@@ -220,6 +220,10 @@ function declarations(css: string, file: string): Decl[] {
 const cssOf = siteAstro.map((f) => ({ file: rel(f), css: styles(read(f)) })).concat({ file: 'src/site/styles/base.css', css: BASE_CSS });
 const all = cssOf.flatMap((c) => declarations(c.css, c.file));
 const where = (d: Decl) => `${d.file} ${d.sel} { ${d.prop}: ${d.value} }`;
+/** The component that owns a component token's group (its `site.owner`). */
+const ownerOfToken = (t: { path: string[] }) => ((SOURCES['tokens.json'].c as Record<string, { $extensions?: Record<string, unknown> }>)[t.path[1]]?.$extensions?.['site.owner'] as string | undefined) ?? '';
+/** The container query sizes a component owns (component tokens marked site.container), as CSS. */
+const containerSizesOf = (component: string) => model.tokens.filter((t) => t.extensions?.['site.container'] && ownerOfToken(t) === component).map((t) => resolve(t, model.byPath));
 const bare = (v: string) => v.replace(/var\([^()]*(\([^()]*\))?[^()]*\)/g, '');
 
 describe('CSS reads tokens, never raw values', () => {
@@ -250,9 +254,9 @@ describe('CSS reads tokens, never raw values', () => {
     expect(all.filter((d) => d.prop === 'z-index' && !/^var\(--layer-[\w-]+\)$/.test(d.value)).map(where)).toEqual([]);
   });
 
-  it('type from its scales: sizes, weights, line heights, families', () => {
+  it('type from its scales: sizes, weights, line heights, families (or a whole type style: font, from a typography token)', () => {
     expect(all.filter((d) => d.prop === 'font-size' && !/^(var\(--(text|c)-[\w-]+\)|1em|100%|inherit)$/.test(d.value)).map(where)).toEqual([]);
-    expect(all.filter((d) => d.prop === 'font').map(where)).toEqual([]);
+    expect(all.filter((d) => d.prop === 'font' && !/^var\(--type-[\w-]+\)$/.test(d.value)).map(where)).toEqual([]);
     expect(all.filter((d) => d.prop === 'font-weight' && !/^(var\(--weight-[\w-]+\)|inherit)$/.test(d.value)).map(where)).toEqual([]);
     expect(all.filter((d) => d.prop === 'line-height' && !/^(var\(--leading-[\w-]+\)|0|inherit)$/.test(d.value)).map(where)).toEqual([]);
     expect(all.filter((d) => d.prop === 'font-family' && !/^(var\(--font-[\w-]+\)|inherit)$/.test(d.value)).map(where)).toEqual([]);
@@ -311,11 +315,20 @@ describe('CSS reads tokens, never raw values', () => {
     expect(bad.map(where)).toEqual([]);
   });
 
-  it('width and height queries only at the breakpoint tokens, in CSS and in scripts', () => {
+  it('width and height queries only at the breakpoint tokens, in CSS (media and container queries, either syntax) and in scripts; a container query may also use a size token its component owns (site.container)', () => {
     const bps = new Set(model.tokens.filter((t) => t.path[0] === 'breakpoint').map((t) => resolve(t, model.byPath)));
     const bad: string[] = [];
-    const sizes = (q: string) => [...q.matchAll(/\((?:min|max)-(?:width|height):\s*([\d.]+\w+)\)/g)].map((m) => m[1]);
-    for (const c of cssOf) for (const m of c.css.matchAll(/@(?:media|container)([^{]*)\{/g)) for (const v of sizes(m[1])) if (!bps.has(v)) bad.push(`${c.file}: ${m[0]}`);
+    // (max-width: 40rem), and the range syntax a container query reads best in: (width < 40rem), (40rem <= inline-size)
+    const sizes = (q: string) => [
+      ...[...q.matchAll(/\((?:min|max)-(?:width|height|inline-size|block-size):\s*([\d.]+\w+)\)/g)].map((m) => m[1]),
+      ...[...q.matchAll(/\(\s*(?:width|height|inline-size|block-size)\s*[<>]=?\s*([\d.]+\w+)\s*\)/g)].map((m) => m[1]),
+      ...[...q.matchAll(/\(\s*([\d.]+\w+)\s*[<>]=?\s*(?:width|height|inline-size|block-size)\s*\)/g)].map((m) => m[1]),
+    ];
+    expect(sizes('(width < 40rem) and (30rem <= inline-size) and (max-width: 56rem)')).toEqual(['56rem', '40rem', '30rem']);
+    for (const c of cssOf) {
+      const own = new Set(containerSizesOf(c.file.split('/').pop()!.replace(/\.astro$/, '')));
+      for (const m of c.css.matchAll(/@(media|container)([^{]*)\{/g)) for (const v of sizes(m[2])) if (!bps.has(v) && !(m[1] === 'container' && own.has(v))) bad.push(`${c.file}: ${m[0]}`);
+    }
     for (const f of siteAstro) for (const m of read(f).matchAll(/matchMedia\('([^']*)'\)/g)) for (const v of sizes(m[1])) if (!bps.has(v)) bad.push(`${rel(f)}: ${m[0]}`);
     expect(bad).toEqual([]);
   });
@@ -340,9 +353,15 @@ describe('CSS reads tokens, never raw values', () => {
       .join('\n');
     const queries = cssOf.map((c) => [...c.css.matchAll(/@(?:media|container)([^{]*)\{/g)].map((m) => m[1]).join('\n')).join('\n');
     const unread = model.tokens
-      .filter((t) => t.path[0] !== 'p')
+      // a deprecated alias is kept for one release with no reader (tokenChangelog.test.ts holds that)
+      .filter((t) => t.path[0] !== 'p' && t.deprecated === undefined)
       .filter((t) => {
         if (t.path[0] === 'breakpoint') return !queries.includes(resolve(t, model.byPath)) && !sources.includes(`media('${t.path[1]}'`);
+        // a container query's size: read by its owner's @container query (CSS can't read a variable there), or by name from a script
+        if (t.extensions?.['site.container']) {
+          const owner = cssOf.find((c) => c.file.endsWith(`/${ownerOfToken(t)}.astro`));
+          return !(owner && [...owner.css.matchAll(/@container([^{]*)\{/g)].some((m) => m[1].includes(resolve(t, model.byPath)))) && !sources.includes(t.name);
+        }
         if (t.extensions?.['site.sizes']) return !new RegExp(`'${t.name.replace(/^--c-/, '')}'`).test(sources) && !sources.includes(`var(${t.name})`);
         return !sources.includes(t.name) && !generated.includes(`var(${t.name})`);
       })
@@ -391,7 +410,7 @@ describe('CSS reads tokens, never raw values', () => {
       'Lightbox.astro': 'the filmstrip its script builds',
       'VideoEmbed.astro': 'the iframe its script swaps in',
       'CanvasChrome.astro': "edit mode's canvas: the page's own editable text and the paragraph its script adds",
-      'Inspector.astro': "edit mode's rich fields: the paragraphs and lists the browser writes as they're edited",
+      'CollectionFields.astro': "edit mode's rich fields (a collection item's words): the paragraphs and lists the browser writes as they're edited",
       'InsertForms.astro': "edit mode's rich fields (a new collection's words): the paragraphs and lists the browser writes as they're edited",
     };
     const bad = siteAstro.filter((f) => !ALLOWED[f.split(sep).pop()!] && (/:global\(/.test(styles(read(f))) || /<style[^>]*is:global/.test(read(f)))).map(rel);
@@ -508,7 +527,9 @@ describe('component tokens: each group is owned by one component or shared by al
   );
 
   it('every group names its owner (a component) or says it is shared', () => {
-    const names = new Set(tierFiles.map((f) => f.name));
+    // edit mode's parts and layout own their c.editor-* groups (documentation/editor/spec.md §10; held in editorDesignSystem.test.ts)
+    const editorParts = [...walk(join(ROOT, 'src/site/editor/components'), /\.astro$/), join(ROOT, 'src/site/editor/EditorLayout.astro')].map((f) => f.split(sep).pop()!.replace(/\.astro$/, ''));
+    const names = new Set([...tierFiles.map((f) => f.name), ...editorParts]);
     const bad = groups.filter((g) => {
       const o = ownerOf(g);
       return !o || (o !== 'shared' && !names.has(o));
@@ -554,11 +575,11 @@ describe('every component documents itself and has a story', () => {
     expect(orphans).toEqual([]);
   });
 
-  it('a component stays short enough to change safely: markup and script at most 350 lines (logic beyond wiring lives in tier 0), the whole file at most 650', () => {
+  it('a component stays short enough to change safely: markup and script at most 350 lines (logic beyond wiring lives in tier 0), the whole file at most 500 (DS2-08: room under the old 650)', () => {
     const lines = (s: string) => s.split('\n').length;
     const long = tierFiles
       .map((f) => ({ name: f.name, total: lines(f.src), rest: lines(f.src) - [...f.src.matchAll(/<style[\s\S]*?<\/style>/g)].reduce((n, m) => n + lines(m[0]), 0) }))
-      .filter((f) => f.rest > 350 || f.total > 650)
+      .filter((f) => f.rest > 350 || f.total > 500)
       .map((f) => `${f.name}: ${f.total} lines, ${f.rest} without its styles`);
     expect(long).toEqual([]);
   });
@@ -588,6 +609,73 @@ describe('every component documents itself and has a story', () => {
       }
     }
     expect(missing).toEqual([]);
+  });
+});
+
+// ---------- recipes written once (DS2-18), and compounds that size by their column (DS2-08) ----------
+describe('recipes written once: a shared decision is a token, a base.css recipe or a tier 0 type, never a copied block', () => {
+  const COMPONENTS = tierFiles.filter((f) => f.tier !== 'layout');
+
+  /** Identical declaration blocks (60 characters or more, a `prop: value` body) in 2 or more files: the measure scripts/design-system-audit.mjs takes. */
+  const copied = (files: { name: string; src: string }[]) => {
+    const seen = new Map<string, Set<string>>();
+    for (const f of files)
+      for (const m of f.src.matchAll(/\{([^{}]{60,})\}/g)) {
+        const b = m[1].replace(/\s+/g, ' ').trim();
+        if (!/:\s/.test(b) || /^\s*\w+\??:\s*(string|number|boolean)/.test(b)) continue;
+        if (!seen.has(b)) seen.set(b, new Set());
+        seen.get(b)!.add(f.name);
+      }
+    return [...seen.entries()].filter(([, s]) => s.size >= 2).map(([b, s]) => `${[...s].join(', ')}: ${b.slice(0, 100)}`);
+  };
+
+  it('fewer than 25 identical declaration blocks are copied across the fundamentals and compounds', () => {
+    const block = '{\n    color: var(--color-text-muted);\n    font: var(--type-hint);\n  }';
+    expect(copied([{ name: 'A', src: `.a ${block}` }, { name: 'B', src: `.b ${block}` }, { name: 'C', src: '.c { color: red }' }])).toHaveLength(1);
+    const blocks = copied(COMPONENTS);
+    expect(blocks.length, blocks.join('\n')).toBeLessThan(25);
+  });
+
+  it("the recipes base.css holds are written nowhere else: a control's disabled state (data-press), the focus ring (data-focus-ring), a card that's one link (data-card)", () => {
+    const own = (re: RegExp) => COMPONENTS.filter((f) => re.test(styles(f.src).replace(/\s+/g, ' '))).map((f) => f.name);
+    expect(own(/opacity: var\(--opacity-disabled\); cursor: not-allowed/)).toEqual([]);
+    expect(own(/outline: var\(--border-focus\) solid var\(--color-focus\); outline-offset: var\(--border-focus-offset\)/)).toEqual([]);
+    expect(own(/\{ content: ''; position: absolute; inset: 0; \}/)).toEqual([]);
+    // and each is there, keyed by its attribute
+    for (const key of ['[data-press]', "[data-focus-ring='inside']", '[data-card]', "[data-field-part='hint']", "[data-check-part='root']"]) expect(BASE_CSS, key).toContain(key);
+  });
+
+  it("the picture's drop shadow and the room it takes are c.image tokens, and the field label's type is a typography token", () => {
+    const own = (re: RegExp) => COMPONENTS.filter((f) => re.test(styles(f.src))).map((f) => f.name);
+    expect(own(/drop-shadow\(|calc\(var\(--c-image-shadow-y\)/)).toEqual([]);
+    expect(TOKENS_CSS).toMatch(/--c-image-shadow-filter: drop-shadow\(/);
+    expect(TOKENS_CSS).toMatch(/--type-label: var\(--weight-semibold\) var\(--text-sm\)\/var\(--leading-ui\) var\(--font-ui\);/);
+    // a field label's three longhands (size, weight, line height) are the token's to set
+    const triple = /font-size: var\(--text-sm\);\s*font-weight: var\(--weight-semibold\);\s*line-height: var\(--leading-ui\)/;
+    expect(COMPONENTS.filter((f) => ['FileField', 'Progress', 'Slider', 'TextField', 'ChoiceGroup'].includes(f.name) && triple.test(styles(f.src))).map((f) => f.name)).toEqual([]);
+  });
+
+  it("a picture's file is one type (PictureSource in design/pictures.ts), never declared inline in a component", () => {
+    const inline = /\{\s*src: string; srcset\?: string; width: number; height: number/;
+    const files = [...tierFiles.map((f) => ({ name: f.name, src: f.src })), ...walk(join(ROOT, 'src/site/scripts'), /\.ts$/).map((f) => ({ name: rel(f), src: read(f) }))];
+    expect(files.filter((f) => inline.test(frontmatter(f.src) || f.src)).map((f) => f.name)).toEqual([]);
+    expect(read(join(ROOT, 'src/site/design/pictures.ts'))).toMatch(/export interface PictureSource \{/);
+  });
+});
+
+describe('compounds placed in a column size their insides by the column (a container query), not the screen (DS2-08)', () => {
+  // where a column's width, not the window's, decides their layout: a collection, a story card, a carousel
+  const IN_COLUMNS = ['Collection', 'StoryCard', 'Carousel'];
+  const SCRIPTS: Record<string, string> = { Collection: 'collectionStrip.ts', Carousel: 'carousel.ts' };
+
+  it.each(IN_COLUMNS)('%s is a container, and no width query of the screen lays it out (its script asks its own width too)', (name) => {
+    const f = tierFiles.find((x) => x.name === name)!;
+    const css = styles(f.src);
+    expect(css, 'a container').toMatch(/container-type:\s*inline-size/);
+    expect(css, 'container queries').toMatch(/@container\s*\(/);
+    const screen = [...css.matchAll(/@media([^{]*)\{/g)].map((m) => m[1].trim()).filter((q) => /width|height/.test(q));
+    expect(screen).toEqual([]);
+    if (SCRIPTS[name]) expect(read(join(ROOT, 'src/site/scripts', SCRIPTS[name]))).not.toMatch(/matchMedia\(\s*media\(/);
   });
 });
 
@@ -681,8 +769,9 @@ describe('edit mode: parts made only from the design system, pages that compose 
   it('found the parts', () => expect(parts.length).toBeGreaterThanOrEqual(15));
 
   it('Media and inspector previews always show whole images with square corners', () => {
-    for (const name of ['MediaGrid.astro', 'MediaDetails.astro', 'Inspector.astro']) {
-      const part = parts.find((p) => p.name === name)!;
+    const kitPicture = { name: 'PictureField.astro', src: read(join(EDITOR, 'kit/PictureField.astro')) };
+    for (const name of ['MediaGrid.astro', 'MediaDetails.astro', 'SetFields.astro', 'PictureField.astro']) {
+      const part = [...parts, kitPicture].find((p) => p.name === name)!;
       const images = [...part.src.matchAll(/<Image\b[\s\S]*?\/>/g)];
       expect(images.length, name).toBeGreaterThan(0);
       for (const [tag] of images) {
@@ -699,6 +788,8 @@ describe('edit mode: parts made only from the design system, pages that compose 
       /^\.\.\/\.\.\/(design|scripts|styles)\/[\w./-]+$/.test(i) ||
       /^\.\.\/\.\.\/content\/(schema|load)$/.test(i) ||
       /^\.\.\/(model|scripts)\/[\w-]+$/.test(i) ||
+      // edit mode's kit: the pieces several parts are made of (src/site/editor/kit)
+      /^\.\.\/kit\/[A-Z]\w*\.astro$/.test(i) ||
       // labels and row types only: reading and writing content is the pages' job
       i === '../server/screens';
     expect(specs(p.src).filter((i) => !ok(i))).toEqual([]);

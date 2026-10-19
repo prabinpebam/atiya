@@ -6,6 +6,9 @@
  */
 import { createElement, useEffect, useRef, type ComponentPropsWithRef, type ReactNode, type Ref } from 'react';
 import { spaceBack } from '../input/keyboard';
+import './styles/dialog.css';
+import './styles/panel.css';
+import './styles/scroll-area.css';
 
 const cx = (...c: unknown[]) => c.filter(Boolean).join(' ');
 
@@ -83,6 +86,7 @@ export function Panel({ backdrop, outside, className, children, ...rest }: Panel
 export type ScrollAreaProps = Omit<ComponentPropsWithRef<'div'>, 'ref'> & {
   /** The element it is (a list scrolls as a `ul`). */
   as?: 'div' | 'ul';
+  /** Its element, for the caller to focus or measure (a `ul` or a `div`, as `as` says). */
   ref?: Ref<HTMLElement>;
 };
 

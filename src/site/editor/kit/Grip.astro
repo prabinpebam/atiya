@@ -1,0 +1,31 @@
+---
+/**
+ * A drag handle: the grip a row or a section is dragged by (the outline's blocks, a set's pictures, a
+ * collection's items), a touch target's height, with the cursor that says it can be grabbed. The screen's
+ * script finds it by its data attribute (data-editor-drag, data-inspector-drag) and runs the drag.
+ * @tier kit
+ * @a11y Decorative (aria-hidden): every drag has buttons beside it that do the same (Move up, Move down), so nothing needs a drag (WCAG 2.5.7).
+ */
+import Icon from '../../components/fundamentals/Icon.astro';
+
+interface Props {
+  /** Data attributes pass through to the handle: the drag's hooks (which row, which item). */
+  [data: `data-${string}`]: string | undefined;
+}
+
+const { ...rest } = Astro.props;
+---
+
+<span class="drag-grip" aria-hidden="true" {...rest}><Icon name="drag" /></span>
+
+<style>
+  .drag-grip {
+    display: grid;
+    place-items: center;
+    inline-size: var(--space-6);
+    block-size: var(--size-touch);
+    color: var(--color-text-muted);
+    cursor: grab;
+    touch-action: none;
+  }
+</style>

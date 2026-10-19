@@ -1,0 +1,9 @@
+---
+import Example from '../../library/Example.astro';
+import PlaceForms from '../components/PlaceForms.astro';
+import { PLACES, PLANET, SECTION_OPTIONS } from './samples';
+---
+
+<Example title="A building's settings" description="Its name, what it holds, its summary and the section it shows; only the chosen building's form shows." layout="block">
+  <PlaceForms places={PLACES} selected="workshop" sections={SECTION_OPTIONS} planet={PLANET} version="sample" />
+</Example>

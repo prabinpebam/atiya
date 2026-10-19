@@ -1,0 +1,32 @@
+---
+import Example from '../../library/Example.astro';
+import Panel from '../kit/Panel.astro';
+import Heading from '../../components/fundamentals/Heading.astro';
+import Text from '../../components/fundamentals/Text.astro';
+import TextField from '../../components/fundamentals/TextField.astro';
+import Button from '../../components/fundamentals/Button.astro';
+---
+
+<Example title="A section of a screen" description="Raised and ruled, its parts a set space apart (md)." layout="block">
+  <Panel labelledby="story-panel-changes">
+    <Heading level={3} size="h4" id="story-panel-changes">Changes to save</Heading>
+    <Text variant="ui" tone="muted">Nothing has changed since the last save to remote.</Text>
+  </Panel>
+</Example>
+
+<Example title="A card of fields" description="as='form' with gap lg: a settings card, its fields a little further apart." layout="block">
+  <Panel as="form" gap="lg" labelledby="story-panel-site">
+    <Heading level={3} size="h4" id="story-panel-site">The site</Heading>
+    <TextField label="Name" name="name" id="story-panel-name" />
+    <Button variant="primary" type="submit">Save the site settings</Button>
+  </Panel>
+</Example>
+
+<Example title="A result and a warning" description="tone positive or negative: marked on its leading edge, on the panel's own surface." layout="stack">
+  <Panel as="div" tone="positive">
+    <Text variant="ui">Saved to remote: GitHub Actions builds the site in a few minutes.</Text>
+  </Panel>
+  <Panel as="div" tone="negative">
+    <Text variant="ui">2 commits not on GitHub yet: push again once the reason is fixed.</Text>
+  </Panel>
+</Example>

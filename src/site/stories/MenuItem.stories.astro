@@ -1,0 +1,31 @@
+---
+import Example from '../library/Example.astro';
+import MenuItem from '../components/fundamentals/MenuItem.astro';
+---
+
+<Example title="A context menu" description="Each command in a menu: its container has role menu, and a group in it is named.">
+  <div class="demo-menu" role="menu" aria-label="Table actions">
+    <div class="demo-group" role="group" aria-label="Row actions">
+      <MenuItem>Insert row above</MenuItem>
+      <MenuItem>Insert row below</MenuItem>
+      <MenuItem>Move row up</MenuItem>
+      <MenuItem disabled>Delete row</MenuItem>
+    </div>
+  </div>
+</Example>
+
+<style>
+  .demo-menu {
+    display: grid;
+    padding: var(--space-2);
+    border: var(--border-hairline) solid var(--color-rule);
+    border-radius: var(--radius-lg);
+    background: var(--color-bg-raised);
+    box-shadow: var(--shadow-md);
+  }
+
+  .demo-group {
+    display: grid;
+    gap: var(--c-list-item-gap);
+  }
+</style>

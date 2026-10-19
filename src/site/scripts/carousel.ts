@@ -3,14 +3,15 @@
  * or filmstrip, keys and counter, and a peek's room and shading. Carousel.astro's script runs it on each
  * carousel through `each`; the rules it applies are pure in `media.ts` and `units.ts`, and unit-tested.
  */
-import { arrowStep, bleed, clampIndex, counter, nearest, peekInset, peekOf, reveal } from './media';
+import { arrowStep, bleed, clampIndex, counter, narrowerThan, nearest, peekInset, peekOf, reveal } from './media';
 import { cssNumber } from './units';
-import { media } from '../design/responsive';
 
 /** The names of the component's tokens the script reads (the component owns them, so it names them). */
 export interface CarouselTokens {
   /** The least of each neighbour a peek keeps in view. */
   peekMin: string;
+  /** Its container query's size: narrower than this, no peek (one slide at a time). */
+  narrow: string;
 }
 
 export function setupCarousel(root: HTMLElement, signal: AbortSignal, tokens: CarouselTokens): void {
@@ -96,16 +97,18 @@ export function setupCarousel(root: HTMLElement, signal: AbortSignal, tokens: Ca
   window.addEventListener('resize', () => update(nearest(track.scrollLeft, offsets())), { signal });
 
   if (peek) {
-    const narrow = matchMedia(media('sm'));
-    const token = (name: string) => cssNumber(getComputedStyle(root).getPropertyValue(name), parseFloat(getComputedStyle(document.documentElement).fontSize) || 16);
+    const remPx = () => parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
+    const token = (name: string) => cssNumber(getComputedStyle(root).getPropertyValue(name), remPx());
     // the room beside the carousel, up to its bounds (and the viewport): no more than the fade needs (the
-    // gap to a neighbour, then a slide's width)
+    // gap to a neighbour, then a slide's width). None in a column narrower than sm (the stylesheet's
+    // container query: one slide at a time)
     const room = () => {
       const r = root.getBoundingClientRect();
       const box = (root.closest('[data-bleed-bounds]') ?? root.closest('main') ?? document.documentElement).getBoundingClientRect();
       const gap = parseFloat(getComputedStyle(track).columnGap) || 0;
-      const { start, end } = bleed(r, box, document.documentElement.clientWidth, r.width + gap, narrow.matches);
-      const inset = peekInset(token(tokens.peekMin), start, end, narrow.matches);
+      const narrow = narrowerThan(root.clientWidth, getComputedStyle(root).getPropertyValue(tokens.narrow), remPx());
+      const { start, end } = bleed(r, box, document.documentElement.clientWidth, r.width + gap, narrow);
+      const inset = peekInset(token(tokens.peekMin), start, end, narrow);
       root.style.setProperty('--bleed-start', `${start}px`);
       root.style.setProperty('--bleed-end', `${end}px`);
       root.style.setProperty('--inset', `${inset}px`);
@@ -134,7 +137,6 @@ export function setupCarousel(root: HTMLElement, signal: AbortSignal, tokens: Ca
     track.addEventListener('scroll', reshade, { passive: true });
     new ResizeObserver(relayout).observe(root);
     window.addEventListener('resize', relayout, { signal });
-    narrow.addEventListener('change', relayout, { signal });
     relayout();
     // a peeking slide is a hint: choosing it brings it to the middle (not the lightbox)
     slides.forEach((slide, i) =>

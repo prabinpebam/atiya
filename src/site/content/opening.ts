@@ -9,6 +9,7 @@ import { picture } from './pictures';
 import { pageMeasure } from './reading';
 import { rankRelated } from '../scripts/related';
 import type { Article, PictureDisplay } from './schema';
+import type { PictureSource } from '../design/pictures';
 
 /** A picture's dark mode version, as the components take it. */
 const darkOf = (p: { dark?: { src: string; srcset: string; width: number; height: number; thumb: string; bg: string } }) => (p.dark ? { src: p.dark.src, srcset: p.dark.srcset, width: p.dark.width, height: p.dark.height, bg: p.dark.bg } : undefined);
@@ -30,9 +31,9 @@ export interface Opening {
   author?: { name: string; avatar?: string; avatarDark?: string };
   date?: string;
   readingTime?: string;
-  picture?: { src: string; srcset?: string; alt: string; width: number; height: number; caption?: string; credit?: string; display?: PictureDisplay; bg?: string; background?: boolean; rounded?: boolean; shadow?: boolean; dark?: { src: string; srcset?: string; width: number; height: number; bg?: string } };
+  picture?: { src: string; srcset?: string; alt: string; width: number; height: number; caption?: string; credit?: string; display?: PictureDisplay; bg?: string; background?: boolean; rounded?: boolean; shadow?: boolean; dark?: PictureSource };
   /** The person the page is about, whole, beside the title. */
-  portrait?: { src: string; srcset?: string; alt: string; width: number; height: number; focus?: string; dark?: { src: string; srcset?: string; width: number; height: number } };
+  portrait?: { src: string; srcset?: string; alt: string; width: number; height: number; focus?: string; dark?: PictureSource };
 }
 
 /** A story (an article, a talk) opens with a byline; a page and a gallery with their words only. (A drop cap is a paragraph's own choice.) */

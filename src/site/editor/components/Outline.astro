@@ -26,6 +26,8 @@ import Text from '../../components/fundamentals/Text.astro';
 import Icon from '../../components/fundamentals/Icon.astro';
 import IconButton from '../../components/fundamentals/IconButton.astro';
 import Button from '../../components/fundamentals/Button.astro';
+import RowButton from '../../components/fundamentals/RowButton.astro';
+import Grip from '../kit/Grip.astro';
 import type { IconName } from '../../design/icons';
 
 interface Props {
@@ -59,17 +61,13 @@ const { blocks, icons } = Astro.props;
         const row = b ?? { kind: 'Paragraph', excerpt: '', icon: icons.text, type: 'text' };
         const last = b ? i === blocks.length - 1 : true;
         const Row = (
-          <li class="row" data-row={i} data-type={row.type}>
-            <span class="grip" data-editor-drag={i} aria-hidden="true">
-              <Icon name="drag" />
-            </span>
-            <button class="pick" type="button" data-editor-select={i} aria-label={`${row.kind}${row.excerpt ? `: ${row.excerpt}` : ''}`}>
-              <span class="icon" data-editor-row-icon><Icon name={row.icon} /></span>
-              <span class="words">
-                <span class="kind" data-editor-row-kind>{row.kind}</span>
-                <span class="excerpt" data-editor-row-excerpt hidden={!row.excerpt}>{row.excerpt}</span>
-              </span>
-            </button>
+          <li class="block-row" data-drop-line="close" data-row={i} data-type={row.type}>
+            <Grip data-editor-drag={String(i)} />
+            <RowButton data-editor-select={String(i)} aria-label={`${row.kind}${row.excerpt ? `: ${row.excerpt}` : ''}`}>
+              <span slot="icon" class="icon" data-editor-row-icon><Icon name={row.icon} /></span>
+              <span data-editor-row-kind>{row.kind}</span>
+              <span slot="detail" data-editor-row-excerpt hidden={!row.excerpt}>{row.excerpt}</span>
+            </RowButton>
             <span class="saving" aria-hidden="true"></span>
             <span class="moves">
               <IconButton label={`Move ${row.kind.toLowerCase()} up`} icon="arrow-up" size="sm" tooltip="none" disabled={i === 0} data-editor-move="up" data-index={String(i)} />
@@ -148,8 +146,7 @@ const { blocks, icons } = Astro.props;
     list-style: none;
   }
 
-  .row {
-    position: relative;
+  .block-row {
     display: grid;
     grid-template-columns: auto minmax(0, 1fr) auto auto;
     align-items: center;
@@ -159,7 +156,6 @@ const { blocks, icons } = Astro.props;
 
   .icon {
     display: inline-grid;
-    flex: none;
   }
 
   /* a row whose change is saving (spec §2.2): a small spinner at its end, past the delay */
@@ -173,7 +169,7 @@ const { blocks, icons } = Astro.props;
     animation: row-turn var(--duration-slower) linear infinite;
   }
 
-  .row[data-busy='on'] .saving {
+  .block-row[data-busy='on'] .saving {
     display: inline-block;
   }
 
@@ -189,99 +185,6 @@ const { blocks, icons } = Astro.props;
     }
   }
 
-  .row[data-dragging] {
-    opacity: var(--opacity-disabled);
-  }
-
-  .row[data-drop='before']::before,
-  .row[data-drop='after']::after {
-    content: '';
-    position: absolute;
-    inset-inline: var(--space-2);
-    block-size: var(--border-strong);
-    border-radius: var(--radius-pill);
-    background: var(--color-accent);
-  }
-
-  .row[data-drop='before']::before {
-    inset-block-start: calc(var(--space-0-5) * -1);
-  }
-
-  .row[data-drop='after']::after {
-    inset-block-end: calc(var(--space-0-5) * -1);
-  }
-
-  .grip {
-    display: grid;
-    place-items: center;
-    inline-size: var(--space-6);
-    block-size: var(--size-touch);
-    color: var(--color-text-muted);
-    cursor: grab;
-    touch-action: none;
-  }
-
-  .pick {
-    display: flex;
-    align-items: center;
-    gap: var(--space-2);
-    min-inline-size: 0;
-    min-block-size: var(--size-touch);
-    padding: var(--space-1) var(--space-2);
-    border: 0;
-    border-radius: var(--radius-md);
-    background: transparent;
-    color: var(--color-text);
-    font-family: var(--font-ui);
-    text-align: start;
-    cursor: pointer;
-  }
-
-  @media (hover: hover) {
-    .pick:hover {
-      background: var(--color-bg-hover);
-    }
-  }
-
-  .pick:active {
-    background: var(--color-bg-hover);
-  }
-
-  .pick[aria-current='true'],
-  .pick[aria-pressed='true'] {
-    background: var(--color-accent-soft);
-    color: var(--color-on-accent-soft);
-  }
-
-  /* the block the inspector shows, among several selected */
-  .pick[aria-pressed='true'][aria-current='true'] {
-    box-shadow: inset var(--border-strong) 0 0 var(--color-accent);
-  }
-
-  .words {
-    display: grid;
-    min-inline-size: 0;
-  }
-
-  .kind {
-    font-size: var(--text-sm);
-    font-weight: var(--weight-semibold);
-    line-height: var(--leading-ui);
-  }
-
-  .excerpt {
-    overflow: hidden;
-    color: var(--color-text-muted);
-    font-size: var(--text-sm);
-    line-height: var(--leading-ui);
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  .pick[aria-current='true'] .excerpt,
-  .pick[aria-pressed='true'] .excerpt {
-    color: var(--color-on-accent-soft);
-  }
 
   .moves {
     display: flex;
@@ -289,19 +192,19 @@ const { blocks, icons } = Astro.props;
     transition: opacity var(--duration-fast) var(--ease-standard);
   }
 
-  .row:focus-within .moves,
-  .row[data-current] .moves,
-  .row[data-picked] .moves {
+  .block-row:focus-within .moves,
+  .block-row[data-current] .moves,
+  .block-row[data-picked] .moves {
     opacity: 1;
   }
 
   @media (hover: hover) {
-    .row:hover .moves {
+    .block-row:hover .moves {
       opacity: 1;
     }
   }
 
-  .row:active .moves {
+  .block-row:active .moves {
     opacity: 1;
   }
 

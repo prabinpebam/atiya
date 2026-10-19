@@ -1,0 +1,31 @@
+---
+import Example from '../library/Example.astro';
+import ColorField from '../components/fundamentals/ColorField.astro';
+---
+
+<Example title="Labelled" description="The system's own colour input, as a swatch beside its label.">
+  <ColorField label="Accent" name="accent" value="#3d4fd6" />
+  <ColorField label="Highlight" name="highlight" value="#e3a21a" />
+  <ColorField label="Rules" name="rules" value="#d8d2c4" disabled />
+</Example>
+
+<Example title="In a row that names it" description="The label hidden from sight (still read), where the row's own words say what the colour is for.">
+  <div class="demo-row">
+    <span class="demo-name">Muted text</span>
+    <ColorField label="Muted text, light page" hideLabel name="muted-light" value="#6b6459" />
+    <ColorField label="Muted text, dark page" hideLabel name="muted-dark" value="#a59d90" />
+  </div>
+</Example>
+
+<style>
+  .demo-row {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+  }
+
+  .demo-name {
+    font-family: var(--font-ui);
+    font-size: var(--text-sm);
+  }
+</style>

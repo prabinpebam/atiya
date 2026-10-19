@@ -1,0 +1,21 @@
+---
+import Example from '../../library/Example.astro';
+import NavGroup from '../kit/NavGroup.astro';
+import NavRow from '../kit/NavRow.astro';
+import Button from '../../components/fundamentals/Button.astro';
+---
+
+<Example title="Groups of sections" description="A group's name over its rows; groups side by side are ruled apart, and what comes after a group's rows (Add an item) sits under them." layout="block">
+  <nav aria-label="Story: settings">
+    <NavGroup label="Items (2)">
+      <NavRow pick="story-item-0" detail="Walk first">Item 1</NavRow>
+      <NavRow pick="story-item-1" detail="Then build">Item 2</NavRow>
+      <Fragment slot="after">
+        <Button variant="quiet" size="sm" icon="plus">Add an item</Button>
+      </Fragment>
+    </NavGroup>
+    <NavGroup label="Settings">
+      <NavRow pick="story-layout">Layout and width</NavRow>
+    </NavGroup>
+  </nav>
+</Example>

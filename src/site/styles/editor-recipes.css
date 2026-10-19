@@ -1,0 +1,103 @@
+/*
+ * Edit mode's recipes (documentation/editor/spec.md §10): the small decisions several of its parts share that no
+ * component can hold (they style the part's own element, or what the browser writes), written once and keyed by
+ * a data attribute, as the site's base.css keys its own. Tokens only. Imported by EditorLayout alone, like
+ * editor-tokens.css: none of it reaches a production page.
+ */
+
+/* ---------- a region drawn again from the server (spec §2.2): what it shows stays while it updates, with a
+   line along its top past the delay. data-busy-line on the region (data-busy is the task tracker's); "sticky"
+   holds the line at the top of a region that scrolls (the inspector) ---------- */
+[data-busy-line][data-busy='on'] {
+  position: relative;
+}
+
+[data-busy-line][data-busy='on']::before {
+  content: '';
+  position: absolute;
+  inset-inline: 0;
+  inset-block-start: 0;
+  z-index: var(--layer-raised);
+  block-size: var(--border-strong);
+  background: linear-gradient(90deg, transparent, var(--color-accent), transparent) no-repeat;
+  background-size: 40% 100%;
+  animation: editor-region-busy var(--duration-slower) var(--ease-standard) infinite alternate;
+  pointer-events: none;
+}
+
+[data-busy-line='sticky'][data-busy='on']::before {
+  position: sticky;
+  display: block;
+  margin-block-end: calc(var(--border-strong) * -1);
+}
+
+@keyframes editor-region-busy {
+  from {
+    background-position: 0 0;
+  }
+  to {
+    background-position: 100% 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-busy-line][data-busy='on']::before {
+    animation: none;
+    background: var(--color-accent);
+  }
+}
+
+/* ---------- where a dragged row would land: a line before or after it (the drag's script sets data-drop).
+   data-drop-line on the row says how far apart the rows are, so the line sits between them: flush (rows ruled
+   against each other), close (space-0-5 apart) or spaced (space-2 apart or more) ---------- */
+[data-drop-line] {
+  position: relative;
+}
+
+[data-drop-line][data-dragging] {
+  opacity: var(--opacity-disabled);
+}
+
+[data-drop-line][data-drop='before']::before,
+[data-drop-line][data-drop='after']::after {
+  content: '';
+  position: absolute;
+  inset-inline: var(--space-2);
+  block-size: var(--border-strong);
+  border-radius: var(--radius-pill);
+  background: var(--color-accent);
+}
+
+[data-drop-line='flush'][data-drop='before']::before {
+  inset-block-start: calc(var(--border-strong) / -2);
+}
+
+[data-drop-line='flush'][data-drop='after']::after {
+  inset-block-end: calc(var(--border-strong) / -2);
+}
+
+[data-drop-line='close'][data-drop='before']::before {
+  inset-block-start: calc(var(--space-0-5) * -1);
+}
+
+[data-drop-line='close'][data-drop='after']::after {
+  inset-block-end: calc(var(--space-0-5) * -1);
+}
+
+[data-drop-line='spaced'][data-drop='before']::before {
+  inset-block-start: calc(var(--space-1) * -1);
+}
+
+[data-drop-line='spaced'][data-drop='after']::after {
+  inset-block-end: calc(var(--space-1) * -1);
+}
+
+/* ---------- a rich field's words (kit/RichField): the paragraphs and lists its editing makes, which the
+   browser writes, a paragraph apart as on the page ---------- */
+[data-rich-field] [data-rich-input] > * {
+  margin-block: 0;
+}
+
+[data-rich-field] [data-rich-input] > * + * {
+  margin-block-start: var(--space-3);
+}

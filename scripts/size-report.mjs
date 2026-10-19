@@ -129,6 +129,17 @@ if (process.argv.includes('--prod')) {
   } else {
     console.log(`✓ no edit mode in the production build (${built.length} files searched)`);
   }
+  // the game UI's gallery is dev and test only (documentation/game-ui/design-system.md §9.1): no page, script or marker of it
+  const galleryLeaks = [
+    ...(existsSync(join(DIST, 'play', 'gallery')) ? ['play/gallery/'] : []),
+    ...built.filter((p) => /data-game-gallery|game-gallery|mountGallery/.test(readFileSync(p, 'utf8'))).map((p) => relative(DIST, p)),
+  ];
+  if (galleryLeaks.length) {
+    console.error(`✗ the game's gallery found in the production build: ${galleryLeaks.slice(0, 20).join(', ')}`);
+    failed = true;
+  } else {
+    console.log('✓ no game gallery in the production build');
+  }
 }
 if (landingGameJs.length) {
   console.error(`✗ landing page loads 3D JS: ${landingGameJs.join(', ')}`);

@@ -1,0 +1,99 @@
+/* The loading scene (progressive-loading.md §5.2): the little drawn planet, the bar and the status, until the planet is live; the gate hides it (and the welcome) behind its panels.
+ * Its owners import it (src/pages/play.astro, platform/greeting.ts); tokens only (tests/unit/designSystem.test.ts). */
+@layer tokens, base, primitives, components, cursors;
+
+@layer components {
+  /* The loading scene (progressive-loading.md §5.2): a little drawn planet turning, a bar, and Prabin's
+   * welcome over it from the first paint; it cross-fades into the live planet */
+  .load-scene {
+    position: absolute;
+    inset: 0;
+    z-index: var(--layer-overlay);
+    display: grid;
+    place-content: center;
+    justify-items: center;
+    gap: var(--space-4);
+    /* lifted clear of the welcome in the bottom lane, and kept inside the interaction-safe rectangle */
+    padding: calc(var(--space-6) + var(--safe-top)) calc(var(--space-6) + var(--safe-right)) calc(var(--space-18) + var(--space-18) + var(--space-16) + var(--safe-bottom))
+      calc(var(--space-6) + var(--safe-left));
+    background: linear-gradient(180deg, var(--color-sky-top) 0%, var(--color-sky-mid) 45%, var(--color-sky-low) 100%);
+    transition: opacity var(--dur-reveal) var(--ease-out);
+  }
+
+  .load-scene[data-live] {
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .load-planet {
+    width: var(--c-loader-size);
+    height: var(--c-loader-size);
+  }
+
+  .load-turn {
+    transform-origin: 50% 50%;
+    animation: load-turn var(--dur-turn) linear infinite;
+  }
+
+  .load-meadow {
+    fill: var(--color-loader-meadow);
+  }
+
+  .load-shade {
+    fill: var(--color-loader-meadow-shade);
+  }
+
+  .load-tree {
+    fill: var(--color-loader-tree);
+  }
+
+  .load-wall {
+    fill: var(--color-loader-wall);
+  }
+
+  .load-roof {
+    fill: var(--color-loader-roof);
+  }
+
+  .load-bar {
+    width: var(--c-loader-size);
+    height: var(--space-1-5);
+    overflow: hidden;
+    border-radius: var(--radius-pill);
+    background: var(--color-scrim-soft);
+  }
+
+  .load-fill {
+    display: block;
+    height: 100%;
+    border-radius: var(--radius-pill);
+    background: var(--color-loader-bar);
+    transform: scaleX(var(--load, 0));
+    transform-origin: 0 50%;
+    transition: transform var(--dur-slow) var(--ease-out);
+  }
+
+  .load-status {
+    min-height: var(--c-loader-status);
+    margin: 0;
+    color: var(--color-paper-text);
+    font-size: var(--text-sm);
+  }
+
+  /* behind a gate panel (the fallback, the offer, an error): greeting.ts hides the scene and the welcome */
+  [data-gate-hidden] {
+    display: none;
+  }
+
+  @keyframes load-turn {
+    to {
+      transform: rotate(360deg);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .load-turn {
+      animation: none;
+    }
+  }
+}

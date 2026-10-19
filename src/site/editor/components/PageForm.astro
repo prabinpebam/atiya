@@ -1,0 +1,203 @@
+---
+/**
+ * The page's settings in the inspector (documentation/editor/spec.md §3.5), in sections (kit/Sections): its title
+ * and summary, publishing (status, visibility, who can see it, its section and its place on the planet; a private
+ * page's address and Share), its lead picture, thumbnail and portrait (each with how it's shown), search and
+ * sharing, and its dates. Every field is named by its path in the article (`seo.description`); a draft can be
+ * deleted from its footer.
+ * @tier editor
+ * @a11y A form named "Page settings"; every field labelled, hints tied to their fields; the list of sections is a named navigation of buttons, in groups, the one shown marked aria-current.
+ * @a11y A refused value is announced beside the actions (role="alert").
+ * @key Up / Down: in the list of sections, the previous / next one
+ */
+import Button from '../../components/fundamentals/Button.astro';
+import Link from '../../components/fundamentals/Link.astro';
+import Select from '../../components/fundamentals/Select.astro';
+import Switch from '../../components/fundamentals/Switch.astro';
+import Text from '../../components/fundamentals/Text.astro';
+import TextField from '../../components/fundamentals/TextField.astro';
+import Sections from '../kit/Sections.astro';
+import NavGroup from '../kit/NavGroup.astro';
+import NavRow from '../kit/NavRow.astro';
+import Pane from '../kit/Pane.astro';
+import PictureField from '../kit/PictureField.astro';
+import ActionBar from '../../components/compounds/ActionBar.astro';
+import Form from '../kit/Form.astro';
+import FormFoot from '../kit/FormFoot.astro';
+import IssueNote from '../kit/IssueNote.astro';
+import type { Article } from '../../content/schema';
+import { pictureNote } from '../model/crop';
+import { PICTURE_SPECS, specTip } from '../../design/pictures';
+import { ACCESS, DISPLAYS, PAGE_KINDS, SECTION_HINT, onPlanet, statusChoices, type Choice, type Thumb } from '../model/inspectorFields';
+
+interface Props {
+  /** The article. */
+  article: Article;
+  /** The pictures it can show, by media ID. */
+  media: Record<string, Thumb>;
+  /** The sections it can go in. */
+  sections: Choice[];
+  /** The section it's in ('' for none); a private page's, from the private overlay. */
+  section: string;
+  /**
+   * Who can see it (documentation/access/spec.md §8.2): open, or private. Left out when private-pages/
+   * isn't set up, so the choice isn't offered.
+   */
+  access?: 'open' | 'private';
+  /**
+   * The building that shows its section on the planet ('' for none): a page is read there once it's
+   * published and open (documentation/sections/spec.md §5.2).
+   */
+  place: string;
+  /** Published (a draft can be deleted; a published page is unpublished first). */
+  published: boolean;
+  /** Its address on the site, when placed. */
+  path: string | null;
+  /** Where to set up private pages, when they aren't yet and the site is in Atiya Studio (documentation/desktop/spec.md F8). */
+  privateSetup?: string | null;
+}
+
+const { article, media, sections, section, access, place, published, path, privateSetup = null } = Astro.props;
+const privatePage = access === 'private';
+const thumbOf = (m?: string) => (m ? media[m] : undefined);
+// the lead picture, and what cards show (the thumbnail, or else the lead picture)
+const lead = thumbOf(article.hero?.media);
+const card = thumbOf(article.thumbnail ?? article.hero?.media);
+const face = thumbOf(article.portrait);
+const STATUS = statusChoices(article.status);
+const KINDS: Choice[] = article.kind === 'talk' ? [{ value: 'talk', label: 'Talk' }] : PAGE_KINDS;
+const VISIBILITY: Choice[] = [{ value: 'public', label: 'Public' }, { value: 'publicRedacted', label: 'Public, with details removed' }, { value: 'summaryOnly', label: 'Summary only' }];
+---
+
+<Form fill data-page-form="" label="Page settings">
+  <Sections name="page" label="Page settings">
+    <Fragment slot="nav">
+      <NavGroup label="Page">
+        <NavRow pick="basics">Title and summary</NavRow>
+        <NavRow pick="publishing" detail={STATUS.find((s) => s.value === article.status)?.label}>Publishing</NavRow>
+      </NavGroup>
+      <NavGroup label="Pictures">
+        <NavRow pick="lead" detail={article.hero ? lead?.alt || 'Chosen' : 'None'}>Lead picture</NavRow>
+        <NavRow pick="thumbnail" detail={article.thumbnail ? card?.alt || 'Chosen' : article.hero ? 'The lead picture' : 'None'}>Thumbnail</NavRow>
+        <NavRow pick="portrait" detail={article.portrait ? face?.alt || 'Chosen' : 'None'}>Portrait</NavRow>
+      </NavGroup>
+      <NavGroup label="More">
+        <NavRow pick="search">Search and sharing</NavRow>
+        <NavRow pick="dates">Dates</NavRow>
+      </NavGroup>
+    </Fragment>
+
+    <Pane name="basics" title="Title and summary" titleId="page-s-basics">
+      <TextField label="Title" name="title" id="page-title" value={article.title} required />
+      <TextField label="Menu label" name="navLabel" id="page-navLabel" value={article.navLabel ?? ''} optional hint="A shorter name for menus and breadcrumbs." />
+      <TextField label="Slug" name="slug" id="page-slug" value={article.slug} required hint={privatePage ? 'Kept for when it’s public: a private page’s address is a code.' : path ? `Its address: ${path}. Changed, the old address simply goes.` : 'Its address once it has a section.'} />
+      <TextField label="Summary" name="summary" id="page-summary" value={article.summary} multiline rows={3} required hint="At most 240 characters: the standfirst and the card's line. Search results show about the first 160, cut at a word." data-editor-count="240" />
+      <Select label="Kind" name="kind" id="page-kind" value={article.kind} disabled={article.kind === 'talk'} options={KINDS} />
+    </Pane>
+
+    <Pane name="publishing" title="Publishing" titleId="page-s-publishing">
+      <Select label="Status" name="status" id="page-status" value={article.status} options={STATUS} hint="A Published page goes on the site when you save to remote; back to Draft takes it off." />
+      <Select label="Visibility" name="visibility" id="page-visibility" value={article.visibility} options={VISIBILITY} />
+      {access && <Select label="Who can see it" name="__access" id="page-access" value={access} options={ACCESS} hint="A private page is kept in private-pages/ and published encrypted: never in the public repository. It opens with an access code or a magic link you share. Making it public moves it back." />}
+      {
+        !access && privateSetup && (
+          <Text variant="small" tone="muted">
+            Everyone can see this page. To keep pages for people you choose, <Link href={privateSetup}>set up private pages</Link>.
+          </Text>
+        )
+      }
+      {
+        privatePage && (
+          <div class="private-field">
+            <span class="field-label">Private address</span>
+            <Text variant="small" tone="muted">{path ? <code>{path}</code> : 'Its address once it’s on the site.'}</Text>
+            <ActionBar gap="sm">
+              <Button variant="secondary" size="sm" icon="key" data-dialog-open="share-page">Share</Button>
+              <Button variant="quiet" size="sm" data-editor-address="">Change address</Button>
+            </ActionBar>
+            <Text variant="small" tone="muted">Share it with an access code (a password they type) or a magic link (opens it with nothing to type). Changing the address stops every link to it, magic links included.</Text>
+          </div>
+        )
+      }
+      <Select label="Section" name="__section" id="page-section" value={section} options={[{ value: '', label: 'Not on the site yet' }, ...sections]} hint={SECTION_HINT[access ?? 'open']} />
+      <div class="planet-field" data-editor-place>
+        <span class="field-label">On the planet</span>
+        <Text variant="small" tone="muted">{onPlanet(privatePage, place, published)}</Text>
+      </div>
+    </Pane>
+
+    <Pane name="lead" title="Lead picture" titleId="page-s-lead">
+      <PictureField thumb={lead} ratio="4/3" words={article.hero ? lead?.alt || 'No alt text' : 'None'} note={specTip(PICTURE_SPECS.lead)} fit={lead ? pictureNote(PICTURE_SPECS.lead, lead.width, lead.height) : undefined} data-editor-picture="lead">
+        <Button variant="secondary" size="sm" icon="image" data-editor-pick="hero.media" data-pick-mode="single">{article.hero ? 'Replace' : 'Choose'}</Button>
+        {article.hero && <Button variant="secondary" size="sm" icon="crop" data-editor-crop="hero.media">Crop</Button>}
+        {article.hero && <Button variant="quiet" size="sm" data-editor-clear="hero">Remove</Button>}
+      </PictureField>
+      {article.hero && <Select label="Lead picture shown as" name="hero.display" id="page-hero-display" value={article.hero.display ?? 'fill'} options={DISPLAYS} hint="How it sits in its 21:9 frame." />}
+      {article.hero && <Switch label="Colour behind the lead picture" name="hero.background" id="page-hero-background" checked={!!article.hero.background} data-type="bool" />}
+      {article.hero && <Switch label="Lead picture's rounded corners" name="hero.rounded" id="page-hero-rounded" checked={article.hero.rounded !== false} data-type="bool-default-true" />}
+      {article.hero && <Switch label="Lead picture's drop shadow" name="hero.shadow" id="page-hero-shadow" checked={!!article.hero.shadow} data-type="bool" />}
+      {article.hero && <Switch label="Show the lead picture's caption" name="hero.showCaption" id="page-hero-showCaption" checked={article.hero.showCaption !== false} data-type="bool-default-true" />}
+      {article.hero && <TextField label="Lead picture's caption" name="hero.caption" id="page-hero-caption" value={article.hero.caption ?? ''} optional hint="Left empty, the picture's own caption shows." />}
+    </Pane>
+
+    <Pane name="thumbnail" title="Thumbnail" titleId="page-s-thumbnail">
+      <PictureField thumb={card} ratio="3/2" words={article.thumbnail ? card?.alt || 'No alt text' : article.hero ? 'The lead picture' : 'None'} note={`${specTip(PICTURE_SPECS.thumbnail)} Left empty, the lead picture is used.`} fit={card ? pictureNote(PICTURE_SPECS.thumbnail, card.width, card.height) : undefined} data-editor-picture="thumbnail">
+        <Button variant="secondary" size="sm" icon="image" data-editor-pick="thumbnail" data-pick-mode="single">{article.thumbnail ? 'Replace' : 'Choose'}</Button>
+        {card && <Button variant="secondary" size="sm" icon="crop" data-editor-crop="thumbnail">Crop</Button>}
+        {article.thumbnail && <Button variant="quiet" size="sm" data-editor-clear="thumbnail">Remove</Button>}
+      </PictureField>
+      {card && <Select label="Thumbnail shown as" name="thumbnailStyle.display" id="page-thumbnail-display" value={article.thumbnailStyle?.display ?? 'fit'} options={DISPLAYS} hint="How it sits in the cards' 3:2 frame." />}
+      {card && <Switch label="Colour behind the thumbnail" name="thumbnailStyle.background" id="page-thumbnail-background" checked={!!article.thumbnailStyle?.background} data-type="bool" />}
+      {card && <Switch label="Thumbnail's rounded corners" name="thumbnailStyle.rounded" id="page-thumbnail-rounded" checked={article.thumbnailStyle?.rounded !== false} data-type="bool-default-true" />}
+      {card && <Switch label="Thumbnail's drop shadow" name="thumbnailStyle.shadow" id="page-thumbnail-shadow" checked={!!article.thumbnailStyle?.shadow} data-type="bool" />}
+    </Pane>
+
+    <Pane name="portrait" title="Portrait" titleId="page-s-portrait">
+      <PictureField thumb={face} ratio="4/5" words={article.portrait ? face?.alt || 'No alt text' : 'None'} note="The person the page is about (a résumé, About), beside the title at 4:5 around the picture's focus point." data-editor-picture="portrait">
+        <Button variant="secondary" size="sm" icon="image" data-editor-pick="portrait" data-pick-mode="single">{article.portrait ? 'Replace' : 'Choose'}</Button>
+        {article.portrait && <Button variant="quiet" size="sm" data-editor-clear="portrait">Remove</Button>}
+      </PictureField>
+    </Pane>
+
+    <Pane name="search" title="Search and sharing" titleId="page-s-search">
+      <TextField label="Search title" name="seo.title" id="page-seo-title" value={article.seo?.title ?? ''} optional />
+      <TextField label="Search description" name="seo.description" id="page-seo-description" value={article.seo?.description ?? ''} multiline rows={2} optional hint="At most 160 characters. Left empty, the summary is used, cut at a word near 160." />
+      <Switch label="Keep it out of search results" name="seo.noindex" id="page-seo-noindex" checked={!!article.seo?.noindex} data-type="bool" />
+    </Pane>
+
+    <Pane name="dates" title="Dates" titleId="page-s-dates">
+      <TextField label="Published" type="date" name="publishedAt" id="page-publishedAt" value={article.publishedAt ?? ''} optional hint="Set when it's first published." />
+      <TextField label="Updated" type="date" name="updatedAt" id="page-updatedAt" value={article.updatedAt} required hint="Moves to today when its words or blocks change." />
+      <TextField label="Last reviewed" type="date" name="reviewedAt" id="page-reviewedAt" value={article.reviewedAt ?? ''} optional />
+    </Pane>
+  </Sections>
+
+  <IssueNote data-editor-issue="" />
+  {
+    !published && (
+      <FormFoot>
+        <ActionBar gap="sm">
+          <Button variant="quiet" size="sm" icon="delete" data-dialog-open="delete-article">Delete this draft</Button>
+        </ActionBar>
+      </FormFoot>
+    )
+  }
+</Form>
+
+<style>
+  .field-label {
+    font: var(--type-label);
+  }
+
+  .private-field,
+  .planet-field {
+    display: grid;
+    gap: var(--space-2);
+  }
+
+  .private-field code {
+    font-family: var(--font-code);
+    overflow-wrap: anywhere;
+  }
+
+</style>

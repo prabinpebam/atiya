@@ -1,0 +1,63 @@
+---
+/**
+ * One group in a Sections list (its nav slot): an optional name over its rows (NavRows, in an ordered list), and
+ * what comes after them (the after slot: Add an item). Groups side by side are ruled apart.
+ * @tier kit
+ * @a11y An ordered list; its name is a visible label over it, never a heading (the panes have the headings).
+ */
+
+interface Props {
+  /** The group's name, over its rows ("Items (3)"). */
+  label?: string;
+  /** Data attributes pass through to the list (data-sort-list, for rows that drag). */
+  [data: `data-${string}`]: string | undefined;
+}
+
+const { label, ...rest } = Astro.props;
+const after = Astro.slots.has('after');
+---
+
+<div class="nav-group">
+  {label && <span class="nav-label">{label}</span>}
+  <ol class="nav-list" {...rest}><slot /></ol>
+  {
+    after && (
+      <div class="nav-after">
+        <slot name="after" />
+      </div>
+    )
+  }
+</div>
+
+<style>
+  .nav-group {
+    display: grid;
+    gap: var(--space-1);
+  }
+
+  /* groups apart, a rule between them */
+  .nav-group + .nav-group {
+    padding-block-start: var(--space-3);
+    border-block-start: var(--border-hairline) solid var(--color-rule);
+  }
+
+  .nav-label {
+    padding-inline: var(--space-2);
+    color: var(--color-text-muted);
+    font-family: var(--font-ui);
+    font-size: var(--text-sm);
+    font-weight: var(--weight-semibold);
+  }
+
+  .nav-list {
+    display: grid;
+    gap: var(--space-0-5);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .nav-after {
+    padding-inline-start: var(--space-6);
+  }
+</style>

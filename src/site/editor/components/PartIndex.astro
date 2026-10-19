@@ -1,0 +1,76 @@
+---
+/**
+ * The parts library's contents (the dev-only /_edit/library/ screen, documentation/editor/spec.md §10): edit mode's
+ * kit pieces and parts in groups, each a link to its page with its summary under it, so a piece is found by what
+ * it's for as well as by its name.
+ * @tier editor
+ * @a11y Each group is a region named by its heading, holding a list of links; a link's summary is plain text under it.
+ */
+import Heading from '../../components/fundamentals/Heading.astro';
+import Link from '../../components/fundamentals/Link.astro';
+import Text from '../../components/fundamentals/Text.astro';
+import PlainList from '../kit/PlainList.astro';
+
+/** A group of pieces: the kit, or the parts. */
+export interface PartGroup {
+  /** Its heading. */
+  title: string;
+  /** What's in it, in a line. */
+  blurb: string;
+  /** Its pieces, each with its page and its summary. */
+  entries: { name: string; href: string; summary: string }[];
+}
+
+interface Props {
+  /** The groups, in order. */
+  groups: PartGroup[];
+}
+
+const { groups } = Astro.props;
+const idOf = (title: string) => `parts-${title.toLowerCase().replace(/\W+/g, '-')}`;
+---
+
+<div class="part-index">
+  {
+    groups.map((g) => (
+      <section class="part-group" aria-labelledby={idOf(g.title)}>
+        <Heading level={2} size="h4" id={idOf(g.title)}>
+          {`${g.title} (${g.entries.length})`}
+        </Heading>
+        <Text variant="ui" tone="muted">
+          {g.blurb}
+        </Text>
+        <PlainList gap="md">
+          {g.entries.map((e) => (
+            <li class="part-entry">
+              <Link href={e.href} variant="standalone">
+                {e.name}
+              </Link>
+              <Text variant="small" tone="muted">
+                {e.summary}
+              </Text>
+            </li>
+          ))}
+        </PlainList>
+      </section>
+    ))
+  }
+</div>
+
+<style>
+  .part-index {
+    display: grid;
+    gap: var(--space-10);
+    max-inline-size: var(--size-popout);
+  }
+
+  .part-group {
+    display: grid;
+    gap: var(--space-4);
+  }
+
+  .part-entry {
+    display: grid;
+    gap: var(--space-1);
+  }
+</style>

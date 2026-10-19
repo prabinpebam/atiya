@@ -1,0 +1,19 @@
+---
+/**
+ * The game UI's gallery page (documentation/game-ui/design-system.md §9.1): the game's tokens and styles
+ * (BaseLayout), and the gallery drawn into it on the client. Injected at /play/gallery/ in development and
+ * test builds only (integrations/game-gallery.mjs); a production build never has it (scripts/size-report.mjs).
+ */
+import BaseLayout from '../../layouts/BaseLayout.astro';
+// the HUD's stage draws a copy of the page's top bar (the HUD portals its buttons into it): its stylesheet
+import '../ui/styles/play-header.css';
+---
+
+<BaseLayout title="Game UI gallery" description="The game UI's primitives and panels, with sample data.">
+  <main id="game-gallery" data-game-gallery></main>
+  <script>
+    import { mountGallery } from './mount';
+
+    mountGallery(document.getElementById('game-gallery')!);
+  </script>
+</BaseLayout>

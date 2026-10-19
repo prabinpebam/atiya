@@ -27,6 +27,8 @@ export interface Token {
   unit?: string;
   /** Its `$extensions`, as written (e.g. `site.sizes`: a picture width scripts may read, through responsive.ts). */
   extensions?: Record<string, unknown>;
+  /** DTCG 2025.10 `$deprecated` (its own or its group's): `true`, or what to use instead. Still built; never read. */
+  deprecated?: boolean | string;
 }
 
 export interface Model {
@@ -82,9 +84,10 @@ export function resolveDocument(r: Resolver, read: (ref: string) => Json, inputs
 
 // ---------- tokens ----------
 
-export function flatten(tree: Json, path: string[] = [], type = ''): Token[] {
+export function flatten(tree: Json, path: string[] = [], type = '', deprecatedGroup?: boolean | string): Token[] {
   const out: Token[] = [];
   const t = typeof tree.$type === 'string' ? tree.$type : type;
+  const groupDeprecated = deprecatedOf(tree) ?? deprecatedGroup;
   for (const [key, node] of Object.entries(tree)) {
     if (key.startsWith('$') || !isObj(node)) continue;
     const p = [...path, key];
@@ -100,9 +103,17 @@ export function flatten(tree: Json, path: string[] = [], type = ''): Token[] {
         unit: typeof ext['site.unit'] === 'string' ? (ext['site.unit'] as string) : undefined,
         extensions: isObj(node.$extensions) ? (node.$extensions as Record<string, unknown>) : undefined,
       });
-    } else out.push(...flatten(node, p, t));
+      const d = deprecatedOf(node) ?? groupDeprecated;
+      if (d !== undefined && d !== false) out[out.length - 1].deprecated = d;
+    } else out.push(...flatten(node, p, t, groupDeprecated));
   }
   return out;
+}
+
+/** A node's DTCG `$deprecated`: `true`/`false`, or a string saying what to use instead. */
+function deprecatedOf(node: Json): boolean | string | undefined {
+  const d = node.$deprecated;
+  return typeof d === 'boolean' || typeof d === 'string' ? d : undefined;
 }
 
 export function cssName(path: string[]): string {
@@ -150,8 +161,11 @@ function colour(v: Json): string {
   return a === 1 ? `rgb(${r} ${g} ${b})` : `rgb(${r} ${g} ${b} / ${a})`;
 }
 
-/** A value as CSS; `ref` turns an alias into CSS (a var() reference, or its resolved value). */
-export function toCss(v: unknown, type: string, ref: (path: string) => string, unit?: string): string {
+/**
+ * A value as CSS; `ref` turns an alias into CSS (a var() reference, or its resolved value). `fn` is a
+ * token's `site.css` extension: `drop-shadow` writes a shadow as the filter function (no spread).
+ */
+export function toCss(v: unknown, type: string, ref: (path: string) => string, unit?: string, fn?: string): string {
   if (typeof v === 'string') return v.replace(ALIAS, (_, p: string) => ref(p));
   if (typeof v === 'number') return unit ? `${v}${unit}` : String(v);
   if (Array.isArray(v)) {
@@ -164,8 +178,11 @@ export function toCss(v: unknown, type: string, ref: (path: string) => string, u
     if ('unit' in v && 'value' in v) return `${v.value}${v.unit}`;
     if (type === 'shadow') {
       const d = (x: unknown) => toCss(x, 'dimension', ref);
+      if (fn === 'drop-shadow') return `drop-shadow(${d(v.offsetX)} ${d(v.offsetY)} ${d(v.blur)} ${toCss(v.color, 'color', ref)})`;
       return `${v.inset ? 'inset ' : ''}${d(v.offsetX)} ${d(v.offsetY)} ${d(v.blur)} ${d(v.spread)} ${toCss(v.color, 'color', ref)}`;
     }
+    // a typography composite is the font shorthand: weight, size / line height, family (letter spacing can't go in it)
+    if (type === 'typography') return `${toCss(v.fontWeight, 'fontWeight', ref)} ${toCss(v.fontSize, 'dimension', ref)}/${toCss(v.lineHeight, 'number', ref)} ${toCss(v.fontFamily, 'fontFamily', ref)}`;
   }
   throw new Error(`can't write ${JSON.stringify(v)} (${type}) as CSS`);
 }
@@ -185,6 +202,9 @@ export function fluid(min: string, max: string, from = FLUID_FROM, to = FLUID_TO
   return `clamp(${min}, ${round(intercept / 16)}rem + ${round(slope * 100)}vw, ${max})`;
 }
 
+/** A token's `site.css` extension (how a composite is written, e.g. a shadow as `drop-shadow`). */
+const fnOf = (t: Token): string | undefined => (typeof t.extensions?.['site.css'] === 'string' ? (t.extensions['site.css'] as string) : undefined);
+
 function aliasRef(byPath: Map<string, Token>, where: string) {
   return (p: string) => {
     const target = byPath.get(p);
@@ -196,15 +216,15 @@ function aliasRef(byPath: Map<string, Token>, where: string) {
 /** The token's CSS value: aliases as var(), light-dark() when the dark context differs, clamp() for a fluid size. */
 export function cssValue(t: Token, byPath: Map<string, Token>): string {
   const ref = aliasRef(byPath, t.path.join('.'));
-  const v = toCss(t.value, t.type, ref, t.unit);
-  if (t.dark !== undefined) return `light-dark(${v}, ${toCss(t.dark, t.type, ref, t.unit)})`;
+  const v = toCss(t.value, t.type, ref, t.unit, fnOf(t));
+  if (t.dark !== undefined) return `light-dark(${v}, ${toCss(t.dark, t.type, ref, t.unit, fnOf(t))})`;
   if (t.fluidMin !== undefined) return fluid(toCss(t.fluidMin, t.type, ref), v);
   return v;
 }
 
 /** The token's CSS value when the reader asks for more contrast (only for tokens the `more` context changes). */
 export function cssMore(t: Token, byPath: Map<string, Token>): string {
-  return toCss(t.more, t.type, aliasRef(byPath, t.path.join('.')), t.unit);
+  return toCss(t.more, t.type, aliasRef(byPath, t.path.join('.')), t.unit, fnOf(t));
 }
 
 /** The literal a token resolves to with more contrast, in a mode. */
@@ -219,6 +239,7 @@ export function resolveMore(t: Token, byPath: Map<string, Token>, mode: Mode = '
       return resolveMore(target, byPath, mode);
     },
     t.unit,
+    fnOf(t),
   );
 }
 
@@ -236,6 +257,7 @@ export function resolve(t: Token, byPath: Map<string, Token>, mode: Mode = 'ligh
       return resolve(target, byPath, mode, new Set([...seen, key]));
     },
     t.unit,
+    fnOf(t),
   );
 }
 

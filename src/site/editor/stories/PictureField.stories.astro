@@ -1,0 +1,25 @@
+---
+import Example from '../../library/Example.astro';
+import PictureField from '../kit/PictureField.astro';
+import Button from '../../components/fundamentals/Button.astro';
+import { MEDIA } from './samples';
+---
+
+<Example title="A lead picture" description="The picture, whole, beside its alt text and its actions, with what the place takes and how this one fits (4/3)." layout="block">
+  <PictureField thumb={MEDIA['samples/pond']} ratio="4/3" words={MEDIA['samples/pond'].alt} note="21:9, at least 2400 px wide" fit="Wide enough; it's cropped to 21:9 around its focus.">
+    <Button variant="secondary" size="sm" icon="image">Replace</Button>
+    <Button variant="quiet" size="sm">Remove</Button>
+  </PictureField>
+</Example>
+
+<Example title="Other frames" description="3/2 for a card's thumbnail, 4/5 for a tall picture, 1/1 for a portrait." layout="stack">
+  <PictureField thumb={MEDIA['samples/bridge']} ratio="3/2" words="The thumbnail" />
+  <PictureField thumb={MEDIA['samples/workshop']} ratio="4/5" words="A tall frame" />
+  <PictureField thumb={MEDIA['samples/plaza']} ratio="1/1" words="A portrait" />
+</Example>
+
+<Example title="No picture yet" description="placeholder: a dashed box that says so; blank, the default, leaves the space empty." layout="block">
+  <PictureField ratio="4/3" empty="placeholder">
+    <Button variant="secondary" size="sm" icon="image">Add a picture</Button>
+  </PictureField>
+</Example>

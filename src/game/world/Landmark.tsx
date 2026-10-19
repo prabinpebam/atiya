@@ -39,6 +39,7 @@ import { kitMaterials } from './materials';
 import { landmarkModel, type LandmarkModel } from './models';
 import { ARCH, type DoorLeaf } from './parts';
 import { withSurfaceDetail } from './rockDetail';
+import '../ui/styles/world-label.css';
 
 const R = CONFIG.planetRadius;
 

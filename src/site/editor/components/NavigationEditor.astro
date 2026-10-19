@@ -15,6 +15,8 @@ import TextField from '../../components/fundamentals/TextField.astro';
 import Select from '../../components/fundamentals/Select.astro';
 import Button from '../../components/fundamentals/Button.astro';
 import IconButton from '../../components/fundamentals/IconButton.astro';
+import Panel from '../kit/Panel.astro';
+import IssueNote from '../kit/IssueNote.astro';
 import SiteHeader, { type NavItem } from '../../components/compounds/SiteHeader.astro';
 import type { SelectOption } from '../../components/fundamentals/Select.astro';
 import type { SiteStructure } from '../../content/schema';
@@ -46,6 +48,7 @@ interface Props {
   max: number;
   /** The site structure and its version, for the screen's script. */
   structure: SiteStructure;
+  /** The site structure's version, which its save sends back (a conflict if it changed meanwhile). */
   version: string;
 }
 
@@ -56,7 +59,7 @@ const state = JSON.stringify({ structure, version }).replace(/</g, '\\u003c');
 ---
 
 <div class="navigation" data-editor-navigation>
-  <section class="card preview-card" aria-labelledby="nav-preview-title">
+  <Panel gap="lg" labelledby="nav-preview-title">
     <div class="head">
       <Heading level={2} size="h4" id="nav-preview-title">Preview</Heading>
       <Text variant="small" tone="muted">The header on every page of the site, at desktop width. Under 56 rem it folds into a menu.</Text>
@@ -64,9 +67,9 @@ const state = JSON.stringify({ structure, version }).replace(/</g, '\\u003c');
     <div class="preview" inert>
       <SiteHeader nav={preview} action={{ label: 'Explore in 3D', href: '#', icon: 'planet' }} navLabel="Sections (preview)" />
     </div>
-  </section>
+  </Panel>
 
-  <section class="card" aria-labelledby="nav-entries-title">
+  <Panel gap="lg" labelledby="nav-entries-title">
     <div class="head">
       <Heading level={2} size="h4" id="nav-entries-title">In the navigation</Heading>
       <Text variant="small" tone="muted">{`${entries.length} of ${max} entries, in the order they show.`}</Text>
@@ -109,9 +112,9 @@ const state = JSON.stringify({ structure, version }).replace(/</g, '\\u003c');
         </ol>
       )
     }
-  </section>
+  </Panel>
 
-  <section class="card" aria-labelledby="nav-add-title">
+  <Panel gap="lg" labelledby="nav-add-title">
     <div class="head">
       <Heading level={2} size="h4" id="nav-add-title">Add to the navigation</Heading>
       {full && <Text variant="small" tone="muted">{`The navigation is full (${max} entries): remove one to add another.`}</Text>}
@@ -145,8 +148,8 @@ const state = JSON.stringify({ structure, version }).replace(/</g, '\\u003c');
       <TextField label="Address" name="href" hint="An https, http or mailto address, or a path on this site (/play/)." />
       <Button variant="secondary" type="submit" icon="plus" disabled={full}>Add link</Button>
     </form>
-    <p class="issue" role="alert" data-editor-form-issue hidden></p>
-  </section>
+    <IssueNote data-editor-form-issue="" />
+  </Panel>
   <script is:inline type="application/json" data-editor-navigation-state set:html={state} />
 </div>
 
@@ -157,14 +160,6 @@ const state = JSON.stringify({ structure, version }).replace(/</g, '\\u003c');
     align-content: start;
   }
 
-  .card {
-    display: grid;
-    gap: var(--space-5);
-    padding: var(--space-6);
-    border: var(--border-hairline) solid var(--color-rule);
-    border-radius: var(--radius-lg);
-    background: var(--color-bg-raised);
-  }
 
   .head {
     display: grid;
@@ -225,12 +220,6 @@ const state = JSON.stringify({ structure, version }).replace(/</g, '\\u003c');
     grid-template-columns: minmax(0, 1fr) minmax(0, 2fr) auto;
   }
 
-  .issue {
-    margin: 0;
-    color: var(--color-negative);
-    font-size: var(--text-sm);
-    font-weight: var(--weight-medium);
-  }
 
   @media (max-width: 40rem) {
     .add,

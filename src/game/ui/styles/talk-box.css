@@ -1,0 +1,153 @@
+/* TalkBox (family.md §6; world/home/TalkBox.tsx), and the welcome play.astro draws in it from the first paint: the talking head, the name plate, the line typing out, Next and close.
+ * Its owners import it (world/home/TalkBox.tsx, src/pages/play.astro); tokens only (tests/unit/designSystem.test.ts). */
+@layer tokens, base, primitives, components, cursors;
+
+@layer components {
+  /* the welcome over the loading scene, until the game takes it over */
+  .talk-box[data-greeting] {
+    z-index: var(--layer-greeting);
+  }
+
+  .talk-box[data-greeting][hidden] {
+    display: none;
+  }
+
+  /* the conversation (family.md §6): name plate, the line typing out, Next and close */
+  .talk-box {
+    width: min(var(--c-talk-width), calc(100vw - var(--safe-left) - var(--safe-right) - var(--space-6)));
+    padding: var(--space-4-5) var(--space-5) var(--space-3-5);
+    border-block-start: var(--border-rule-sm) solid var(--color-talk-rule);
+    animation-name: talk-in;
+    animation-duration: var(--dur-base);
+    animation-timing-function: var(--ease-out);
+  }
+
+  /* the welcome handed over from the page's greeting: it's already there, so it doesn't slide in again */
+  .talk-box[data-handed] {
+    animation: none;
+  }
+
+  /* the talking head: the speaker's portrait on a sky disc in a gold ring, over the box's top-left corner,
+   * the name plate beside it and the line beside that; it nods along while the line types out */
+  .talk-box.has-head {
+    padding-inline-start: calc(var(--c-talk-head) + var(--space-8));
+  }
+
+  .talk-head {
+    position: absolute;
+    inset-inline-start: var(--space-4);
+    inset-block-start: calc(-1 * var(--space-8));
+    width: var(--c-talk-head);
+    height: var(--c-talk-head);
+    overflow: hidden;
+    border: var(--border-base) solid var(--surface-accent);
+    border-radius: var(--radius-round);
+    background: radial-gradient(circle at 50% 30%, var(--color-sky-low), var(--color-sky-mid) 62%, var(--color-sky-top));
+    box-shadow:
+      0 0 0 var(--border-base) var(--surface-bg),
+      var(--shadow-lift);
+  }
+
+  .talk-head img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transform-origin: 50% 85%;
+  }
+
+  .talk-initials {
+    display: grid;
+    place-items: center;
+    width: 100%;
+    height: 100%;
+    color: var(--surface-text);
+    font-family: var(--font-display);
+    font-size: var(--text-2xl);
+    font-weight: var(--weight-bold);
+  }
+
+  .talk-head.speaking img {
+    animation: talk-nod var(--dur-loop) var(--ease-standard) infinite;
+  }
+
+  .talk-box.has-head .talk-name {
+    inset-inline-start: calc(var(--c-talk-head) + var(--space-6));
+  }
+
+  @media (max-width: 30rem) {
+    .talk-box.has-head {
+      padding-inline-start: calc(var(--c-talk-head-sm) + var(--space-6));
+    }
+
+    .talk-head {
+      inset-block-start: calc(-1 * var(--space-6));
+      width: var(--c-talk-head-sm);
+      height: var(--c-talk-head-sm);
+    }
+
+    .talk-box.has-head .talk-name {
+      inset-inline-start: calc(var(--c-talk-head-sm) + var(--space-5));
+    }
+  }
+
+  @keyframes talk-nod {
+    50% {
+      transform: translateY(var(--shift-md)) rotate(var(--tilt-nod));
+    }
+  }
+
+  /* (its margins, and the line's, are the card's paragraph gap: card.css's .card p) */
+  .talk-name {
+    position: absolute;
+    inset-block-start: calc(-1 * var(--space-4-5));
+    inset-inline-start: var(--space-4-5);
+    padding: var(--space-0-5) var(--space-3-5);
+    border: var(--border-base) solid var(--surface-accent);
+    border-radius: var(--radius-pill);
+    background: var(--surface-accent);
+    color: var(--surface-on-accent);
+    font-weight: var(--weight-heavy);
+  }
+
+  .talk-line {
+    min-height: var(--c-talk-lines);
+    font-size: var(--text-lg);
+    line-height: var(--leading-snug);
+  }
+
+  .talk-rest {
+    visibility: hidden;
+  }
+
+  .talk-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: var(--space-2);
+  }
+
+  .talk-more {
+    animation: talk-bob var(--dur-loop) var(--ease-standard) infinite;
+  }
+
+  @keyframes talk-in {
+    from {
+      opacity: 0;
+      transform: translate(-50%, var(--space-2));
+    }
+  }
+
+  @keyframes talk-bob {
+    50% {
+      transform: translateY(var(--shift-lg));
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .talk-box,
+    .talk-more,
+    .talk-head img {
+      animation: none;
+    }
+  }
+}

@@ -1,0 +1,46 @@
+---
+/**
+ * A row of actions: the buttons and links that act on what's above them, side by side, wrapping onto another
+ * line when there's no room. They sit at the start (a form's Save), at the end (a dialog's Cancel and its
+ * main action), or apart (Save at the start, Delete at the end).
+ * @tier compound
+ * @a11y A layout only: it adds no role, so each button keeps its own name and the order is the source's. Put the main action where it's looked for: first in a form, last in a dialog.
+ */
+interface Props {
+  /** Where the actions sit: at the start, at the end, or apart (the first at the start, the last at the end). */
+  align?: 'start' | 'end' | 'between';
+  /** The space between them: md for buttons, sm for a dense row of small ones. */
+  gap?: 'sm' | 'md';
+  /** Data attributes pass through to the row. */
+  [data: `data-${string}`]: string | undefined;
+}
+
+const { align = 'start', gap = 'md', ...rest } = Astro.props;
+---
+
+<div class="action-bar" data-align={align} data-gap={gap} {...rest}><slot /></div>
+
+<style>
+  .action-bar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-3);
+  }
+
+  .action-bar[data-gap='sm'] {
+    gap: var(--space-2);
+  }
+
+  .action-bar[data-align='end'] {
+    justify-content: end;
+  }
+
+  .action-bar[data-align='between'] {
+    justify-content: space-between;
+  }
+
+  .action-bar[hidden] {
+    display: none;
+  }
+</style>

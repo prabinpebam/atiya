@@ -1,0 +1,30 @@
+/* Toast (R7; Hud.tsx): top centre, one at a time, the newest replacing it (also announced).
+ * Its owner imports it (ui/Hud.tsx); tokens only (tests/unit/designSystem.test.ts). */
+@layer tokens, base, primitives, components, cursors;
+
+@layer components {
+  /* R7: the toast, top centre: one at a time, the newest replaces (also announced) */
+  .toast {
+    position: absolute;
+    inset-block-start: calc(var(--c-toast-top) + var(--safe-top));
+    inset-inline-start: 50%;
+    z-index: var(--layer-toast);
+    max-width: min(var(--c-toast-width), calc(100vw - var(--safe-left) - var(--safe-right) - var(--space-8)));
+    transform: translateX(-50%);
+    padding: var(--space-2-5) var(--space-4);
+    border: var(--border-base) solid var(--surface-accent);
+    border-radius: var(--radius-pill);
+    background: var(--surface-bg);
+    color: var(--surface-text);
+    box-shadow: var(--shadow-lift);
+    font-weight: var(--weight-semibold);
+    text-align: center;
+    animation: card-fade var(--dur-base) var(--ease-out);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .toast {
+      animation: none;
+    }
+  }
+}

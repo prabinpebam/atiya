@@ -1,0 +1,14 @@
+---
+import Example from '../../library/Example.astro';
+import SectionManager from '../components/SectionManager.astro';
+import Button from '../../components/fundamentals/Button.astro';
+import { MANAGED_SECTIONS } from './samples';
+---
+
+<Example title="Sections and their pages" description="The sections on the left; the chosen one's pages (Find, Show, a selection that moves together) and its settings, as tabs." layout="block" bleed>
+  <SectionManager screen="story-sections" label="The site's sections (sample)" sections={MANAGED_SECTIONS} selected="work" param="section" reorder>
+    <Fragment slot="tools">
+      <Button variant="secondary" size="sm" icon="plus">New section</Button>
+    </Fragment>
+  </SectionManager>
+</Example>

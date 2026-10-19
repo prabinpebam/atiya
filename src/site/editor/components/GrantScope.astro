@@ -1,0 +1,223 @@
+---
+/**
+ * What an access code or magic link opens, on the Access screen (documentation/access/spec.md §8.1): a line that
+ * says it, a search, and every section of the site with its private pages under it, in collapsible groups so it
+ * stays usable with many pages. A section's own choice opens every private page in it, now and later, and covers
+ * its pages; what the grant names that's no longer on the site comes last, to be cleared. The page puts it in
+ * GrantDetails' scope slot, inside its form (scripts/grants.ts keeps the line, the counts and the search).
+ * @tier editor
+ * @a11y Each section is a fieldset inside a disclosure that says its count and what's chosen; pages a section covers show checked and can't be changed, and say why.
+ * @a11y The line over the list is a live region that says what it opens; a search with no match says so.
+ */
+import Checkbox from '../../components/fundamentals/Checkbox.astro';
+import Icon from '../../components/fundamentals/Icon.astro';
+import Text from '../../components/fundamentals/Text.astro';
+import TextField from '../../components/fundamentals/TextField.astro';
+import { pageHint, scopeChoices, type ListedGrant, type ScopeSection } from '../model/access';
+
+interface Props {
+  /** Every section with its private pages, and what the grant names that's no longer there. */
+  options: { sections: ScopeSection[]; unknown: { sections: string[]; pages: string[] } };
+  /** What it opens now (a new one's preset). */
+  scope?: ListedGrant['scope'];
+  /** The fields' ID prefix: a new grant's or the chosen one's. */
+  prefix: string;
+}
+
+const { options, scope = {}, prefix } = Astro.props;
+const { line, sections } = scopeChoices(options, scope);
+---
+
+<div class="scope" data-scope>
+  <p class="scope-line" aria-live="polite" data-scope-line>
+    {line}
+  </p>
+  <TextField label="Find a section or page" type="search" icon="search" id={`${prefix}-scope-find`} data-scope-find="" />
+  <div class="scope-list" data-scrollbar data-scope-list>
+    {
+      sections.map((s) => (
+        <details class="group" open={s.open} data-scope-group={s.id} data-title={s.title.toLowerCase()} data-open={s.open ? '' : undefined}>
+          <summary class="group-head">
+            <span class="chevron">
+              <Icon name="chevron-right" />
+            </span>
+            <span class="group-name" data-scope-name>
+              {s.title}
+            </span>
+            <Text as="span" variant="small" tone="muted">
+              {s.count}
+              <span data-scope-chosen>{s.chosen && ` · ${s.chosen}`}</span>
+            </Text>
+          </summary>
+          <fieldset class="group-body">
+            <legend class="sr-only">{s.title}</legend>
+            <Checkbox id={`${prefix}-section-${s.id}`} name="sections" value={s.id} checked={s.all} label={`Every private page in ${s.title}`} hint="Now and later: new private pages here open too." data-scope-section={s.id} />
+            {s.pages.length > 0 && (
+              <ul class="pages">
+                {s.pages.map((p) => (
+                  <li data-scope-page={p.id} data-title={p.title.toLowerCase()} data-name={p.title} data-hint={pageHint(p.published)}>
+                    <Checkbox
+                      id={`${prefix}-page-${p.id}`}
+                      name="pages"
+                      value={p.id}
+                      checked={s.all || s.own.has(p.id)}
+                      disabled={s.all}
+                      label={p.title}
+                      hint={s.all ? `Opened by ${s.title}` : pageHint(p.published)}
+                      data-own={s.own.has(p.id) ? 'true' : 'false'}
+                    />
+                  </li>
+                ))}
+              </ul>
+            )}
+          </fieldset>
+        </details>
+      ))
+    }
+    {
+      (options.unknown.sections.length > 0 || options.unknown.pages.length > 0) && (
+        <details class="group" open data-scope-group="_gone" data-title="no longer on the site" data-open="">
+          <summary class="group-head">
+            <span class="chevron">
+              <Icon name="chevron-right" />
+            </span>
+            <span class="group-name" data-scope-name>
+              No longer on the site
+            </span>
+          </summary>
+          <fieldset class="group-body">
+            <legend class="sr-only">No longer on the site</legend>
+            <Text variant="small" tone="muted">
+              It still names these, but they’re no longer a section or a private page. Clear them and save.
+            </Text>
+            <ul class="pages">
+              {options.unknown.sections.map((id) => (
+                <li data-scope-page={`_s_${id}`} data-title={id} data-name={id}>
+                  <Checkbox id={`${prefix}-gone-section-${id}`} name="sections" value={id} checked label={id} hint="A section" />
+                </li>
+              ))}
+              {options.unknown.pages.map((id) => (
+                <li data-scope-page={id} data-title={id} data-name={id}>
+                  <Checkbox id={`${prefix}-gone-page-${id}`} name="pages" value={id} checked label={id} hint="A page" />
+                </li>
+              ))}
+            </ul>
+          </fieldset>
+        </details>
+      )
+    }
+    <p class="nomatch" data-scope-nomatch hidden>
+      <Text as="span" variant="small" tone="muted">
+        No section or page matches.
+      </Text>
+    </p>
+  </div>
+</div>
+
+<style>
+  .scope {
+    display: grid;
+    gap: var(--space-3);
+  }
+
+  .scope-line {
+    margin: 0;
+    font-weight: var(--weight-medium);
+  }
+
+  /* the sections and their pages: as long as the site grows, scrolling on its own past a point */
+  .scope-list {
+    display: grid;
+    align-content: start;
+    gap: var(--space-2);
+    max-block-size: var(--c-editor-scope-list);
+    overflow: auto;
+    scrollbar-width: none;
+    padding: var(--space-2);
+    border: var(--border-hairline) solid var(--color-rule);
+    border-radius: var(--radius-md);
+    background: var(--color-bg);
+  }
+
+  .group {
+    border-radius: var(--radius-md);
+  }
+
+  .group[hidden],
+  .pages li[hidden],
+  .nomatch[hidden] {
+    display: none;
+  }
+
+  .group-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-1) var(--space-2);
+    min-block-size: var(--size-touch);
+    padding: var(--space-1) var(--space-2);
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    list-style: none;
+  }
+
+  .group-head::-webkit-details-marker {
+    display: none;
+  }
+
+  @media (hover: hover) {
+    .group-head:hover {
+      background: var(--color-bg-hover);
+    }
+  }
+
+  .group-head:active {
+    background: var(--color-bg-hover);
+  }
+
+  /* the ring (base.css) inside the row, so the list's edge never clips it */
+  .group-head:focus-visible {
+    outline-offset: calc(var(--border-focus) * -1);
+  }
+
+  .chevron {
+    display: grid;
+    transition: transform var(--duration-fast) var(--ease-standard);
+  }
+
+  .group[open] > .group-head .chevron {
+    transform: rotate(90deg);
+  }
+
+  .group-name {
+    font-weight: var(--weight-semibold);
+  }
+
+
+  .group-body {
+    display: grid;
+    gap: var(--space-1);
+    margin: 0;
+    padding: 0 var(--space-2) var(--space-3) var(--space-8);
+    border: 0;
+  }
+
+  .pages {
+    display: grid;
+    gap: var(--space-1);
+    margin: 0;
+    padding: 0 0 0 var(--space-6);
+    list-style: none;
+  }
+
+  .nomatch {
+    margin: 0;
+    padding: var(--space-2);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .chevron {
+      transition: none;
+    }
+  }
+</style>

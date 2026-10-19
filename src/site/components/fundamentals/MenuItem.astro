@@ -1,0 +1,61 @@
+---
+/**
+ * A command in a menu, such as a context menu's "Insert row above": its words on a row as wide as the menu.
+ * The menu itself (role="menu", and any groups in it) is its container's.
+ * @tier fundamental
+ * @a11y A native button with role="menuitem": put it inside an element with role="menu", or a group in one.
+ * @a11y Its words name it; disabled, it's muted and can't be pressed.
+ * @a11y 48 px tall, so at least 44 px to touch.
+ * @key Enter: runs it
+ * @key Space: runs it
+ */
+
+interface Props {
+  /** Can't be pressed (a command that doesn't apply here); a script may set it too. */
+  disabled?: boolean;
+  /** The element's id. */
+  id?: string;
+  /** Data attributes pass through to the button. */
+  [data: `data-${string}`]: string | undefined;
+}
+
+const { disabled = false, ...rest } = Astro.props;
+---
+
+<button class="menu-item" type="button" role="menuitem" disabled={disabled ? true : undefined} {...rest}><slot /></button>
+
+<style>
+  .menu-item {
+    min-block-size: var(--c-control-height-md);
+    padding-inline: var(--space-3);
+    border: 0;
+    border-radius: var(--radius-md);
+    background: transparent;
+    color: var(--color-text);
+    font-family: var(--font-ui);
+    font-size: var(--text-sm);
+    line-height: var(--leading-ui);
+    text-align: start;
+    white-space: nowrap;
+    cursor: pointer;
+  }
+
+  .menu-item[hidden] {
+    display: none;
+  }
+
+  @media (hover: hover) {
+    .menu-item:hover {
+      background: var(--color-bg-hover);
+    }
+  }
+
+  .menu-item:active {
+    background: var(--color-bg-hover);
+  }
+
+  .menu-item:disabled {
+    color: var(--color-text-muted);
+    cursor: not-allowed;
+  }
+</style>

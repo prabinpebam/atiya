@@ -1,0 +1,101 @@
+/* PaintPicker (crafting.md §4.3; world/craft/ui.tsx): a swatch per paint for Chopper’s house.
+ * Its owner imports it (world/craft/ui.tsx); tokens only (tests/unit/designSystem.test.ts). */
+@layer tokens, base, primitives, components, cursors;
+
+@layer components {
+  .inv-help {
+    margin: var(--space-0-5) 0 0;
+    max-width: calc(9 * var(--slot) + var(--space-6));
+    font-size: var(--text-sm);
+    color: var(--surface-text-muted);
+  }
+
+  .paint-panel {
+    width: min(var(--c-paint-width), calc(100vw - var(--safe-left) - var(--safe-right) - var(--space-4)));
+  }
+
+  .paint-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: var(--space-2);
+  }
+
+  .paint-swatch {
+    display: grid;
+    justify-items: center;
+    gap: var(--space-1);
+    padding: var(--space-2-5) var(--space-1-5) var(--space-2);
+    border: 0;
+    border-radius: var(--radius-sm);
+    background: var(--surface-bg-soft);
+    color: var(--surface-text);
+    font-family: var(--font-text);
+    font-size: var(--text-sm);
+    font-weight: var(--weight-semibold);
+    line-height: var(--leading-tight);
+    cursor: pointer;
+  }
+
+  @media (hover: hover) {
+    .paint-swatch:hover:not(:disabled) {
+      background: var(--surface-bg-warm);
+    }
+  }
+
+  .paint-swatch:active:not(:disabled) {
+    background: var(--surface-bg-warm);
+  }
+
+  .paint-swatch:focus-visible {
+    outline: var(--border-focus) solid var(--surface-focus);
+    outline-offset: var(--border-focus-offset-sm);
+  }
+
+  .paint-swatch.on {
+    box-shadow: inset 0 0 0 var(--border-base) var(--surface-highlight);
+  }
+
+  .paint-swatch:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+  }
+
+  /* the swatch's colour is data (the house's paint), set inline through `background` */
+  .paint-chip {
+    display: grid;
+    place-items: center;
+    width: var(--c-paint-chip);
+    height: var(--c-paint-chip);
+    border-radius: var(--radius-round);
+    box-shadow: var(--shadow-chip);
+    color: var(--color-chip-ink);
+  }
+
+  .paint-pots {
+    font-size: var(--text-xs);
+    color: var(--surface-text-muted);
+  }
+
+  @media (forced-colors: active) {
+    .paint-swatch {
+      border: var(--border-hair) solid ButtonText;
+    }
+
+    .paint-swatch.on {
+      border: var(--border-focus) solid Highlight;
+    }
+
+    .paint-swatch:focus-visible {
+      outline-color: Highlight;
+    }
+
+    .paint-swatch:disabled {
+      border-color: GrayText;
+      color: GrayText;
+    }
+
+    .paint-chip {
+      forced-color-adjust: none;
+    }
+  }
+}

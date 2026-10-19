@@ -23,8 +23,8 @@ export function initIconPattern(field: HTMLElement, signal: AbortSignal) {
     if (signal.aborted) return;
     const style = getComputedStyle(field);
     const rem = parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
-    const cell = cssNumber(style.getPropertyValue('--c-editor-pattern-cell'), rem);
-    const largest = cssNumber(style.getPropertyValue('--c-editor-pattern-icon'), rem);
+    const cell = cssNumber(style.getPropertyValue('--pattern-cell'), rem);
+    const largest = cssNumber(style.getPropertyValue('--pattern-icon'), rem);
     const colour = style.color;
     const ratio = window.devicePixelRatio || 1;
     // the whole window, so making it smaller never needs a new drawing

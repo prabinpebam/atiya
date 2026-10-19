@@ -1,0 +1,57 @@
+---
+/**
+ * The list column of a list-and-details screen (SplitView's list slot: the Sections, Recommendations and
+ * Access screens): a raised, ruled panel that stays in view under the top bar while a long form beside it
+ * scrolls. Taller than the window, either the whole panel scrolls, or only its last part does, its tools
+ * staying on top. Under 56 rem, above the details, it runs as long as it needs.
+ * @tier kit
+ * @a11y A navigation landmark named by its label when its links show the details (as="nav"); a plain group otherwise.
+ * @a11y What scrolls carries data-scrollbar (the overlay handle); give the scrolling part it when only the last part scrolls.
+ */
+
+interface Props {
+  /** The element: a navigation landmark (a list of links to the details) or a plain group. */
+  as?: 'nav' | 'div';
+  /** Names the navigation landmark. */
+  label?: string;
+  /** What scrolls when it's taller than the window: the whole panel (padded, its parts apart), or only its last part (the caller's own scroller), its other parts staying on top. */
+  scroll?: 'whole' | 'last';
+  /** Data attributes pass through to the panel (the screen's hooks, data-scrollbar). */
+  [data: `data-${string}`]: string | undefined;
+}
+
+const { as: Tag = 'nav', label, scroll = 'whole', ...rest } = Astro.props;
+---
+
+<Tag class="list-pane" aria-label={label} data-scroll={scroll} {...rest}><slot /></Tag>
+
+<style>
+  .list-pane {
+    position: sticky;
+    inset-block-start: var(--space-4);
+    display: grid;
+    max-block-size: calc(100dvh - var(--c-editor-topbar) - var(--space-8));
+    border: var(--border-hairline) solid var(--color-rule);
+    border-radius: var(--radius-lg);
+    background: var(--color-bg-raised);
+  }
+
+  .list-pane[data-scroll='whole'] {
+    gap: var(--space-4);
+    overflow: auto;
+    padding: var(--space-3);
+  }
+
+  /* its parts in a column: the last (with min-block-size: 0 and its own overflow) gives way when it's too tall */
+  .list-pane[data-scroll='last'] {
+    display: flex;
+    flex-direction: column;
+  }
+
+  @media (max-width: 56rem) {
+    .list-pane {
+      position: static;
+      max-block-size: none;
+    }
+  }
+</style>

@@ -1,0 +1,9 @@
+---
+import Example from '../../library/Example.astro';
+import RecommendationsManager from '../components/RecommendationsManager.astro';
+import { RECOMMENDATIONS, REC_SECTIONS } from './samples';
+---
+
+<Example title="A recommendation chosen" description="Where they show and the people on the left; the chosen one's form on the right, with Move up and Move down." layout="block" bleed>
+  <RecommendationsManager sections={REC_SECTIONS} chosen="about" selected="grace-hopper" items={RECOMMENDATIONS} listVersion="sample" structureVersion="sample" placeLine="About, after the pages, as tiles" />
+</Example>

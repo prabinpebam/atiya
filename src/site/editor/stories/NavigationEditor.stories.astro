@@ -1,0 +1,9 @@
+---
+import Example from '../../library/Example.astro';
+import NavigationEditor from '../components/NavigationEditor.astro';
+import { NAV_ENTRIES, NAV_PREVIEW, SECTION_OPTIONS, STRUCTURE } from './samples';
+---
+
+<Example title="The site's navigation" description="The header as it will show, its entries in order with their labels and moves, and the ways to add a section, a page or a link." layout="block">
+  <NavigationEditor entries={NAV_ENTRIES} preview={NAV_PREVIEW} sections={SECTION_OPTIONS.slice(2)} pages={[{ value: 'the-bridge', label: 'The bridge' }]} max={8} structure={STRUCTURE} version="sample" />
+</Example>

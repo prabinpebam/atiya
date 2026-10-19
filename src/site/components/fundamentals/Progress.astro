@@ -35,10 +35,10 @@ const pct = determinate ? clampRangeValue(Number(value), 0, 100) : undefined;
 const labelId = `${id}-label`;
 ---
 
-<div class="progress-wrap" data-tone={tone} data-size={size} style={determinate ? `--progress: ${pct}%` : undefined} {...rest}>
-  <div class:list={['head', { 'sr-only': hideLabel }]}>
+<div class="progress-wrap" data-field-part="root" data-tone={tone} data-size={size} style={determinate ? `--progress: ${pct}%` : undefined} {...rest}>
+  <div class:list={['head', { 'sr-only': hideLabel }]} data-field-part="head">
     <span class="label" id={labelId}>{label}</span>
-    {showValue && determinate && <span class="value">{formatSliderValue(pct ?? 0, 'percent')}</span>}
+    {showValue && determinate && <span class="value" data-field-part="note">{formatSliderValue(pct ?? 0, 'percent')}</span>}
   </div>
   <div
     class="bar"
@@ -55,31 +55,8 @@ const labelId = `${id}-label`;
 </div>
 
 <style>
-  .progress-wrap {
-    display: grid;
-    gap: var(--space-2);
-    font-family: var(--font-ui);
-    color: var(--color-text);
-  }
-
-  .head {
-    display: flex;
-    align-items: baseline;
-    justify-content: space-between;
-    gap: var(--space-4);
-  }
-
   .label {
-    font-size: var(--text-sm);
-    font-weight: var(--weight-semibold);
-    line-height: var(--leading-ui);
-  }
-
-  .value {
-    color: var(--color-text-muted);
-    font-size: var(--text-sm);
-    font-weight: var(--weight-medium);
-    line-height: var(--leading-ui);
+    font: var(--type-label);
   }
 
   .bar {

@@ -1,0 +1,57 @@
+---
+/**
+ * A row in a Sections list: the section's name and an optional line of detail (a RowButton that shows the
+ * section, data-section-pick), with a drag handle before it when its rows can be reordered (the grip slot).
+ * @tier kit
+ * @a11y A list item holding a button named by the section's name and detail; the one shown is aria-current (set by scripts/inspector.ts).
+ * @a11y A drag handle is decorative (aria-hidden): the section's own Move up and Move down buttons do the same.
+ */
+import RowButton from '../../components/fundamentals/RowButton.astro';
+
+interface Props {
+  /** The section it shows (its pane's data-section). */
+  pick: string;
+  /** A line under the name: how many, which one is chosen (or the detail slot, for words a script rewrites). */
+  detail?: string;
+  /** Data attributes pass through to the list item (data-sort-row, for rows that drag). */
+  [data: `data-${string}`]: string | undefined;
+}
+
+const { pick, detail, ...rest } = Astro.props;
+const grip = Astro.slots.has('grip');
+const detailSlot = Astro.slots.has('detail');
+---
+
+<li class="nav-row" data-grip={grip ? '' : undefined} data-drop-line="spaced" {...rest}>
+  <slot name="grip" />
+  {
+    detailSlot ? (
+      <RowButton data-section-pick={pick}>
+        <slot />
+        <slot name="detail" slot="detail" />
+      </RowButton>
+    ) : detail === undefined ? (
+      <RowButton data-section-pick={pick}>
+        <slot />
+      </RowButton>
+    ) : (
+      <RowButton data-section-pick={pick}>
+        <slot />
+        <span slot="detail">{detail}</span>
+      </RowButton>
+    )
+  }
+</li>
+
+<style>
+  .nav-row {
+    position: relative;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    align-items: center;
+  }
+
+  .nav-row[data-grip] {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+</style>

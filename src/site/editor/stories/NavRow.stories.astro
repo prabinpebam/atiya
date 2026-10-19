@@ -1,0 +1,23 @@
+---
+import Example from '../../library/Example.astro';
+import NavGroup from '../kit/NavGroup.astro';
+import NavRow from '../kit/NavRow.astro';
+import Grip from '../kit/Grip.astro';
+---
+
+<Example title="Rows that show a section" description="A name, and a line of detail (a prop, or the detail slot for words a script rewrites); with a grip when the rows can be reordered." layout="block">
+  <nav aria-label="Story: rows">
+    <NavGroup>
+      <NavRow pick="story-row-basics">Title and summary</NavRow>
+      <NavRow pick="story-row-publishing" detail="Draft">Publishing</NavRow>
+      <NavRow pick="story-row-item">
+        <span>Item 1</span>
+        <span slot="detail">Empty</span>
+      </NavRow>
+      <NavRow pick="story-row-drag" detail="Then build">
+        <Fragment slot="grip"><Grip data-story-drag="1" /></Fragment>
+        Item 2
+      </NavRow>
+    </NavGroup>
+  </nav>
+</Example>

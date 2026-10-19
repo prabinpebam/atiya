@@ -41,7 +41,7 @@ export function laneBeneath(s: LaneInput): FocusLane {
 /** What owns the bottom-left aside (the build-site card, or nothing), and nothing during a conversation. */
 export type Aside = 'site' | null;
 
-/** Below this width the aside and the focus lane share one bottom stack (hud.css), so the lane wins. */
+/** Below this width the aside and the focus lane share one bottom stack (ui/styles/site-card.css), so the lane wins. */
 // narrow, or short (a phone held sideways: the aside and a lane card can't both fit)
 export const COMPACT_QUERY = '(max-width: 760px), (max-height: 500px)';
 

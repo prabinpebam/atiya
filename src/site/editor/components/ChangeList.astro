@@ -17,6 +17,12 @@ import Tag from '../../components/fundamentals/Tag.astro';
 import Icon from '../../components/fundamentals/Icon.astro';
 import Checkbox from '../../components/fundamentals/Checkbox.astro';
 import Dialog from '../../components/compounds/Dialog.astro';
+import ActionBar from '../../components/compounds/ActionBar.astro';
+import Panel from '../kit/Panel.astro';
+import PlainList from '../kit/PlainList.astro';
+import IssueNote from '../kit/IssueNote.astro';
+import StatusNote from '../kit/StatusNote.astro';
+import Fieldset from '../kit/Fieldset.astro';
 import { withBase } from '../../design/meta';
 import type { IconName } from '../../design/icons';
 
@@ -62,7 +68,7 @@ const reason = checking ? null : blocked ?? (changes.length || drafts.some((draf
 <div class="publish" data-region="publish" data-editor-publish data-width={wide ? 'wide' : undefined} data-publish-has-changes={changes.length ? '' : undefined} data-publish-blocked={blocked ? '' : undefined} data-published={published ?? undefined} data-checking={checking ? '' : undefined} aria-busy={checking ? 'true' : undefined}>
   {
     published && (
-      <section class="panel" data-tone="positive" aria-labelledby="publish-done-title">
+      <Panel tone="positive" labelledby="publish-done-title">
         <Heading level={2} size="ui" id="publish-done-title">Saved to remote</Heading>
         <Text variant="ui">{`Commit ${published} is pushed. GitHub Actions builds the site and deploys it in a few minutes.`}</Text>
         {actions && (
@@ -70,30 +76,30 @@ const reason = checking ? null : blocked ?? (changes.length || drafts.some((draf
             Follow the deploy
           </Link>
         )}
-      </section>
+      </Panel>
     )
   }
   {
     ahead > 0 && (
-      <section class="panel" data-tone="negative" aria-labelledby="publish-ahead-title">
+      <Panel tone="negative" labelledby="publish-ahead-title">
         <Heading level={2} size="ui" id="publish-ahead-title">{`${ahead} ${ahead === 1 ? 'commit' : 'commits'} not on GitHub yet`}</Heading>
         <Text variant="ui">A save was committed here, but its push failed, so the site hasn't changed. Push again once the reason below is fixed.</Text>
-        <p class="issue" role="alert" data-publish-push-issue hidden />
-        <div class="actions">
+        <IssueNote data-publish-push-issue="" />
+        <ActionBar align="end">
           <Button variant="primary" icon="publish" data-publish-push="">Push again</Button>
-        </div>
-      </section>
+        </ActionBar>
+      </Panel>
     )
   }
 
-  <section class="panel" aria-labelledby="publish-changes-title">
+  <Panel labelledby="publish-changes-title">
     <Heading level={2} size="h4" id="publish-changes-title">{changes.length ? `${changes.length} ${changes.length === 1 ? 'change' : 'changes'} to save` : 'Changes to save'}</Heading>
-    <p class="checking" role="status" data-publish-checking hidden={!checking}>Checking what changed…</p>
+    <StatusNote live="status" hidden={!checking} data-publish-checking="">Checking what changed…</StatusNote>
     {
       checking ? null : changes.length ? (
-        <ul class="list">
+        <PlainList data-change-list="">
           {changes.map((c) => (
-            <li class="row">
+            <li class="change">
               <Icon name={ICON[c.kind] ?? 'page'} />
               <span class="what">
                 <Text as="span" variant="small" tone="muted">
@@ -119,37 +125,36 @@ const reason = checking ? null : blocked ?? (changes.length || drafts.some((draf
               )}
             </li>
           ))}
-        </ul>
+        </PlainList>
       ) : (
         <Text variant="ui" tone="muted">Nothing has changed in content/ or private-pages/ since the last save to remote.</Text>
       )
     }
-  </section>
+  </Panel>
 
-  <form class="panel" data-publish-form novalidate aria-labelledby="publish-form-title">
+  <Panel as="form" data-publish-form="" labelledby="publish-form-title">
     <Heading level={2} size="h4" id="publish-form-title">Save to remote</Heading>
     <Text variant="ui" tone="muted">Commits content/ and private-pages/ (and nothing else), private pages first, then pushes them to GitHub, which deploys the site.</Text>
     <TextField label="Message" name="message" value={message} required disabled={checking || !!reason} />
     {privateNote && <Text variant="small" tone="muted">{privateNote}</Text>}
     {
       drafts.length > 0 && (
-        <fieldset class="drafts" data-publish-drafts>
-          <legend>Publish pages</legend>
+        <Fieldset legend="Publish pages" data-publish-drafts="">
           <Text variant="small" tone="muted">
             These pages are in a section but still drafts, so readers don't see them. Tick one to publish it: its Status becomes Published, and it goes on the site with this save.
           </Text>
           {drafts.map((d) => (
             <Checkbox name="publish" value={d.id} id={`publish-draft-${d.id}`} checked={d.checked} disabled={!!blocked} label={d.title} hint={d.access === 'private' ? 'Private page: for the readers you share it with' : 'For everyone'} />
           ))}
-        </fieldset>
+        </Fieldset>
       )
     }
     {reason && <Text variant="small" tone={blocked ? 'negative' : 'muted'} data-publish-reason="">{reason}</Text>}
-    <p class="issue" role="alert" data-editor-form-issue hidden />
-    <div class="actions">
+    <IssueNote data-editor-form-issue="" />
+    <ActionBar align="end">
       <Button variant="primary" type="submit" icon="upload" disabled={checking || !!reason}>Save to remote</Button>
-    </div>
-  </form>
+    </ActionBar>
+  </Panel>
 
   <Dialog id="publish-discard" title="Discard this change?" size="sm">
     <Text variant="ui">
@@ -173,36 +178,7 @@ const reason = checking ? null : blocked ?? (changes.length || drafts.some((draf
     max-inline-size: none;
   }
 
-  .panel {
-    display: grid;
-    gap: var(--space-4);
-    padding: var(--space-6);
-    border: var(--border-hairline) solid var(--color-rule);
-    border-radius: var(--radius-lg);
-    background: var(--color-bg-raised);
-  }
-
-  /* a result or a warning: the panel's own surface (so its text keeps its contrast), marked on its edge */
-  .panel[data-tone] {
-    border-inline-start-width: var(--border-strong);
-  }
-
-  .panel[data-tone='positive'] {
-    border-inline-start-color: var(--color-positive);
-  }
-
-  .panel[data-tone='negative'] {
-    border-inline-start-color: var(--color-negative);
-  }
-
-  .list {
-    display: grid;
-    margin: 0;
-    padding: 0;
-    list-style: none;
-  }
-
-  .row {
+  .change {
     display: grid;
     grid-template-columns: auto minmax(0, 1fr) auto auto;
     align-items: center;
@@ -212,7 +188,7 @@ const reason = checking ? null : blocked ?? (changes.length || drafts.some((draf
     border-block-end: var(--border-hairline) solid var(--color-rule);
   }
 
-  .row:last-child {
+  .change:last-child {
     border-block-end: 0;
   }
 
@@ -222,46 +198,16 @@ const reason = checking ? null : blocked ?? (changes.length || drafts.some((draf
     overflow-wrap: anywhere;
   }
 
-  .actions {
-    display: flex;
-    justify-content: end;
-  }
 
-  .drafts {
-    display: grid;
-    gap: var(--space-2);
-    margin: 0;
-    padding: 0;
-    border: 0;
-  }
-
-  .drafts legend {
-    padding: 0;
-    margin-block-end: var(--space-1);
-    font-weight: var(--weight-semibold);
-  }
-
-  .issue {
-    margin: 0;
-    color: var(--color-negative);
-    font-size: var(--text-sm);
-    font-weight: var(--weight-medium);
-  }
-
-  .checking {
-    margin: 0;
-    color: var(--color-text-muted);
-    font-size: var(--text-sm);
-  }
 
   /* being read again from git: what's shown may be out of date, so it steps back until it's replaced */
-  .publish[data-checking] .list,
+  .publish[data-checking] [data-change-list],
   .publish[data-checking] form {
     opacity: var(--opacity-disabled);
   }
 
   @media (max-width: 40rem) {
-    .row {
+    .change {
       grid-template-columns: auto minmax(0, 1fr) auto;
     }
   }

@@ -4,34 +4,32 @@
  * with its icon and one line on what it's for. Choosing one adds it where the "+" was; a block that
  * needs something first (a picture, a quote's words) asks for it before it exists. Shown in a Dialog.
  * @tier editor
- * @a11y Every block is a button named by its kind, with its description tied to it.
+ * @a11y Every block is a button (TileButton) named by its kind, with its description tied to it.
  */
-import Heading from '../../components/fundamentals/Heading.astro';
-import Icon from '../../components/fundamentals/Icon.astro';
-import type { IconName } from '../../design/icons';
+import ChoiceTiles, { type TileChoice } from '../kit/ChoiceTiles.astro';
 
-const GROUPS: { title: string; blocks: { type: string; name: string; what: string; icon: IconName }[] }[] = [
+const GROUPS: { title: string; blocks: TileChoice[] }[] = [
   {
     title: 'Text',
     blocks: [
-      { type: 'text', name: 'Paragraph', what: 'Words, with bold, italic, code and links', icon: 'paragraph' },
-      { type: 'heading', name: 'Heading', what: 'A section title; the minimap lists it', icon: 'heading' },
-      { type: 'subheading', name: 'Subheading', what: 'A line more about the heading above, set close under it', icon: 'subheading' },
-      { type: 'marker', name: 'Section marker', what: 'A big number or word in marigold, like 1 or Chapter 1', icon: 'section-mark' },
-      { type: 'quote', name: 'Quote', what: 'Words someone said, in the column or pulled out', icon: 'quote' },
-      { type: 'collection', name: 'Collection', what: 'Items with a heading, a picture, a subtext or words, as rows, columns, tiles, masonry, a carousel or a timeline', icon: 'collection' },
-      { type: 'table', name: 'Table', what: 'Rows and columns of short facts, with headings', icon: 'table' },
-      { type: 'divider', name: 'Divider', what: 'A turn in the story', icon: 'minus' },
+      { value: 'text', name: 'Paragraph', what: 'Words, with bold, italic, code and links', icon: 'paragraph' },
+      { value: 'heading', name: 'Heading', what: 'A section title; the minimap lists it', icon: 'heading' },
+      { value: 'subheading', name: 'Subheading', what: 'A line more about the heading above, set close under it', icon: 'subheading' },
+      { value: 'marker', name: 'Section marker', what: 'A big number or word in marigold, like 1 or Chapter 1', icon: 'section-mark' },
+      { value: 'quote', name: 'Quote', what: 'Words someone said, in the column or pulled out', icon: 'quote' },
+      { value: 'collection', name: 'Collection', what: 'Items with a heading, a picture, a subtext or words, as rows, columns, tiles, masonry, a carousel or a timeline', icon: 'collection' },
+      { value: 'table', name: 'Table', what: 'Rows and columns of short facts, with headings', icon: 'table' },
+      { value: 'divider', name: 'Divider', what: 'A turn in the story', icon: 'minus' },
     ],
   },
   {
     title: 'Media',
     blocks: [
-      { type: 'figure', name: 'Picture', what: 'One picture with its caption', icon: 'image' },
-      { type: 'gallery', name: 'Gallery', what: 'A set of pictures in a grid or a mosaic', icon: 'gallery' },
-      { type: 'carousel', name: 'Carousel', what: 'Pictures to browse, one at a time', icon: 'carousel' },
-      { type: 'video', name: 'Video', what: 'A video file you upload (under 100 MB), with its caption', icon: 'video' },
-      { type: 'embed', name: 'YouTube or Vimeo', what: 'A video on YouTube or Vimeo, with a poster', icon: 'play' },
+      { value: 'figure', name: 'Picture', what: 'One picture with its caption', icon: 'image' },
+      { value: 'gallery', name: 'Gallery', what: 'A set of pictures in a grid or a mosaic', icon: 'gallery' },
+      { value: 'carousel', name: 'Carousel', what: 'Pictures to browse, one at a time', icon: 'carousel' },
+      { value: 'video', name: 'Video', what: 'A video file you upload (under 100 MB), with its caption', icon: 'video' },
+      { value: 'embed', name: 'YouTube or Vimeo', what: 'A video on YouTube or Vimeo, with a poster', icon: 'play' },
     ],
   },
 ];
@@ -39,24 +37,7 @@ const GROUPS: { title: string; blocks: { type: string; name: string; what: strin
 
 <div class="palette" data-editor-palette>
   {
-    GROUPS.map((g) => (
-      <section class="group" aria-labelledby={`palette-${g.title}`}>
-        <Heading level={3} size="ui" id={`palette-${g.title}`}>
-          {g.title}
-        </Heading>
-        <div class="grid">
-          {g.blocks.map((b) => (
-            <button class="choice" type="button" data-editor-add={b.type} aria-describedby={`palette-${b.type}`}>
-              <Icon name={b.icon} size="lg" />
-              <span class="name">{b.name}</span>
-              <span class="what" id={`palette-${b.type}`}>
-                {b.what}
-              </span>
-            </button>
-          ))}
-        </div>
-      </section>
-    ))
+    GROUPS.map((g) => <ChoiceTiles title={g.title} titleId={`palette-${g.title}`} choices={g.blocks} hook="data-editor-add" whatPrefix="palette-" />)
   }
 </div>
 
@@ -64,56 +45,5 @@ const GROUPS: { title: string; blocks: { type: string; name: string; what: strin
   .palette {
     display: grid;
     gap: var(--space-6);
-  }
-
-  .group {
-    display: grid;
-    gap: var(--space-3);
-  }
-
-  .grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(min(100%, var(--c-editor-thumb)), 1fr));
-    gap: var(--space-3);
-  }
-
-  .choice {
-    display: grid;
-    align-content: start;
-    gap: var(--space-1-5);
-    min-block-size: var(--size-touch);
-    padding: var(--space-4);
-    border: var(--border-hairline) solid var(--color-rule);
-    border-radius: var(--radius-md);
-    background: var(--color-bg-raised);
-    color: var(--color-text);
-    font-family: var(--font-ui);
-    text-align: start;
-    cursor: pointer;
-    transition:
-      border-color var(--duration-fast) var(--ease-standard),
-      background-color var(--duration-fast) var(--ease-standard);
-  }
-
-  @media (hover: hover) {
-    .choice:hover {
-      border-color: var(--color-accent);
-      background: var(--color-accent-soft);
-    }
-  }
-
-  .choice:active {
-    border-color: var(--color-accent);
-    background: var(--color-accent-soft);
-  }
-
-  .name {
-    font-weight: var(--weight-semibold);
-  }
-
-  .what {
-    color: var(--color-text-muted);
-    font-size: var(--text-sm);
-    line-height: var(--leading-ui);
   }
 </style>

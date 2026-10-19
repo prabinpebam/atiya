@@ -16,6 +16,7 @@ import Spinner from '../../components/fundamentals/Spinner.astro';
 import Button from '../../components/fundamentals/Button.astro';
 import Heading from '../../components/fundamentals/Heading.astro';
 import Text from '../../components/fundamentals/Text.astro';
+import ActionBar from '../../components/compounds/ActionBar.astro';
 
 interface Props {
   /** The run to show: an ID, or "current" (the newest active run, else the newest). */
@@ -47,12 +48,12 @@ const { run = 'current' } = Astro.props;
       <span class="seg" data-seg="passed"></span><span class="seg" data-seg="flaky"></span><span class="seg" data-seg="failed"></span><span class="seg" data-seg="running"></span><span class="seg" data-seg="queued"></span>
     </div>
     <p class="overlap" data-t="overlap" hidden></p>
-    <div class="actions">
+    <ActionBar gap="sm">
       <Button variant="secondary" size="sm" icon="copy" data-tests-copy="">Copy summary</Button>
       <Button variant="quiet" size="sm" icon="expand" data-tests-expand="">Open all</Button>
       <Button variant="quiet" size="sm" icon="compress" data-tests-collapse="">Close all</Button>
       <span class="follow" data-t="follow"><Button variant="quiet" size="sm" icon="location" data-tests-follow="">Follow the running test</Button></span>
-    </div>
+    </ActionBar>
   </header>
 
   <section class="failures" aria-labelledby="test-failures-heading" data-t="failures" hidden>
@@ -300,7 +301,6 @@ const { run = 'current' } = Astro.props;
     font-weight: var(--weight-semibold);
   }
 
-  .actions,
   .filters,
   .tree-head {
     display: flex;

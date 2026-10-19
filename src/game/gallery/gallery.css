@@ -1,0 +1,68 @@
+/* The game UI's gallery (Gallery.tsx; design-system.md §9.1): its index and the stage the HUD and panels sit on.
+ * Development and test builds only. Tokens only, like every game stylesheet (tests/unit/designSystem.test.ts). */
+@layer tokens, base, primitives, components, cursors;
+
+@layer components {
+  .gallery {
+    min-block-size: 100dvh;
+    background: var(--surface-bg);
+    color: var(--surface-text);
+  }
+
+  .gallery-head,
+  .gallery-sections {
+    max-inline-size: var(--c-gallery-width);
+    margin-inline: auto;
+    padding: var(--space-6) var(--space-4);
+  }
+
+  .gallery-head h1 {
+    margin: 0 0 var(--space-2);
+    font-size: var(--text-3xl);
+  }
+
+  .gallery-nav {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2) var(--space-4);
+    margin: var(--space-4) 0 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .gallery-section h2 {
+    margin: var(--space-6) 0 var(--space-3);
+    font-size: var(--text-xl);
+  }
+
+  .gallery-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-3);
+  }
+
+  .gallery-scroll {
+    max-block-size: var(--c-gallery-scroll);
+    inline-size: var(--c-gallery-scroll);
+    margin: 0;
+    padding: var(--space-2) var(--space-3);
+    overflow: auto;
+    border: var(--border-base) solid var(--surface-border);
+    border-radius: var(--radius-md);
+  }
+
+  /* the planet's sky under the HUD and panels, at the HUD's own size: what's absolute sits in it, as on /play */
+  .gallery-stage {
+    position: relative;
+    min-block-size: 100dvh;
+    overflow: hidden;
+    background: linear-gradient(180deg, var(--color-sky-top) 0%, var(--color-sky-mid) 45%, var(--color-sky-low) 100%);
+  }
+
+  @media (forced-colors: active) {
+    .gallery-scroll {
+      border-color: CanvasText;
+    }
+  }
+}

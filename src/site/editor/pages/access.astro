@@ -7,6 +7,7 @@
 import EditorLayout from '../EditorLayout.astro';
 import AccessManager from '../components/AccessManager.astro';
 import GrantDetails from '../components/GrantDetails.astro';
+import GrantScope from '../components/GrantScope.astro';
 import ContentIssues from '../components/ContentIssues.astro';
 import { load } from '../server/screens';
 import { posthogPerson, shareMessage, sharingView } from '../server/access';
@@ -69,7 +70,9 @@ const privateSetup = privateSetupHref(SITE_FEATURES.managed, hasPrivate(privateR
           made={params.get('made') === '1'}
           posthog={grant && person ? person(grant.id) : undefined}
           count={grants.length}
-        />
+        >
+          {mode !== 'none' && <GrantScope slot="scope" options={options} scope={mode === 'grant' ? grant?.scope : preset} prefix={mode === 'new' ? 'new-grant' : 'grant'} />}
+        </GrantDetails>
       </AccessManager>
     )
   }

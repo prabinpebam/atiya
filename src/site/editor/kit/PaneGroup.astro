@@ -1,0 +1,85 @@
+---
+/**
+ * A group of item sections in Sections (a collection's items): its name and a line on what an item holds, the
+ * items (Panes marked item, the default slot) in a list that can be reordered, and what comes after them (the
+ * add slot: Add an item). In a wide Sections, it shows only while one of its items is the chosen section, and
+ * then only that item: the list beside it has the items' names, handles and Add an item.
+ * @tier kit
+ * @a11y Its name is a visible label (each item has its own heading); the line under it is plain text.
+ */
+import Text from '../../components/fundamentals/Text.astro';
+import ActionBar from '../../components/compounds/ActionBar.astro';
+
+interface Props {
+  /** The group's name ("Items (3)"). */
+  label: string;
+  /** A line on what an item holds. */
+  hint?: string;
+  /** Its items can be dragged into a new order (data-sort-list on the list). */
+  sortable?: boolean;
+  /** Data attributes pass through to the group. */
+  [data: `data-${string}`]: string | undefined;
+}
+
+const { label, hint, sortable = false, ...rest } = Astro.props;
+const add = Astro.slots.has('add');
+---
+
+<div class="pane-group" {...rest}>
+  <div class="pane-group-head">
+    <span class="pane-group-label">{label}</span>
+    {hint && <Text variant="small" tone="muted">{hint}</Text>}
+  </div>
+  <div class="pane-list" data-pane-list data-sort-list={sortable ? '' : undefined}><slot /></div>
+  {
+    add && (
+      <div class="pane-group-add">
+        <ActionBar gap="sm">
+          <slot name="add" />
+        </ActionBar>
+      </div>
+    )
+  }
+</div>
+
+<style>
+  .pane-group {
+    display: grid;
+    gap: var(--space-4);
+    min-inline-size: 0;
+    padding-block-start: var(--space-4);
+    border-block-start: var(--border-hairline) solid var(--color-rule);
+  }
+
+  .pane-group-head {
+    display: grid;
+    gap: var(--space-1);
+    min-inline-size: 0;
+  }
+
+  .pane-group-label {
+    font: var(--type-label);
+  }
+
+  .pane-list {
+    display: grid;
+    gap: var(--space-5);
+    min-inline-size: 0;
+  }
+
+  @container sections (min-width: 40rem) {
+    .pane-group:not(:has([data-current])) {
+      display: none;
+    }
+
+    .pane-group {
+      padding-block-start: var(--space-0);
+      border-block-start: 0;
+    }
+
+    .pane-group-head,
+    .pane-group-add {
+      display: none;
+    }
+  }
+</style>

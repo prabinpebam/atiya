@@ -1,0 +1,9 @@
+---
+import Example from '../../library/Example.astro';
+import GrantScope from '../components/GrantScope.astro';
+import { SCOPE } from './samples';
+---
+
+<Example title="What a code or link opens" description="Every private page in a section (now and later), or pages one by one; Find narrows a long list." layout="block">
+  <GrantScope options={SCOPE} scope={{ sections: ['work'] }} prefix="story-scope" />
+</Example>

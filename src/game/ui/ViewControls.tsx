@@ -5,6 +5,7 @@ import { compassPoint, viewBearingDeg, type CompassPoint } from '../math/compass
 import { faHouse } from '@fortawesome/free-solid-svg-icons';
 import { Icon } from './Icon';
 import { Button } from './primitives';
+import './styles/view-controls.css';
 
 /**
  * Run a view action. After a mouse/touch click, hand focus back to the planet so WASD keeps

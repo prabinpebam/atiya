@@ -12,6 +12,9 @@ import Link from '../../components/fundamentals/Link.astro';
 import Button from '../../components/fundamentals/Button.astro';
 import Tag from '../../components/fundamentals/Tag.astro';
 import Icon from '../../components/fundamentals/Icon.astro';
+import ActionBar from '../../components/compounds/ActionBar.astro';
+import Panel from '../kit/Panel.astro';
+import PlainList from '../kit/PlainList.astro';
 import { withBase } from '../../design/meta';
 import { STATUS_LABEL, type ArticleRow } from '../server/screens';
 
@@ -31,26 +34,26 @@ const to = (p: string) => withBase(`/_edit/${p}`);
 ---
 
 <div class="panels">
-  <section class="panel wide" aria-labelledby="dash-actions">
+  <Panel labelledby="dash-actions" data-wide="">
     <Heading level={2} size="h4" id="dash-actions">Start something</Heading>
-    <div class="row">
+    <ActionBar>
       <Button variant="primary" icon="plus" href={to('articles/?new=note')}>New article</Button>
       <Button variant="secondary" icon="page" href={to('articles/?new=page')}>New page</Button>
       <Button variant="secondary" icon="upload" href={to('media/?upload=1')}>Upload pictures</Button>
-    </div>
-  </section>
+    </ActionBar>
+  </Panel>
 
-  <section class="panel" aria-labelledby="dash-counts">
+  <Panel labelledby="dash-counts">
     <Heading level={2} size="h4" id="dash-counts">Pages</Heading>
     <dl class="counts">
-      <div><dt>Published</dt><dd>{counts.published}</dd></div>
-      <div><dt>Drafts</dt><dd>{counts.draft}</dd></div>
-      {counts.other > 0 && <div><dt>In review</dt><dd>{counts.other}</dd></div>}
+      <div><dt><Text as="span" variant="small" tone="muted">Published</Text></dt><dd>{counts.published}</dd></div>
+      <div><dt><Text as="span" variant="small" tone="muted">Drafts</Text></dt><dd>{counts.draft}</dd></div>
+      {counts.other > 0 && <div><dt><Text as="span" variant="small" tone="muted">In review</Text></dt><dd>{counts.other}</dd></div>}
     </dl>
     <Link href={to('articles/')} variant="standalone">See them all</Link>
-  </section>
+  </Panel>
 
-  <section class="panel" aria-labelledby="dash-publish">
+  <Panel labelledby="dash-publish">
     <Heading level={2} size="h4" id="dash-publish">Since the last save to remote</Heading>
     <div data-region="pending-summary">
       {
@@ -64,11 +67,11 @@ const to = (p: string) => withBase(`/_edit/${p}`);
       }
     </div>
     <Link href={to('publish/')} variant="standalone">Review and save to remote</Link>
-  </section>
+  </Panel>
 
-  <section class="panel wide" aria-labelledby="dash-recent">
+  <Panel labelledby="dash-recent" data-wide="">
     <Heading level={2} size="h4" id="dash-recent">Recently updated</Heading>
-    <ul class="list">
+    <PlainList gap="sm">
       {
         recent.map((r) => (
           <li>
@@ -78,26 +81,26 @@ const to = (p: string) => withBase(`/_edit/${p}`);
           </li>
         ))
       }
-    </ul>
-  </section>
+    </PlainList>
+  </Panel>
 
-  <section class="panel wide" aria-labelledby="dash-attention">
+  <Panel labelledby="dash-attention" data-wide="">
     <Heading level={2} size="h4" id="dash-attention">Needs attention</Heading>
     {
       attention.length ? (
-        <ul class="list">
+        <PlainList gap="sm">
           {attention.map((a) => (
             <li>
               <Icon name="error" tone="tonal" />
               <Link href={a.href} variant="quiet">{a.text}</Link>
             </li>
           ))}
-        </ul>
+        </PlainList>
       ) : (
         <Text variant="ui" tone="muted">Nothing: every picture has its alt text and is used, and every published article has a page.</Text>
       )
     }
-  </section>
+  </Panel>
 </div>
 
 <style>
@@ -107,24 +110,9 @@ const to = (p: string) => withBase(`/_edit/${p}`);
     gap: var(--space-6);
   }
 
-  .panel {
-    display: grid;
-    align-content: start;
-    gap: var(--space-4);
-    padding: var(--space-6);
-    border: var(--border-hairline) solid var(--color-rule);
-    border-radius: var(--radius-lg);
-    background: var(--color-bg-raised);
-  }
-
-  .wide {
+  /* the panels that span both columns */
+  .panels > [data-wide] {
     grid-column: 1 / -1;
-  }
-
-  .row {
-    display: flex;
-    flex-wrap: wrap;
-    gap: var(--space-3);
   }
 
   .counts {
@@ -133,10 +121,6 @@ const to = (p: string) => withBase(`/_edit/${p}`);
     margin: 0;
   }
 
-  dt {
-    color: var(--color-text-muted);
-    font-size: var(--text-sm);
-  }
 
   dd {
     margin: 0;
@@ -145,13 +129,6 @@ const to = (p: string) => withBase(`/_edit/${p}`);
     line-height: var(--leading-tight);
   }
 
-  .list {
-    display: grid;
-    gap: var(--space-2);
-    margin: 0;
-    padding: 0;
-    list-style: none;
-  }
 
   li {
     display: flex;

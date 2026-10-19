@@ -39,7 +39,7 @@ const walk = places.slice(0, 5).map((p, n) => ({ ...p, when: `Stop ${n + 1}` }))
   <Collection heading="Hidden collection header" showHeading={false} items={facts} />
 </Example>
 
-<Example title="Tiles: a story's brief" description="An even grid of cards, two to a row: a label over a sentence or two, or a list. The words can carry bold, italic, strikethrough, code and links, and lists can nest.">
+<Example layout="stack" title="Tiles: a story's brief" description="An even grid of cards, two to a row: a label over a sentence or two, or a list. The words can carry bold, italic, strikethrough, code and links, and lists can nest.">
   <Collection layout="tiles" width="popout" items={brief} />
 </Example>
 
@@ -96,7 +96,7 @@ const walk = places.slice(0, 5).map((p, n) => ({ ...p, when: `Stop ${n + 1}` }))
   <Collection layout="carousel" label="Two places, full width" headings="title" ratio="4/3" width="full" items={places.slice(0, 2)} />
 </Example>
 
-<Example title="Tiles, with times" description="A career as tiles: outside a timeline, each item's time sits over its heading.">
+<Example layout="stack" title="Tiles, with times" description="A career as tiles: outside a timeline, each item's time sits over its heading.">
   <Collection layout="tiles" items={career.slice(0, 4)} />
 </Example>
 

@@ -13,6 +13,11 @@ import InventoryPanel from '../../ui/InventoryPanel';
 import { selectReducedMotion } from '../../state/store';
 import type { Crafting } from './index';
 import { BULK_MAX, CRAFT_S, DECK_NEEDS, FURNACE_NEEDS, HOUSE_HEX, HOUSE_NEEDS, MAX_NEEDS, SMELTING, SMELT_S, SWING_NEEDS, RECIPES, byMaterials, colourName, haveOf, maxCraftable, paintOptions, type Recipe } from './recipes';
+import '../../ui/styles/panel.css';
+import '../../ui/styles/card.css';
+import '../../ui/styles/site-card.css';
+import '../../ui/styles/craft-pane.css';
+import '../../ui/styles/paint-picker.css';
 
 /** The crafting screen, the palette for Chopper's house, and the site card (crafting.md §4.2, §4.3). */
 export function CraftScreens({ controller, crafting }: { controller: GameController; crafting: Crafting }) {

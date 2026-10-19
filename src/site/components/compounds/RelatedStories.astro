@@ -14,7 +14,7 @@ import Heading from '../fundamentals/Heading.astro';
 import Text from '../fundamentals/Text.astro';
 import Image from '../fundamentals/Image.astro';
 import Tag from '../fundamentals/Tag.astro';
-import { PICTURE_SPECS } from '../../design/pictures';
+import { PICTURE_SPECS, type CardPicture } from '../../design/pictures';
 import { sizes } from '../../design/responsive';
 import { RELATED_SHOWN } from '../../scripts/related';
 
@@ -29,7 +29,7 @@ export interface RelatedStory {
   /** How long it takes to read. */
   meta?: string;
   /** Its card picture in a 3:2 frame (shown whole unless display says otherwise), and its dark mode version. */
-  picture?: { src: string; srcset?: string; alt: string; width: number; height: number; display?: 'fill' | 'fit' | 'actual' | 'tile'; bg?: string; background?: boolean; rounded?: boolean; shadow?: boolean; dark?: { src: string; srcset?: string; width: number; height: number; bg?: string } };
+  picture?: CardPicture;
 }
 
 interface Props {
@@ -53,7 +53,7 @@ const { current, stories, heading = 'Keep exploring', shown = RELATED_SHOWN } = 
       <ul class="list" role="list">
         {stories.map((s, i) => (
           <li class="item" data-related-item={s.id} hidden={i >= shown}>
-            <article class="card">
+            <article class="card" data-card>
               {s.picture && (
                 <div class="picture" data-shadow={s.picture.shadow ? '' : undefined}>
                   <Image src={s.picture.src} srcset={s.picture.srcset} sizes={sizes(['sm', '92vw'], ['lg', '46vw'], { share: 'wide', of: 3 })} alt={s.picture.alt} width={s.picture.width} height={s.picture.height} ratio={PICTURE_SPECS.thumbnail.ratio} display={s.picture.display ?? 'fit'} rounded={s.picture.rounded !== false} bg={s.picture.background && s.picture.bg ? { light: s.picture.bg, dark: s.picture.dark?.bg } : undefined} dark={s.picture.dark} />
@@ -61,7 +61,7 @@ const { current, stories, heading = 'Keep exploring', shown = RELATED_SHOWN } = 
               )}
               <div class="words">
                 <Heading level={3} size="h4">
-                  <a class="title" href={s.href}>{s.title}</a>
+                  <a class="title" href={s.href} data-card-link>{s.title}</a>
                 </Heading>
                 {s.dek && <Text variant="small" tone="muted">{s.dek}</Text>}
                 <span class="meta">
@@ -102,7 +102,6 @@ const { current, stories, heading = 'Keep exploring', shown = RELATED_SHOWN } = 
   }
 
   .card {
-    position: relative;
     display: grid;
     gap: var(--space-4);
     align-content: start;
@@ -114,7 +113,7 @@ const { current, stories, heading = 'Keep exploring', shown = RELATED_SHOWN } = 
 
   /* the shadow on the frame, which clips the picture: drawn outside the clip, in the picture's shape */
   .picture[data-shadow] {
-    filter: drop-shadow(0 var(--c-image-shadow-y) var(--c-image-shadow-blur) var(--c-image-shadow));
+    filter: var(--c-image-shadow-filter);
   }
 
   .words {
@@ -130,27 +129,7 @@ const { current, stories, heading = 'Keep exploring', shown = RELATED_SHOWN } = 
     gap: var(--space-2);
   }
 
-  .title {
-    color: var(--color-text);
-    text-decoration: none;
-  }
-
-  /* the whole card follows the title's link */
-  .title::after {
-    content: '';
-    position: absolute;
-    inset: 0;
-  }
-
-  @media (hover: hover) {
-    .card:hover .title {
-      text-decoration: underline;
-      text-decoration-thickness: var(--underline-thickness-strong);
-      text-decoration-color: var(--color-highlight);
-      text-underline-offset: var(--underline-offset);
-    }
-  }
-
+  /* the card is one link on its title (base.css: data-card, data-card-link), which underlines on a press too */
   .card:has(.title:active) .title {
     text-decoration: underline;
     text-decoration-thickness: var(--underline-thickness-strong);
@@ -158,13 +137,7 @@ const { current, stories, heading = 'Keep exploring', shown = RELATED_SHOWN } = 
     text-underline-offset: var(--underline-offset);
   }
 
-  .title:focus-visible {
-    outline: none;
-  }
-
   .title:focus-visible::after {
-    outline: var(--border-focus) solid var(--color-focus);
-    outline-offset: var(--border-focus-offset);
     border-radius: var(--c-image-radius);
   }
 

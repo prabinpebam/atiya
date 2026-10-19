@@ -22,7 +22,8 @@ import Image from '../fundamentals/Image.astro';
 import Video from '../fundamentals/Video.astro';
 import Caption from '../fundamentals/Caption.astro';
 import IconButton from '../fundamentals/IconButton.astro';
-import { slideShape } from '../../scripts/media';
+import { slideShape, videoSources } from '../../scripts/media';
+import type { PictureSource } from '../../design/pictures';
 
 export interface CarouselItem {
   /** The displayed image. */
@@ -44,7 +45,7 @@ export interface CarouselItem {
   /** Which part stays in a crop. */
   focus?: string;
   /** Its dark mode version, shown when the page is dark. */
-  dark?: { src: string; srcset?: string; width: number; height: number; full?: string; thumb?: string; bg?: string };
+  dark?: PictureSource & { full?: string; thumb?: string };
   /** Its own edge colour (media.md §9.1), for a background behind it. */
   bg?: string;
   /**
@@ -149,8 +150,7 @@ const shape = `--slide-shape: ${tallest.width} / ${tallest.height}`;
                 <div class="slide-frame">
                   {item.video ? (
                     <Video
-                      src={item.video.type === 'video/mp4' ? item.video.src : undefined}
-                      webm={item.video.type === 'video/webm' ? item.video.src : undefined}
+                      {...videoSources(item.video)}
                       label={item.alt}
                       poster={item.src || undefined}
                       width={item.width}
@@ -214,8 +214,10 @@ const shape = `--slide-shape: ${tallest.width} / ${tallest.height}`;
 </section>
 
 <style>
+  /* it sizes its insides by its own width (a container), not the screen's */
   .carousel {
     --slide-gap: var(--space-4);
+    container-type: inline-size;
     display: grid;
     gap: var(--space-4);
   }
@@ -244,13 +246,12 @@ const shape = `--slide-shape: ${tallest.width} / ${tallest.height}`;
 
   /* the track scrolls sideways, which would cut the shadows off: room for them under the slides */
   .carousel[data-shadow] .track {
-    padding-block-end: calc(var(--c-image-shadow-y) + var(--c-image-shadow-blur));
+    padding-block-end: var(--c-image-shadow-room);
   }
 
   .slide-body {
     display: grid;
     gap: var(--space-3);
-    margin: 0;
   }
 
   /* every slide's picture frame: the tallest picture's shape (--slide-shape), so the carousel is only as tall
@@ -419,8 +420,8 @@ const shape = `--slide-shape: ${tallest.width} / ${tallest.height}`;
     opacity: 1;
   }
 
-  /* a phone shows one slide at a time */
-  @media (max-width: 40rem) {
+  /* narrower than c.carousel.query-narrow (its column at the sm window, a phone's): one slide at a time */
+  @container (width < 36.45rem) {
     .carousel[data-peek] .viewport {
       --inset: 0px;
       mask-image: none;
@@ -439,5 +440,5 @@ const shape = `--slide-shape: ${tallest.width} / ${tallest.height}`;
   import { each } from '../../scripts/page';
   import { setupCarousel } from '../../scripts/carousel';
 
-  each<HTMLElement>('[data-carousel]', (root, signal) => setupCarousel(root, signal, { peekMin: '--c-carousel-peek-min' }));
+  each<HTMLElement>('[data-carousel]', (root, signal) => setupCarousel(root, signal, { peekMin: '--c-carousel-peek-min', narrow: '--c-carousel-query-narrow' }));
 </script>

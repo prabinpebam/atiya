@@ -12,40 +12,24 @@ import Switch from '../../components/fundamentals/Switch.astro';
 import Button from '../../components/fundamentals/Button.astro';
 import Text from '../../components/fundamentals/Text.astro';
 import Dialog from '../../components/compounds/Dialog.astro';
+import ActionBar from '../../components/compounds/ActionBar.astro';
+import Form from '../kit/Form.astro';
+import IssueNote from '../kit/IssueNote.astro';
 import { VIEW_OPTIONS as VIEWS } from '../server/screens';
 
 ---
 
 <Button variant="secondary" size="sm" icon="plus" data-dialog-open="new-section">New section</Button>
 <Dialog id="new-section" title="New section" size="md">
-  <form class="form" data-sections-new novalidate>
+  <Form data-sections-new="">
     <TextField label="Title" name="title" required hint="Its heading, and its address made from it." />
     <TextField label="Summary" name="summary" multiline rows={2} optional />
     <Select label="View" name="view" value="features" options={VIEWS} />
     <Switch label="In the navigation" name="inNav" checked data-sections-in-nav="" />
     <Text variant="small" tone="muted">It goes after the other sections, under the home page.</Text>
-    <p class="issue" role="alert" data-editor-form-issue hidden></p>
-    <div class="actions">
+    <IssueNote data-editor-form-issue="" />
+    <ActionBar align="end">
       <Button variant="primary" type="submit" icon="plus">Add the section</Button>
-    </div>
-  </form>
+    </ActionBar>
+  </Form>
 </Dialog>
-
-<style>
-  .form {
-    display: grid;
-    gap: var(--space-4);
-  }
-
-  .actions {
-    display: flex;
-    justify-content: end;
-  }
-
-  .issue {
-    margin: 0;
-    color: var(--color-negative);
-    font-size: var(--text-sm);
-    font-weight: var(--weight-medium);
-  }
-</style>

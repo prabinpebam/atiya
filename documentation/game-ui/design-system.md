@@ -41,13 +41,29 @@ The source of truth is `src/design/tokens.json`, in the [W3C Design Tokens (DTCG
 - a shadow is `{ color, offsetX, offsetY, blur, spread, inset? }`, or a list of them;
 - what DTCG has no type for is a number with its unit in `$extensions`: `game.unit` (`%`, `em`), `game.fluid` (a `clamp()` between `min` and the value, growing with `vw`), `game.filter` (a shadow written as `drop-shadow()`).
 
-`designSystem.test.ts` checks the format, and that every token is read (by a stylesheet, the game's code or another token).
+`designSystem.test.ts` checks the format, and that every token is read (by a stylesheet, the game's code or another token), except a deprecated alias in its one release.
+
+**Changes and deprecation.** The build compares the tokens with the last set it built (`src/design/token-history.json`, generated and committed with them) and writes what was added, removed, renamed, changed in value or deprecated to [the token changelog](token-changelog.md), under that day's date; `--check` fails when the tokens changed without a build. A token is never renamed or removed in one step:
+1. Add the new token with the old value, and turn the old one into an alias of it marked with DTCG's `$deprecated`, saying what to use instead (`"$value": "{c.chopper.thumb-width}", "$deprecated": "Use --c-chopper-thumb-width"`).
+2. Move every reader to the new name in the same change. The build still writes the old custom property and marks it in [tokens.md](tokens.md) and the changelog.
+3. Keep the alias for one release, then remove it.
+
+`tokenChangelog.test.ts` fails when a stylesheet, the game's code or a live token reads a deprecated name. The first rename through it: `--c-chopper-thumb-w` and `-h` became `--c-chopper-thumb-width` and `-height` (19 October 2026).
 
 | Tier | Prefix | Who may use it | Examples |
 |---|---|---|---|
 | 1. Primitives | `--p-*` | Only other tokens. Never component CSS (the lint rejects it) | `--p-color-wood-900`, `--p-color-gold-300` |
 | 2. Semantic | `--color-*`, `--space-*`, `--radius-*`, `--border-*`, `--font-*`, `--text-*`, `--weight-*`, `--leading-*`, `--tracking-*`, `--shadow-*`, `--dur-*`, `--ease-*`, `--layer-*` | All CSS | `--space-4`, `--text-sm`, `--layer-lane` |
-| 3. Component | `--c-*` | The component they belong to | `--c-btn-h`, `--c-lane-edge`, `--c-view-size` |
+| 3. Component | `--c-*` | Only its owner (below) | `--c-btn-h`, `--c-lane-edge`, `--c-view-size` |
+
+**Owners.** Every `c.*` group names who reads it in `$extensions["game.owner"]`:
+- a component, by its name: the React function that writes its classes (`ViewControls`, `TalkBox`, `CraftPane`, `KeyCap`, …);
+- a class family, when no component writes it: `.stick` (the floating stick, which the touch chunk draws) or `.load-*` (the loading scene in `play.astro`);
+- `shared`, when several components read it: the button's heights (`btn`), cards, slots, the hotbar and lanes (they feed the page-wide `--slot`, `--hotbar-h` and `--lane-bottom`) and the scrollbar.
+
+A stylesheet rule may read a group only if its selector names a class its owner writes (or one of the family's); a keyframe step counts as its animation's name. Only the owner's own file may read one from code. `designSystem.test.ts` holds both. The build ignores owners: they aren't values, so they don't reach `tokens.css` or the changelog.
+
+**More contrast.** Paper and wood each have three strong roles, `text-muted-strong`, `border-strong` and `line-strong`. Under `@media (prefers-contrast: more)`, `base.css` points `--surface-text-muted`, `--surface-border` and `--surface-line` at them, on `:root` and on every surface. That's the one place a stylesheet re-points a role, and only to its own `-strong` role (tested).
 
 **Surfaces.** A surface class maps the `--surface-*` roles (`bg`, `bg-soft`, `bg-warm`, `bg-sunk`, `bg-glass`, `text`, `text-muted`, `line`, `border`, `accent`, `accent-hover`, `on-accent`, `link`, `focus`, `highlight`, `highlight-soft`, `positive`, `negative`) to one colour set:
 
@@ -66,32 +82,46 @@ Both surfaces define every role (a test checks), and each surface re-declares `c
 
 ## 4. Components
 
-Each component has one class family, reads only surface roles and tokens, and has its own section in one stylesheet.
+Each component has one class family, reads only surface roles and tokens, and has **its own stylesheet beside the others in `src/game/ui/styles/`**, named for it (`hotbar.css`, `talk-box.css`, `preview-card.css`), **imported by the component whose markup writes its classes** (`import './styles/hotbar.css';` in `Inventory.tsx`). What every page needs is `src/styles/`: `global.css` (the entry: the layer order and the imports), `base.css` (element and global rules only: the reset, type, focus, the surfaces, `.sr-only`, `.muted`, `.kicker`, the shared keyframes and the page-wide layout variables) and the two generated files. Astro hoists the CSS a component imports into the page's own stylesheets, even from a chunk that loads later, so a stylesheet costs the game's JS nothing and is there from the first paint; `play.astro` also imports the sheets of what it draws before any script (the top bar, the loading scene, the welcome), so the development server shows them at once too.
+
+**Cascade layers.** Every game style sits in a layer, declared in this order at the top of every stylesheet (so it never depends on which one the browser meets first):
+
+| Layer | What | Where |
+|---|---|---|
+| `tokens` | The custom properties | `tokens.css` (generated), layered where `global.css` imports it |
+| `base` | Reset, type, focus, utilities, more contrast, reduced motion | `base.css` |
+| `primitives` | The primitives' and the shared parts' own looks: Button, KeyCap, Icon, Dialog, Panel, ScrollArea, the card, the slot and the focus lane | `button.css`, `key-cap.css`, `icon.css`, `dialog.css`, `panel.css`, `scroll-area.css`, `card.css`, `slot.css`, `lane.css` |
+| `components` | Every other component, which lays the primitives out and adjusts them | the rest of `src/game/ui/styles/` |
+| `cursors` | The game's cursors: a cursor state always wins | `cursors.css` (generated), layered where `global.css` imports it |
+
+A later layer wins whatever the selectors, so a component's rule beats a primitive's without a longer selector, and a rule's place among the stylesheets never matters. Within a layer, two stylesheets never style one element's property at the same specificity (checked when the styles were split: [as built](#as-built-styles-and-gallery)). Nothing of the game is outside a layer, so the cascade is the same in every build; the website's styles never reach `/play`.
 
 | Component | Class | Stylesheet | Anatomy and variants |
 |---|---|---|---|
-| Button | `.btn` | `components.css` | Label (verb first), optional icon (`Icon`, `aria-hidden`), optional `.kbd`. Variants: default (soft surface), `.primary` (the accent; one per view), `.sm`, `.big`, `.icon-btn` (icon only, with an `aria-label`). Height `--c-btn-h`, 44 px minimum target. |
-| Key cap | `.kbd` | `components.css` | A light cap with dark text on both surfaces. It shows a key; it's never the only label. |
-| Card | `.card`, `.card-title` | `components.css` | The surface's `bg`, `--radius-lg`, `--shadow-card`. An optional eyebrow, a title, a body and `.actions`. Landmark cards carry `--accent` as a top rule. |
-| Dialog | `.dialog`, `.landmark-dialog`, `.menu-dialog` | `components.css` | Native `<dialog>` (focus is trapped and restored; <kbd>Space</kbd> closes, and <kbd>Esc</kbd> too, §6.7). Title, body, actions with the primary action first; Close shows <kbd>Space</kbd>. |
-| Menu list, check, radio group | `.menu-list`, `.menu-item`, `.check`, `.radio-group` | `components.css` | Settings rows in the menu (sound, time, larger text). |
-| Time badge | `.time-badge` | `components.css` | The clock chip in the top bar; `.time-scrubbing` while dragging. |
-| Top bar | `.play-header`, `.brand`, `.hud-actions`, `.icon-btn` | `hud.css` | Brand (the site's home), Classic site, time, and the Sound, Fast travel, View whole planet and Menu icon buttons (a speaker, a map pin, the earth and a hamburger, named by `aria-label`; View whole planet carries `aria-pressed` and is made by its chunk once the planet is complete: [full planet](../poc-3d-navigation/full-planet.md)). Fast travel (T) is the menu dialog's travel page: a tile per place (`.travel-grid`, `.travel-tile`: its sign on an accent disc, its name, what's inside, its number key; the plaza is H), the arrow keys moving between tiles. It never wraps (the brand shortens on narrow screens). |
-| Focus lane | `.lane` | `hud.css` | The bottom-centre slot above the hotbar. It holds one of: talk box, stand-up prompt, action prompt, preview card. |
-| Action prompt | `.seat-prompt.action-prompt` | `hud.css` | Icon + verb + object + `.kbd`. It's a real button (a click or tap does the same as <kbd>E</kbd>). |
-| Preview card | `.preview-card` | `hud.css` | The landmark's eyebrow, title and one line, with Enter to open. |
-| Talk box | `.talk-box` | `hud.css` | Name, the line (typed; instant under reduced motion), "more" cue, Next (<kbd>E</kbd>) and Close (<kbd>Space</kbd>) actions. |
-| Aside | `.aside` (`.site-card`) | `hud.css` | Bottom left: the site card (a build goal's needs). |
-| How to play | `.menu-dialog`, `.help-list` | `components.css` | The menu dialog's help page (the notice board, or Menu → Show controls): the controls with inline `kbd`, or the touch gestures, and tips. |
-| Toast | `.toast` | `hud.css` | Top centre, one at a time, announced; 4 to 9 s by length. |
-| View controls | `.view-controls`, `.compass`, `.view-home` | `hud.css` | The compass and Reset, bottom right. Turning and tilting without a drag are the menu's View group (`.menu-view`). |
-| Character picker | `.character-picker`, `.avatar-btn` | `hud.css` | A radio group of portraits, top right. |
+| Button | `.btn` | `button.css` | Label (verb first), optional icon (`Icon`, `aria-hidden`), optional `.kbd`. Variants: default (soft surface), `.primary` (the accent; one per view), `.icon-btn` (icon only, with an `aria-label`). Height `--c-btn-h`, 44 px minimum target. |
+| Key cap | `kbd` | `key-cap.css` | A light cap with dark text on both surfaces. It shows a key; it's never the only label. |
+| Card | `.card`, `.card-title`, `.actions` | `card.css` | The surface's `bg`, `--radius-lg`, `--shadow-card`. An optional eyebrow, a title, a body and `.actions`. Landmark cards carry `--accent` as a top rule. |
+| Dialog | `.dialog`, `.dialog-body`; the reading overlay `.reading-overlay` | `dialog.css`, `scroll-area.css`; `reading-overlay.css` | Native `<dialog>` (focus is trapped and restored; <kbd>Space</kbd> closes, and <kbd>Esc</kbd> too, §6.7). Title, body, actions with the primary action first; Close shows <kbd>Space</kbd>. |
+| Menu, check, radio group | `.menu-dialog`, `.menu-view`, `.check`, `.radio-group`, `.help-list` | `menu-dialog.css` | The menu's groups, its settings rows (sound, time, larger text) and How to play's list; Close kept in reach. |
+| Time badge | `.time-badge` | `time-badge.css` | The clock chip in the top bar; `.time-scrubbing` while dragging. |
+| Top bar | `.play-header`, `.brand`, `.hud-actions`, `.icon-btn` | `play-header.css`; fast travel `fast-travel.css` | Brand (the site's home), Classic site, time, and the Sound, Fast travel, View whole planet and Menu icon buttons (a speaker, a map pin, the earth and a hamburger, named by `aria-label`; View whole planet carries `aria-pressed` and is made by its chunk once the planet is complete: [full planet](../poc-3d-navigation/full-planet.md)). Fast travel (T) is the menu dialog's travel page: a tile per place (`.travel-grid`, `.travel-tile`: its sign on an accent disc, its name, what's inside, its number key; the plaza is H), the arrow keys moving between tiles. It never wraps (the brand shortens on narrow screens). |
+| Focus lane | `.lane` | `lane.css` | The bottom-centre slot above the hotbar. It holds one of: talk box, stand-up prompt, action prompt, preview card. |
+| Action prompt | `.seat-prompt.action-prompt` | `action-prompt.css` | Icon + verb + object + `.kbd`. It's a real button (a click or tap does the same as <kbd>E</kbd>). |
+| Preview card | `.preview-card` | `preview-card.css` | The landmark's eyebrow, title and one line, with Enter to open. |
+| Talk box | `.talk-box` | `talk-box.css` | Name, the line (typed; instant under reduced motion), "more" cue, Next (<kbd>E</kbd>) and Close (<kbd>Space</kbd>) actions. |
+| Aside | `.aside` (`.site-card`) | `site-card.css` | Bottom left: the site card (a build goal's needs). |
+| How to play | `.menu-dialog`, `.help-list` | `menu-dialog.css` | The menu dialog's help page (the notice board, or Menu → Show controls): the controls with inline `kbd`, or the touch gestures, and tips. |
+| Toast | `.toast` | `toast.css` | Top centre, one at a time, announced; 4 to 9 s by length. |
+| View controls | `.view-controls`, `.compass`, `.view-home` | `view-controls.css` | The compass and Reset, bottom right. Turning and tilting without a drag are the menu's View group (`.menu-view`). |
+| Character picker | `.character-picker`, `.avatar-btn` | `character-picker.css` | A radio group of portraits, top right. |
 | Cursors | `cursors.css` (generated) | `cursors.css` | The game's own mouse cursors (the website keeps the system's): **arrow** (the default), **pointer** (a button, a link, a slot, a recipe, a landmark to travel to), **walk** (over the ground: the arrow with the gold ring the click leaves), **not allowed** (a disabled control), **grab** and **grabbing** (dragging the planet's view, turning Chopper on his card), **ew-resize** (the clock's scrubber). Font Awesome Free shapes outlined in wood ink and cream with a soft shadow, so they read on the sky, the grass and the panels; 32 px with a 64 px copy for sharp screens (`image-set`), a system fallback on each. Made by `node scripts/build-cursors.mjs` (images in `src/assets/cursors/`, hotspots found from the pixels), which also writes the states' selectors: never edit `cursors.css` by hand. The ground state is `data-cursor="walk"` on the game region (a ray–sphere test on every mouse move, `WalkMarker`), a landmark under the mouse is `data-hover="landmark"`. |
-| Hotbar and slot | `.hotbar`, `.slot`, `.slot-key`, `.slot-count` | `panels.css` | Nine slots, the backpack and the whistle. The selected slot uses `--surface-highlight`. |
-| Backpack, crafting, paint | `.inv-panel`, `.craft-panel`, `.paint-panel` | `panels.css` | Wood panels on the overlay layer, at a fixed size: head (title, help button, tools, close) and sections; no help text of their own. The crafting screen is the inventory panel in two columns: the recipe book down the left, the detail over the backpack and hotbar (`.craft-book`, `.craft-grid`, `.craft-need`; [crafting screen](./crafting-screen.md)). |
-| Help popover | `.help-pop`, `.help-btn`, `.help-card`, `.help-keys` | `panels.css` | A panel's keys and gestures behind a question-mark button ("Show controls") in its head: shown on hover or focus, pinned by a press, closed by <kbd>Escape</kbd> or leaving (WCAG 1.4.13). A key / what-it-does list per group, the touch gestures on touch. A game panel never spells its controls out inline. |
+| Hotbar and slot | `.hotbar`, `.slot`, `.slot-key`, `.slot-count` | `hotbar.css`, `slot.css` | Nine slots, the backpack and the whistle. The selected slot uses `--surface-highlight`. |
+| Backpack, crafting, paint | `.inv-panel`, `.craft-panel`, `.paint-panel` | `panel.css`, `inventory-panel.css`, `craft-pane.css`, `paint-picker.css` | Wood panels on the overlay layer, at a fixed size: head (title, help button, tools, close) and sections; no help text of their own. The crafting screen is the inventory panel in two columns: the recipe book down the left, the detail over the backpack and hotbar (`.craft-book`, `.craft-grid`, `.craft-need`; [crafting screen](./crafting-screen.md)). |
+| Help popover | `.help-pop`, `.help-btn`, `.help-card`, `.help-keys` | `help-popover.css` | A panel's keys and gestures behind a question-mark button ("Show controls") in its head: shown on hover or focus, pinned by a press, closed by <kbd>Escape</kbd> or leaving (WCAG 1.4.13). A key / what-it-does list per group, the touch gestures on touch. A game panel never spells its controls out inline. |
 
-Adding a component: give it a class family, put it in the right stylesheet, use only surface roles and tokens (add `c.*` tokens if needed), add its row here, and let the design-system test run.
+The rest of the game's own UI has a stylesheet each too: the loading scene (`load-scene.css`), the page (`play-page.css`: the body, the skip link, the container), the overlay and its centred card (`overlay.css`), the planet's region (`planet-region.css`), the travel fade (`travel-fade.css`), the floating stick (`stick.css`), a landmark's name in the world (`world-label.css`), what full planet hides (`full-planet.css`) and Chopper's card (`chopper-card.css`).
+
+Adding a component: give it a class family and its own stylesheet in `src/game/ui/styles/` (opening with the layer order, everything inside `@layer components`, or `primitives` for a shared part), import it from the component that writes the classes, use only surface roles and tokens (add `c.*` tokens if needed), give it an entry in the gallery (§9.1), add its row here, and let the design-system test run.
 
 ### 4.1 Primitives
 
@@ -101,7 +131,7 @@ The game's TSX never writes a `<button>`, `<dialog>` or `<kbd>` itself: it uses 
 |---|---|---|
 | `Button` | [ui/primitives.tsx](https://github.com/prabinpebam/atiya/blob/main/src/game/ui/primitives.tsx) | `type="button"`, `.btn` and `variant` (`primary`, or `bare` for controls with their own anatomy: slots, travel tiles, the compass, swatches, portraits). States are native: `disabled`, `aria-disabled` (busy or unavailable but focusable, like the crafting button), `aria-pressed`, `aria-expanded`. Every other prop (refs, handlers, `data-*`, `className` for layout) passes through. |
 | `IconButton` | ui/primitives.tsx | An icon-only button: a required `label` (its `aria-label`) and an `icon` (through `Icon`); square `.icon-btn` unless `pill`. A button with an icon and a key cap but no words is a `Button` with an `aria-label`. |
-| `KeyCap` | ui/primitives.tsx | The key cap: the `kbd` element itself (styled by the `kbd` rule in `components.css`), so it costs the initial bundle nothing. |
+| `KeyCap` | ui/primitives.tsx | The key cap: the `kbd` element itself (styled by `key-cap.css`), so it costs the initial bundle nothing. |
 | `Dialog` | [ui/overlays.tsx](https://github.com/prabinpebam/atiya/blob/main/src/game/ui/overlays.tsx) | The native modal `dialog`: `open` keeps it in step (`showModal`, `close`), and `onDismiss` hears Esc, Space (`spaceBack`, §6.7) and the backdrop. `.dialog` unless `bare` (the reading overlay, which ignores its backdrop). |
 | `Panel` | ui/overlays.tsx | A wood panel: the `.surface-wood` backdrop (`backdrop` props, `outside` for what floats over it) round a modal `role="dialog"` `.inv-panel`. |
 | `ScrollArea` | ui/overlays.tsx | A scroller with the thin scrollbar (`.scroll-thin`), a `div` or a `ul`. |
@@ -255,6 +285,16 @@ The copy lint in the design-system test rejects emoji, "click here", "OK", "Subm
 - **Targets:** at least 44 × 44 px (`--c-btn-h`, the view buttons on touch, slots). One exception, with its reason: hotbar slots are 28 px on a phone held upright (WCAG 2.5.8's 24 px minimum), because nine slots, the backpack and the whistle must fit 360 px ([touch controls](touch.md) §5.4).
 - **Text:** functional text is at least 14 px (`--text-sm`); the smaller sizes are only for eyebrows and counts. "Larger text" in the menu scales everything by 112.5 % and is saved (`site.largeText`).
 - **Focus:** a visible ring in the surface's `--surface-focus`; dialogs trap focus and give it back.
+- **Forced colours** (Windows contrast themes, `@media (forced-colors: active)`): the HUD and panels take the system's colours; the planet's canvas can't. Each stylesheet ends with its controls' rules:
+  - every control keeps a boundary (`ButtonText`) and its focus ring in `Highlight`;
+  - a slot or a swatch, drawn by a fill and an inset shadow that forced colours drop, gets a border;
+  - a state shown only by a fill or a shadow gets a `Highlight` border: the selected slot, avatar and photo, a spread or drop target, the place you're at, the running stick;
+  - panels and tooltips get an outline, so they don't melt into the scrim;
+  - the paint chips and the compass keep their own colours (`forced-color-adjust: none`), because their colours are what they show.
+
+  System colours appear only in these blocks, and only `ButtonText`, `ButtonFace`, `ButtonBorder`, `Canvas`, `CanvasText`, `Highlight`, `HighlightText`, `GrayText` and `LinkText` (tested).
+- **More contrast** (`prefers-contrast: more`, iOS Increase Contrast): muted text, outlines and rules take their strong roles (§3), at 7:1 for the text and 3:1 for the lines, and never weaker than the plain role (tested).
+- **Logical properties:** margins, paddings, borders and positions use their logical names (`margin-block-start`, `padding-inline`, `border-block-end`, `inset-inline-start`, …), and text aligns to `start` or `end`, so the HUD can follow a right-to-left language. The game is left-to-right today, so they draw exactly as the physical ones did. Positions the code sets from a pointer or a measured box (a tooltip, a crafted item's flight) stay `left` and `top`: they're screen coordinates.
 - **Motion:** every animation uses `--dur-*` and `--ease-*`, and `prefers-reduced-motion` shortens it to nothing (the talk box then shows lines instantly).
 - **Text twins (P7):** prompts are buttons with names; toasts, talk lines and results are announced in the polite live region.
 - **Keys:** scoped to the focused game region; Tab and the browser's keys are never taken.
@@ -268,27 +308,56 @@ The copy lint in the design-system test rejects emoji, "click here", "OK", "Subm
   - no colour literals and no `--p-*` in component CSS;
   - z-index only from layers; font sizes only from `--text-*`, a component token or `1em`; weight and leading from their scales; radius from the scale;
   - durations and easing from motion tokens, and no px/rem spacing literals;
-  - every value is a token: a CSS parser (`postcss`, pinned) reads the four stylesheets and finds no raw size, offset, blur, turn, time or scale outside an allow-list (`0`, `1em`, percentages, `100vw`/`100dvh`, quarter turns, and the named `.sr-only` and skip-link values), and every `@media` query at a breakpoint token;
-  - only the three calculated layout properties (`--slot`, `--hotbar-h`, `--lane-bottom`) and the four OS safe-area insets (`--safe-*`) are free custom properties;
+  - every value is a token: a CSS parser (`postcss`, pinned) reads every game stylesheet (found by glob, so a new one can’t escape: `base.css` and every `.css` under `src/game/`) and finds no raw size, offset, blur, turn, time or scale outside an allow-list (`0`, `1em`, percentages, `100vw`/`100dvh`, quarter turns, and the named `.sr-only` and skip-link values), and every `@media` query at a breakpoint token;
+  - only the three calculated layout properties (`--slot`, `--hotbar-h`, `--lane-bottom`) and the four OS safe-area insets (`--safe-*`) are free custom properties, besides the strong roles re-pointed for more contrast;
   - inline styles have no colour literals;
   - contrast on both surfaces, and wood defines every paper role;
   - the copy lint;
-  - no `<button>`, `<kbd>` or `<dialog>` outside the primitives (§4.1), `IconButton` requires its `label`, and the initial bundle never imports the containers.
+  - no `<button>`, `<kbd>` or `<dialog>` outside the primitives (§4.1), `IconButton` requires its `label`, and the initial bundle never imports the containers;
+  - hover only where it can hover: every `:hover` rule inside `@media (hover: hover)`, each with an `:active` twin outside it (§10);
+  - no physical property (`margin-top`, `left`, …) and no `text-align: left` or `right` (§8);
+  - every control family (every class with a hover, press or focus state, and the focusable controls without one: `.icon-btn`, `.menu-item`, `.seat-prompt`, `.time-badge`, `.chopper-thumb`, `.craft-cell`) has a rule inside `@media (forced-colors: active)`, system colours only there, and the more-contrast block re-points muted text, borders and rules (§8);
+  - every `c.*` group names its owner, and only its owner reads it (§3);
+  - every export of the game's UI files (`src/game/ui/`, the crafting chunk's `ui.tsx`, the home chunk's `TalkBox.tsx`) has a `/** … */` comment right before it, and every prop of the primitives and containers has one;
+  - styles beside their components, in layers (§4; review DS2-04): `src/styles/` holds only `global.css`, `base.css` and the two generated files; `global.css` declares the layer order and imports `tokens.css` and `cursors.css` into their layers; every game stylesheet opens with the order and holds only its own layer (`base`, `primitives` for the primitives' and shared parts' sheets, `components` for the rest), so no game style is outside a layer; `base.css` names no component's class; and every stylesheet in `src/game/ui/styles/` is imported by the modules that write its classes, every rule in it naming a class (or attribute) one of them writes. A rule no component owns fails;
+  - the gallery (§9.1; review DS2-05): every primitive and every exported game UI component is drawn by the gallery (`<Name` in `src/game/gallery/`), every view the screenshot test visits is drawn, the page exists only in development and test builds, and it imports nothing of the website.
 - `tests/unit/lanes.test.ts` covers the arbiter, the aside, the compact rule, toast timing, the guard and the target tiers.
 - The E2E test "one thing asks at a time" talks to Prabin by a landmark, checks that only the talk box shows, and checks that <kbd>E</kbd> advances it. The E2E group "larger text" turns the setting on and checks that the menu, fast travel, the backpack and the hotbar keep every label whole and on screen.
 - **To add a token:**
-  1. Add it to `tokens.json` with `$type`, `$value` and `$description`, in the right tier.
+  1. Add it to `tokens.json` with `$type`, `$value` and `$description`, in the right tier. A new `c.*` group names its owner in `$extensions["game.owner"]`.
   2. Run `node scripts/build-tokens.mjs`.
   3. Use the CSS variable.
+- **To add a component:** a `/** … */` comment before its export saying what it shows and does; its own stylesheet in `src/game/ui/styles/`, imported by it (§4); an entry in the gallery (§9.1); a control's class gets its forced-colours rule (§8), and its hover goes inside `@media (hover: hover)` with an `:active` twin.
 - **To change a colour:** change the primitive or the role; the contrast test tells you if it still passes on both surfaces.
 - **Exceptions:** the lint's exceptions are listed in the test with a reason. Add one only with a reason.
-- **The audit:** what the [design systems audit](../site-ui/design-system-audit.md) found here and closed (DS-10 to DS-14) is recorded there.
+- **The audit:** what the [design systems audit](../site-ui/design-system-audit.md) found here and closed (DS-10 to DS-14) is recorded there; `node scripts/design-system-audit.mjs` re-takes the measures (DS2-04: game rules outside a cascade layer and shared stylesheets beyond `base.css`, both 0; DS2-05: the primitives in the gallery).
+
+### 9.1 The gallery
+
+The game's primitives and panels have a page of their own, `/play/gallery/` (review DS2-05, decided 19 October 2026): **in development and in `--mode test` builds only**, like the test hook. `integrations/game-gallery.mjs` injects the route only when the mode isn't production (the rule is pure in `integrations/game-gallery-rules.mjs`, unit-tested), and `verify:prod` fails if the page or its marker reaches `dist/` (`scripts/size-report.mjs`, "no game gallery in the production build"). It never imports the website, and nothing in the game imports it.
+
+- **What it draws:** the real components from sample data (`src/game/gallery/samples.ts`: a real store and inventory behind a stand-in controller whose actions do nothing, the seven buildings with made-up words, a stand-in crafting chunk), one view at a time (`src/game/gallery/views.ts`): the controls (every `Button` variant and state, `IconButton`, `KeyCap`, `Icon`, the slots, `ScrollArea`), the HUD (the top bar, the prompt, the toast, the clock, the hotbar, the view controls, the character picker), seated, the preview card, the talk box, the site card, `Dialog`, `Panel`, the menu, How to play, fast travel, the backpack, the chest, the crafting table, the furnace, the palette, the reading overlay, the lost view and Chopper's card.
+- **Surfaces:** `?surface=paper` (light) or `?surface=wood` (its own look, dark; `&theme=light` for wood's light look, which is paper's colours); `?view=<id>` for one view, the index lists them.
+- **Screenshots:** `tests/e2e/visual-game.spec.ts` (the `visual` project) shoots every view on both surfaces at 360, 768 and 1280 px, the 3D canvas and the framed page masked.
+- **Adding a component:** give it an entry (a view, or a place in one) drawn by the component itself; the unit test fails on an exported game UI component the gallery doesn't draw.
+
+### As built: styles and gallery
+
+19 October 2026 (review DS2-04, DS2-05). `hud.css` (953 lines), `panels.css` (765) and `components.css` were split into 35 stylesheets in `src/game/ui/styles/`, each imported by its owner, and every game style was put in a layer. The look is unchanged, checked three ways: a static comparison of the old and the new cascade (every pair of declarations that could meet on one element: no winner changed but those noted here); the computed style of every element of every gallery view, before and after, on paper and wood, at three widths, in forced colours and with reduced motion (210 captures, all identical); and the game's own states (the first paint with the welcome, the talk box, the HUD, the menu, fast travel, the backpack, a preview card, the crafting table, at 1280 and 390 px) drawn with the old and the new styles on the same page (identical computed styles, pixel-identical screenshots). Changes that draw nothing differently:
+
+- dead rules removed: `.btn.big`, `.btn.sm`, `.menu-list` and `.menu-item` (no markup wrote them); `--c-btn-h-lg` is deprecated, nothing reads it;
+- the talk box's name plate and line lost two margins `.card p` always outranked (the card's paragraph gap is what they had, and have);
+- `[data-gate-hidden]` (the gate hiding the loading scene and the welcome) moved from the base to the loading scene's stylesheet, so it still beats `.load-scene`;
+- under the touch input on a narrow screen, a preview card's row now takes the game's own pointer (the cursors layer) instead of the system's; a finger shows no cursor.
+
+The CSS a component imports is hoisted into `/play`'s head by Astro; the sheets `play.astro` also imports for its first paint (the top bar, the loading scene, the welcome, the button, key cap, icon, card and lane) are in the page's CSS twice in a build (about 7 KB before compression), the cost of drawing them before any script in development as well.
 
 ## 10. Touch
 
 The rules for playing under a thumb; the research, the critique and the plan are in [touch controls](touch.md).
 
 - **The last input decides.** `<html data-input="touch|keys">` follows the last `pointerdown` or `keydown` (set by the touch chunk, mirrored in the store as `input`). Style touch-only changes with `[data-input='touch']`, never with a pointer media query: a touchscreen laptop can switch back and forth.
+- **Hover only where it can hover.** Every `:hover` rule sits inside `@media (hover: hover)`, so a tap never leaves a control looking hovered, and has an `:active` twin outside it that shows the same change while a finger presses (as the website does; tested).
 - **Full-bleed world, safe controls.** The game viewport uses `viewport-fit=cover`; `body.play`, the loading scene, the game container and the canvas fill `100dvh` edge to edge. The four `--safe-*` layout properties read `env(safe-area-inset-*)`. Every edge-anchored interactive region composes its token spacing with those insets: header, hotbar and focus lane, aside, compass, picker, dialogs, panels and the reading overlay. Never inset the canvas or world visuals. Both portrait and landscape are covered by the E2E test "the world fills iOS while controls stay inside portrait and landscape safe areas".
 - **In touch mode:** keycaps in buttons and the hotbar's slot numbers hide; Prabin's welcome, the How to play page and the announcements use the touch copy (`input/touchCopy.ts`); the compass and Reset are 44 px.
 - **Structure previews on phones:** at widths up to the `3xl` breakpoint (1100 px), touch input shows one compact row in the bottom focus lane, above the hotbar. The whole row is a named button: the building's title and Open, with a 44 px minimum target. Tapping opens the same reading overlay and closing restores focus to the row. The kicker, summary and classic-page link stay in the full preview for keyboard or mouse input and larger screens; the classic site remains reachable from the header. The E2E test "structure preview is one tappable bottom row on a phone" checks both orientations, 320 px, Larger text, opening, focus restoration and switching back to keys.

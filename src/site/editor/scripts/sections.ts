@@ -19,7 +19,7 @@ const FOCUS = 'editor.sections.focus';
 export function initSections(root: HTMLElement, signal: AbortSignal) {
   const state = JSON.parse(root.querySelector('[data-editor-sections-state]')?.textContent ?? '{}') as { structure: SiteStructure; version: string };
   const on = (type: string, fn: (e: Event) => void) => root.addEventListener(type, fn, { signal });
-  const titleOf = (id: string) => root.querySelector(`[data-manager-section="${id}"] .section-name`)?.textContent?.trim() ?? id;
+  const titleOf = (id: string) => root.querySelector(`[data-manager-section="${id}"] [data-link-name]`)?.textContent?.trim() ?? id;
   const nameOf = (page: string) => root.querySelector<HTMLElement>(`[data-manager-row="${page}"]`)?.dataset.name ?? page;
   const say = (form: Element | null, text: string) => {
     const p = form?.querySelector<HTMLElement>('[data-editor-form-issue]');

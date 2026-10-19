@@ -11,6 +11,9 @@ import { Button, KeyCap } from './primitives';
 import { Dialog } from './overlays';
 import { applyGameTheme, gameTheme, gameThemeStorage, GAME_THEME_EVENT } from '../platform/theme';
 import { RESIDENTS } from '../platform/residents';
+import './styles/dialog.css';
+import './styles/menu-dialog.css';
+import './styles/fast-travel.css';
 
 const toClassic = () => prefs.setMode('classic');
 
@@ -200,6 +203,11 @@ function HowToPlay({ controller }: { controller: GameController }) {
   );
 }
 
+/**
+ * The game's menu dialog, three pages as the store's `menuOpen` says: the menu (Places, View, Rest and
+ * Settings), How to play (`help`) and fast travel (`travel`). On the travel page a place's number key flies
+ * there, H returns to the plaza and T closes.
+ */
 export default function MenuDialog({ controller }: { controller: GameController }) {
   const menuOpen = useStore(controller.store, (s) => s.menuOpen);
   const help = menuOpen === 'help';

@@ -30,7 +30,7 @@ const { label, name, value = 'on', id = `switch-${stableId(Astro, 'Switch')}`, c
 const hasSlot = Astro.slots.has('default');
 ---
 
-<label class="switch" data-disabled={disabled ? '' : undefined} {...rest}>
+<label class="switch" data-disabled={disabled ? '' : undefined} data-press {...rest}>
   <span class="label">{hasSlot ? <slot /> : label}</span>
   <input class="input" type="checkbox" role="switch" id={id} name={name} value={value} checked={checked} disabled={disabled} />
 </label>
@@ -47,15 +47,8 @@ const hasSlot = Astro.slots.has('default');
     cursor: pointer;
   }
 
-  .switch[data-disabled] {
-    opacity: var(--opacity-disabled);
-    cursor: not-allowed;
-  }
-
   .label {
-    font-size: var(--text-md);
-    font-weight: var(--weight-medium);
-    line-height: var(--leading-ui);
+    font: var(--type-control);
   }
 
   .input {

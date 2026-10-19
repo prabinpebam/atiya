@@ -218,7 +218,7 @@ The HUD keeps its own touches: a touch that starts on a button never becomes a s
 | 5 | A tap still walks to a spot or uses a building (WCAG 2.5.7) | E2E | Done |
 | 6 | Keycaps and slot numbers hide, and the copy follows the last input | E2E (start card, hint, prompt keycap hidden); unit (`forTouch`) | Done |
 | 7 | View buttons and Reset are 44 px on touch | E2E (measured 44 × 44) | Done |
-| 8 | No double-tap zoom on HUD buttons, no callout, no pull-to-refresh | CSS review ([`hud.css`](https://github.com/prabinpebam/atiya/blob/main/src/styles/hud.css)); needs a pass on a real iPhone and Android phone | Done (emulated) |
+| 8 | No double-tap zoom on HUD buttons, no callout, no pull-to-refresh | CSS review ([`planet-region.css`](https://github.com/prabinpebam/atiya/blob/main/src/game/ui/styles/planet-region.css) and each control's own stylesheet beside it); needs a pass on a real iPhone and Android phone | Done (emulated) |
 | 9 | Desktop unchanged: mouse drag turns the view, keyboard walks | "view controls" E2E (4 tests) | Done |
 | 10 | Budgets met: initial ≤ 450 KB, on demand ≤ 80 KB; nothing loads on a mouse-only device | `verify:prod`; the import is behind `(any-pointer: coarse)` | Done |
 | 11 | Installed iOS fills the display while controls avoid cutouts and the home indicator in portrait and landscape | E2E "the world fills iOS while controls stay inside portrait and landscape safe areas"; design-system unit contract | Done |

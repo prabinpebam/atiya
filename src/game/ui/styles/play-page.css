@@ -1,0 +1,41 @@
+/* The /play page’s own (play.astro): the body over the sky, the skip link, and the game’s container.
+ * Its owner imports it (src/pages/play.astro); tokens only (tests/unit/designSystem.test.ts). */
+@layer tokens, base, primitives, components, cursors;
+
+@layer components {
+  .skip-link {
+    position: absolute;
+    inset-inline-start: calc(var(--space-3) + var(--safe-left));
+    inset-block-start: -100px;
+    z-index: var(--layer-skip);
+    padding: var(--space-2-5) var(--space-4);
+    border-radius: var(--radius-sm);
+    background: var(--color-toast-bg);
+    color: var(--color-toast-text);
+    font-weight: var(--weight-semibold);
+    text-decoration: none;
+  }
+
+  .skip-link:focus {
+    inset-block-start: calc(var(--space-3) + var(--safe-top));
+  }
+
+  @media (forced-colors: active) {
+    .skip-link {
+      border: var(--border-base) solid CanvasText;
+    }
+  }
+
+  body.play {
+    height: 100dvh;
+    overflow: hidden;
+    /* no bounce or pull-to-refresh on phones */
+    overscroll-behavior: none;
+    background: linear-gradient(180deg, var(--color-sky-top) 0%, var(--color-sky-mid) 45%, var(--color-sky-low) 100%);
+  }
+
+  .game-container {
+    position: fixed;
+    inset: 0;
+  }
+}

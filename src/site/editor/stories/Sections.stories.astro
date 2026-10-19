@@ -1,0 +1,26 @@
+---
+import Example from '../../library/Example.astro';
+import Sections from '../kit/Sections.astro';
+import NavGroup from '../kit/NavGroup.astro';
+import NavRow from '../kit/NavRow.astro';
+import Pane from '../kit/Pane.astro';
+import TextField from '../../components/fundamentals/TextField.astro';
+import Switch from '../../components/fundamentals/Switch.astro';
+---
+
+<Example title="A form in sections" description="Narrow, every section in turn; from 40 rem wide (a container query on itself), the list of sections beside the chosen one (the inspector's script picks it)." layout="block">
+  <Sections name="story-page" label="Page settings (sample)">
+    <Fragment slot="nav">
+      <NavGroup label="Page">
+        <NavRow pick="story-sections-basics">Title and summary</NavRow>
+        <NavRow pick="story-sections-publishing" detail="Draft">Publishing</NavRow>
+      </NavGroup>
+    </Fragment>
+    <Pane name="story-sections-basics" title="Title and summary" titleId="story-sections-basics-title" data-current="">
+      <TextField label="Title" name="title" id="story-sections-title" />
+    </Pane>
+    <Pane name="story-sections-publishing" title="Publishing" titleId="story-sections-publishing-title">
+      <Switch label="In the navigation" name="inNav" id="story-sections-nav" />
+    </Pane>
+  </Sections>
+</Example>

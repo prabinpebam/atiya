@@ -7,6 +7,7 @@ import { grassEnv } from './world/grassEnv';
 import { prepareGround } from './world/Planet';
 import { preloadTextures, textureStatus, tierTextures } from './world/textures';
 import { RESIDENTS } from './platform/residents';
+import './ui/styles/planet-region.css';
 
 /** The page's loading scene (platform/greeting.ts), if the gate started it. */
 const loadScreen = () => (window as unknown as { __loadScreen?: { progress(f: number): void; live(): void } }).__loadScreen;

@@ -1,0 +1,120 @@
+---
+/**
+ * A radio drawn as a card: what it picks (its name, an optional line of detail under it in the detail slot,
+ * and an optional swatch or picture before them in the start slot) inside a bordered card, with the native
+ * radio hidden in it. The picked card takes the accent; keyboard focus rings the whole card. For a short
+ * list of radios with visible circles, use Radio.
+ * @tier fundamental
+ * @a11y A native radio, hidden but still focusable and announced, inside the card's label: the whole card picks it.
+ * @a11y Its words name it; the picked one is checked, and the card's border and fill say so too.
+ * @a11y At least 44 px tall.
+ * @key Arrow keys: move through radios with the same name
+ * @key Space: picks it
+ */
+
+interface Props {
+  /** The radio group's form name. */
+  name?: string;
+  /** The submitted value. */
+  value?: string;
+  /** Starts picked. */
+  checked?: boolean;
+  /** Can't be picked. */
+  disabled?: boolean;
+  /** The input's id (none by default: the label holds it, and a template copied by a script can't repeat one). */
+  id?: string;
+  /** Data attributes pass through to the card (the label). */
+  [data: `data-${string}`]: string | undefined;
+}
+
+const { name, value, checked = false, disabled = false, id, ...rest } = Astro.props;
+const start = Astro.slots.has('start');
+const detail = Astro.slots.has('detail');
+---
+
+<label class="radio-card" data-press data-focus-ring="inside" data-disabled={disabled ? '' : undefined} {...rest}>
+  <input class="input" type="radio" id={id} name={name} value={value} checked={checked} disabled={disabled} />
+  {
+    start && (
+      <span class="start">
+        <slot name="start" />
+      </span>
+    )
+  }
+  <span class="words">
+    <span class="name"><slot /></span>
+    {
+      detail && (
+        <span class="detail">
+          <slot name="detail" />
+        </span>
+      )
+    }
+  </span>
+</label>
+
+<style>
+  .radio-card {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    min-block-size: var(--size-touch);
+    padding: var(--space-2) var(--space-3);
+    border: var(--border-hairline) solid var(--color-rule);
+    border-radius: var(--radius-md);
+    background: var(--color-bg);
+    color: var(--color-text);
+    font-family: var(--font-ui);
+    cursor: pointer;
+  }
+
+  .radio-card[hidden] {
+    display: none;
+  }
+
+  .input {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  @media (hover: hover) {
+    .radio-card:hover {
+      border-color: var(--color-border);
+    }
+  }
+
+  .radio-card:active {
+    border-color: var(--color-border);
+  }
+
+  .radio-card:has(.input:checked) {
+    border-color: var(--color-accent);
+    background: var(--color-accent-soft);
+    color: var(--color-on-accent-soft);
+  }
+
+  .start {
+    display: inline-flex;
+    flex: none;
+  }
+
+  .words {
+    display: grid;
+    min-inline-size: 0;
+  }
+
+  .name {
+    font-weight: var(--weight-semibold);
+  }
+
+  .detail {
+    color: var(--color-text-muted);
+    font-size: var(--text-sm);
+  }
+
+  .radio-card:has(.input:checked) .detail {
+    color: var(--color-on-accent-soft);
+  }
+</style>

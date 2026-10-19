@@ -1,6 +1,8 @@
 /* ---------- The site's base: element defaults only (design-system.md §3) ----------
- * Tier 0 with the tokens: this file styles elements, two utilities and the overlay scrollbar's handle
- * (which scripts/scrollbars.ts adds), never a component. Every value
+ * Tier 0 with the tokens: this file styles elements, two utilities, the overlay scrollbar's handle
+ * (which scripts/scrollbars.ts adds) and the recipes several components share (a control's disabled
+ * state, the focus ring round a wrapper, a card that's one link, a field's parts, a check's layout), each
+ * keyed by a data attribute the components put on their own markup; never one component's look. Every value
  * comes from a token (tokens.css, generated); tests/unit/siteDesignSystem.test.ts enforces it. */
 
 *,
@@ -246,9 +248,122 @@ a:active {
   color: var(--color-accent-hover);
 }
 
-:focus-visible {
+/* the focus ring, written once: on what has the keyboard's focus, and round a wrapper that shows its
+   control's focus (data-focus-ring: "child", a list it holds, a strip's; "inside", a control deep in it,
+   a choice card's; "within", any focus in it, a drop zone's) */
+:focus-visible,
+[data-focus-ring='child']:has(> :focus-visible),
+[data-focus-ring='inside']:has(:focus-visible),
+[data-focus-ring='within']:focus-within {
   outline: var(--border-focus) solid var(--color-focus);
   outline-offset: var(--border-focus-offset);
+}
+
+/* ---------- Recipes the components share, written once (design-system.md §3) ---------- */
+
+/* a control you press (the fundamentals mark it data-press), while it's disabled (natively, with
+   aria-disabled or with data-disabled) and not busy: faded, and the cursor says no */
+[data-press]:is(:disabled, [aria-disabled='true'], [data-disabled]):not([aria-busy='true']) {
+  opacity: var(--opacity-disabled);
+  cursor: not-allowed;
+}
+
+/* a card that's one link, on its title: the card (data-card) holds it, and the title's link
+   (data-card-link) stretches over the whole card, which underlines it while it's hovered. Each card
+   rounds the ring to its own shape (border-radius on the link's ::after) and answers a press its own way */
+[data-card] {
+  position: relative;
+}
+
+a[data-card-link] {
+  color: var(--color-text);
+  text-decoration: none;
+}
+
+a[data-card-link]::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+}
+
+@media (hover: hover) {
+  [data-card]:hover a[data-card-link] {
+    text-decoration: underline;
+    text-decoration-thickness: var(--underline-thickness-strong);
+    text-decoration-color: var(--color-highlight);
+    text-underline-offset: var(--underline-offset);
+  }
+}
+
+a[data-card-link]:focus-visible {
+  outline: none;
+}
+
+a[data-card-link]:focus-visible::after {
+  outline: var(--border-focus) solid var(--color-focus);
+  outline-offset: var(--border-focus-offset);
+}
+
+/* a field's parts (TextField, Slider, Progress, FileField; a check's and a choice group's hint), named by
+   data-field-part: the root stacks its label, control and hint; a head sets a label and its value apart on
+   one line; a hint is muted; a note (a value beside its label, a field's Optional) is a little heavier */
+[data-field-part='root'] {
+  display: grid;
+  gap: var(--space-2);
+  font-family: var(--font-ui);
+  color: var(--color-text);
+}
+
+[data-field-part='head'] {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-4);
+}
+
+[data-field-part='hint'] {
+  color: var(--color-text-muted);
+  font: var(--type-hint);
+}
+
+[data-field-part='note'] {
+  color: var(--color-text-muted);
+  font: var(--type-note);
+}
+
+/* a check (Checkbox, Radio: the c.check family), named by data-check-part: its box or circle beside its
+   words (a label, a hint under it), on the label's first line when there's a hint */
+[data-check-part='root'] {
+  display: grid;
+  grid-template-columns: var(--c-check-size) minmax(0, 1fr);
+  align-items: center;
+  gap: var(--space-3);
+  min-height: var(--size-touch);
+  font-family: var(--font-ui);
+  color: var(--color-text);
+  cursor: pointer;
+}
+
+[data-check-part='root']:has([data-field-part='hint']) {
+  align-items: start;
+}
+
+[data-check-part='box'] {
+  position: relative;
+  display: grid;
+  place-items: center;
+  inline-size: var(--c-check-size);
+  block-size: var(--c-check-size);
+}
+
+[data-check-part='root']:has([data-field-part='hint']) [data-check-part='box'] {
+  margin-block-start: calc((var(--leading-ui) * var(--text-md) - var(--c-check-size)) / 2);
+}
+
+[data-check-part='words'] {
+  display: grid;
+  gap: var(--space-1);
+  min-width: 0;
 }
 
 ::selection {

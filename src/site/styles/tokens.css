@@ -138,6 +138,10 @@
   --weight-display: 460;
   --weight-medium: 500;
   --weight-semibold: 600;
+  --type-label: var(--weight-semibold) var(--text-sm)/var(--leading-ui) var(--font-ui);
+  --type-control: var(--weight-medium) var(--text-md)/var(--leading-ui) var(--font-ui);
+  --type-hint: var(--weight-regular) var(--text-sm)/var(--leading-ui) var(--font-ui);
+  --type-note: var(--weight-medium) var(--text-sm)/var(--leading-ui) var(--font-ui);
   --space-0: 0rem;
   --space-1: 0.25rem;
   --space-2: 0.5rem;
@@ -288,6 +292,8 @@
   --c-collection-timeline-line: var(--color-rule);
   --c-collection-timeline-mark: var(--color-highlight);
   --c-collection-timeline-when: var(--color-highlight-ink);
+  --c-collection-query-narrow: 36.45rem;
+  --c-collection-query-two-up: 49.5rem;
   --c-table-cell-min: 8rem;
   --c-table-row-heading-min: 10rem;
   --c-table-cell-max: 16rem;
@@ -304,6 +310,8 @@
   --c-image-shadow-y: 0.75rem;
   --c-image-shadow-blur: 1.25rem;
   --c-image-shadow: var(--color-shadow-strong);
+  --c-image-shadow-filter: drop-shadow(0rem var(--c-image-shadow-y) var(--c-image-shadow-blur) var(--c-image-shadow));
+  --c-image-shadow-room: calc(var(--c-image-shadow-y) + var(--c-image-shadow-blur));
   --c-quote-rule: var(--color-highlight);
   --c-quote-mark: var(--color-highlight);
   --c-dropcap-color: var(--color-accent);
@@ -339,6 +347,7 @@
   --c-carousel-peek-min: 2rem;
   --c-carousel-slide-min: 300px;
   --c-carousel-slide-max: 80;
+  --c-carousel-query-narrow: 36.45rem;
   --c-video-play: 4.5rem;
   --c-video-play-icon: 1.75rem;
   --c-contact-panel-frame: 40rem;
@@ -350,9 +359,13 @@
   --c-recommendation-mark: var(--color-highlight);
   --c-story-card-row-picture: 11rem;
   --c-story-card-row-picture-compact: 6rem;
+  --c-story-card-query-feature: 49.5rem;
+  --c-story-card-query-row: 36.45rem;
   --c-scroll-area-height-sm: 13rem;
   --c-scroll-area-height-md: 18rem;
   --c-scroll-area-height-lg: 24rem;
+  --c-split-view-list: 18rem;
+  --c-split-view-list-wide: 22rem;
   --c-minimap-width: 3.25rem;
   --c-minimap-width-touch: 3.75rem;
   --c-minimap-inset: 1rem;

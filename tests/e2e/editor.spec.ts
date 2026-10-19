@@ -384,7 +384,7 @@ test.describe('editor', () => {
     await noSeriousViolations(page, 'the wide inspector');
     // the form fills the inspector: the list's column runs to the footer, and the footer sits at the bottom edge
     const inspector = (await page.locator('[data-editor-inspector]').boundingBox())!;
-    const footer = (await form.locator('.block-actions').boundingBox())!;
+    const footer = (await form.locator('[data-form-foot]').boundingBox())!;
     const column = (await form.locator('.sections').boundingBox())!;
     expect(inspector.y + inspector.height - (footer.y + footer.height)).toBeLessThanOrEqual(2);
     expect(footer.y - (column.y + column.height)).toBeLessThanOrEqual(24);

@@ -15,7 +15,7 @@ import Heading from '../fundamentals/Heading.astro';
 import Text from '../fundamentals/Text.astro';
 import Image from '../fundamentals/Image.astro';
 import Tag from '../fundamentals/Tag.astro';
-import { PICTURE_SPECS } from '../../design/pictures';
+import { PICTURE_SPECS, type CardPicture } from '../../design/pictures';
 import { sizes } from '../../design/responsive';
 
 interface Props {
@@ -30,7 +30,7 @@ interface Props {
   /** When, or how long it takes to read. */
   meta?: string;
   /** The story’s picture in a 3:2 frame, shown whole unless display says otherwise (fill, actual size, tile), and its dark mode version if it has one. */
-  picture?: { src: string; srcset?: string; alt: string; width: number; height: number; display?: 'fill' | 'fit' | 'actual' | 'tile'; bg?: string; background?: boolean; rounded?: boolean; shadow?: boolean; dark?: { src: string; srcset?: string; width: number; height: number; bg?: string } };
+  picture?: CardPicture;
   /** standard: picture above; feature: picture beside, larger type; row: words first, a small picture at the end (a list); compact: no picture. */
   variant?: 'standard' | 'feature' | 'row' | 'compact';
   /** The title’s heading level: h2 on an index, h3 under a section heading. */
@@ -54,50 +54,57 @@ const pictureSizes =
         : sizes(['sm', '92vw'], ['lg', '46vw'], ['wide', '30vw'], { share: 'wide', of: 3 });
 ---
 
-<article class="card" data-variant={variant}>
-  {
-    picture && variant !== 'compact' && (
-      <div class="picture" data-shadow={picture.shadow ? '' : undefined}>
-        <div class="zoom">
-          <Image
-            src={picture.src}
-            srcset={picture.srcset}
-            sizes={pictureSizes}
-            alt={picture.alt}
-            width={picture.width}
-            height={picture.height}
-            ratio={PICTURE_SPECS.thumbnail.ratio}
-            display={picture.display ?? 'fit'}
-            rounded={picture.rounded !== false}
-            bg={picture.background && picture.bg ? { light: picture.bg, dark: picture.dark?.bg } : undefined}
-            dark={picture.dark}
-          />
+<article class="card" data-variant={variant} data-card>
+  <div class="layout">
+    {
+      picture && variant !== 'compact' && (
+        <div class="picture" data-shadow={picture.shadow ? '' : undefined}>
+          <div class="zoom">
+            <Image
+              src={picture.src}
+              srcset={picture.srcset}
+              sizes={pictureSizes}
+              alt={picture.alt}
+              width={picture.width}
+              height={picture.height}
+              ratio={PICTURE_SPECS.thumbnail.ratio}
+              display={picture.display ?? 'fit'}
+              rounded={picture.rounded !== false}
+              bg={picture.background && picture.bg ? { light: picture.bg, dark: picture.dark?.bg } : undefined}
+              dark={picture.dark}
+            />
+          </div>
         </div>
-      </div>
-    )
-  }
-  <div class="words">
-    {(topic || shared) && (
-      <p class="topic">
-        {shared && <Tag size="sm" tone="highlight" icon="key">{shared === 'private' ? 'Private' : 'Shared with you'}</Tag>}
-        {topic && <Tag size="sm">{topic}</Tag>}
-      </p>
-    )}
-    <Heading level={headingLevel} size={variant === 'feature' ? 'h2' : 'h3'}><a class="title" href={href}>{title}</a></Heading>
-    {dek && <Text variant={variant === 'feature' ? 'lead' : 'body'} tone="muted">{dek}</Text>}
-    {meta && <Text variant="meta">{meta}</Text>}
+      )
+    }
+    <div class="words">
+      {(topic || shared) && (
+        <p class="topic">
+          {shared && <Tag size="sm" tone="highlight" icon="key">{shared === 'private' ? 'Private' : 'Shared with you'}</Tag>}
+          {topic && <Tag size="sm">{topic}</Tag>}
+        </p>
+      )}
+      <Heading level={headingLevel} size={variant === 'feature' ? 'h2' : 'h3'}><a class="title" href={href} data-card-link>{title}</a></Heading>
+      {dek && <Text variant={variant === 'feature' ? 'lead' : 'body'} tone="muted">{dek}</Text>}
+      {meta && <Text variant="meta">{meta}</Text>}
+    </div>
   </div>
 </article>
 
 <style>
+  /* the card sizes its insides by its own width, not the screen's (the query at the end), and is one link
+     on its title (base.css: data-card, data-card-link) */
   .card {
-    position: relative;
+    container-type: inline-size;
+  }
+
+  .layout {
     display: grid;
     gap: var(--space-5);
     align-content: start;
   }
 
-  .card[data-variant='feature'] {
+  .card[data-variant='feature'] .layout {
     grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
     gap: var(--space-10);
     align-items: center;
@@ -110,10 +117,13 @@ const pictureSizes =
 
   /* a line of a list: the words first, the picture at the end of the row */
   .card[data-variant='row'] {
-    grid-template-columns: minmax(0, 1fr) var(--c-story-card-row-picture);
-    gap: var(--space-8);
     padding-block-start: var(--space-6);
     border-block-start: var(--border-hairline) solid var(--color-rule);
+  }
+
+  .card[data-variant='row'] .layout {
+    grid-template-columns: minmax(0, 1fr) var(--c-story-card-row-picture);
+    gap: var(--space-8);
   }
 
   .card[data-variant='row'] .picture {
@@ -132,7 +142,7 @@ const pictureSizes =
 
   /* the shadow on the frame, which clips the picture: drawn outside the clip, in the picture's shape */
   .picture[data-shadow] {
-    filter: drop-shadow(0 var(--c-image-shadow-y) var(--c-image-shadow-blur) var(--c-image-shadow));
+    filter: var(--c-image-shadow-filter);
   }
 
   .zoom {
@@ -160,49 +170,24 @@ const pictureSizes =
     display: flex;
     flex-wrap: wrap;
     gap: var(--space-2);
-    margin: 0;
-  }
-
-  .title {
-    color: var(--color-text);
-    text-decoration: none;
-  }
-
-  /* the whole card follows the title's link */
-  .title::after {
-    content: '';
-    position: absolute;
-    inset: 0;
-  }
-
-  @media (hover: hover) {
-    .card:hover .title {
-      text-decoration: underline;
-      text-decoration-thickness: var(--underline-thickness-strong);
-      text-decoration-color: var(--color-highlight);
-      text-underline-offset: var(--underline-offset);
-    }
-  }
-
-  .title:focus-visible {
-    outline: none;
   }
 
   .title:focus-visible::after {
-    outline: var(--border-focus) solid var(--color-focus);
-    outline-offset: var(--border-focus-offset);
     border-radius: var(--c-image-radius);
   }
 
-  @media (max-width: 56rem) {
-    .card[data-variant='feature'] {
+  /* narrower than c.story-card.query-feature (the index's column just under the md window), a feature's picture
+     goes over its words; narrower than c.story-card.query-row (the list's at the sm window), a row's
+     picture shrinks */
+  @container (width < 49.5rem) {
+    .card[data-variant='feature'] .layout {
       grid-template-columns: minmax(0, 1fr);
       gap: var(--space-5);
     }
   }
 
-  @media (max-width: 40rem) {
-    .card[data-variant='row'] {
+  @container (width < 36.45rem) {
+    .card[data-variant='row'] .layout {
       grid-template-columns: minmax(0, 1fr) var(--c-story-card-row-picture-compact);
       gap: var(--space-5);
     }

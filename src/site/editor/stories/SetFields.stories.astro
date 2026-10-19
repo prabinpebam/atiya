@@ -1,0 +1,13 @@
+---
+import Example from '../../library/Example.astro';
+import SetFields from '../components/SetFields.astro';
+import { CAROUSEL_BLOCK, GALLERY_BLOCK, MEDIA } from './samples';
+---
+
+<Example title="A gallery's settings" description="Its pictures (each with its caption, reordered by its handle or its moves), its layout and width, its style and its captions." layout="block">
+  <SetFields block={GALLERY_BLOCK} index={5} media={MEDIA} />
+</Example>
+
+<Example title="A carousel's settings" description="Its slides in place of a layout: its label, the neighbours, its pager and its buttons." layout="block">
+  <SetFields block={CAROUSEL_BLOCK} index={6} media={MEDIA} />
+</Example>

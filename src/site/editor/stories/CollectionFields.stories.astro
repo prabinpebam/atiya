@@ -1,0 +1,9 @@
+---
+import Example from '../../library/Example.astro';
+import CollectionFields from '../components/CollectionFields.astro';
+import { COLLECTION_BLOCK, MEDIA } from './samples';
+---
+
+<Example title="A collection's settings" description="Its items, a section each with a rich field for its words; then its layout and its pictures." layout="block">
+  <CollectionFields block={COLLECTION_BLOCK} index={4} media={MEDIA} />
+</Example>

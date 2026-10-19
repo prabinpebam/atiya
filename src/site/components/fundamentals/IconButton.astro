@@ -65,6 +65,7 @@ const accessibleLabel = `${label}${policy.newTab ? NEW_TAB_NOTE : ''}`;
   rel={policy.rel}
   type={isLink ? undefined : type}
   disabled={!isLink && disabled ? true : undefined}
+  data-press
   {...rest}
 >
   <svg class="glyph" viewBox={i.viewBox} aria-hidden="true" focusable="false" data-icon={i.name} data-icon-tone={variant === 'primary' ? 'tonal' : undefined}><Fragment set:html={i.body} /></svg>
@@ -175,11 +176,6 @@ const accessibleLabel = `${label}${policy.newTab ? NEW_TAB_NOTE : ''}`;
     transform: scale(var(--scale-press-small));
   }
 
-  .icon-button:disabled {
-    opacity: var(--opacity-disabled);
-    cursor: not-allowed;
-  }
-
   /* the tooltip: the label, on hover and keyboard focus */
   .icon-button[data-tip]::after {
     content: attr(data-label);
@@ -191,10 +187,7 @@ const accessibleLabel = `${label}${policy.newTab ? NEW_TAB_NOTE : ''}`;
     border-radius: var(--radius-pill);
     background: var(--color-text);
     color: var(--color-bg);
-    font-family: var(--font-ui);
-    font-size: var(--text-sm);
-    font-weight: var(--weight-medium);
-    line-height: var(--leading-ui);
+    font: var(--type-note);
     white-space: nowrap;
     pointer-events: none;
     opacity: 0;

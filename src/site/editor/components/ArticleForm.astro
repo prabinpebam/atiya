@@ -13,6 +13,10 @@ import Button from '../../components/fundamentals/Button.astro';
 import Checkbox from '../../components/fundamentals/Checkbox.astro';
 import Text from '../../components/fundamentals/Text.astro';
 import Link from '../../components/fundamentals/Link.astro';
+import ActionBar from '../../components/compounds/ActionBar.astro';
+import Form from '../kit/Form.astro';
+import IssueNote from '../kit/IssueNote.astro';
+import { PAGE_KINDS } from '../model/inspectorFields';
 import type { SelectOption } from '../../components/fundamentals/Select.astro';
 
 interface Props {
@@ -37,19 +41,10 @@ const { mode, sections = [], section = '', kind = 'note', article, protectable =
 
 {
   mode === 'new' ? (
-    <form class="form" data-editor-new novalidate>
+    <Form data-editor-new="">
       <TextField label="Title" name="title" required />
       <TextField label="Summary" name="summary" multiline rows={3} required hint="At most 240 characters: the standfirst and the card's line. Search results show about the first 160." />
-      <Select
-        label="Kind"
-        name="kind"
-        value={kind}
-        options={[
-          { value: 'note', label: 'Article', description: 'A story, a note or an essay' },
-          { value: 'page', label: 'Page', description: 'About, Contact and the like' },
-          { value: 'gallery', label: 'Gallery', description: 'A set of pictures with a few words' },
-        ]}
-      />
+      <Select label="Kind" name="kind" value={kind} options={PAGE_KINDS} />
       <Select label="Section" name="section" value={section} options={[{ value: '', label: 'Not on the site yet', description: 'Place it later from Sections' }, ...sections]} hint="Where it sits on the site, and so its address. A private page needs one too." />
       {
         protectable && (
@@ -72,54 +67,34 @@ const { mode, sections = [], section = '', kind = 'note', article, protectable =
           </Text>
         )
       }
-      <p class="issue" role="alert" data-editor-form-issue hidden />
-      <div class="actions">
+      <IssueNote data-editor-form-issue="" />
+      <ActionBar align="end">
         <Button variant="quiet" data-dialog-close="">
           Cancel
         </Button>
         <Button variant="primary" type="submit" icon="plus">
           Create the draft
         </Button>
-      </div>
-    </form>
+      </ActionBar>
+    </Form>
   ) : (
-    <form class="form" data-editor-delete-form data-article={article} novalidate>
+    <Form data-editor-delete-form="" data-article={article}>
       <Text variant="ui">
         <strong data-editor-delete-name /> goes, with its place on the site. This can't be undone here; until you save to remote, Discard on that screen can bring it back.
       </Text>
       <Checkbox label="Also delete the pictures in its folder that nothing else uses" name="media" />
-      <p class="issue" role="alert" data-editor-form-issue hidden />
-      <div class="actions">
+      <IssueNote data-editor-form-issue="" />
+      <ActionBar align="end">
         <Button variant="quiet" data-dialog-close="">
           Keep it
         </Button>
         <Button variant="primary" type="submit" icon="delete">
           Delete the draft
         </Button>
-      </div>
-    </form>
+      </ActionBar>
+    </Form>
   )
 }
-
-<style>
-  .form {
-    display: grid;
-    gap: var(--space-5);
-  }
-
-  .actions {
-    display: flex;
-    justify-content: end;
-    gap: var(--space-3);
-  }
-
-  .issue {
-    margin: 0;
-    color: var(--color-negative);
-    font-size: var(--text-sm);
-    font-weight: var(--weight-medium);
-  }
-</style>
 
 <script>
   import { each } from '../../scripts/page';

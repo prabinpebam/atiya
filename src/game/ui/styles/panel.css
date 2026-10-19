@@ -1,0 +1,72 @@
+/* Panel (ui/overlays.tsx; §4.1): a modal wood sheet over its scrim, and the head the screens put in it.
+ * Its owners import it (ui/overlays.tsx, ui/InventoryPanel.tsx, world/craft/ui.tsx); tokens only (tests/unit/designSystem.test.ts). */
+@layer tokens, base, primitives, components, cursors;
+
+@layer primitives {
+  .inv-panel {
+    scrollbar-width: thin;
+    scrollbar-color: var(--surface-text-muted) transparent;
+  }
+
+  .inv-panel::-webkit-scrollbar {
+    width: var(--c-scrollbar);
+    height: var(--c-scrollbar);
+  }
+
+  .inv-panel::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .inv-panel::-webkit-scrollbar-thumb {
+    border-radius: var(--radius-pill);
+    background: var(--surface-text-muted);
+  }
+
+  /* Panel: a modal wood sheet over a scrim (the backpack and chest, crafting, paint) */
+  .inv-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: var(--layer-overlay);
+    display: grid;
+    place-items: center;
+    /* panels stay clear of the top bar (a button and its padding), which stays usable above them */
+    padding: calc(var(--c-btn-h) + 2 * var(--space-3) + var(--safe-top)) calc(var(--space-2) + var(--safe-right)) calc(var(--space-2) + var(--safe-bottom))
+      calc(var(--space-2) + var(--safe-left));
+    background: var(--color-scrim-wood);
+  }
+
+  .inv-panel {
+    display: grid;
+    gap: var(--space-2-5);
+    padding: var(--space-3-5) var(--space-4) var(--space-3);
+    border-radius: var(--radius-md);
+    background: var(--surface-bg);
+    color: var(--surface-text);
+    box-shadow: var(--shadow-panel);
+    max-width: calc(100vw - var(--safe-left) - var(--safe-right) - var(--space-4));
+  }
+
+  .inv-head {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+  }
+
+  .inv-head h2 {
+    flex: 1;
+    margin: 0;
+    font-size: var(--text-lg);
+  }
+
+  .inv-head .btn {
+    min-height: var(--c-btn-h-sm);
+    padding: 0 var(--space-3);
+    font-size: var(--text-sm);
+  }
+
+  @media (forced-colors: active) {
+    .inv-panel {
+      outline: var(--border-hair) solid CanvasText;
+    }
+  }
+}

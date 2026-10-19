@@ -1,0 +1,17 @@
+---
+import Example from '../../library/Example.astro';
+import BlockForm from '../components/BlockForm.astro';
+import { BLOCKS, MEDIA } from './samples';
+---
+
+<Example title="A heading's settings" description="Its kind and place, its level, Turn into and Add subheading, and its actions in the foot." layout="block">
+  <BlockForm block={BLOCKS.heading} index={0} count={3} next="text" media={MEDIA} shown />
+</Example>
+
+<Example title="A quote's settings" description="Its words, who said it and its style." layout="block">
+  <BlockForm block={BLOCKS.quote} index={1} count={3} prev="heading" media={MEDIA} shown />
+</Example>
+
+<Example title="A picture's settings" description="The picture, whole, with Replace and Crop; how it's shown, and its caption." layout="block">
+  <BlockForm block={BLOCKS.figure} index={2} count={3} prev="quote" media={MEDIA} shown />
+</Example>

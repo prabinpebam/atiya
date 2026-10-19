@@ -22,6 +22,7 @@
  * @key Ctrl + Alt + 0 / 2 / 3 / 4, Ctrl + Shift + 7 / 8 / 9: turn a text block into a paragraph, a heading, a list or a quote (also while editing it)
  */
 import IconButton from '../../components/fundamentals/IconButton.astro';
+import MenuItem from '../../components/fundamentals/MenuItem.astro';
 import '../../styles/editor-tokens.css';
 
 interface Props {
@@ -75,30 +76,30 @@ const json = JSON.stringify(blocks).replace(/</g, '\\u003c');
       <span class="more-menu" id="chrome-more-menu" role="group" aria-label="More formatting" data-chrome-more-menu hidden></span>
     </span>
   </div>
-  <div class="table-insert row" data-chrome-table-insert="row" hidden>
+  <div class="table-insert" data-chrome-table-insert="row" hidden>
     <span class="table-insert-line" aria-hidden="true"></span>
     <IconButton label="Insert row here" icon="plus" size="sm" variant="primary" tooltip="none" />
   </div>
-  <div class="table-insert column" data-chrome-table-insert="column" hidden>
+  <div class="table-insert" data-chrome-table-insert="column" hidden>
     <span class="table-insert-line" aria-hidden="true"></span>
     <IconButton label="Insert column here" icon="plus" size="sm" variant="primary" tooltip="none" />
   </div>
   <div class="table-menu" id="chrome-table-menu" role="menu" aria-label="Table actions" data-chrome-table-menu hidden>
     <div role="group" aria-label="Row actions" data-chrome-table-menu-group="row">
       <span class="table-menu-label">Row</span>
-      <button type="button" role="menuitem" data-chrome-table-op="insert-row-above">Insert row above</button>
-      <button type="button" role="menuitem" data-chrome-table-op="insert-row-below">Insert row below</button>
-      <button type="button" role="menuitem" data-chrome-table-op="move-row-up">Move row up</button>
-      <button type="button" role="menuitem" data-chrome-table-op="move-row-down">Move row down</button>
-      <button type="button" role="menuitem" data-chrome-table-op="delete-row">Delete row</button>
+      <MenuItem data-chrome-table-op="insert-row-above">Insert row above</MenuItem>
+      <MenuItem data-chrome-table-op="insert-row-below">Insert row below</MenuItem>
+      <MenuItem data-chrome-table-op="move-row-up">Move row up</MenuItem>
+      <MenuItem data-chrome-table-op="move-row-down">Move row down</MenuItem>
+      <MenuItem data-chrome-table-op="delete-row">Delete row</MenuItem>
     </div>
     <div role="group" aria-label="Column actions" data-chrome-table-menu-group="column">
       <span class="table-menu-label">Column</span>
-      <button type="button" role="menuitem" data-chrome-table-op="insert-column-left">Insert column left</button>
-      <button type="button" role="menuitem" data-chrome-table-op="insert-column-right">Insert column right</button>
-      <button type="button" role="menuitem" data-chrome-table-op="move-column-left">Move column left</button>
-      <button type="button" role="menuitem" data-chrome-table-op="move-column-right">Move column right</button>
-      <button type="button" role="menuitem" data-chrome-table-op="delete-column">Delete column</button>
+      <MenuItem data-chrome-table-op="insert-column-left">Insert column left</MenuItem>
+      <MenuItem data-chrome-table-op="insert-column-right">Insert column right</MenuItem>
+      <MenuItem data-chrome-table-op="move-column-left">Move column left</MenuItem>
+      <MenuItem data-chrome-table-op="move-column-right">Move column right</MenuItem>
+      <MenuItem data-chrome-table-op="delete-column">Delete column</MenuItem>
     </div>
   </div>
 </div>
@@ -201,34 +202,34 @@ const json = JSON.stringify(blocks).replace(/</g, '\\u003c');
     pointer-events: auto;
   }
 
-  .table-insert.row {
+  .table-insert[data-chrome-table-insert='row'] {
     align-items: center;
     inline-size: var(--w, 0);
     transform: translateY(-50%);
   }
 
-  .table-insert.row .table-insert-line {
+  .table-insert[data-chrome-table-insert='row'] .table-insert-line {
     inline-size: 100%;
     border-block-start: var(--border-strong) solid var(--color-accent);
   }
 
-  .table-insert.row :global(button) {
+  .table-insert[data-chrome-table-insert='row'] :global(button) {
     justify-self: start;
     transform: translateX(-50%);
   }
 
-  .table-insert.column {
+  .table-insert[data-chrome-table-insert='column'] {
     justify-items: center;
     block-size: var(--h, 0);
     transform: translateX(-50%);
   }
 
-  .table-insert.column .table-insert-line {
+  .table-insert[data-chrome-table-insert='column'] .table-insert-line {
     block-size: 100%;
     border-inline-start: var(--border-strong) solid var(--color-accent);
   }
 
-  .table-insert.column :global(button) {
+  .table-insert[data-chrome-table-insert='column'] :global(button) {
     align-self: start;
     transform: translateY(-50%);
   }
@@ -260,34 +261,6 @@ const json = JSON.stringify(blocks).replace(/</g, '\\u003c');
     font-size: var(--text-sm);
     font-weight: var(--weight-semibold);
     line-height: var(--leading-ui);
-  }
-
-  .table-menu button {
-    min-block-size: var(--c-control-height-md);
-    padding-inline: var(--space-3);
-    border: 0;
-    border-radius: var(--radius-md);
-    background: transparent;
-    color: var(--color-text);
-    font-family: var(--font-ui);
-    font-size: var(--text-sm);
-    line-height: var(--leading-ui);
-    text-align: start;
-    white-space: nowrap;
-  }
-
-  .table-menu button:active {
-    background: var(--color-bg-hover);
-  }
-
-  @media (hover: hover) {
-    .table-menu button:hover {
-      background: var(--color-bg-hover);
-    }
-  }
-
-  .table-menu button:disabled {
-    color: var(--color-text-muted);
   }
 
   /* the format bar's groups, a little apart: marks; code and link; lists */

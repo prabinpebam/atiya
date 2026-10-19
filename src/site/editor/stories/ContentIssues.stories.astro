@@ -1,0 +1,9 @@
+---
+import Example from '../../library/Example.astro';
+import ContentIssues from '../components/ContentIssues.astro';
+import { ISSUES } from './samples';
+---
+
+<Example title="The content's problems" description="What a screen shows instead when a file changed outside edit mode no longer passes the content check." layout="block">
+  <ContentIssues issues={ISSUES} />
+</Example>

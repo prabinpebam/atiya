@@ -1,0 +1,9 @@
+---
+import Example from '../../library/Example.astro';
+import SettingsForms from '../components/SettingsForms.astro';
+import { PERSON, SETTINGS_THUMBS, SITE } from './samples';
+---
+
+<Example title="The site and your profile" description="Two cards, each saving its own file: the site's name, description and pictures; your name, role, bio, portrait and links." layout="block">
+  <SettingsForms site={SITE} siteVersion="sample" person={PERSON} personVersion="sample" thumbs={SETTINGS_THUMBS} />
+</Example>

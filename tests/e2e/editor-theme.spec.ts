@@ -17,7 +17,7 @@ const SITE = join(FIXTURE, 'content/site.json');
 const themeFile = (id: string) => join(FIXTURE, `content/themes/${id}.json`);
 const readJson = (file: string) => JSON.parse(readFileSync(file, 'utf8'));
 const panel = (page: Page) => page.locator('[data-theme-panel]');
-const item = (page: Page, name: string) => panel(page).locator('[data-theme-list] .item', { hasText: name });
+const item = (page: Page, name: string) => panel(page).locator('[data-theme-list] label', { hasText: name });
 const action = (page: Page, name: string) => panel(page).locator(`[data-theme-action="${name}"]`);
 /** The site page in the panel's frame. */
 const site = async (page: Page): Promise<Frame> => {
@@ -160,7 +160,7 @@ test.describe('editor: theme', () => {
   test('colours: a palette, an accent, a picture, one by one with contrast, and Fix contrast', async ({ page }) => {
     await openPanel(page);
     const frame = await site(page);
-    await panel(page).locator('.palette', { hasText: 'Forest' }).click();
+    await panel(page).locator('[data-theme-palettes] label', { hasText: 'Forest' }).click();
     await expect.poll(() => token(frame, '--color-accent')).toMatch(/#2F6B4A/i);
     // from a picture: a red one gives a red accent
     await panel(page).locator('input[name="picture-file"]').setInputFiles({ name: 'red.png', mimeType: 'image/png', buffer: png(196, 48, 40) });

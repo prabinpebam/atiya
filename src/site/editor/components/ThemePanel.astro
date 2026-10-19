@@ -6,20 +6,28 @@
  * Apply, Revert, Reset to preset, Rename and Delete. In a browser it shows the site in a frame beside it; in Atiya
  * Studio the app docks it beside its own view of the site.
  * @tier editor
- * @a11y Each group is a disclosure with a heading; choices are native radios in fieldsets with legends; colours are
- * native colour inputs, each with its contrast in words; saves and refusals are announced in a live region.
+ * @a11y Each group is a disclosure with a heading; choices are native radios in fieldsets with legends (a palette or a
+ * theme is a RadioCard); colours are native colour inputs (ColorField), each with its contrast in words; saves and
+ * refusals are announced in a live region.
  * @a11y The theme list is a radio group: arrows move through it and preview each theme on the site.
  */
 import Button from '../../components/fundamentals/Button.astro';
 import Checkbox from '../../components/fundamentals/Checkbox.astro';
+import ColorField from '../../components/fundamentals/ColorField.astro';
 import FileField from '../../components/fundamentals/FileField.astro';
 import Heading from '../../components/fundamentals/Heading.astro';
+import RadioCard from '../../components/fundamentals/RadioCard.astro';
 import Select from '../../components/fundamentals/Select.astro';
 import Slider from '../../components/fundamentals/Slider.astro';
 import Text from '../../components/fundamentals/Text.astro';
 import TextField from '../../components/fundamentals/TextField.astro';
+import TileButton from '../../components/fundamentals/TileButton.astro';
 import ChoiceGroup from '../../components/compounds/ChoiceGroup.astro';
 import Dialog from '../../components/compounds/Dialog.astro';
+import ActionBar from '../../components/compounds/ActionBar.astro';
+import Form from '../kit/Form.astro';
+import StatusNote from '../kit/StatusNote.astro';
+import Fieldset from '../kit/Fieldset.astro';
 import { withBase } from '../../design/meta';
 import { CORNERS, FACES, FONT_CATEGORIES, NEUTRALS, PAIRINGS, PALETTES, SPACINGS, TYPE_SCALES, TYPE_SLIDERS, sliderRange, type FontFile, type ThemeBase, type ThemeEntry } from '../model/theme';
 
@@ -63,57 +71,49 @@ const cap = (s: string) => s[0].toUpperCase() + s.slice(1);
       </div>
       <div class="current">
         <p class="name" data-theme-name>Atiya</p>
-        <p class="state" data-theme-state>Preset</p>
+        <StatusNote live="off" data-theme-state="">Preset</StatusNote>
       </div>
-      <div class="actions">
+      <ActionBar gap="sm">
         <Button size="sm" variant="primary" data-theme-action="apply">Apply</Button>
         <Button size="sm" data-theme-action="save">Save</Button>
         <Button size="sm" data-theme-action="save-as">Save as new</Button>
-      </div>
-      <div class="actions">
+      </ActionBar>
+      <ActionBar gap="sm">
         <Button size="sm" variant="quiet" data-theme-action="revert">Revert</Button>
         <Button size="sm" variant="quiet" data-theme-action="reset">Reset to preset</Button>
         <Button size="sm" variant="quiet" data-theme-action="rename">Rename</Button>
         <Button size="sm" variant="quiet" data-theme-action="delete">Delete</Button>
-      </div>
-      <p class="note" role="status" aria-live="polite" data-theme-note></p>
+      </ActionBar>
+      <StatusNote live="status" data-theme-note="" />
     </header>
 
     <details class="group" open data-theme-group="browse">
       <summary><Heading level={2} size="ui">Browse themes</Heading></summary>
-      <div class="list" role="radiogroup" aria-label="Themes" data-theme-list></div>
+      <div class="theme-list" role="radiogroup" aria-label="Themes" data-theme-list></div>
     </details>
 
     <details class="group" open data-theme-group="colour">
       <summary><Heading level={2} size="ui">Colour</Heading></summary>
-      <fieldset class="palettes" data-theme-palettes>
-        <legend class="legend">Palettes</legend>
+      <Fieldset legend="Palettes" data-theme-palettes="">
         {
           PALETTES.map((p) => (
-            <label class="palette">
-              <input type="radio" name="palette" value={p.id} />
-              <span class="strip" aria-hidden="true">
+            <RadioCard name="palette" value={p.id}>
+              <span slot="start" class="strip" aria-hidden="true">
                 {(paletteSwatches[p.id] ?? []).map((c) => (
                   <span class="chip" style={`--chip: ${c}`} />
                 ))}
               </span>
-              <span class="palette-name">{p.name}</span>
-            </label>
+              {p.name}
+            </RadioCard>
           ))
         }
-      </fieldset>
+      </Fieldset>
       <div class="seed">
-        <label class="colour">
-          <span>Accent</span>
-          <input type="color" data-theme-seed="accent" />
-        </label>
-        <label class="colour">
-          <span>Highlight</span>
-          <input type="color" data-theme-seed="highlight" />
-        </label>
+        <ColorField label="Accent" data-theme-seed="accent" />
+        <ColorField label="Highlight" data-theme-seed="highlight" />
         <Checkbox label="Choose the highlight from the accent" name="auto-highlight" />
       </div>
-      <p class="state" data-theme-adjusted></p>
+      <StatusNote live="off" data-theme-adjusted="" />
       <ChoiceGroup legend="Neutrals" name="neutral" orientation="horizontal" options={NEUTRALS.map((n) => ({ value: n, label: cap(n) }))} hint="The page, the text and the rules: warm, plain grey, cool, or tinted by the accent." />
       <div class="picture">
         <Heading level={3} size="ui">From a picture</Heading>
@@ -162,17 +162,17 @@ const cap = (s: string) => s[0].toUpperCase() + s.slice(1);
     </footer>
 
     <template data-theme-item>
-      <label class="item">
-        <input type="radio" name="theme" />
-        <span class="strip" aria-hidden="true"><span class="chip"></span><span class="chip"></span><span class="chip"></span><span class="chip"></span></span>
-        <span class="item-words"><span class="item-name"></span><span class="item-tags"></span></span>
-      </label>
+      <RadioCard name="theme">
+        <span slot="start" class="strip" aria-hidden="true"><span class="chip"></span><span class="chip"></span><span class="chip"></span><span class="chip"></span></span>
+        <span class="item-name"></span>
+        <span slot="detail" class="item-tags"></span>
+      </RadioCard>
     </template>
     <template data-theme-role>
       <div class="role">
         <span class="role-name"></span>
-        <label class="role-mode"><span class="sr-only"></span><input type="color" data-mode="light" /></label>
-        <label class="role-mode"><span class="sr-only"></span><input type="color" data-mode="dark" /></label>
+        <ColorField label="Light page" hideLabel data-mode="light" />
+        <ColorField label="Dark page" hideLabel data-mode="dark" />
         <span class="role-contrast"></span>
       </div>
     </template>
@@ -180,30 +180,30 @@ const cap = (s: string) => s[0].toUpperCase() + s.slice(1);
       <p class="legend"></p>
     </template>
     <template data-theme-swatch>
-      <button type="button" class="swatch-button"><span class="chip" aria-hidden="true"></span><span class="swatch-words"></span></button>
+      <TileButton variant="chip"><span class="chip swatch-chip" aria-hidden="true"></span><span class="swatch-words"></span></TileButton>
     </template>
     <template data-theme-thumb>
-      <button type="button" class="thumb"><img alt="" /></button>
+      <TileButton variant="thumbnail"><img class="thumb" alt="" /></TileButton>
     </template>
     <script is:inline type="application/json" data-theme-json set:html={state} />
   </section>
 </div>
 
 <Dialog id="theme-name" title="Save as a new theme" size="sm">
-  <form class="dialog-form" data-theme-name-form novalidate>
+  <Form data-theme-name-form="">
     <TextField label="Name" name="name" maxlength={60} required />
-    <div class="actions">
+    <ActionBar gap="sm">
       <Button variant="primary" type="submit">Save theme</Button>
       <Button variant="quiet" data-dialog-close="">Cancel</Button>
-    </div>
-  </form>
+    </ActionBar>
+  </Form>
 </Dialog>
 <Dialog id="theme-delete" title="Delete this theme?" size="sm">
   <Text as="p" variant="ui" data-theme-delete-words>It's deleted from the site's content. If the site uses it, the site goes back to Atiya.</Text>
-  <div class="actions">
+  <ActionBar gap="sm">
     <Button variant="primary" data-theme-action="delete-yes">Delete theme</Button>
     <Button variant="quiet" data-dialog-close="">Keep it</Button>
-  </div>
+  </ActionBar>
 </Dialog>
 
 <style>
@@ -247,20 +247,16 @@ const cap = (s: string) => s[0].toUpperCase() + s.slice(1);
     border-block-end: var(--border-hairline) solid var(--color-rule);
   }
 
-  .head-row,
-  .actions {
+  .head-row {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
+    justify-content: space-between;
     gap: var(--space-2);
   }
 
-  .head-row {
-    justify-content: space-between;
-  }
-
   /* an action the chosen theme doesn't offer (Save on a preset) */
-  .actions > [hidden] {
+  [data-theme-action][hidden] {
     display: none;
   }
 
@@ -275,33 +271,10 @@ const cap = (s: string) => s[0].toUpperCase() + s.slice(1);
     font-weight: var(--weight-semibold);
   }
 
-  .state {
-    margin: 0;
-    color: var(--color-text-muted);
-    font-size: var(--text-sm);
-  }
-
-  .state:empty {
-    display: none;
-  }
-
-  .note,
   .issues {
     margin: 0;
-  }
-
-  .note,
-  .issues {
-    font-size: var(--text-sm);
-    color: var(--color-text-muted);
-  }
-
-  .note:empty {
-    display: none;
-  }
-
-  .issues {
     color: var(--color-negative);
+    font-size: var(--text-sm);
   }
 
   .group {
@@ -327,64 +300,15 @@ const cap = (s: string) => s[0].toUpperCase() + s.slice(1);
     margin-block-start: var(--space-4);
   }
 
-  .list,
-  .palettes {
+  .theme-list {
     display: grid;
     gap: var(--space-2);
-    margin: 0;
-    padding: 0;
-    border: 0;
   }
 
   .legend {
     margin-block-end: var(--space-2);
     padding: 0;
     font-weight: var(--weight-semibold);
-  }
-
-  .item,
-  .palette {
-    display: flex;
-    align-items: center;
-    gap: var(--space-3);
-    min-block-size: var(--size-touch);
-    padding: var(--space-2) var(--space-3);
-    border: var(--border-hairline) solid var(--color-rule);
-    border-radius: var(--radius-md);
-    background: var(--color-bg);
-    cursor: pointer;
-  }
-
-  .item:has(input:checked),
-  .palette:has(input:checked) {
-    border-color: var(--color-accent);
-    background: var(--color-accent-soft);
-    color: var(--color-on-accent-soft);
-  }
-
-  .item:has(input:focus-visible),
-  .palette:has(input:focus-visible) {
-    outline: var(--border-focus) solid var(--color-focus);
-    outline-offset: var(--border-focus-offset);
-  }
-
-  .item input,
-  .palette input {
-    position: absolute;
-    opacity: 0;
-    pointer-events: none;
-  }
-
-  @media (hover: hover) {
-    .item:hover,
-    .palette:hover {
-      border-color: var(--color-border);
-    }
-  }
-
-  .item:active,
-  .palette:active {
-    border-color: var(--color-border);
   }
 
   .strip {
@@ -401,48 +325,11 @@ const cap = (s: string) => s[0].toUpperCase() + s.slice(1);
     background: var(--chip);
   }
 
-  .item-words {
-    display: grid;
-    min-inline-size: 0;
-  }
-
-  .item-name,
-  .palette-name {
-    font-weight: var(--weight-semibold);
-  }
-
-  .item-tags {
-    color: var(--color-text-muted);
-    font-size: var(--text-sm);
-  }
-
-  .item:has(input:checked) .item-tags {
-    color: var(--color-on-accent-soft);
-  }
-
   .seed {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
     gap: var(--space-3) var(--space-5);
-  }
-
-  .colour {
-    display: inline-flex;
-    align-items: center;
-    gap: var(--space-2);
-    font-size: var(--text-sm);
-    font-weight: var(--weight-semibold);
-  }
-
-  input[type='color'] {
-    inline-size: var(--size-touch);
-    block-size: var(--size-touch);
-    padding: var(--space-1);
-    border: var(--border-hairline) solid var(--color-border);
-    border-radius: var(--radius-sm);
-    background: var(--color-bg);
-    cursor: pointer;
   }
 
   .picture,
@@ -464,55 +351,18 @@ const cap = (s: string) => s[0].toUpperCase() + s.slice(1);
     display: none;
   }
 
-  .swatch-button,
-  .thumb {
-    display: inline-flex;
-    align-items: center;
-    gap: var(--space-2);
-    min-block-size: var(--size-touch);
-    padding: var(--space-1) var(--space-3) var(--space-1) var(--space-1);
-    border: var(--border-hairline) solid var(--color-rule);
-    border-radius: var(--radius-sm);
-    background: var(--color-bg);
-    color: var(--color-text);
-    font-family: inherit;
-    font-size: var(--text-sm);
-    cursor: pointer;
-  }
-
-  .swatch-button .chip {
+  /* a swatch's colour, in its chip (TileButton) */
+  .swatch-chip {
     block-size: var(--space-8);
     border-radius: var(--radius-xs);
   }
 
+  /* a picture to take colours from, edge to edge in its thumbnail (TileButton) */
   .thumb {
-    padding: 0;
-    overflow: hidden;
-  }
-
-  .thumb img {
     display: block;
     inline-size: var(--size-avatar-md);
     block-size: var(--size-avatar-md);
     object-fit: cover;
-  }
-
-  .swatch-button:focus-visible,
-  .thumb:focus-visible {
-    outline: var(--border-focus) solid var(--color-focus);
-    outline-offset: var(--border-focus-offset);
-  }
-
-  @media (hover: hover) {
-    .swatch-button:hover,
-    .thumb:hover {
-      border-color: var(--color-border);
-    }
-  }
-
-  .swatch-button:active,
-  .thumb:active {
-    border-color: var(--color-border-strong);
   }
 
   .role {
@@ -547,19 +397,6 @@ const cap = (s: string) => s[0].toUpperCase() + s.slice(1);
     padding-block-start: var(--space-3);
   }
 
-  .dialog-form {
-    display: grid;
-    gap: var(--space-4);
-  }
-
-  .sr-only {
-    position: absolute;
-    inline-size: 1px;
-    block-size: 1px;
-    overflow: hidden;
-    clip-path: inset(50%);
-    white-space: nowrap;
-  }
 </style>
 
 <script>

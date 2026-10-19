@@ -26,6 +26,12 @@ import Button from '../../components/fundamentals/Button.astro';
 import IconButton from '../../components/fundamentals/IconButton.astro';
 import Dialog from '../../components/compounds/Dialog.astro';
 import Tabs from '../../components/compounds/Tabs.astro';
+import SplitView from '../../components/compounds/SplitView.astro';
+import ActionBar from '../../components/compounds/ActionBar.astro';
+import ListPane from '../kit/ListPane.astro';
+import ListLink from '../kit/ListLink.astro';
+import PlainList from '../kit/PlainList.astro';
+import IssueNote from '../kit/IssueNote.astro';
 import type { IconName } from '../../design/icons';
 import type { ListedPage } from '../server/screens';
 
@@ -81,29 +87,35 @@ const count = (n: number) => `${n} ${n === 1 ? 'page' : 'pages'}`;
 ---
 
 <div class="manager" data-manager={screen} data-param={param} data-reorder={reorder ? '' : undefined}>
-  <p class="issue" role="alert" data-manager-issue hidden></p>
-  <div class="split">
-    <nav class="list" aria-label={label} data-manager-sections data-scrollbar>
-      <ul class="sections">
+  <IssueNote data-manager-issue="" />
+  <SplitView>
+    <Fragment slot="list">
+    <ListPane label={label} data-manager-sections="" data-scrollbar="">
+      <PlainList gap="xs">
         {
           sections.map((s) => (
-            <li>
-              <a class="section" href={`?${param}=${s.id}`} aria-current={s.id === current ? 'true' : undefined} data-manager-section={s.id} data-holds={s.pages ? '' : undefined} data-off={s.id === '_off' ? '' : undefined}>
-                {s.icon && <Icon name={s.icon} />}
-                <span class="section-words">
-                  <span class="section-name">{s.title}</span>
-                  {s.meta && <span class="section-meta">{s.meta}</span>}
-                </span>
-                {s.pages && <Tag size="sm">{String(s.pages.length)}</Tag>}
-              </a>
+            <li class={s.id === '_off' ? 'off' : undefined}>
+              <ListLink href={`?${param}=${s.id}`} current={s.id === current} name={s.title} meta={s.meta ? [s.meta] : []} data-manager-section={s.id} data-holds={s.pages ? '' : undefined} data-off={s.id === '_off' ? '' : undefined}>
+                {s.icon && (
+                  <Fragment slot="mark">
+                    <Icon name={s.icon} />
+                  </Fragment>
+                )}
+                {s.pages && (
+                  <Fragment slot="end">
+                    <Tag size="sm">{String(s.pages.length)}</Tag>
+                  </Fragment>
+                )}
+              </ListLink>
             </li>
           ))
         }
-      </ul>
-      <div class="list-tools">
+      </PlainList>
+      <ActionBar gap="sm">
         <slot name="tools" />
-      </div>
-    </nav>
+      </ActionBar>
+    </ListPane>
+    </Fragment>
 
     <div class="detail" data-manager-detail>
       {
@@ -140,7 +152,7 @@ const count = (n: number) => `${n} ${n === 1 ? 'page' : 'pages'}`;
                     </div>
                     <Select label="Show" size="md" value="all" options={SHOW} data-manager-show="" />
                   </div>
-                  <div class="selection">
+                  <ActionBar>
                     <Checkbox label="Select all" disabled={!s.pages.some((p) => p.movable)} data-manager-all="" />
                     <span class="count" data-manager-count aria-live="polite">
                       <Text as="span" variant="small" tone="muted">
@@ -150,10 +162,10 @@ const count = (n: number) => `${n} ${n === 1 ? 'page' : 'pages'}`;
                     <Button variant="secondary" size="sm" icon="arrow-right" disabled data-manager-move-selected="">
                       Move selected
                     </Button>
-                  </div>
+                  </ActionBar>
                   <ol class="rows" data-manager-list={s.id} hidden={s.pages.length === 0}>
                     {s.pages.map((p) => (
-                      <li class="row" data-manager-row={p.id} data-name={p.title} data-title={p.title.toLowerCase()} data-published={p.published ? '' : undefined} data-private={p.private ? '' : undefined}>
+                      <li class="page-row" data-drop-line="flush" data-manager-row={p.id} data-name={p.title} data-title={p.title.toLowerCase()} data-published={p.published ? '' : undefined} data-private={p.private ? '' : undefined}>
                         <IconButton label={`Move ${p.title}`} icon="drag" size="sm" tooltip="none" disabled={!p.movable} data-manager-grip={p.id} />
                         <span class="pick">
                           <Checkbox label={p.title} hint={[p.kind, p.note].filter(Boolean).join(' · ')} disabled={!p.movable} data-manager-pick={p.id} />
@@ -206,7 +218,7 @@ const count = (n: number) => `${n} ${n === 1 ? 'page' : 'pages'}`;
         </Fragment>
       </Tabs>
     </div>
-  </div>
+  </SplitView>
 
   <div class="ghost" data-manager-ghost hidden aria-hidden="true">
     <span class="ghost-title" data-manager-ghost-title></span>
@@ -216,12 +228,12 @@ const count = (n: number) => `${n} ${n === 1 ? 'page' : 'pages'}`;
   <Dialog id="manager-move" title="Move" size="sm">
     <div class="move">
       <p class="move-name" data-manager-move-name>A page</p>
-      <div class="move-row" data-manager-move-steps>
+      <ActionBar gap="sm" data-manager-move-steps="">
         <Button variant="secondary" size="sm" icon="arrow-up" data-manager-move-by="-1">Move up</Button>
         <Button variant="secondary" size="sm" icon="arrow-down" data-manager-move-by="1">Move down</Button>
-      </div>
+      </ActionBar>
       <Heading level={3} size="ui">Move to</Heading>
-      <ul class="move-to">
+      <PlainList>
         {
           sections
             .filter((s) => s.pages)
@@ -233,7 +245,7 @@ const count = (n: number) => `${n} ${n === 1 ? 'page' : 'pages'}`;
               </li>
             ))
         }
-      </ul>
+      </PlainList>
     </div>
   </Dialog>
 </div>
@@ -245,109 +257,10 @@ const count = (n: number) => `${n} ${n === 1 ? 'page' : 'pages'}`;
     min-inline-size: 0;
   }
 
-  .issue {
-    margin: 0;
-    color: var(--color-negative);
-    font-size: var(--text-sm);
-    font-weight: var(--weight-medium);
-  }
-
-  .split {
-    display: grid;
-    grid-template-columns: var(--c-editor-section-list) minmax(0, 1fr);
-    gap: var(--space-8);
-    align-items: start;
-  }
-
-  /* the sections stay in view (and scroll on their own) while a long list of pages scrolls past */
-  .list {
-    position: sticky;
-    inset-block-start: var(--space-4);
-    display: grid;
-    gap: var(--space-4);
-    max-block-size: calc(100dvh - var(--c-editor-topbar) - var(--space-8));
-    overflow: auto;
-    padding: var(--space-3);
-    border: var(--border-hairline) solid var(--color-rule);
-    border-radius: var(--radius-lg);
-    background: var(--color-bg-raised);
-  }
-
-  .sections {
-    display: grid;
-    gap: var(--space-0-5);
-    margin: 0;
-    padding: 0;
-    list-style: none;
-  }
-
-  .section {
-    display: flex;
-    align-items: center;
-    gap: var(--space-2);
-    min-block-size: var(--size-touch);
-    padding: var(--space-1) var(--space-2);
-    border-radius: var(--radius-md);
-    color: var(--color-text);
-    text-decoration: none;
-  }
-
-  @media (hover: hover) {
-    .section:hover {
-      background: var(--color-bg-hover);
-    }
-  }
-
-  .section:active {
-    background: var(--color-bg-hover);
-  }
-
-  .section[aria-current='true'] {
-    background: var(--color-accent-soft);
-    color: var(--color-on-accent-soft);
-  }
-
-  .section:focus-visible {
-    outline: var(--border-focus) solid var(--color-focus);
-    outline-offset: calc(var(--border-focus) * -1);
-  }
-
-  /* where a dragged page would go */
-  .section[data-drop-target] {
-    outline: var(--border-strong) solid var(--color-accent);
-    outline-offset: calc(var(--border-strong) * -1);
-  }
-
-  .section[data-off] {
+  /* the sections stay in view (and scroll on their own) while a long list of pages scrolls past; the pages in
+     none stand a little apart */
+  .off {
     margin-block-start: var(--space-2);
-  }
-
-  .section-words {
-    display: grid;
-    flex: 1;
-    min-inline-size: 0;
-  }
-
-  .section-name {
-    font-weight: var(--weight-semibold);
-  }
-
-  .section-meta {
-    overflow: hidden;
-    color: var(--color-text-muted);
-    font-size: var(--text-sm);
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  .section[aria-current='true'] .section-meta {
-    color: inherit;
-  }
-
-  .list-tools {
-    display: flex;
-    flex-wrap: wrap;
-    gap: var(--space-2);
   }
 
   .detail {
@@ -363,7 +276,7 @@ const count = (n: number) => `${n} ${n === 1 ? 'page' : 'pages'}`;
 
   .head[hidden],
   .pages[hidden],
-  .row[hidden],
+  .page-row[hidden],
   .empty[hidden] {
     display: none;
   }
@@ -385,13 +298,6 @@ const count = (n: number) => `${n} ${n === 1 ? 'page' : 'pages'}`;
     min-inline-size: min(100%, var(--c-editor-section-list));
   }
 
-  .selection {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: var(--space-3);
-  }
-
   .count {
     flex: 1;
   }
@@ -411,8 +317,7 @@ const count = (n: number) => `${n} ${n === 1 ? 'page' : 'pages'}`;
     display: none;
   }
 
-  .row {
-    position: relative;
+  .page-row {
     display: grid;
     grid-template-columns: auto minmax(0, 1fr) auto auto;
     align-items: center;
@@ -421,7 +326,7 @@ const count = (n: number) => `${n} ${n === 1 ? 'page' : 'pages'}`;
     border-block-start: var(--border-hairline) solid var(--color-rule);
   }
 
-  .row:first-child {
+  .page-row:first-child {
     border-block-start: 0;
   }
 
@@ -432,34 +337,12 @@ const count = (n: number) => `${n} ${n === 1 ? 'page' : 'pages'}`;
     gap: var(--space-1);
   }
 
-  .row[data-picked] {
+  .page-row[data-picked] {
     background: var(--color-accent-soft);
-  }
-
-  .row[data-dragging] {
-    opacity: var(--opacity-disabled);
   }
 
   .pick {
     min-inline-size: 0;
-  }
-
-  .row[data-drop='before']::before,
-  .row[data-drop='after']::after {
-    content: '';
-    position: absolute;
-    inset-inline: var(--space-2);
-    block-size: var(--border-strong);
-    border-radius: var(--radius-pill);
-    background: var(--color-accent);
-  }
-
-  .row[data-drop='before']::before {
-    inset-block-start: calc(var(--border-strong) / -2);
-  }
-
-  .row[data-drop='after']::after {
-    inset-block-end: calc(var(--border-strong) / -2);
   }
 
   .empty {
@@ -515,35 +398,6 @@ const count = (n: number) => `${n} ${n === 1 ? 'page' : 'pages'}`;
   .move-name {
     margin: 0;
     font-weight: var(--weight-medium);
-  }
-
-  .move-row {
-    display: flex;
-    flex-wrap: wrap;
-    gap: var(--space-2);
-  }
-
-  .move-row[hidden] {
-    display: none;
-  }
-
-  .move-to {
-    display: grid;
-    margin: 0;
-    padding: 0;
-    list-style: none;
-  }
-
-  @media (max-width: 56rem) {
-    .split {
-      grid-template-columns: minmax(0, 1fr);
-      gap: var(--space-6);
-    }
-
-    .list {
-      position: static;
-      max-block-size: none;
-    }
   }
 </style>
 

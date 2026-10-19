@@ -1,0 +1,13 @@
+---
+import Example from '../../library/Example.astro';
+import MediaGrid from '../components/MediaGrid.astro';
+import { MEDIA_CARDS } from './samples';
+---
+
+<Example title="The media library" description="mode 'library': upload, search, and every picture by owner, its tags saying what needs doing." layout="block">
+  <MediaGrid media={MEDIA_CARDS} mode="library" owner="samples" selected="samples/pond" />
+</Example>
+
+<Example title="The picker" description="mode 'pick': the same cards, pressed to choose." layout="block">
+  <MediaGrid media={MEDIA_CARDS} mode="pick" owner="samples" />
+</Example>

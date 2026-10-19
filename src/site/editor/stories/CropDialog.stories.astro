@@ -1,0 +1,10 @@
+---
+import Example from '../../library/Example.astro';
+import CropDialog from '../components/CropDialog.astro';
+import Button from '../../components/fundamentals/Button.astro';
+---
+
+<Example title="The crop" description="A dialog over the picture; the media library opens it with the picture to crop (here it opens empty)." layout="row">
+  <Button variant="secondary" icon="crop" data-dialog-open="crop">Open the crop</Button>
+  <CropDialog />
+</Example>

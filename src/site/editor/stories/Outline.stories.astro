@@ -1,0 +1,9 @@
+---
+import Example from '../../library/Example.astro';
+import Outline from '../components/Outline.astro';
+import { OUTLINE_BLOCKS, OUTLINE_ICONS } from './samples';
+---
+
+<Example title="A page's blocks" description="Each by its kind and first words, with its handle and its moves; Add a block under them." layout="block">
+  <Outline blocks={OUTLINE_BLOCKS} icons={OUTLINE_ICONS} />
+</Example>

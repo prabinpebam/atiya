@@ -48,6 +48,8 @@ const ALL: Refresh = { canvas: true, outline: true, inspector: true };
 export function initEditor(root: HTMLElement, signal: AbortSignal) {
   const readState = (): State => JSON.parse(document.querySelector('[data-editor-state]')?.textContent ?? '{}');
   const state = readState();
+  // a studio with no article on the page (the parts library's story of it) has nothing to edit
+  if (!state.article) return;
   let doc: Article = state.article;
   let saved: Article = structuredClone(doc);
   let selected: number | null = null;
@@ -1187,9 +1189,9 @@ export function initEditor(root: HTMLElement, signal: AbortSignal) {
   let pendingVideo: { embed: { provider: 'youtube' | 'vimeo'; id: string }; title: string; duration?: number } | null = null;
 
   // ---------- a new collection's items: one to start, more added (and removed) in the form ----------
-  // The form has the inspector's sections: each item a pane with its row in the list beside it (item-<uid>).
+  // The form has the inspector's sections (the kit's): each item a pane in the PaneGroup's list, with its row in the list beside it (item-<uid>).
   let itemUid = 0;
-  const itemsOf = (form: Element) => [...form.querySelectorAll<HTMLElement>('[data-insert-items] > [data-insert-item]')];
+  const itemsOf = (form: Element) => [...form.querySelectorAll<HTMLElement>('[data-insert-items] [data-insert-item]')];
   const navRowOf = (item: HTMLElement) => item.closest('form')?.querySelector(`[data-section-pick="${item.dataset.section}"]`)?.closest('li') ?? null;
   const hostOf = (form: Element) => form.querySelector<HTMLElement>('[data-sections]');
   /** An item's line in the list: its heading, else its subtext, its time or its words. */
@@ -1241,7 +1243,7 @@ export function initEditor(root: HTMLElement, signal: AbortSignal) {
     if (add) {
       const uid = ++itemUid;
       const item = copyOf(form, '[data-insert-item-template]', uid);
-      form.querySelector('[data-insert-items]')!.append(item);
+      form.querySelector('[data-insert-items] [data-pane-list]')!.append(item);
       form.querySelector('[data-insert-nav]')!.append(copyOf(form, '[data-insert-nav-template]', uid));
       renumber(form);
       if (host) chooseSection(host, `item-${uid}`);
@@ -1261,7 +1263,7 @@ export function initEditor(root: HTMLElement, signal: AbortSignal) {
   });
   // the list says what each item is, and which layout, as they're written
   on(root, 'input', (e) => {
-    const item = (e.target as Element).closest<HTMLElement>('[data-insert-items] > [data-insert-item]');
+    const item = (e.target as Element).closest<HTMLElement>('[data-insert-items] [data-insert-item]');
     if (item) describeItem(item);
   });
   on(root, 'change', (e) => {
@@ -1296,7 +1298,7 @@ export function initEditor(root: HTMLElement, signal: AbortSignal) {
     }
     if (kind === 'collection') {
       const field = (it: HTMLElement, k: string) => (it.querySelector<HTMLInputElement>(`[data-insert-field="${k}"] input`)?.value ?? '').trim();
-      const items = [...form.querySelectorAll<HTMLElement>('[data-insert-items] > [data-insert-item]')]
+      const items = [...form.querySelectorAll<HTMLElement>('[data-insert-items] [data-insert-item]')]
         .map((it) => ({ when: field(it, 'when'), heading: field(it, 'heading'), subtext: field(it, 'subtext'), text: richMarkdown(it.querySelector<HTMLElement>('[data-rich-input]')!).trim() }))
         .map((it) => Object.fromEntries(Object.entries(it).filter(([, v]) => v)) as { when?: string; heading?: string; subtext?: string; text?: string })
         .filter((it) => it.heading || it.subtext || it.text);

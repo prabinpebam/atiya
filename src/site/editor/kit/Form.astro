@@ -1,0 +1,79 @@
+---
+/**
+ * A form laid out as a column: its fields, notes and actions one under another, a set space apart. It never
+ * validates in the browser's own way (novalidate): its screen's script checks it and says what's wrong in an
+ * IssueNote. A form that fills its panel (the inspector's) stretches to the panel's height, so its sections can
+ * grow and a FormFoot sits at its bottom.
+ * @tier kit
+ * @a11y A form named by its label or by the heading it's labelled by; its fields carry their own labels.
+ */
+
+interface Props {
+  /** The element: a form, or a group of fields inside one (a dialog's body that another form owns). */
+  as?: 'form' | 'div';
+  /** The space between its parts: md (the most usual), lg for a form of groups, xl for a form of sections with headings. */
+  gap?: 'md' | 'lg' | 'xl';
+  /** How wide it runs: the column's whole width, or a comfortable line's (the measure). */
+  width?: 'full' | 'measure';
+  /** Fills its panel's height (a column the panel stretches): its last part (a FormFoot) sits at the bottom. */
+  fill?: boolean;
+  /** Names the form (aria-label), when no heading does. */
+  label?: string;
+  /** The id of the heading that names it (aria-labelledby). */
+  labelledby?: string;
+  /** Its id (a link to it from elsewhere on the screen). */
+  id?: string;
+  /** Hidden until a script shows it. */
+  hidden?: boolean;
+  /** Data attributes pass through to the form: the hook its screen's script finds it by. */
+  [data: `data-${string}`]: string | undefined;
+}
+
+const { as: Tag = 'form', gap = 'md', width = 'full', fill = false, label, labelledby, id, hidden = false, ...rest } = Astro.props;
+---
+
+<Tag
+  class="stack-form"
+  data-gap={gap}
+  data-width={width}
+  data-fill={fill ? '' : undefined}
+  novalidate={Tag === 'form' ? true : undefined}
+  aria-label={label}
+  aria-labelledby={labelledby}
+  id={id}
+  hidden={hidden}
+  {...rest}
+>
+  <slot />
+</Tag>
+
+<style>
+  .stack-form {
+    display: grid;
+    gap: var(--space-4);
+  }
+
+  .stack-form[data-gap='lg'] {
+    gap: var(--space-6);
+  }
+
+  .stack-form[data-gap='xl'] {
+    gap: var(--space-8);
+  }
+
+  .stack-form[data-width='measure'] {
+    max-inline-size: var(--size-measure);
+  }
+
+  /* a column at least as tall as its panel: its sections stretch, and its foot sits at the bottom */
+  .stack-form[data-fill] {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-block-size: 0;
+  }
+
+  .stack-form[hidden] {
+    display: none;
+  }
+</style>

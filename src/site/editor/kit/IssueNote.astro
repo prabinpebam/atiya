@@ -1,0 +1,33 @@
+---
+/**
+ * What went wrong, said where it happened: a line in the negative colour under a form's fields (or over a list),
+ * hidden and empty until a screen's script gives it words (a refused save's reasons, through
+ * scripts/client.ts's describeIssue). The script finds it by the data attribute it's given
+ * (data-editor-form-issue, data-grant-issue…), sets its text and shows it, and hides it again once it's empty.
+ * @tier kit
+ * @a11y role="alert": the words are read out as soon as a script sets them; hidden while empty, it says nothing.
+ */
+
+interface Props {
+  /** Words to show from the start (a story's sample); left out, it waits, hidden, for a script's. */
+  text?: string;
+  /** Data attributes pass through to the line: the hook its screen's script finds it by. */
+  [data: `data-${string}`]: string | undefined;
+}
+
+const { text, ...rest } = Astro.props;
+---
+
+<p class="issue-note" role="alert" hidden={!text} {...rest}>{text}</p>
+
+<style>
+  .issue-note {
+    margin: 0;
+    color: var(--color-negative);
+    font: var(--type-note);
+  }
+
+  .issue-note[hidden] {
+    display: none;
+  }
+</style>

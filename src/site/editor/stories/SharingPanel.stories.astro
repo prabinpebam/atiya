@@ -1,0 +1,9 @@
+---
+import Example from '../../library/Example.astro';
+import SharingPanel from '../components/SharingPanel.astro';
+import { SHARING } from './samples';
+---
+
+<Example title="A private page's Share dialog" description="Who it's shared with, each with Copy message and Manage, then a form to share it with someone new." layout="block">
+  <SharingPanel view={SHARING} page="a-case-for-later" />
+</Example>

@@ -7,6 +7,7 @@ import { Scene } from './Scene';
 import { Hud } from './ui/Hud';
 import { EXPOSURE } from './world/timeOfDay';
 import { RESIDENTS } from './platform/residents';
+import './ui/styles/planet-region.css';
 
 const C = CONFIG.camera;
 const R = CONFIG.planetRadius;

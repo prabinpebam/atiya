@@ -23,9 +23,11 @@ import {
   magicLink,
   movePages,
   openBefore,
+  pageHint,
   placePrivate,
   privateNode,
   reorderSection,
+  scopeChoices,
   scopeGroups,
   scopeLine,
   sectionOrder,
@@ -144,6 +146,33 @@ describe("the Access screen's words", () => {
     const g = scopeGroups(view, { sections: ['work', 'old'], pages: ['p1', 'gone'] });
     expect(g.sections.map((s) => `${s.id}:${s.pages.length}`)).toEqual(['work:1', 'notes:0']);
     expect(g.unknown).toEqual({ sections: ['old'], pages: ['gone'] });
+  });
+
+  it("the list of what a grant opens (GrantScope): a section's own choice covers its pages, counts and chosen lines, and which sections start open", () => {
+    const page = (id: string, sectionId: string, published = true) => ({ id, title: id.toUpperCase(), section: sectionId, sectionId, published });
+    const options = {
+      sections: [
+        { id: 'work', title: 'Work', pages: [page('w1', 'work'), page('w2', 'work', false)] },
+        { id: 'notes', title: 'Notes', pages: [page('n1', 'notes')] },
+        { id: 'empty', title: 'Empty', pages: [] },
+      ],
+    };
+    // the section covers w1, so the line names it once, through the section
+    const c = scopeChoices(options, { sections: ['work'], pages: ['w1', 'n1'] });
+    expect(c.line).toBe('Opens every private page in Work, and N1');
+    expect(c.sections.map((s) => [s.id, s.all, s.count, s.chosen, s.open])).toEqual([
+      ['work', true, '2 private pages', 'All, now and later', true],
+      ['notes', false, '1 private page', '1 chosen', true],
+      ['empty', false, 'No private pages yet', '', false],
+    ]);
+    expect([...c.sections[1].own]).toEqual(['n1']);
+    // nothing chosen: a short list opens where there are pages; a long one (over 12 pages) stays shut
+    expect(scopeChoices(options).sections.map((s) => s.open)).toEqual([true, true, false]);
+    const long = { sections: [{ id: 'big', title: 'Big', pages: Array.from({ length: 13 }, (_, n) => page(`b${n}`, 'big')) }] };
+    expect(scopeChoices(long).sections[0].open).toBe(false);
+    expect(scopeChoices(long).line).toMatch(/^Opens nothing yet/);
+    expect(pageHint(true)).toBe('Published');
+    expect(pageHint(false)).toMatch(/opens once it is/);
   });
 
   it('is found by who, why, notes, its code name and what it opens', () => {

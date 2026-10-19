@@ -4,36 +4,48 @@
  * src/design/tokens.json (W3C DTCG format) is the source of truth. This writes:
  *   - src/styles/tokens.css: every token as a CSS custom property, aliases kept as var() references,
  *     and the surfaces: fixed paper for key caps, and light paper / dark wood for the game;
- *   - documentation/game-ui/tokens.md: the token reference for the docs site.
- * Never hand-edit either. `node scripts/build-tokens.mjs --check` fails if they're out of date.
+ *   - documentation/game-ui/tokens.md: the token reference for the docs site (a `$deprecated` token marked);
+ *   - src/design/token-history.json and documentation/game-ui/token-changelog.md: the changelog, from the
+ *     last built token set (scripts/lib/token-changelog.mjs).
+ * Never hand-edit any of them. `node scripts/build-tokens.mjs --check` fails if they're out of date.
  */
 import { readFileSync, writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
+import { snapshotOf, update, parseHistory, historyJson, renderChangelog, today, codeNames } from './lib/token-changelog.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 export const SOURCE = join(ROOT, 'src/design/tokens.json');
 export const CSS_OUT = join(ROOT, 'src/styles/tokens.css');
 export const DOC_OUT = join(ROOT, 'documentation/game-ui/tokens.md');
+/** The changelog's memory: the last built token set and the entries (generated; committed). */
+export const HISTORY_OUT = join(ROOT, 'src/design/token-history.json');
+export const CHANGELOG_OUT = join(ROOT, 'documentation/game-ui/token-changelog.md');
 
 /** The surfaces: each maps --surface-<role> to its --color-<surface>-<role>. */
 export const SURFACES = ['paper', 'wood'];
 
 /**
- * @typedef {{ path: string[]; name: string; type: string; value: unknown; description: string; extensions: Record<string, any> }} Token
+ * @typedef {{ path: string[]; name: string; type: string; value: unknown; description: string; extensions: Record<string, any>; deprecated?: boolean | string }} Token
  */
 
-/** Flatten the tree into tokens (inheriting $type from groups). @returns {Token[]} */
-export function flatten(tree, path = [], type = '') {
+/** A node's DTCG 2025.10 `$deprecated`: `true`/`false`, or a string saying what to use instead. */
+const deprecatedOf = (node) => (typeof node.$deprecated === 'boolean' || typeof node.$deprecated === 'string' ? node.$deprecated : undefined);
+
+/** Flatten the tree into tokens (inheriting $type and $deprecated from groups). @returns {Token[]} */
+export function flatten(tree, path = [], type = '', deprecatedGroup = undefined) {
   /** @type {Token[]} */
   const out = [];
   const t = typeof tree.$type === 'string' ? tree.$type : type;
+  const groupDeprecated = deprecatedOf(tree) ?? deprecatedGroup;
   for (const [key, node] of Object.entries(tree)) {
     if (key.startsWith('$') || typeof node !== 'object' || node === null) continue;
     const p = [...path, key];
     if ('$value' in node) {
       out.push({ path: p, name: cssName(p), type: typeof node.$type === 'string' ? node.$type : t, value: node.$value, description: node.$description ?? '', extensions: node.$extensions ?? {} });
-    } else out.push(...flatten(node, p, t));
+      const d = deprecatedOf(node) ?? groupDeprecated;
+      if (d !== undefined && d !== false) out[out.length - 1].deprecated = d;
+    } else out.push(...flatten(node, p, t, groupDeprecated));
   }
   return out;
 }
@@ -137,6 +149,13 @@ export function buildCss({ tokens, byPath } = load()) {
 
 const TIER = (t) => (t.path[0] === 'p' ? 'Primitive (private)' : t.path[0] === 'c' ? 'Component' : 'Semantic');
 
+/** A token's "Use" cell: a deprecated one says so first, and what to use instead. */
+export function useOf(t) {
+  if (t.deprecated === undefined) return t.description;
+  const why = typeof t.deprecated === 'string' && t.deprecated ? `: ${codeNames(t.deprecated)}` : '';
+  return `**Deprecated**${why}.${t.description ? ` ${t.description}` : ''}`;
+}
+
 export function buildDoc({ json, tokens, byPath } = load()) {
   const groups = new Map();
   for (const t of tokens) {
@@ -162,7 +181,7 @@ export function buildDoc({ json, tokens, byPath } = load()) {
     for (const t of list) {
       const v = cssValue(t, byPath);
       const r = resolve(t, byPath);
-      out.push(`| \`${t.name}\` | \`${esc(v)}\` | ${v === r ? '' : `\`${esc(r)}\``} | ${esc(t.description)} |`);
+      out.push(`| \`${t.name}\` | \`${esc(v)}\` | ${v === r ? '' : `\`${esc(r)}\``} | ${esc(useOf(t))} |`);
     }
     out.push('');
   }
@@ -177,15 +196,49 @@ export function buildDoc({ json, tokens, byPath } = load()) {
   return out.join('\n');
 }
 
+/** A path's custom property: `c.chopper.thumb-width` → `--c-chopper-thumb-width`. */
+const nameOfPath = (path) => cssName(path.split('.'));
+
+/**
+ * The changelog: the tokens as built now, against the last built set in token-history.json. Returns the
+ * history file's and the page's text; the entry is dated `date` (today) only if something changed.
+ */
+export function buildChangelog({ tokens, byPath } = load(), date = today(), previous = readOr(HISTORY_OUT)) {
+  const snapshot = snapshotOf(tokens.map((t) => ({ path: t.path, value: cssValue(t, byPath), deprecated: t.deprecated })));
+  const history = update(parseHistory(previous), snapshot, date);
+  const page = renderChangelog({
+    title: 'Game UI token changelog',
+    tldr: `Every change to the game UI's design tokens, newest first: what was added, removed, renamed, changed in value or deprecated, by date. ${tokens.length} tokens today, ${tokens.filter((t) => t.deprecated !== undefined).length} of them deprecated. Generated by \`scripts/build-tokens.mjs\`; its \`--check\` fails when the tokens changed without a build.`,
+    about: [
+      '> Generated by `scripts/build-tokens.mjs` from `src/design/tokens.json`. Do not edit this page: change the JSON and run `node scripts/build-tokens.mjs`.',
+      "The build compares the tokens with the last set it built (kept in `src/design/token-history.json`, generated and committed with them) and records what changed under that day's date. A removed and an added token with the same value in the same group are listed as renamed; a token that now aliases a new one holding its old value, and is newly deprecated, is a rename that keeps the old name for one release ([the design system](design-system.md) §3, the deprecation rule). Owners and other `$extensions` aren't values and aren't recorded. The tokens themselves are in [tokens.md](tokens.md).",
+    ],
+    history,
+    name: nameOfPath,
+  });
+  return { history: historyJson(history), page };
+}
+
+function readOr(file) {
+  try {
+    return readFileSync(file, 'utf8');
+  } catch {
+    return null;
+  }
+}
+
 const isMain = process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1];
 if (isMain) {
   const model = load();
   const css = buildCss(model);
   const doc = buildDoc(model);
+  const changelog = buildChangelog(model);
   if (process.argv.includes('--check')) {
     const stale = [
       [CSS_OUT, css],
       [DOC_OUT, doc],
+      [HISTORY_OUT, changelog.history],
+      [CHANGELOG_OUT, changelog.page],
     ].filter(([f, want]) => {
       try {
         return readFileSync(f, 'utf8').replace(/\r\n/g, '\n') !== want;
@@ -201,6 +254,8 @@ if (isMain) {
   } else {
     writeFileSync(CSS_OUT, css);
     writeFileSync(DOC_OUT, doc);
+    writeFileSync(HISTORY_OUT, changelog.history);
+    writeFileSync(CHANGELOG_OUT, changelog.page);
     console.log(`wrote ${model.tokens.length} tokens`);
   }
 }

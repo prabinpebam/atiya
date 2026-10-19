@@ -1,0 +1,13 @@
+---
+import Example from '../../library/Example.astro';
+import MediaDetails from '../components/MediaDetails.astro';
+import { PICTURE } from './samples';
+---
+
+<Example title="A picture's details" description="Its focus point, its words, where it's used, its crops, its dark mode version, Replace and Delete." layout="block">
+  <MediaDetails picture={PICTURE} usedIn={[{ label: 'A walk round the pond', href: 'articles/a-walk-round-the-pond/' }]} copies={['samples/pond-2']} />
+</Example>
+
+<Example title="Nothing chosen" description="What it says until a picture or a video is chosen." layout="block">
+  <MediaDetails picture={null} usedIn={[]} />
+</Example>

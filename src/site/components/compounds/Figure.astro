@@ -9,6 +9,7 @@
  */
 import Image from '../fundamentals/Image.astro';
 import Caption from '../fundamentals/Caption.astro';
+import type { PictureSource } from '../../design/pictures';
 
 interface Props {
   /** The displayed image. */
@@ -44,7 +45,7 @@ interface Props {
   /** The lightbox group name. */
   lightbox?: string;
   /** Its dark mode version (its own sizes, full size and thumbnail), shown when the page is dark. */
-  dark?: { src: string; srcset?: string; width: number; height: number; full?: string; thumb?: string; bg?: string };
+  dark?: PictureSource & { full?: string; thumb?: string };
   /** The picture's own edge colour (media.md §9.1), for a background behind it. */
   bg?: string;
   /** Puts that colour behind it (the room round a fitted picture, its transparent parts). */
@@ -101,7 +102,6 @@ const lightboxThumb = thumb ?? src;
   .figure {
     display: grid;
     gap: var(--space-3);
-    margin: 0;
   }
 
   .media-link {

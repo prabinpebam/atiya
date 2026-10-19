@@ -1,0 +1,52 @@
+/* The planet clock (Hud.tsx’s TimeBadge): a pill showing the time, which is also a slider.
+ * Its owner imports it (ui/Hud.tsx); tokens only (tests/unit/designSystem.test.ts). */
+@layer tokens, base, primitives, components, cursors;
+
+@layer components {
+  /* Badge: a pill that shows a value (the planet clock, also a slider) */
+  .time-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--c-time-gap);
+    min-height: var(--c-btn-h);
+    min-width: var(--c-time-width);
+    padding: 0 var(--space-3-5);
+    border: var(--border-base) solid var(--surface-border);
+    border-radius: var(--radius-pill);
+    background: var(--surface-bg);
+    color: var(--surface-text);
+    font-family: var(--font-text);
+    font-size: var(--text-sm);
+    font-weight: var(--weight-semibold);
+    line-height: var(--leading-none);
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+    /* a slider: drag sideways to wind the planet clock */
+    cursor: ew-resize;
+    user-select: none;
+    touch-action: none;
+  }
+
+  /* while the clock is dragged the pointer disappears (the sky itself shows the change) */
+  .time-scrubbing,
+  .time-scrubbing * {
+    cursor: none !important;
+  }
+
+  @media (forced-colors: active) {
+    .time-badge {
+      border-color: ButtonText;
+    }
+
+    .time-badge:focus-visible {
+      outline-color: Highlight;
+    }
+  }
+
+  @media (max-width: 32.5rem) {
+    .time-badge {
+      display: none;
+    }
+  }
+}

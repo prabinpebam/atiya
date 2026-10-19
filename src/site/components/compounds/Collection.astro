@@ -26,39 +26,9 @@ import Image from '../fundamentals/Image.astro';
 import Heading from '../fundamentals/Heading.astro';
 import Prose from '../fundamentals/Prose.astro';
 import IconButton from '../fundamentals/IconButton.astro';
-import { collectionView, itemBody } from '../../scripts/collection';
+import { collectionView, itemBody, type CollectionItem } from '../../scripts/collection';
 
-export interface CollectionPicture {
-  /** The displayed image. */
-  src: string;
-  /** Responsive sources for it. */
-  srcset?: string;
-  /** What the picture shows. */
-  alt: string;
-  /** Its own width (px). */
-  width: number;
-  /** Its own height (px). */
-  height: number;
-  /** Which part stays in a crop ("50% 30%"). */
-  focus?: string;
-  /** Its own edge colour (media.md §9.1), for a background behind it. */
-  bg?: string;
-  /** Its dark mode version, shown when the page is dark. */
-  dark?: { src: string; srcset?: string; width: number; height: number; bg?: string };
-}
-
-export interface CollectionItem {
-  /** When it was, in words ("2016", "July 2019 to now"): by its mark in a timeline, over its heading otherwise. */
-  when?: string;
-  /** Its heading: a label or a title, as the collection says. */
-  heading?: string;
-  /** Its picture. */
-  picture?: CollectionPicture;
-  /** A short line under the heading. */
-  subtext?: string;
-  /** Its words as HTML the content layer rendered from Markdown (paragraphs and lists, bold, italic, strikethrough, code, links), set as compact prose; a line of inline HTML, or several (each a paragraph), works too. */
-  html?: string | string[];
-}
+export type { CollectionPicture, CollectionItem } from '../../scripts/collection';
 
 interface Props {
   /** Optional plain-text header for the whole collection, rendered as a level-three heading. */
@@ -94,9 +64,8 @@ interface Props {
 }
 
 const { items, layout = 'tiles', headings = 'label', ratio, background = false, rounded = true, shadow = false } = Astro.props;
+// its width is always declared (content too), as a figure's is: the article spaces it apart as a block, not a line of text
 const { columns, prominent, shown, strip, timeline, label, width, peek, pictureSizes } = collectionView({ ...Astro.props, count: items.length, layout });
-// always declared (content too), as a figure does: the article spaces it apart as a block, not as a line of text
-const breakout = width;
 const heading = Astro.props.showHeading !== false ? Astro.props.heading?.trim() : undefined;
 ---
 
@@ -105,13 +74,15 @@ const heading = Astro.props.showHeading !== false ? Astro.props.heading?.trim() 
   data-layout={layout}
   data-columns={String(columns)}
   data-headings={headings}
-  data-breakout={breakout}
+  data-breakout={width}
+  style={`--columns: ${columns}`}
   role={strip ? 'region' : undefined}
   aria-roledescription={layout === 'carousel' ? 'carousel' : undefined}
   aria-label={strip ? heading || label : undefined}
   data-collection
   data-collection-strip={strip ? '' : undefined}
   data-peek={peek ? '' : undefined}
+  data-focus-ring={peek ? 'child' : undefined}
   data-prominent={prominent ? '' : undefined}
 >
   {heading && <header class="collection-header"><Heading level={3}>{heading}</Heading></header>}
@@ -168,13 +139,13 @@ const heading = Astro.props.showHeading !== false ? Astro.props.heading?.trim() 
 </div>
 
 <style>
-  .collection-header {
-    margin-bottom: var(--space-6);
+  /* the layouts that read their own width (the queries at the end) size by it, not the screen's */
+  .collection:is([data-layout='tiles'], [data-layout='masonry'], [data-layout='timeline'], [data-layout='rows']:has([data-picture])) {
+    container-type: inline-size;
   }
 
-  .items {
-    padding: 0;
-    list-style: none;
+  .collection-header {
+    margin-bottom: var(--space-6);
   }
 
   .item,
@@ -182,12 +153,8 @@ const heading = Astro.props.showHeading !== false ? Astro.props.heading?.trim() 
   .body {
     display: grid;
     align-content: start;
-    min-width: 0;
-  }
-
-  .item,
-  .body {
     gap: var(--space-3);
+    min-width: 0;
   }
 
   .words {
@@ -195,38 +162,30 @@ const heading = Astro.props.showHeading !== false ? Astro.props.heading?.trim() 
   }
 
   .picture {
-    display: block;
     min-width: 0;
-  }
-
-  .when,
-  .heading,
-  .subtext {
-    margin: 0;
   }
 
   /* an item's time: marigold as type, in the interface face, its figures lined up */
   .when {
     color: var(--c-collection-timeline-when);
-    font-family: var(--font-ui);
-    font-size: var(--text-sm);
-    font-weight: var(--weight-semibold);
+    font: var(--type-label);
     font-variant-numeric: tabular-nums;
-    line-height: var(--leading-ui);
   }
 
-  /* the heading as a label: small capitals over the words */
+  /* the heading as a label (small capitals over the words; prominent tiles' in the accent's ink), or a title */
   .heading {
     color: var(--color-text-muted);
-    font-family: var(--font-ui);
-    font-size: var(--text-sm);
-    font-weight: var(--weight-semibold);
+    font: var(--type-label);
+    font-variant-numeric: inherit;
     letter-spacing: var(--tracking-label);
-    line-height: var(--leading-ui);
     text-transform: uppercase;
   }
 
-  /* or as a title */
+  [data-prominent] .heading,
+  [data-prominent][data-headings='title'] .subtext {
+    color: var(--c-collection-prominent-ink);
+  }
+
   [data-headings='title'] .heading {
     color: var(--color-text);
     font-family: var(--font-display);
@@ -238,26 +197,18 @@ const heading = Astro.props.showHeading !== false ? Astro.props.heading?.trim() 
 
   .subtext {
     color: var(--color-text);
-    font-family: var(--font-ui);
-    font-size: var(--text-md);
-    font-weight: var(--weight-medium);
-    line-height: var(--leading-ui);
+    font: var(--type-control);
   }
 
   [data-headings='title'] .subtext {
     color: var(--color-text-muted);
   }
 
-  /* an item's words (compact prose: paragraphs and lists), a little apart from the lines over them */
   .texts {
     margin-block-start: var(--space-1);
   }
 
-  /* rows: one under another, a picture beside its words, between hairlines */
-  [data-layout='rows'] .items {
-    display: grid;
-  }
-
+  /* rows: one under another (as the timeline), a picture beside its words, between hairlines */
   [data-layout='rows'] .item {
     gap: var(--space-5);
     padding-block: var(--space-5);
@@ -281,27 +232,15 @@ const heading = Astro.props.showHeading !== false ? Astro.props.heading?.trim() 
     border-block: var(--border-hairline) solid var(--color-rule);
   }
 
-  [data-layout='columns'] .item {
-    flex: 0 1 auto;
-  }
-
   [data-layout='columns'] .item[data-picture] {
     flex: 1 1 var(--c-collection-column);
   }
 
-  /* tiles: an even grid of cards on the page's raised paper */
+  /* tiles: an even grid of cards on the page's raised paper, --columns to a row (set from data-columns) */
   [data-layout='tiles'] .items {
     display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: repeat(var(--columns), minmax(0, 1fr));
     gap: var(--space-4);
-  }
-
-  [data-layout='tiles'][data-columns='3'] .items {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
-
-  [data-layout='tiles'][data-columns='4'] .items {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
   }
 
   [data-layout='tiles'] .item,
@@ -313,47 +252,21 @@ const heading = Astro.props.showHeading !== false ? Astro.props.heading?.trim() 
     background: var(--color-bg-raised);
   }
 
-  [data-layout='tiles'][data-columns='1'] .items {
-    grid-template-columns: minmax(0, 1fr);
-  }
-
   [data-layout='tiles'] .words {
     gap: var(--space-2);
   }
 
-  /* prominent tiles: a step up from the raised paper (the accent's soft tint, never inverted), an accent edge
-     down the start side, and the labels in the accent's ink */
+  /* prominent: the accent's soft tint (never inverted), an accent edge down the start */
   [data-prominent] .item {
     border-color: transparent;
     border-inline-start: var(--border-quote) solid var(--c-collection-prominent-edge);
     background: var(--c-collection-prominent-bg);
   }
 
-  [data-prominent] .heading,
-  [data-prominent][data-headings='title'] .subtext {
-    color: var(--c-collection-prominent-ink);
-  }
-
-  [data-prominent][data-headings='title'] .heading {
-    color: var(--color-text);
-  }
-
-  /* masonry: cards in columns, each as tall as it is */
+  /* masonry: cards in --columns columns, each as tall as it is */
   [data-layout='masonry'] .items {
-    columns: 2;
+    columns: var(--columns);
     column-gap: var(--space-4);
-  }
-
-  [data-layout='masonry'][data-columns='1'] .items {
-    columns: 1;
-  }
-
-  [data-layout='masonry'][data-columns='3'] .items {
-    columns: 3;
-  }
-
-  [data-layout='masonry'][data-columns='4'] .items {
-    columns: 4;
   }
 
   [data-layout='masonry'] .item {
@@ -379,63 +292,46 @@ const heading = Astro.props.showHeading !== false ? Astro.props.heading?.trim() 
   [data-collection-strip] .items {
     display: grid;
     grid-auto-flow: column;
+    grid-auto-columns: min(var(--slide), var(--share));
     padding-block-end: var(--space-2);
     overflow-x: auto;
     overscroll-behavior-x: contain;
     scroll-padding-inline: var(--space-0);
-  }
-
-  [data-collection-strip] .items:focus-visible {
-    outline: var(--border-focus) solid var(--color-focus);
-    outline-offset: var(--border-focus-offset);
+    scroll-behavior: smooth;
   }
 
   [data-collection-strip] .item {
     scroll-snap-align: start;
   }
 
-  /* carousel: cards in the strip, one snapped to its start at a time */
   [data-layout='carousel'] .items {
-    grid-auto-columns: min(var(--c-collection-slide), 85%);
+    --slide: var(--c-collection-slide);
+    --share: 85%;
     gap: var(--space-4);
     scroll-snap-type: x mandatory;
   }
 
-  .controls {
+  /* nothing to scroll (everything in view): no buttons (hidden) */
+  .controls:not([hidden]) {
     display: flex;
     justify-content: end;
     gap: var(--space-2);
   }
 
-  /* full: the strip spans the viewport inside the page's gutters, centred: its items shrink (to
-     c.collection.strip-min) to fit the window, and only a row that still doesn't fit scrolls, from the gutter */
+  /* full: across the viewport inside its gutters, centred; items shrink (to strip-min) before it scrolls */
   [data-collection-strip][data-breakout='full'] .items {
+    grid-auto-columns: minmax(min(var(--c-collection-strip-min), var(--share)), min(var(--slide), var(--share)));
     justify-content: safe center;
     padding-inline: var(--space-gutter);
     scroll-padding-inline: var(--space-gutter);
-  }
-
-  [data-layout='carousel'][data-breakout='full'] .items {
-    grid-auto-columns: minmax(min(var(--c-collection-strip-min), 85%), min(var(--c-collection-slide), 85%));
-  }
-
-  [data-layout='timeline-scroll'][data-breakout='full'] .items {
-    grid-auto-columns: minmax(min(var(--c-collection-strip-min), 80%), min(var(--c-collection-timeline-slide), 80%));
   }
 
   [data-collection-strip][data-breakout='full'] .controls {
     padding-inline: var(--space-gutter);
   }
 
-  /* nothing to scroll (everything in view): no buttons */
-  .controls[hidden] {
-    display: none;
-  }
-
-  /* peek: the list reaches out by --bleed-start / --bleed-end (the room beside the strip, from the script)
-     and fades to nothing across it, while the column stays whole; at rest, the first item sits at the
-     column's start. The fade is the strip's, not the items': it stays put while they move under it. Before
-     the script runs, and on a phone, there's no room: a plain strip. */
+  /* peek: the list reaches out by --bleed-start / --bleed-end (the script's; none on a phone) and fades out
+     there, the fade the strip's. It would hide the list's ring, so the strip draws it (data-focus-ring) */
   [data-peek] .items {
     margin-inline: calc(var(--bleed-start, 0px) * -1) calc(var(--bleed-end, 0px) * -1);
     padding-inline: var(--bleed-start, 0px) var(--bleed-end, 0px);
@@ -443,21 +339,11 @@ const heading = Astro.props.showHeading !== false ? Astro.props.heading?.trim() 
     mask-image: linear-gradient(to right, transparent, currentColor var(--bleed-start, 0px), currentColor calc(100% - var(--bleed-end, 0px)), transparent);
   }
 
-  /* the fade would hide the list's own focus ring at its sides: the strip draws it round the column */
   [data-peek] .items:focus-visible {
     outline: none;
   }
 
-  [data-peek]:has(> .items:focus-visible) {
-    outline: var(--border-focus) solid var(--color-focus);
-    outline-offset: var(--border-focus-offset);
-  }
-
-  /*
-   * The timelines: each item's mark on a line, the line broken a little either side of each mark. The
-   * mark sits level with the item's first line: its time's (a line of small text), or its heading's when
-   * the time is beside it in a column and the heading is a title.
-   */
+  /* the timelines: each mark on a line, broken either side of it, level with its item's first line */
   [data-layout^='timeline'] {
     --line-sm: calc(var(--text-sm) * var(--leading-ui));
     --first-line: var(--line-sm);
@@ -473,6 +359,7 @@ const heading = Astro.props.showHeading !== false ? Astro.props.heading?.trim() 
   .mark::after {
     position: absolute;
     content: '';
+    background: var(--c-collection-timeline-line);
   }
 
   .mark::before {
@@ -480,10 +367,6 @@ const heading = Astro.props.showHeading !== false ? Astro.props.heading?.trim() 
     block-size: var(--mark);
     border-radius: var(--radius-round);
     background: var(--c-collection-timeline-mark);
-  }
-
-  .mark::after {
-    background: var(--c-collection-timeline-line);
   }
 
   .item:last-child .mark::after {
@@ -499,10 +382,6 @@ const heading = Astro.props.showHeading !== false ? Astro.props.heading?.trim() 
   }
 
   /* timeline: down a line, its times in a column before it */
-  [data-layout='timeline'] .items {
-    display: grid;
-  }
-
   [data-layout='timeline'] .item {
     grid-template-columns: var(--c-collection-timeline-when-width) var(--c-collection-timeline-gutter) minmax(0, 1fr);
     grid-template-areas: 'when mark body';
@@ -532,22 +411,19 @@ const heading = Astro.props.showHeading !== false ? Astro.props.heading?.trim() 
   }
 
   /* the space between items is the body's, so the line runs through it to the next mark */
-  [data-layout='timeline'] .body {
+  [data-layout='timeline'] .item:not(:last-child) .body {
     padding-block-end: var(--space-10);
-  }
-
-  [data-layout='timeline'] .item:last-child .body {
-    padding-block-end: var(--space-0);
   }
 
   [data-layout='timeline'] .picture {
     max-inline-size: var(--c-collection-timeline-picture);
   }
 
-  /* sideways: the times over the line, the words under it; each item runs the line on to the next mark */
+  /* sideways: times over the line, words under it; the space between items is theirs, so the line runs on */
   [data-layout='timeline-scroll'] .items {
+    --slide: var(--c-collection-timeline-slide);
+    --share: 80%;
     grid-template-rows: auto var(--c-collection-timeline-gutter) auto;
-    grid-auto-columns: min(var(--c-collection-timeline-slide), 80%);
     scroll-snap-type: x proximity;
   }
 
@@ -558,7 +434,6 @@ const heading = Astro.props.showHeading !== false ? Astro.props.heading?.trim() 
     gap: var(--space-2) var(--space-0);
   }
 
-  /* the space between items is the time's and the words', so the line runs through it to the next mark */
   [data-layout='timeline-scroll'] .when,
   [data-layout='timeline-scroll'] .body {
     padding-inline-end: var(--space-6);
@@ -577,42 +452,31 @@ const heading = Astro.props.showHeading !== false ? Astro.props.heading?.trim() 
     margin-block: auto;
   }
 
-  @media (max-width: 56rem) {
-    [data-layout='tiles'][data-columns='3'] .items,
-    [data-layout='tiles'][data-columns='4'] .items {
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-    }
-
-    [data-layout='masonry'][data-columns='3'] .items,
-    [data-layout='masonry'][data-columns='4'] .items {
-      columns: 2;
+  /* 3 or 4 to a row go 2: popout and wide below c.collection.query-two-up, content below its measure */
+  @container (width < 49.5rem) {
+    :is([data-breakout='popout'], [data-breakout='wide']):is([data-columns='3'], [data-columns='4']) .items {
+      --columns: 2;
     }
   }
 
-  @media (max-width: 40rem) {
-    [data-layout='tiles'] .items,
-    [data-layout='tiles'][data-columns='3'] .items,
-    [data-layout='tiles'][data-columns='4'] .items {
-      grid-template-columns: minmax(0, 1fr);
+  @container (width < 40rem) {
+    [data-breakout='content']:is([data-columns='3'], [data-columns='4']) .items {
+      --columns: 2;
     }
+  }
 
-    [data-layout='masonry'] .items,
-    [data-layout='masonry'][data-columns='3'] .items,
-    [data-layout='masonry'][data-columns='4'] .items {
-      columns: 1;
+  /* below c.collection.query-narrow (a phone's column): one to a row, pictures over words, the line down the start */
+  @container (width < 36.45rem) {
+    [data-columns][data-breakout] .items {
+      --columns: 1;
     }
 
     [data-layout='rows'] .item[data-picture] {
       grid-template-columns: minmax(0, 1fr);
     }
 
-    /* on a phone, the timeline's line runs down the start, each time over its words */
-    [data-layout='timeline'],
-    [data-layout='timeline'][data-headings='title'] {
-      --first-line: var(--line-sm);
-    }
-
     [data-layout='timeline'] .item {
+      --first-line: var(--line-sm);
       grid-template-columns: var(--c-collection-timeline-gutter) minmax(0, 1fr);
       grid-template-areas: 'mark when' 'mark body';
       column-gap: var(--space-3);
@@ -623,12 +487,6 @@ const heading = Astro.props.showHeading !== false ? Astro.props.heading?.trim() 
       text-align: start;
     }
   }
-
-  @media (prefers-reduced-motion: no-preference) {
-    [data-collection-strip] .items {
-      scroll-behavior: smooth;
-    }
-  }
 </style>
 
 <script>
@@ -637,6 +495,5 @@ const heading = Astro.props.showHeading !== false ? Astro.props.heading?.trim() 
   import { setupCollectionStrip } from '../../scripts/collectionStrip';
 
   each<HTMLElement>('[data-layout="masonry"]', setupCollectionMasonry);
-  // a strip's Previous and Next (the carousel's, the sideways timeline's), and a peek's room
-  each<HTMLElement>('[data-collection-strip]', setupCollectionStrip);
+  each<HTMLElement>('[data-collection-strip]', (root, signal) => setupCollectionStrip(root, signal, '--c-collection-query-narrow'));
 </script>

@@ -26,6 +26,11 @@ import Link from '../../components/fundamentals/Link.astro';
 import Dialog from '../../components/compounds/Dialog.astro';
 import Video from '../../components/fundamentals/Video.astro';
 import Tag from '../../components/fundamentals/Tag.astro';
+import HiddenField from '../../components/fundamentals/HiddenField.astro';
+import ActionBar from '../../components/compounds/ActionBar.astro';
+import Form from '../kit/Form.astro';
+import PlainList from '../kit/PlainList.astro';
+import IssueNote from '../kit/IssueNote.astro';
 import { withBase } from '../../design/meta';
 import { sizes } from '../../design/responsive';
 import type { ImageMedia, VideoMedia } from '../../content/schema';
@@ -89,11 +94,11 @@ const vs = video?.sidecar;
 const videoFacts = vs ? [`${vs.width} \u00d7 ${vs.height}`, vs.duration ? clock(vs.duration) : '', megabytes(video!.bytes), vs.file.endsWith('.webm') ? 'WebM' : 'MP4'].filter(Boolean).join(' \u00b7 ') : '';
 ---
 
-<div class="details" data-region="media-details" data-editor-media-details={(picture ?? video)?.id ?? ''}>
+<div class="details" data-busy-line data-region="media-details" data-editor-media-details={(picture ?? video)?.id ?? ''}>
   {
     video && vs ? (
       <>
-        <form class="form" data-editor-media-form novalidate aria-labelledby="media-details-title">
+        <Form data-editor-media-form="" labelledby="media-details-title">
           <div class="head">
             <Heading level={2} size="h4" id="media-details-title">{name}</Heading>
             <Text variant="small" tone="muted">{`${video.id} \u00b7 ${videoFacts}`}</Text>
@@ -106,22 +111,22 @@ const videoFacts = vs ? [`${vs.width} \u00d7 ${vs.height}`, vs.duration ? clock(
           <TextField label="Licence" name="licence.name" value={vs.licence?.name ?? ''} optional hint="CC BY 4.0, All rights reserved, and so on." />
           <TextField label="Licence address" name="licence.url" type="url" value={vs.licence?.url ?? ''} optional />
           <TextField label="Source" name="source" type="url" value={vs.source ?? ''} optional hint="Where it came from, if someone else made it." />
-          <p class="issue" role="alert" data-editor-form-issue hidden />
-          <div class="actions">
+          <IssueNote data-editor-form-issue="" />
+          <ActionBar align="end">
             <Button variant="primary" type="submit">Save the details</Button>
-          </div>
-        </form>
+          </ActionBar>
+        </Form>
 
         <section class="part" aria-labelledby="media-used-title">
           <Heading level={3} size="ui" id="media-used-title">Used in</Heading>
           {usedIn.length ? (
-            <ul class="list">
+            <PlainList gap="sm">
               {usedIn.map((r) => (
                 <li>
                   <Link href={withBase(`/_edit/${r.href}`)} variant="standalone">{r.label}</Link>
                 </li>
               ))}
-            </ul>
+            </PlainList>
           ) : (
             <Text variant="ui" tone="muted">Nothing uses it yet.</Text>
           )}
@@ -134,9 +139,9 @@ const videoFacts = vs ? [`${vs.width} \u00d7 ${vs.height}`, vs.duration ? clock(
           ) : (
             <Text variant="small" tone="muted">Deletes the video, its poster and its details from content/. Saving to remote then removes it from the site.</Text>
           )}
-          <div class="actions">
+          <ActionBar align="end">
             <Button variant="secondary" icon="delete" disabled={usedIn.length > 0} data-dialog-open="delete-media">Delete the video</Button>
-          </div>
+          </ActionBar>
           <Dialog id="delete-media" title="Delete this video?" size="sm">
             <Text variant="ui">{`${name}, its poster and its details will be deleted from content/. If it's on the site already, Discard on the Save to remote screen brings it back until you save.`}</Text>
             <Fragment slot="actions">
@@ -149,7 +154,7 @@ const videoFacts = vs ? [`${vs.width} \u00d7 ${vs.height}`, vs.duration ? clock(
       </>
     ) : picture && sc ? (
       <>
-        <form class="form" data-editor-media-form novalidate aria-labelledby="media-details-title">
+        <Form data-editor-media-form="" labelledby="media-details-title">
           <div class="head">
             <Heading level={2} size="h4" id="media-details-title">{name}</Heading>
             <Text variant="small" tone="muted">{`${picture.id} \u00b7 ${picture.width} \u00d7 ${picture.height}`}</Text>
@@ -166,7 +171,7 @@ const videoFacts = vs ? [`${vs.width} \u00d7 ${vs.height}`, vs.duration ? clock(
             </Text>
             <Button variant="quiet" size="sm" icon="focus" data-editor-focus-clear="">Use the centre</Button>
           </div>
-          <input type="hidden" name="focus" value={sc.focus ?? ''} />
+          <HiddenField name="focus" value={sc.focus ?? ''} />
           <TextField label="Alt text" name="alt" value={sc.alt ?? ''} multiline rows={3} hint={'What it shows, for someone who can\u2019t see it: 250 characters at most, and never \u201cimage of\u201d.'} />
           <Checkbox label="It's decorative: it adds nothing a reader would miss" name="decorative" checked={!!sc.decorative} />
           <TextField label="Caption" name="caption" value={sc.caption ?? ''} multiline rows={2} optional />
@@ -174,22 +179,22 @@ const videoFacts = vs ? [`${vs.width} \u00d7 ${vs.height}`, vs.duration ? clock(
           <TextField label="Licence" name="licence.name" value={sc.licence?.name ?? ''} optional hint="CC BY 4.0, All rights reserved, and so on." />
           <TextField label="Licence address" name="licence.url" type="url" value={sc.licence?.url ?? ''} optional />
           <TextField label="Source" name="source" type="url" value={sc.source ?? ''} optional hint="Where it came from, if someone else made it." />
-          <p class="issue" role="alert" data-editor-form-issue hidden />
-          <div class="actions">
+          <IssueNote data-editor-form-issue="" />
+          <ActionBar align="end">
             <Button variant="primary" type="submit">Save the details</Button>
-          </div>
-        </form>
+          </ActionBar>
+        </Form>
 
         <section class="part" aria-labelledby="media-used-title">
           <Heading level={3} size="ui" id="media-used-title">Used in</Heading>
           {usedIn.length ? (
-            <ul class="list">
+            <PlainList gap="sm">
               {usedIn.map((r) => (
                 <li>
                   <Link href={withBase(`/_edit/${r.href}`)} variant="standalone">{r.label}</Link>
                 </li>
               ))}
-            </ul>
+            </PlainList>
           ) : (
             <Text variant="ui" tone="muted">Nothing uses it yet.</Text>
           )}
@@ -211,17 +216,17 @@ const videoFacts = vs ? [`${vs.width} \u00d7 ${vs.height}`, vs.duration ? clock(
             <Text variant="small" tone="muted">Cropping makes a copy beside it, with its details. This picture stays as it is.</Text>
           )}
           {copies.length > 0 && (
-            <ul class="list" aria-label="Cropped copies">
+            <PlainList gap="sm" label="Cropped copies">
               {copies.map((c) => (
                 <li>
                   <Link href={media(c)} variant="standalone">{`Cropped copy: ${c.split('/').pop()}`}</Link>
                 </li>
               ))}
-            </ul>
+            </PlainList>
           )}
-          <div class="actions">
+          <ActionBar align="end">
             {gif ? <Text variant="small" tone="muted">A GIF is kept exactly as it is, so it isn't cropped. Set its focus point above to control what a frame keeps.</Text> : animated ? <Text variant="small" tone="muted">An animated picture stays whole. Set its focus point above to control what a frame keeps.</Text> : <Button variant="secondary" icon="crop" data-editor-media-crop="">Crop the picture</Button>}
-          </div>
+          </ActionBar>
         </section>
 
         <form class="part" data-editor-media-dark novalidate aria-labelledby="media-dark-title">
@@ -247,20 +252,20 @@ const videoFacts = vs ? [`${vs.width} \u00d7 ${vs.height}`, vs.duration ? clock(
             <Text variant="small" tone="muted">None: the same picture shows in light and dark mode. Add one when a picture needs other colours on a dark page (a diagram, a logo, a screenshot).</Text>
           )}
           <FileField label={picture.dark ? 'New dark version' : 'Dark version'} name="file" accept="image/jpeg,image/png,image/webp,image/avif,image/gif,image/tiff,image/svg+xml" hint="The same picture, in colours for a dark page, and of the same shape. Saved as WebP within the budgets, with its transparency; a GIF is kept exactly as it is." />
-          <p class="issue" role="alert" data-editor-form-issue hidden />
-          <div class="actions">
+          <IssueNote data-editor-form-issue="" />
+          <ActionBar align="end">
             {picture.dark && <Button variant="quiet" icon="delete" data-editor-media-dark-remove="">Remove it</Button>}
             <Button variant="secondary" type="submit" icon="upload">{picture.dark ? 'Replace it' : 'Add it'}</Button>
-          </div>
+          </ActionBar>
         </form>
 
         <form class="part" data-editor-media-replace novalidate aria-labelledby="media-replace-title">
           <Heading level={3} size="ui" id="media-replace-title">Replace the picture</Heading>
           <FileField label="New picture" name="file" accept="image/jpeg,image/png,image/webp,image/avif,image/gif,image/tiff,image/svg+xml" hint="It keeps its name and details, so every page that uses it shows the new one. A GIF is kept exactly as it is." />
-          <p class="issue" role="alert" data-editor-form-issue hidden />
-          <div class="actions">
+          <IssueNote data-editor-form-issue="" />
+          <ActionBar align="end">
             <Button variant="secondary" type="submit" icon="upload">Replace it</Button>
-          </div>
+          </ActionBar>
         </form>
 
         <section class="part" aria-labelledby="media-delete-title">
@@ -270,9 +275,9 @@ const videoFacts = vs ? [`${vs.width} \u00d7 ${vs.height}`, vs.duration ? clock(
           ) : (
             <Text variant="small" tone="muted">Deletes the picture and its details from content/. Saving to remote then removes it from the site.</Text>
           )}
-          <div class="actions">
+          <ActionBar align="end">
             <Button variant="secondary" icon="delete" disabled={usedIn.length > 0} data-dialog-open="delete-media">Delete the picture</Button>
-          </div>
+          </ActionBar>
           <Dialog id="delete-media" title="Delete this picture?" size="sm">
             <Text variant="ui">{`${name} and its details will be deleted from content/. If it's on the site already, Discard on the Save to remote screen brings it back until you save.`}</Text>
             <Fragment slot="actions">
@@ -299,13 +304,9 @@ const videoFacts = vs ? [`${vs.width} \u00d7 ${vs.height}`, vs.duration ? clock(
     background: var(--color-bg-raised);
   }
 
-  .form,
   .part {
     display: grid;
     gap: var(--space-4);
-  }
-
-  .part {
     padding-block-start: var(--space-5);
     border-block-start: var(--border-hairline) solid var(--color-rule);
   }
@@ -349,32 +350,12 @@ const videoFacts = vs ? [`${vs.width} \u00d7 ${vs.height}`, vs.duration ? clock(
     pointer-events: none;
   }
 
-  .focus-row,
-  .actions {
+  .focus-row {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
     justify-content: space-between;
     gap: var(--space-3);
-  }
-
-  .actions {
-    justify-content: end;
-  }
-
-  .issue {
-    margin: 0;
-    color: var(--color-negative);
-    font-size: var(--text-sm);
-    font-weight: var(--weight-medium);
-  }
-
-  .list {
-    display: grid;
-    gap: var(--space-2);
-    margin: 0;
-    padding: 0;
-    list-style: none;
   }
 
   /* the two versions side by side, each on a page of its own mode */
@@ -403,40 +384,6 @@ const videoFacts = vs ? [`${vs.width} \u00d7 ${vs.height}`, vs.duration ? clock(
 
   .side[data-scheme='dark'] {
     color-scheme: dark;
-  }
-  /* drawn again from the server (editor spec §2.2): what it shows stays while it updates, with a line
-     along its top past the delay */
-  .details[data-busy='on'] {
-    position: relative;
-  }
-
-  .details[data-busy='on']::before {
-    content: '';
-    position: absolute;
-    inset-inline: 0;
-    inset-block-start: 0;
-    z-index: var(--layer-raised);
-    block-size: var(--border-strong);
-    background: linear-gradient(90deg, transparent, var(--color-accent), transparent) no-repeat;
-    background-size: 40% 100%;
-    animation: region-busy var(--duration-slower) var(--ease-standard) infinite alternate;
-    pointer-events: none;
-  }
-
-  @keyframes region-busy {
-    from {
-      background-position: 0 0;
-    }
-    to {
-      background-position: 100% 0;
-    }
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    .details[data-busy='on']::before {
-      animation: none;
-      background: var(--color-accent);
-    }
   }
 </style>
 

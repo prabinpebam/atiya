@@ -41,8 +41,8 @@ const hasSlot = Astro.slots.has('default');
 const described = hint ? `${id}-hint` : undefined;
 ---
 
-<label class="checkbox" data-checkbox data-indeterminate={indeterminate ? '' : undefined} data-disabled={disabled ? '' : undefined} {...rest}>
-  <span class="box">
+<label class="checkbox" data-checkbox data-check-part="root" data-indeterminate={indeterminate ? '' : undefined} data-disabled={disabled ? '' : undefined} data-press {...rest}>
+  <span class="box" data-check-part="box">
     <input
       class="input"
       type="checkbox"
@@ -63,46 +63,15 @@ const described = hint ? `${id}-hint` : undefined;
       <Fragment set:html={minus.body} />
     </svg>
   </span>
-  <span class="content">
+  <span class="content" data-check-part="words">
     <span class="label">{hasSlot ? <slot /> : label}</span>
-    {hint && <span class="hint" id={`${id}-hint`}>{hint}</span>}
+    {hint && <span class="hint" id={`${id}-hint`} data-field-part="hint">{hint}</span>}
   </span>
 </label>
 
 <style>
-  .checkbox {
-    display: grid;
-    grid-template-columns: var(--c-check-size) minmax(0, 1fr);
-    align-items: center;
-    gap: var(--space-3);
-    min-height: var(--size-touch);
-    font-family: var(--font-ui);
-    color: var(--color-text);
-    cursor: pointer;
-  }
-
-  .checkbox[data-disabled] {
-    opacity: var(--opacity-disabled);
-    cursor: not-allowed;
-  }
-
-  /* with a hint under it, the box sits on the label's line, not between the two */
-  .checkbox:has(.hint) {
-    align-items: start;
-  }
-
-  .checkbox:has(.hint) .box {
-    margin-block-start: calc((var(--leading-ui) * var(--text-md) - var(--c-check-size)) / 2);
-  }
-
-  .box {
-    position: relative;
-    display: grid;
-    place-items: center;
-    inline-size: var(--c-check-size);
-    block-size: var(--c-check-size);
-  }
-
+  /* its layout (the box beside its words, on the label's line when there's a hint) is base.css's check
+     recipe (data-check-part), shared with Radio */
   .input {
     appearance: none;
     inline-size: var(--c-check-size);
@@ -162,22 +131,8 @@ const described = hint ? `${id}-hint` : undefined;
     opacity: 0;
   }
 
-  .content {
-    display: grid;
-    gap: var(--space-1);
-    min-width: 0;
-  }
-
   .label {
-    font-size: var(--text-md);
-    font-weight: var(--weight-medium);
-    line-height: var(--leading-ui);
-  }
-
-  .hint {
-    color: var(--color-text-muted);
-    font-size: var(--text-sm);
-    line-height: var(--leading-ui);
+    font: var(--type-control);
   }
 </style>
 

@@ -144,6 +144,15 @@
       "group": "The site/Design system"
     },
     {
+      "path": "site-ui/token-changelog.md",
+      "title": "Site token changelog",
+      "order": 15.32,
+      "icon": "history",
+      "status": "stable",
+      "updated": "2026-10-19",
+      "group": "The site/Design system"
+    },
+    {
       "path": "site-ui/theming.md",
       "title": "Theming",
       "order": 15.35,
@@ -193,7 +202,7 @@
       "title": "Design systems: maturity review and next steps",
       "order": 15.8,
       "icon": "workspace_premium",
-      "status": "planned",
+      "status": "done",
       "updated": "2026-10-19",
       "group": "The site/Design system"
     },
@@ -654,6 +663,15 @@
       "icon": "token",
       "status": "stable",
       "updated": "2026-09-26",
+      "group": "Ways to explore/Little planet/Game UI"
+    },
+    {
+      "path": "game-ui/token-changelog.md",
+      "title": "Token changelog",
+      "order": 70.45,
+      "icon": "history",
+      "status": "stable",
+      "updated": "2026-10-19",
       "group": "Ways to explore/Little planet/Game UI"
     },
     {

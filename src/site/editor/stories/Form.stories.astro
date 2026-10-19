@@ -1,0 +1,44 @@
+---
+import Example from '../../library/Example.astro';
+import Form from '../kit/Form.astro';
+import IssueNote from '../kit/IssueNote.astro';
+import TextField from '../../components/fundamentals/TextField.astro';
+import Button from '../../components/fundamentals/Button.astro';
+import Text from '../../components/fundamentals/Text.astro';
+import ActionBar from '../../components/compounds/ActionBar.astro';
+---
+
+<Example title="A form's column" description="Fields, the issue note and the actions, one under another (md, the most usual)." layout="block">
+  <Form label="New section (sample)">
+    <TextField label="Title" name="title" id="story-form-title" />
+    <TextField label="Summary" name="summary" id="story-form-summary" optional />
+    <IssueNote text="A title is needed." />
+    <ActionBar align="end">
+      <Button variant="primary" type="submit">Add the section</Button>
+    </ActionBar>
+  </Form>
+</Example>
+
+<Example title="Groups apart" description="lg, for a form of groups; xl, for a form of sections with headings; measure keeps a line comfortable." layout="block">
+  <Form gap="lg" width="measure" label="Ways to explore (sample)">
+    <TextField label="Heading" name="heading" id="story-form-heading" />
+    <TextField label="Intro" name="intro" id="story-form-intro" optional />
+  </Form>
+  <Form gap="xl" label="Recommendation (sample)">
+    <TextField label="Their name" name="name" id="story-form-name" />
+    <TextField label="Their words" name="text" id="story-form-text" multiline rows={3} />
+  </Form>
+</Example>
+
+<Example title="Fields inside another form" description="as='div': the group of a dialog's body, where the dialog's form owns the submit." layout="block">
+  <Form as="div">
+    <Text variant="ui" tone="muted">A plain group of fields, laid out the same.</Text>
+    <TextField label="Address" name="href" id="story-form-href" />
+  </Form>
+</Example>
+
+<Example title="Filling its panel" description="fill: a column as tall as its panel (the inspector's), its last part at the bottom." layout="block">
+  <Form fill label="Block settings (sample)">
+    <TextField label="Caption" name="caption" id="story-form-caption" optional />
+  </Form>
+</Example>

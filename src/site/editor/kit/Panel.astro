@@ -1,0 +1,61 @@
+---
+/**
+ * A raised, ruled panel holding one thing a screen offers: a settings card (the site's settings, a contact
+ * option), a navigation card, the changes to save. Its parts (a head, fields, actions) sit one under another a
+ * set space apart. As a form, it never validates in the browser's own way (novalidate): its screen's script does.
+ * A result or a warning is marked on its leading edge in its tone, keeping the panel's own surface (so its text
+ * keeps its contrast).
+ * @tier kit
+ * @a11y A section, a form or a plain group: name a section or a form by its heading (labelledby).
+ */
+
+interface Props {
+  /** The element: a section of the screen, a form, or a plain group. */
+  as?: 'section' | 'form' | 'div';
+  /** The space between its parts: md, or lg for a card of fields. */
+  gap?: 'md' | 'lg';
+  /** A result (positive) or a warning (negative): its leading edge drawn thick in that colour. */
+  tone?: 'neutral' | 'positive' | 'negative';
+  /** The id of the heading that names it (aria-labelledby). */
+  labelledby?: string;
+  /** Its id (a link to it from elsewhere: Settings' Contact card). */
+  id?: string;
+  /** Data attributes pass through to the panel: the hook its screen's script finds it by. */
+  [data: `data-${string}`]: string | undefined;
+}
+
+const { as: Tag = 'section', gap = 'md', tone = 'neutral', labelledby, id, ...rest } = Astro.props;
+---
+
+<Tag class="raised-panel" data-gap={gap} data-tone={tone} novalidate={Tag === 'form' ? true : undefined} aria-labelledby={labelledby} id={id} {...rest}>
+  <slot />
+</Tag>
+
+<style>
+  .raised-panel {
+    display: grid;
+    align-content: start;
+    gap: var(--space-4);
+    padding: var(--space-6);
+    border: var(--border-hairline) solid var(--color-rule);
+    border-radius: var(--radius-lg);
+    background: var(--color-bg-raised);
+  }
+
+  .raised-panel[data-gap='lg'] {
+    gap: var(--space-5);
+  }
+
+  .raised-panel[data-tone='positive'],
+  .raised-panel[data-tone='negative'] {
+    border-inline-start-width: var(--border-strong);
+  }
+
+  .raised-panel[data-tone='positive'] {
+    border-inline-start-color: var(--color-positive);
+  }
+
+  .raised-panel[data-tone='negative'] {
+    border-inline-start-color: var(--color-negative);
+  }
+</style>

@@ -48,10 +48,10 @@ const output = formatSliderValue(current, format, unit);
 const described = hint ? `${id}-hint` : undefined;
 ---
 
-<div class="slider" data-slider data-disabled={disabled ? '' : undefined} data-format={format} data-unit={unit} style={`--fill: ${fill}%`} {...rest}>
-  <div class="head">
+<div class="slider" data-slider data-field-part="root" data-disabled={disabled ? '' : undefined} data-format={format} data-unit={unit} style={`--fill: ${fill}%`} {...rest}>
+  <div class="head" data-field-part="head">
     <label class="label" for={id}>{label}</label>
-    <output class="value" for={id} data-output>{output}</output>
+    <output class="value" for={id} data-output data-field-part="note">{output}</output>
   </div>
   <input
     class="range"
@@ -66,39 +66,16 @@ const described = hint ? `${id}-hint` : undefined;
     aria-describedby={described}
     data-range
   />
-  {hint && <p class="hint" id={`${id}-hint`}>{hint}</p>}
+  {hint && <p class="hint" id={`${id}-hint`} data-field-part="hint">{hint}</p>}
 </div>
 
 <style>
-  .slider {
-    display: grid;
-    gap: var(--space-2);
-    font-family: var(--font-ui);
-    color: var(--color-text);
-  }
-
   .slider[data-disabled] {
     opacity: var(--opacity-disabled);
   }
 
-  .head {
-    display: flex;
-    align-items: baseline;
-    justify-content: space-between;
-    gap: var(--space-4);
-  }
-
   .label {
-    font-size: var(--text-sm);
-    font-weight: var(--weight-semibold);
-    line-height: var(--leading-ui);
-  }
-
-  .value {
-    color: var(--color-text-muted);
-    font-size: var(--text-sm);
-    font-weight: var(--weight-medium);
-    line-height: var(--leading-ui);
+    font: var(--type-label);
   }
 
   .range {
@@ -162,13 +139,6 @@ const described = hint ? `${id}-hint` : undefined;
 
   .range:active::-moz-range-thumb {
     transform: scale(var(--scale-lift));
-  }
-
-  .hint {
-    margin: 0;
-    color: var(--color-text-muted);
-    font-size: var(--text-sm);
-    line-height: var(--leading-ui);
   }
 </style>
 

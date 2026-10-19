@@ -122,7 +122,7 @@ export function initThemePanel(panel: HTMLElement, signal: AbortSignal) {
           const row = tpl.content.firstElementChild!.cloneNode(true) as HTMLElement;
           row.dataset.role = role;
           row.querySelector('.role-name')!.textContent = label;
-          row.querySelectorAll<HTMLElement>('.role-mode .sr-only').forEach((s, i) => (s.textContent = `${label}, ${i ? 'dark' : 'light'} page`));
+          row.querySelectorAll<HTMLInputElement>('input[type="color"]').forEach((input, i) => input.setAttribute('aria-label', `${label}, ${i ? 'dark' : 'light'} page`));
           box.append(row);
         }
       }

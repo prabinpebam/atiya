@@ -1,0 +1,14 @@
+/* Full planet (camera/overview.ts): with no character to steer, nothing that steers or uses it shows.
+ * Its owner imports it (camera/overview.ts); tokens only (tests/unit/designSystem.test.ts). */
+@layer tokens, base, primitives, components, cursors;
+
+@layer components {
+  /* full planet (camera/overview.ts): no character to steer, so nothing that steers or uses it shows */
+  .play.overview .lane,
+  .play.overview .aside,
+  .play.overview .view-controls,
+  .play.overview .hotbar-wrap,
+  .play.overview .character-picker {
+    display: none;
+  }
+}

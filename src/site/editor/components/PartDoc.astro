@@ -1,0 +1,90 @@
+---
+/**
+ * A part's or a kit piece's page in the parts library (the dev-only /_edit/library/<name>/ screen,
+ * documentation/editor/spec.md §10), as the design library shows a website component: which tier it is and its
+ * source, its live examples (the default slot: its story), its props (the props slot: the library's table) and
+ * its accessibility notes and keys. Its name and summary are the screen's heading and intro.
+ * @tier editor
+ * @a11y Each section is a region named by its heading; keys are listed as a table with a header row.
+ */
+import Heading from '../../components/fundamentals/Heading.astro';
+import Link from '../../components/fundamentals/Link.astro';
+import Tag from '../../components/fundamentals/Tag.astro';
+import Text from '../../components/fundamentals/Text.astro';
+import ActionBar from '../../components/compounds/ActionBar.astro';
+import Table from '../../components/compounds/Table.astro';
+
+interface Props {
+  /** Its name. */
+  name: string;
+  /** A part or a kit piece. */
+  tier: 'part' | 'kit';
+  /** Its source on GitHub. */
+  source: string;
+  /** The library's contents, to go back to. */
+  index: string;
+  /** Its accessibility notes (its doc comment's @a11y lines). */
+  a11y: string[];
+  /** The keys it takes (its doc comment's @key lines). */
+  keys: { keys: string; action: string }[];
+}
+
+const { name, tier, source, index, a11y, keys } = Astro.props;
+const props = Astro.slots.has('props');
+const examples = Astro.slots.has('default');
+// the table's cells are inline HTML: a key's words are text
+const esc = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;');
+---
+
+<article class="part-doc">
+  <ActionBar>
+    <Tag tone="accent">{tier === 'kit' ? 'Kit piece' : 'Part'}</Tag>
+    <Link href={source} variant="quiet" external>Source on GitHub</Link>
+    <Link href={index} variant="quiet">Every part</Link>
+  </ActionBar>
+
+  <section class="doc-part" aria-labelledby="part-examples">
+    <Heading level={2} size="h3" id="part-examples">Examples</Heading>
+    {examples ? <slot /> : <Text tone="negative">{`${name} has no story yet: add src/site/editor/stories/${name}.stories.astro.`}</Text>}
+  </section>
+
+  {
+    props && (
+      <section class="doc-part" aria-labelledby="part-props">
+        <Heading level={2} size="h3" id="part-props">
+          Props
+        </Heading>
+        <slot name="props" />
+      </section>
+    )
+  }
+
+  {
+    (a11y.length > 0 || keys.length > 0) && (
+      <section class="doc-part" aria-labelledby="part-access">
+        <Heading level={2} size="h3" id="part-access">
+          Accessibility
+        </Heading>
+        {a11y.map((n) => (
+          <Text variant="ui">{n}</Text>
+        ))}
+        {keys.length > 0 && <Table caption="Keyboard" columns={['Key', 'What it does']} rowHeadings rows={keys.map((k) => [esc(k.keys), esc(k.action)])} />}
+      </section>
+    )
+  }
+</article>
+
+<style>
+  .part-doc {
+    display: grid;
+    gap: var(--space-12);
+    min-inline-size: 0;
+  }
+
+  .doc-part {
+    display: grid;
+    gap: var(--space-4);
+    align-content: start;
+    min-inline-size: 0;
+  }
+</style>

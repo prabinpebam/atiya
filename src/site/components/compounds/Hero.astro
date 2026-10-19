@@ -11,6 +11,7 @@ import Heading from '../fundamentals/Heading.astro';
 import Text from '../fundamentals/Text.astro';
 import Image from '../fundamentals/Image.astro';
 import { sizes } from '../../design/responsive';
+import type { PictureSource } from '../../design/pictures';
 
 export interface HeroPicture {
   src: string;
@@ -19,7 +20,7 @@ export interface HeroPicture {
   width: number;
   height: number;
   /** Its dark mode version, shown when the page is dark. */
-  dark?: { src: string; srcset?: string; width: number; height: number };
+  dark?: PictureSource;
 }
 
 interface Props {

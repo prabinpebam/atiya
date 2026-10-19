@@ -1,0 +1,8 @@
+---
+import Example from '../../library/Example.astro';
+import CanvasChrome from '../components/CanvasChrome.astro';
+---
+
+<Example title="The canvas's overlay" description="Drawn over the page in the canvas: the block toolbar, the selection's tools, the table's insert lines and its menu; each shows as the reader works, so here they wait hidden." layout="block">
+  <CanvasChrome blocks={[{ kind: 'Heading 2', type: 'heading' }, { kind: 'Paragraph', type: 'text' }]} />
+</Example>

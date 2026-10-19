@@ -1,0 +1,24 @@
+---
+import Example from '../../library/Example.astro';
+import PlainList from '../kit/PlainList.astro';
+import Link from '../../components/fundamentals/Link.astro';
+---
+
+<Example title="A list without bullets" description="Its items one under another: none (rows that rule themselves apart), xs, sm and md." layout="stack">
+  <PlainList label="Used in (sample)">
+    <li><Link href="#a" variant="standalone">A walk round the pond</Link></li>
+    <li><Link href="#b" variant="standalone">The bridge</Link></li>
+  </PlainList>
+  <PlainList gap="xs" label="Sections (sample)">
+    <li><Link href="#c" variant="standalone">Work</Link></li>
+    <li><Link href="#d" variant="standalone">Writing</Link></li>
+  </PlainList>
+  <PlainList gap="sm" label="Cropped copies (sample)">
+    <li><Link href="#e" variant="standalone">Cropped copy: pond-2</Link></li>
+    <li><Link href="#f" variant="standalone">Cropped copy: pond-3</Link></li>
+  </PlainList>
+  <PlainList as="ol" gap="md" label="Steps (sample)">
+    <li><Link href="#g" variant="standalone">First</Link></li>
+    <li><Link href="#h" variant="standalone">Second</Link></li>
+  </PlainList>
+</Example>

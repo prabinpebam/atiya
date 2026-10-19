@@ -1,0 +1,21 @@
+---
+import Example from '../../library/Example.astro';
+import PaneGroup from '../kit/PaneGroup.astro';
+import Pane from '../kit/Pane.astro';
+import Button from '../../components/fundamentals/Button.astro';
+import TextField from '../../components/fundamentals/TextField.astro';
+---
+
+<Example title="A collection's items" description="Its name and a line on what an item holds, the items in a list that can be reordered (sortable), and Add an item after them." layout="block">
+  <PaneGroup label="Items (2)" hint="Each item has a heading, a picture, a subtext or its words." sortable>
+    <Pane name="story-group-0" title="Item 1" titleId="story-group-item-0" item>
+      <TextField label="Item 1: heading" name="h0" id="story-group-h0" optional />
+    </Pane>
+    <Pane name="story-group-1" title="Item 2" titleId="story-group-item-1" item>
+      <TextField label="Item 2: heading" name="h1" id="story-group-h1" optional />
+    </Pane>
+    <Fragment slot="add">
+      <Button variant="secondary" size="sm" icon="plus">Add an item</Button>
+    </Fragment>
+  </PaneGroup>
+</Example>

@@ -7,6 +7,7 @@ import type { GameController, TouchAttachment } from '../controller';
 import { TouchGestures } from './gestures';
 import { STICK } from './stick';
 import { TOUCH_COPY, forTouch } from './touchCopy';
+import '../ui/styles/stick.css';
 
 type Input = 'touch' | 'keys';
 

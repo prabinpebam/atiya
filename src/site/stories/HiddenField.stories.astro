@@ -1,0 +1,23 @@
+---
+import Example from '../library/Example.astro';
+import HiddenField from '../components/fundamentals/HiddenField.astro';
+import TextField from '../components/fundamentals/TextField.astro';
+import Text from '../components/fundamentals/Text.astro';
+---
+
+<Example title="In a form" layout="stack" description="Nothing shows: the form sends the hidden value with the rest. Here, the ID of the recommendation being edited goes back with its words.">
+  <form class="demo-form" aria-label="A recommendation">
+    <HiddenField name="id" value="ada-king" />
+    <TextField label="Their words" name="quote" value="Thoughtful, kind and quick to see what matters." multiline rows={2} />
+    <Text variant="small" tone="muted">Sent with it: id = ada-king.</Text>
+  </form>
+</Example>
+
+<style>
+  .demo-form {
+    display: grid;
+    gap: var(--space-3);
+    inline-size: 100%;
+    max-inline-size: var(--size-measure-narrow);
+  }
+</style>

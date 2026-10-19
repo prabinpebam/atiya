@@ -18,6 +18,7 @@ import Select from '../../components/fundamentals/Select.astro';
 import Slider from '../../components/fundamentals/Slider.astro';
 import Button from '../../components/fundamentals/Button.astro';
 import Dialog from '../../components/compounds/Dialog.astro';
+import IssueNote from '../kit/IssueNote.astro';
 import type { SelectOption } from '../../components/fundamentals/Select.astro';
 import { HANDLES } from '../model/crop';
 
@@ -57,7 +58,7 @@ const SHAPES: SelectOption[] = [
     <p class="readout" id="crop-readout" data-crop-readout aria-live="polite"></p>
     <p class="warn" data-crop-warn hidden></p>
     <p class="note" data-crop-note></p>
-    <p class="issue" role="alert" data-crop-issue hidden></p>
+    <IssueNote data-crop-issue="" />
   </div>
   <Fragment slot="actions">
     <Button variant="quiet" icon="restore" data-crop-reset="">Reset</Button>
@@ -75,8 +76,7 @@ const SHAPES: SelectOption[] = [
   .for,
   .readout,
   .warn,
-  .note,
-  .issue {
+  .note {
     margin: 0;
     font-size: var(--text-sm);
   }
@@ -94,15 +94,13 @@ const SHAPES: SelectOption[] = [
     color: var(--color-text-muted);
   }
 
-  .warn,
-  .issue {
+  .warn {
     color: var(--color-negative);
     font-weight: var(--weight-medium);
   }
 
   .for[hidden],
-  .warn[hidden],
-  .issue[hidden] {
+  .warn[hidden] {
     display: none;
   }
 

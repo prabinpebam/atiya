@@ -44,6 +44,8 @@ const ROUTES = [
   ['/_edit/publish', 'publish.astro'],
   ['/_edit/theme', 'theme.astro'],
   ['/_edit/tests', 'tests.astro'],
+  ['/_edit/library', 'library.astro'],
+  ['/_edit/library/[slug]', 'libraryPart.astro'],
   ['/_edit/api/[...path]', 'api.ts'],
 ];
 
@@ -227,7 +229,8 @@ export default function editor() {
         if (!editing) return;
         for (const [pattern, file] of ROUTES) {
           // the owner's test runner isn't part of a person's site (desktop plan, stage 7)
-          if (features.managed && pattern === '/_edit/tests') continue;
+          // the source checkout's own screens: the test runs, and the parts library (its stories)
+          if (features.managed && (pattern === '/_edit/tests' || pattern.startsWith('/_edit/library'))) continue;
           injectRoute({ pattern, entrypoint: `./src/site/editor/pages/${file}` });
         }
         addMiddleware({ entrypoint: join(root, 'src/site/editor/server/middleware.ts'), order: 'pre' });

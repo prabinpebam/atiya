@@ -1,0 +1,140 @@
+---
+/**
+ * A gallery's or a carousel's settings in the inspector (documentation/editor/spec.md §3.5), in sections
+ * (kit/Sections): its pictures (each with its caption, and a video's autoplay and loop, reordered by dragging
+ * their handles or with their Move buttons, and more added from the picker), its layout or its slides, its
+ * style and its captions. The page puts it in the block's BlockForm.
+ * @tier editor
+ * @a11y The list of sections is a named navigation of buttons, the one shown marked aria-current; each section is a region named by its heading.
+ * @a11y Every drag has buttons that do the same (Move up, Move down), so it never needs a drag (WCAG 2.5.7).
+ * @key Up / Down: in the list of sections, the previous / next one
+ */
+import Button from '../../components/fundamentals/Button.astro';
+import IconButton from '../../components/fundamentals/IconButton.astro';
+import Image from '../../components/fundamentals/Image.astro';
+import Select from '../../components/fundamentals/Select.astro';
+import Switch from '../../components/fundamentals/Switch.astro';
+import TextField from '../../components/fundamentals/TextField.astro';
+import Sections from '../kit/Sections.astro';
+import NavGroup from '../kit/NavGroup.astro';
+import NavRow from '../kit/NavRow.astro';
+import Pane from '../kit/Pane.astro';
+import Grip from '../kit/Grip.astro';
+import PlainList from '../kit/PlainList.astro';
+import ActionBar from '../../components/compounds/ActionBar.astro';
+import type { Block } from '../../content/schema';
+import { kindOf } from '../model/ops';
+import { DISPLAYS, WIDTHS, fieldId as id, type Thumb } from '../model/inspectorFields';
+
+interface Props {
+  /** The gallery or carousel. */
+  block: Extract<Block, { type: 'gallery' | 'carousel' }>;
+  /** Its place in the article. */
+  index: number;
+  /** The pictures it can show, by media ID. */
+  media: Record<string, Thumb>;
+}
+
+const { block: b, index: i, media } = Astro.props;
+const thumbOf = (m?: string) => (m ? media[m] : undefined);
+---
+
+<Sections name={b.type} label={`${kindOf(b)} settings`}>
+  <Fragment slot="nav">
+    <NavGroup>
+      <NavRow pick="pictures" detail={`${b.items.length} pictures`}>Pictures</NavRow>
+      <NavRow pick={b.type === 'gallery' ? 'layout' : 'slides'}>{b.type === 'gallery' ? 'Layout and width' : 'Slides'}</NavRow>
+      <NavRow pick="style">Style</NavRow>
+      <NavRow pick="captions">Captions</NavRow>
+    </NavGroup>
+  </Fragment>
+  <Pane name="pictures" title={`Pictures (${b.items.length})`} titleId={id(i, 's-pictures')}>
+    <div class="items" data-editor-items-list>
+      <PlainList as="ol" gap="md" data-sort-list="">
+        {
+          b.items.map((it, n) => (
+            <li class="item" data-drop-line="spaced" data-sort-row>
+              <Grip data-inspector-drag="items" data-index={String(i)} data-item={String(n)} />
+              {thumbOf(it.media) ? <Image src={thumbOf(it.media)!.thumb} alt="" width={thumbOf(it.media)!.width} height={thumbOf(it.media)!.height} ratio="1/1" display="fit" rounded={false} /> : <span />}
+              <span class="item-fields">
+                <TextField label={`Caption ${n + 1}`} name={`body.${i}.items.${n}.caption`} id={id(i, `item-${n}`)} value={it.caption ?? ''} optional hint={thumbOf(it.media)?.video ? 'A video: it plays in its place, not in the lightbox.' : undefined} />
+                {thumbOf(it.media)?.video && <Switch label="Autoplay (muted, while in view)" name={`body.${i}.items.${n}.autoplay`} id={id(i, `item-${n}-autoplay`)} checked={!!it.autoplay} data-type="bool" />}
+                {thumbOf(it.media)?.video && <Switch label="Loop" name={`body.${i}.items.${n}.loop`} id={id(i, `item-${n}-loop`)} checked={!!it.loop} data-type="bool" />}
+              </span>
+              <span class="item-moves">
+                <IconButton label={`Move picture ${n + 1} up`} icon="arrow-up" size="sm" tooltip="none" disabled={n === 0} data-editor-items="up" data-index={String(i)} data-item={String(n)} />
+                <IconButton label={`Move picture ${n + 1} down`} icon="arrow-down" size="sm" tooltip="none" disabled={n === b.items.length - 1} data-editor-items="down" data-index={String(i)} data-item={String(n)} />
+                <IconButton label={`Remove picture ${n + 1}`} icon="delete" size="sm" tooltip="none" disabled={b.items.length <= 2} data-editor-items="remove" data-index={String(i)} data-item={String(n)} />
+              </span>
+            </li>
+          ))
+        }
+      </PlainList>
+      <ActionBar gap="sm">
+        <Button variant="secondary" size="sm" icon="plus" data-editor-pick={`body.${i}.items`} data-pick-mode="multiple" data-pick-kind="any">Add pictures or videos</Button>
+      </ActionBar>
+    </div>
+  </Pane>
+  {
+    b.type === 'gallery' && (
+      <Pane name="layout" title="Layout and width" titleId={id(i, 's-layout')}>
+        <Select label="Layout" name={`body.${i}.layout`} id={id(i, 'layout')} value={b.layout ?? 'grid'} options={[{ value: 'grid', label: 'Justified', description: 'Equal-height rows' }, { value: 'mosaic', label: 'Mosaic', description: 'The first picture leads' }, { value: 'row', label: 'Row', description: 'A filmstrip' }]} />
+        <Select label="Width" name={`body.${i}.width`} id={id(i, 'width')} value={b.width ?? 'wide'} options={WIDTHS} />
+        <Switch label="Let tall pictures span two rows" name={`body.${i}.span`} id={id(i, 'span')} checked={b.span !== false} data-type="bool-default-true" />
+      </Pane>
+    )
+  }
+  {
+    b.type === 'carousel' && (
+      <Pane name="slides" title="Slides" titleId={id(i, 's-slides')}>
+        <TextField label="Label" name={`body.${i}.label`} id={id(i, 'label')} value={b.label} required hint="Names the carousel for assistive tech (\u201cSlide templates\u201d)." />
+        <Switch label="Show the neighbours (peek)" name={`body.${i}.peek`} id={id(i, 'peek')} checked={!!b.peek} data-type="bool" />
+        <Select label="Pager" name={`body.${i}.pager`} id={id(i, 'pager')} value={b.pager ?? 'dots'} options={[{ value: 'dots', label: 'Dots' }, { value: 'filmstrip', label: 'Filmstrip' }, { value: 'filmstrip-wrap', label: 'Filmstrip, wrapping' }]} />
+        <Switch label="Previous and next buttons" name={`body.${i}.arrows`} id={id(i, 'arrows')} checked={b.arrows !== false} data-type="bool-default-true" />
+      </Pane>
+    )
+  }
+  <Pane name="style" title="Style" titleId={id(i, 's-style')}>
+    {b.type === 'gallery' ? (
+      <Select label="Shown as" name={`body.${i}.display`} id={id(i, 'display')} value={b.display ?? (b.fit === 'contain' ? 'fit' : 'fill')} options={DISPLAYS} hint="How each picture sits in its cell." />
+    ) : (
+      <Select label="Shown as" name={`body.${i}.display`} id={id(i, 'display')} value={b.display ?? 'fill'} options={DISPLAYS} hint="How each picture sits in its slide. Every slide is the tallest picture's shape, 300 px to 80% of the screen tall." />
+    )}
+    <Switch label="Colour behind them" name={`body.${i}.background`} id={id(i, 'background')} checked={!!b.background} data-type="bool" />
+    <Switch label="Rounded corners" name={`body.${i}.rounded`} id={id(i, 'rounded')} checked={b.rounded !== false} data-type="bool-default-true" />
+    <Switch label="Drop shadow" name={`body.${i}.shadow`} id={id(i, 'shadow')} checked={!!b.shadow} data-type="bool" />
+  </Pane>
+  <Pane name="captions" title="Captions" titleId={id(i, 's-captions')}>
+    <Switch label="Show the captions" name={`body.${i}.showCaption`} id={id(i, 'showCaption')} checked={b.showCaption !== false} data-type="bool-default-true" />
+    {b.type === 'gallery' && <TextField label="Caption for the set" name={`body.${i}.caption`} id={id(i, 'caption')} value={b.caption ?? ''} multiline rows={2} optional />}
+    <Switch label="Open in the lightbox" name={`body.${i}.lightbox`} id={id(i, 'lightbox')} checked={!!b.lightbox} data-type="bool" />
+  </Pane>
+</Sections>
+
+<style>
+  .items {
+    display: grid;
+    gap: var(--space-2);
+  }
+
+  .item {
+    display: grid;
+    grid-template-columns: auto var(--size-avatar-md) minmax(0, 1fr);
+    align-items: end;
+    gap: var(--space-2);
+  }
+
+  .item-moves {
+    grid-column: 1 / -1;
+    display: flex;
+    justify-content: end;
+  }
+
+  /* a picture's caption, and a video's autoplay and loop under it */
+  .item-fields {
+    display: grid;
+    gap: var(--space-2);
+    min-width: 0;
+  }
+
+</style>

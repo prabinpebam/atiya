@@ -1,0 +1,41 @@
+---
+/**
+ * A form's foot: its actions (the default slot, usually an ActionBar), kept in view at the bottom edge of what
+ * scrolls while the form above them scrolls, ruled off and on the raised surface. It reaches out over the
+ * padding of what scrolls (the inspector's, a dialog's body), so it spans the whole width and sits on the edge.
+ * In a form that fills its panel (Form fill), it sits at the bottom even when the form is short. A test finds it by data-form-foot.
+ * @tier kit
+ * @a11y A plain group: its buttons keep their own names, in the form's tab order after its fields.
+ */
+
+interface Props {
+  /** How much the scroller it sits in pads by: md (the inspector's panel) or lg (a dialog's body). */
+  inset?: 'md' | 'lg';
+  /** Data attributes pass through to the foot. */
+  [data: `data-${string}`]: string | undefined;
+}
+
+const { inset = 'md', ...rest } = Astro.props;
+---
+
+<div class="form-foot" data-form-foot data-inset={inset} {...rest}><slot /></div>
+
+<style>
+  .form-foot {
+    position: sticky;
+    z-index: var(--layer-raised);
+    inset-block-end: calc(var(--space-4) * -1);
+    margin-block: auto calc(var(--space-4) * -1);
+    margin-inline: calc(var(--space-4) * -1);
+    padding: var(--space-3) var(--space-4);
+    border-block-start: var(--border-hairline) solid var(--color-rule);
+    background: var(--color-bg-raised);
+  }
+
+  .form-foot[data-inset='lg'] {
+    inset-block-end: calc(var(--space-6) * -1);
+    margin-block: auto calc(var(--space-6) * -1);
+    margin-inline: calc(var(--space-6) * -1);
+    padding: var(--space-4) var(--space-6);
+  }
+</style>

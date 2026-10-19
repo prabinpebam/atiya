@@ -24,6 +24,39 @@ export const PICTURE_SPECS = {
 
 export type PictureUse = keyof typeof PICTURE_SPECS;
 
+/**
+ * A picture's file as the components take it: its address, its responsive sources, its own size and the
+ * colour at its edges (media.md §9.1). A picture's dark mode version is one too (media.md §10).
+ */
+export interface PictureSource {
+  /** The displayed image. */
+  src: string;
+  /** Responsive sources for it. */
+  srcset?: string;
+  /** Its own width (px). */
+  width: number;
+  /** Its own height (px). */
+  height: number;
+  /** Its own edge colour, for a background behind it. */
+  bg?: string;
+}
+
+/** A card's picture (StoryCard, RelatedStories): the file, what it shows, how it's shown in its frame, and its dark mode version. */
+export interface CardPicture extends PictureSource {
+  /** What the picture shows. */
+  alt: string;
+  /** How it sits in its frame (the Image fundamental's display). */
+  display?: 'fill' | 'fit' | 'actual' | 'tile';
+  /** Puts its edge colour behind it. */
+  background?: boolean;
+  /** Rounded corners; false squares them. */
+  rounded?: boolean;
+  /** A drop shadow following its shape. */
+  shadow?: boolean;
+  /** Its dark mode version. */
+  dark?: PictureSource;
+}
+
 /** A ratio such as "21/9" as a number (width over height). */
 export const ratioValue = (ratio: string): number => {
   const [w, h] = ratio.split('/').map(Number);

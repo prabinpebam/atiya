@@ -1,0 +1,13 @@
+---
+import Example from '../../library/Example.astro';
+import WaysForm from '../components/WaysForm.astro';
+
+const choices = [
+  { id: 'little-planet', name: 'Little planet', summary: 'Walk round a small planet whose buildings hold the sections.', mount: 'play', kept: false },
+  { id: 'cozy-room', name: 'Cozy room', summary: 'A room whose shelves hold the sections.', mount: 'room', kept: true },
+];
+---
+
+<Example title="Ways to explore" description="Which ways in are on (a way turned off keeps its map), and what the home page offers first." layout="block">
+  <WaysForm ways={{ modes: [{ id: 'little-planet', on: true }, { id: 'cozy-room', on: false }], primary: 'site' }} version={null} choices={choices} />
+</Example>

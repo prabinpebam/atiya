@@ -1,0 +1,23 @@
+/* KeyCap (ui/primitives.tsx; §4.1): a key the player can press, after the action it does.
+ * Its owners import it (ui/primitives.tsx, src/pages/play.astro); tokens only (tests/unit/designSystem.test.ts). */
+@layer tokens, base, primitives, components, cursors;
+
+@layer primitives {
+  /* Key cap: a key the player can press, after the action it does */
+  kbd {
+    display: inline-block;
+    min-width: var(--c-kbd-min);
+    padding: 0 var(--c-kbd-pad-x);
+    margin: 0 var(--c-kbd-gap);
+    border: var(--border-hair) solid var(--color-paper-line);
+    border-block-end-width: var(--border-base);
+    border-radius: var(--radius-xs);
+    background: var(--color-paper-bg);
+    font-family: var(--font-text);
+    font-size: var(--c-kbd-size);
+    font-weight: var(--weight-semibold);
+    line-height: var(--leading-base);
+    text-align: center;
+    color: var(--color-paper-text);
+  }
+}

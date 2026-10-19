@@ -1,0 +1,14 @@
+---
+import Example from '../../library/Example.astro';
+import StatusNote from '../kit/StatusNote.astro';
+---
+
+<Example title="A line kept up to date" description="Read out politely as it changes (the default), as a status, or not until it's reached (off); empty, it takes no room." layout="stack">
+  <StatusNote>3 pictures</StatusNote>
+  <StatusNote live="status">Checking what changed…</StatusNote>
+  <StatusNote live="off">Preset</StatusNote>
+</Example>
+
+<Example title="Hidden until it applies" description="A script shows it when there's something to say (why a change can't be made)." layout="stack">
+  <StatusNote live="status" hidden data-story-why="">A table can't be turned into a list.</StatusNote>
+</Example>

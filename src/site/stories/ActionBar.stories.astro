@@ -1,0 +1,34 @@
+---
+import Example from '../library/Example.astro';
+import ActionBar from '../components/compounds/ActionBar.astro';
+import Button from '../components/fundamentals/Button.astro';
+---
+
+<Example title="At the start" description="A form's actions: its main one first." layout="block">
+  <ActionBar>
+    <Button variant="primary">Save the section</Button>
+    <Button variant="secondary">Preview</Button>
+  </ActionBar>
+</Example>
+
+<Example title="At the end" description="A dialog's actions: the main one last, at the end." layout="block">
+  <ActionBar align="end">
+    <Button variant="quiet">Cancel</Button>
+    <Button variant="primary" icon="plus">Create the draft</Button>
+  </ActionBar>
+</Example>
+
+<Example title="Apart" description="Save at the start, and Delete kept away from it at the end." layout="block">
+  <ActionBar align="between">
+    <Button variant="primary">Save recommendation</Button>
+    <Button variant="quiet" icon="delete">Delete</Button>
+  </ActionBar>
+</Example>
+
+<Example title="Small and close" description="A dense row of small buttons: the sm gap." layout="block">
+  <ActionBar gap="sm">
+    <Button variant="secondary" size="sm" icon="arrow-up">Move up</Button>
+    <Button variant="secondary" size="sm" icon="arrow-down">Move down</Button>
+    <Button variant="quiet" size="sm" icon="delete">Remove</Button>
+  </ActionBar>
+</Example>

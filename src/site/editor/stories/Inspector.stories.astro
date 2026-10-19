@@ -1,0 +1,18 @@
+---
+import Example from '../../library/Example.astro';
+import Inspector from '../components/Inspector.astro';
+import BlockForm from '../components/BlockForm.astro';
+import PageForm from '../components/PageForm.astro';
+import { ARTICLE, BLOCKS, MEDIA, SECTION_OPTIONS } from './samples';
+---
+
+<Example title="The inspector" description="Two tabs: the selected block's settings (a BlockForm per block) and the page's (the PageForm)." layout="block">
+  <Inspector>
+    <Fragment slot="block">
+      <BlockForm block={BLOCKS.text} index={0} count={1} media={MEDIA} shown />
+    </Fragment>
+    <Fragment slot="page">
+      <PageForm article={ARTICLE} media={MEDIA} sections={SECTION_OPTIONS} section="writing" place="" published={false} path={null} />
+    </Fragment>
+  </Inspector>
+</Example>

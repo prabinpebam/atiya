@@ -88,6 +88,7 @@ const chosenIcon = iconOf(chosen?.icon);
       aria-invalid={error ? 'true' : undefined}
       aria-disabled={disabled ? 'true' : undefined}
       data-combo
+      data-press
     >
       {
         chosenIcon && (
@@ -116,6 +117,7 @@ const chosenIcon = iconOf(chosen?.icon);
               id={`${id}-opt-${i}`}
               aria-selected={i === chosenIndex ? 'true' : 'false'}
               aria-disabled={o.disabled ? 'true' : undefined}
+              data-press
               data-value={o.value}
               data-label={o.label}
               data-option
@@ -192,11 +194,6 @@ const chosenIcon = iconOf(chosen?.icon);
 
   .combo[aria-expanded='true'] {
     border-color: var(--color-accent);
-  }
-
-  .combo[aria-disabled='true'] {
-    opacity: var(--opacity-disabled);
-    cursor: not-allowed;
   }
 
   .select[data-invalid] .combo {
@@ -370,11 +367,6 @@ const chosenIcon = iconOf(chosen?.icon);
     background: var(--color-accent-soft);
     color: var(--color-on-accent-soft);
     font-weight: var(--weight-semibold);
-  }
-
-  .option[aria-disabled='true'] {
-    opacity: var(--opacity-disabled);
-    cursor: not-allowed;
   }
 
   .option-text {

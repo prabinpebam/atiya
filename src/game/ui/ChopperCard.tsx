@@ -10,6 +10,8 @@ import type { Clip } from '../world/chopper/anim';
 import { CHOPPER } from '../world/chopper/profile';
 import { Button, IconButton } from './primitives';
 import { Dialog } from './overlays';
+import './styles/dialog.css';
+import './styles/chopper-card.css';
 
 /** The little doggy things he does beside his card, in random order (never the same twice running). */
 const CARD_IDLES: ReadonlyArray<{ clip: Clip; dur: [number, number]; wag: number; pant?: boolean }> = [

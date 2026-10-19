@@ -11,8 +11,8 @@
  * @key Ctrl or Cmd + Shift + 7 / 8: a numbered / bulleted list
  * @key Ctrl or Cmd + Shift + 9: a quote
  */
-import Heading from '../../components/fundamentals/Heading.astro';
-import Icon from '../../components/fundamentals/Icon.astro';
+import ChoiceTiles, { type TileChoice } from '../kit/ChoiceTiles.astro';
+import StatusNote from '../kit/StatusNote.astro';
 import { TEXT_KINDS } from '../model/ops';
 import type { IconName } from '../../design/icons';
 
@@ -28,23 +28,23 @@ const KIND_ICON: Record<string, IconName> = {
   bulleted: 'bulleted',
   numbered: 'numbered',
 };
-const GROUPS: { id: string; title: string; choices: { value: string; label: string; what: string; icon: IconName }[] }[] = [
-  { id: 'kinds', title: 'A different kind', choices: TEXT_KINDS.map((k) => ({ ...k, icon: KIND_ICON[k.value] })) },
+const GROUPS: { id: string; title: string; choices: TileChoice[] }[] = [
+  { id: 'kinds', title: 'A different kind', choices: TEXT_KINDS.map((k) => ({ value: k.value, name: k.label, what: k.what, icon: KIND_ICON[k.value] })) },
   {
     id: 'together',
     title: 'One block from several',
     choices: [
-      { value: 'join-bulleted', label: 'One bulleted list', what: "Each block's lines become its items", icon: 'bulleted' },
-      { value: 'join-numbered', label: 'One numbered list', what: "Each block's lines become its items, in order", icon: 'numbered' },
-      { value: 'collection', label: 'Collection', what: 'One text block as a single item, or pairs of a heading (or a short line) and its words, as tiles', icon: 'collection' },
+      { value: 'join-bulleted', name: 'One bulleted list', what: "Each block's lines become its items", icon: 'bulleted' },
+      { value: 'join-numbered', name: 'One numbered list', what: "Each block's lines become its items, in order", icon: 'numbered' },
+      { value: 'collection', name: 'Collection', what: 'One text block as a single item, or pairs of a heading (or a short line) and its words, as tiles', icon: 'collection' },
     ],
   },
   {
     id: 'apart',
     title: 'Several blocks from one',
     choices: [
-      { value: 'split', label: 'Separate paragraphs', what: 'One paragraph for each line or item', icon: 'paragraph' },
-      { value: 'uncollect', label: 'Headings and paragraphs', what: 'A heading and a paragraph for each item, and its picture', icon: 'heading' },
+      { value: 'split', name: 'Separate paragraphs', what: 'One paragraph for each line or item', icon: 'paragraph' },
+      { value: 'uncollect', name: 'Headings and paragraphs', what: 'A heading and a paragraph for each item, and its picture', icon: 'heading' },
     ],
   },
 ];
@@ -52,109 +52,14 @@ const GROUPS: { id: string; title: string; choices: { value: string; label: stri
 
 <div class="turn" data-editor-turn>
   {
-    GROUPS.map((g) => (
-      <section class="group" data-turn-group={g.id} aria-labelledby={`turn-${g.id}`}>
-        <Heading level={3} size="ui" id={`turn-${g.id}`}>
-          {g.title}
-        </Heading>
-        <div class="grid">
-          {g.choices.map((c) => (
-            <button class="choice" type="button" data-editor-turn-to={c.value} aria-describedby={`turn-what-${c.value}`}>
-              <Icon name={c.icon} size="lg" />
-              <span class="name">{c.label}</span>
-              <span class="what" id={`turn-what-${c.value}`}>
-                {c.what}
-              </span>
-            </button>
-          ))}
-        </div>
-      </section>
-    ))
+    GROUPS.map((g) => <ChoiceTiles title={g.title} titleId={`turn-${g.id}`} choices={g.choices} hook="data-editor-turn-to" whatPrefix="turn-what-" data-turn-group={g.id} />)
   }
-  <p class="why" role="status" data-editor-turn-why hidden></p>
+  <StatusNote live="status" hidden data-editor-turn-why="" />
 </div>
 
 <style>
   .turn {
     display: grid;
     gap: var(--space-6);
-  }
-
-  .group {
-    display: grid;
-    gap: var(--space-3);
-  }
-
-  .group[hidden],
-  .choice[hidden],
-  .why[hidden] {
-    display: none;
-  }
-
-  .grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(min(100%, var(--c-editor-thumb)), 1fr));
-    gap: var(--space-3);
-  }
-
-  .choice {
-    display: grid;
-    align-content: start;
-    gap: var(--space-1-5);
-    min-block-size: var(--size-touch);
-    padding: var(--space-4);
-    border: var(--border-hairline) solid var(--color-rule);
-    border-radius: var(--radius-md);
-    background: var(--color-bg-raised);
-    color: var(--color-text);
-    font-family: var(--font-ui);
-    text-align: start;
-    cursor: pointer;
-    transition:
-      border-color var(--duration-fast) var(--ease-standard),
-      background-color var(--duration-fast) var(--ease-standard);
-  }
-
-  @media (hover: hover) {
-    .choice:hover:not(:disabled) {
-      border-color: var(--color-accent);
-      background: var(--color-accent-soft);
-    }
-  }
-
-  .choice:active:not(:disabled) {
-    border-color: var(--color-accent);
-    background: var(--color-accent-soft);
-  }
-
-  .choice[aria-current='true'] {
-    border-color: var(--color-accent);
-  }
-
-  .choice:disabled {
-    opacity: var(--opacity-disabled);
-    cursor: not-allowed;
-  }
-
-  .choice:focus-visible {
-    outline: var(--border-focus) solid var(--color-focus);
-    outline-offset: var(--border-focus);
-  }
-
-  .name {
-    font-weight: var(--weight-semibold);
-  }
-
-  .what {
-    color: var(--color-text-muted);
-    font-size: var(--text-sm);
-    line-height: var(--leading-ui);
-  }
-
-  .why {
-    margin: 0;
-    color: var(--color-text-muted);
-    font-family: var(--font-ui);
-    font-size: var(--text-sm);
   }
 </style>

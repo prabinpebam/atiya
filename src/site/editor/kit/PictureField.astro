@@ -1,0 +1,79 @@
+---
+/**
+ * A form's picture field: the picture it has, whole and square-cornered, beside its words (the alt text, or what
+ * stands in for one) and what can be done with it (the default slot: Replace, Crop, Remove), with an optional
+ * line on what fits the place and one on how this picture fits it.
+ * @tier kit
+ * @a11y The thumbnail is decorative (alt ""): its words say what it is, and its buttons say what they do.
+ */
+import Image from '../../components/fundamentals/Image.astro';
+import Text from '../../components/fundamentals/Text.astro';
+import ActionBar from '../../components/compounds/ActionBar.astro';
+import type { Thumb } from '../model/inspectorFields';
+
+interface Props {
+  /** The picture it shows, if any. */
+  thumb?: Thumb;
+  /** The thumbnail's frame. */
+  ratio: '4/3' | '3/2' | '4/5' | '1/1';
+  /** Its words: the alt text, or what it is when there's none. Left out, only its actions show beside it. */
+  words?: string;
+  /** With no picture: an empty space, or a dashed box that says so. */
+  empty?: 'blank' | 'placeholder';
+  /** What the place it's for takes (its shape and size). */
+  note?: string;
+  /** How this picture fits that place. */
+  fit?: string;
+  /** Data attributes pass through to the field. */
+  [data: `data-${string}`]: string | undefined;
+}
+
+const { thumb, ratio, words, empty = 'blank', note, fit, ...rest } = Astro.props;
+---
+
+<div class="picture-field" {...rest}>
+  <div class="picture-row">
+    {
+      thumb ? (
+        <Image src={thumb.thumb} alt="" width={thumb.width} height={thumb.height} ratio={ratio} display="fit" rounded={false} />
+      ) : empty === 'placeholder' ? (
+        <span class="no-picture">
+          <Text as="span" variant="small" tone="muted">
+            No picture
+          </Text>
+        </span>
+      ) : (
+        <span />
+      )
+    }
+    <div class="picture-words">
+      {words !== undefined && <Text variant="small" tone="muted">{words}</Text>}
+      <ActionBar gap="sm"><slot /></ActionBar>
+    </div>
+  </div>
+  {note && <Text variant="small" tone="muted">{note}</Text>}
+  {fit && <Text variant="small">{fit}</Text>}
+</div>
+
+<style>
+  .picture-field,
+  .picture-words {
+    display: grid;
+    gap: var(--space-2);
+  }
+
+  .picture-row {
+    display: grid;
+    grid-template-columns: var(--size-avatar-lg) minmax(0, 1fr);
+    align-items: center;
+    gap: var(--space-3);
+  }
+
+  .no-picture {
+    display: grid;
+    place-items: center;
+    aspect-ratio: 4 / 3;
+    border: var(--border-hairline) dashed var(--color-rule);
+    border-radius: var(--radius-md);
+  }
+</style>

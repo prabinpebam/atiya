@@ -5,6 +5,41 @@
  * them, and `collectionStrip.ts` does a strip's DOM.
  */
 import { sizes } from '../design/responsive';
+import type { PictureSource } from '../design/pictures';
+
+/** A collection item's picture (Collection.astro's items). */
+export interface CollectionPicture {
+  /** The displayed image. */
+  src: string;
+  /** Responsive sources for it. */
+  srcset?: string;
+  /** What the picture shows. */
+  alt: string;
+  /** Its own width (px). */
+  width: number;
+  /** Its own height (px). */
+  height: number;
+  /** Which part stays in a crop ("50% 30%"). */
+  focus?: string;
+  /** Its own edge colour (media.md §9.1), for a background behind it. */
+  bg?: string;
+  /** Its dark mode version, shown when the page is dark. */
+  dark?: PictureSource;
+}
+
+/** A collection item: when it was, a heading, a picture, a subtext and a few words, each optional (Collection.astro's items). */
+export interface CollectionItem {
+  /** When it was, in words ("2016", "July 2019 to now"): by its mark in a timeline, over its heading otherwise. */
+  when?: string;
+  /** Its heading: a label or a title, as the collection says. */
+  heading?: string;
+  /** Its picture. */
+  picture?: CollectionPicture;
+  /** A short line under the heading. */
+  subtext?: string;
+  /** Its words as HTML the content layer rendered from Markdown (paragraphs and lists, bold, italic, strikethrough, code, links), set as compact prose; a line of inline HTML, or several (each a paragraph), works too. */
+  html?: string | string[];
+}
 
 export type CollectionLayout = 'rows' | 'columns' | 'tiles' | 'masonry' | 'carousel' | 'timeline' | 'timeline-scroll';
 export type CollectionWidth = 'content' | 'popout' | 'wide' | 'full';

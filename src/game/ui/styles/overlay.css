@@ -1,0 +1,27 @@
+/* The overlay that takes the screen until it's dismissed, and the card at its centre: no script (play.astro), a lost
+ * 3D view (ui/Dialogs.tsx's ContextLost) and the gate's panels (platform/gate.ts).
+ * Its owners import it (platform/gate.ts, ui/Dialogs.tsx; no script: hoisted into the page); tokens only (tests/unit/designSystem.test.ts). */
+@layer tokens, base, primitives, components, cursors;
+
+@layer components {
+  /* Overlays: loading, context lost (they own the screen until dismissed) */
+  .overlay {
+    position: absolute;
+    inset: 0;
+    z-index: var(--layer-overlay);
+    display: grid;
+    place-items: center;
+    padding: calc(var(--space-6) + var(--safe-top)) calc(var(--space-6) + var(--safe-right)) calc(var(--space-6) + var(--safe-bottom))
+      calc(var(--space-6) + var(--safe-left));
+    background: var(--color-scrim-soft);
+  }
+
+  .center-card {
+    max-width: var(--c-card-width);
+    text-align: center;
+  }
+
+  .center-card .actions {
+    justify-content: center;
+  }
+}

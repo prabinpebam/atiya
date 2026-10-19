@@ -9,6 +9,9 @@
  */
 import ChoiceGroup from '../../components/compounds/ChoiceGroup.astro';
 import Button from '../../components/fundamentals/Button.astro';
+import ActionBar from '../../components/compounds/ActionBar.astro';
+import Form from '../kit/Form.astro';
+import IssueNote from '../kit/IssueNote.astro';
 import type { Ways } from '../model/ways';
 
 /** One way of exploring the engine carries. */
@@ -39,7 +42,7 @@ const on = (id: string) => ways.modes.some((m) => m.id === id && m.on);
 const state = JSON.stringify({ ways, version, mounts: Object.fromEntries(choices.map((c) => [c.id, c.mount])) }).replace(/</g, '\\u003c');
 ---
 
-<form class="form" data-editor-ways novalidate aria-label="Ways to explore">
+<Form data-editor-ways="" label="Ways to explore" gap="lg" width="measure">
   <ChoiceGroup
     legend="Ways to explore the site"
     type="checkbox"
@@ -56,31 +59,12 @@ const state = JSON.stringify({ ways, version, mounts: Object.fromEntries(choices
     hint="A first-time visitor sees this button first. Only a way that's on can be offered."
     options={[{ value: 'site', label: 'Read the site' }, ...choices.map((c) => ({ value: c.id, label: c.name, disabled: !on(c.id) }))]}
   />
-  <p class="issue" role="alert" data-editor-form-issue hidden />
-  <div class="actions">
+  <IssueNote data-editor-form-issue="" />
+  <ActionBar>
     <Button variant="primary" type="submit">Save ways to explore</Button>
-  </div>
+  </ActionBar>
   <script is:inline type="application/json" data-editor-ways-state set:html={state} />
-</form>
-
-<style>
-  .form {
-    display: grid;
-    gap: var(--space-6);
-    max-inline-size: var(--size-measure);
-  }
-
-  .actions {
-    display: flex;
-  }
-
-  .issue {
-    margin: 0;
-    color: var(--color-negative);
-    font-size: var(--text-sm);
-    font-weight: var(--weight-medium);
-  }
-</style>
+</Form>
 
 <script>
   import { each } from '../../scripts/page';

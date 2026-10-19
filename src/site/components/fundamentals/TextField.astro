@@ -77,10 +77,10 @@ const errorIcon = error || liveError ? svgOf('error') : null;
 const note = required ? 'Required' : optional ? 'Optional' : undefined;
 ---
 
-<div class="text-field" data-invalid={error ? '' : undefined} data-disabled={disabled ? '' : undefined} {...rest}>
+<div class="text-field" data-field-part="root" data-invalid={error ? '' : undefined} data-disabled={disabled ? '' : undefined} {...rest}>
   <label class="label" for={id}>
     <span>{label}</span>
-    {note && <span class="note">{note}</span>}
+    {note && <span class="note" data-field-part="note">{note}</span>}
   </label>
   <span class="control">
     {
@@ -127,7 +127,7 @@ const note = required ? 'Required' : optional ? 'Optional' : undefined;
       )
     }
   </span>
-  {hint && <p class="hint" id={`${id}-hint`}>{hint}</p>}
+  {hint && <p class="hint" id={`${id}-hint`} data-field-part="hint">{hint}</p>}
   {
     error && errorIcon && (
       <p class="error" id={`${id}-error`}>
@@ -151,13 +151,6 @@ const note = required ? 'Required' : optional ? 'Optional' : undefined;
 </div>
 
 <style>
-  .text-field {
-    display: grid;
-    gap: var(--space-2);
-    font-family: var(--font-ui);
-    color: var(--color-text);
-  }
-
   .text-field[data-disabled] {
     opacity: var(--opacity-disabled);
   }
@@ -167,15 +160,7 @@ const note = required ? 'Required' : optional ? 'Optional' : undefined;
     align-items: baseline;
     justify-content: space-between;
     gap: var(--space-3);
-    font-size: var(--text-sm);
-    font-weight: var(--weight-semibold);
-    line-height: var(--leading-ui);
-  }
-
-  .note {
-    color: var(--color-text-muted);
-    font-size: var(--text-sm);
-    font-weight: var(--weight-medium);
+    font: var(--type-label);
   }
 
   .control {
@@ -243,23 +228,12 @@ const note = required ? 'Required' : optional ? 'Optional' : undefined;
     pointer-events: none;
   }
 
-  .hint,
-  .error {
-    margin: 0;
-    font-size: var(--text-sm);
-    line-height: var(--leading-ui);
-  }
-
-  .hint {
-    color: var(--color-text-muted);
-  }
-
   .error {
     display: flex;
     align-items: start;
     gap: var(--space-2);
     color: var(--color-negative);
-    font-weight: var(--weight-medium);
+    font: var(--type-note);
   }
 
   .error[hidden] {

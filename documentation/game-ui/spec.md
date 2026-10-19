@@ -122,7 +122,7 @@ The first build kept the HUD cards on paper. The owner preferred the dark look: 
    - Tier 2 semantic roles and scales: colour roles per surface; space, radius, border, type, weight, leading, shadow, duration, easing and layer.
    - Tier 3 component tokens (`--c-*`).
    - Two surfaces map the `--surface-*` roles: `.surface-paper` (the default, on `:root`) for the website pages, and `.surface-wood` on `body.play` and the panels, so the whole game UI is wood.
-2. **Styles split by layer** (`src/styles/`): `tokens.css` (generated), `base.css`, `components.css`, `site.css`, `hud.css`, `panels.css`. Every value comes from a token.
+2. **Styles split by layer** (`src/styles/`): `tokens.css` (generated), `base.css`, `components.css`, `site.css`, `hud.css`, `panels.css`. Every value comes from a token. *(As built since 19 October 2026: one stylesheet per component in `src/game/ui/styles/`, imported by the component, in the cascade layers `tokens`, `base`, `primitives`, `components` and `cursors`; [design system](design-system.md) §4.)*
 3. **The component catalogue** (design system §4). Each component has one class family, anatomy, variants and the tokens it reads.
 4. **Screen regions** (design system §5): the top bar, character picker, view controls, focus lane, hotbar, aside and toast, with the centre kept clear. Modal dialogs and wood panels sit on the overlay layer.
 5. **Priority framework** (design system §6):

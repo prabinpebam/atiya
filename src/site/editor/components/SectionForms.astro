@@ -12,6 +12,9 @@ import TextField from '../../components/fundamentals/TextField.astro';
 import Select from '../../components/fundamentals/Select.astro';
 import Switch from '../../components/fundamentals/Switch.astro';
 import Button from '../../components/fundamentals/Button.astro';
+import ActionBar from '../../components/compounds/ActionBar.astro';
+import Form from '../kit/Form.astro';
+import IssueNote from '../kit/IssueNote.astro';
 import { VIEW_OPTIONS as VIEWS } from '../server/screens';
 import type { SiteStructure } from '../../content/schema';
 
@@ -36,6 +39,7 @@ interface Props {
   selected: string;
   /** The site structure and its version, for the screen's script. */
   structure: SiteStructure;
+  /** The site structure's version, which its save sends back (a conflict if it changed meanwhile). */
   version: string;
 }
 
@@ -48,7 +52,7 @@ const state = JSON.stringify({ structure, version }).replace(/</g, '\\u003c');
   {
     sections.map((s) => (
       <div data-manager-settings={s.id} hidden={s.id !== selected}>
-        <form class="form" data-sections-hub={s.id} novalidate aria-label={`${s.title} settings`}>
+        <Form data-sections-hub={s.id} label={`${s.title} settings`}>
           <TextField label="Title" name="title" value={s.title} required hint={s.home ? 'The name over the home page.' : 'Its heading.'} />
           <TextField label="Menu label" name="navLabel" value={s.navLabel ?? ''} optional hint="A shorter name for menus and breadcrumbs (at most 24 characters)." />
           <TextField label="Summary" name="summary" value={s.summary ?? ''} multiline rows={2} optional hint={s.home ? 'The line under the name on the home page (at most 160 characters).' : 'The standfirst under its title (at most 160 characters).'} />
@@ -56,51 +60,27 @@ const state = JSON.stringify({ structure, version }).replace(/</g, '\\u003c');
           {!s.home && <Select label="View" name="view" value={s.view} options={VIEWS} hint="How it lists its pages." />}
           {!s.home && <Switch label="In the navigation" name="inNav" checked={s.inNav} data-sections-in-nav="" />}
           {!s.home && (
-            <div class="row">
+            <ActionBar gap="sm">
               <Button variant="secondary" size="sm" icon="arrow-up" disabled={order.indexOf(s) === 0} data-sections-move="up" data-node={s.id}>
                 Move up
               </Button>
               <Button variant="secondary" size="sm" icon="arrow-down" disabled={order.indexOf(s) === order.length - 1} data-sections-move="down" data-node={s.id}>
                 Move down
               </Button>
-            </div>
+            </ActionBar>
           )}
-          <p class="issue" role="alert" data-editor-form-issue hidden />
-          <div class="actions">
+          <IssueNote data-editor-form-issue="" />
+          <ActionBar>
             <Button variant="primary" type="submit">
               {s.home ? 'Save the home page' : 'Save the section'}
             </Button>
-          </div>
-        </form>
+          </ActionBar>
+        </Form>
       </div>
     ))
   }
   <script is:inline type="application/json" data-editor-sections-state set:html={state} />
 </div>
-
-<style>
-  .form {
-    display: grid;
-    gap: var(--space-4);
-  }
-
-  .row {
-    display: flex;
-    flex-wrap: wrap;
-    gap: var(--space-2);
-  }
-
-  .actions {
-    display: flex;
-  }
-
-  .issue {
-    margin: 0;
-    color: var(--color-negative);
-    font-size: var(--text-sm);
-    font-weight: var(--weight-medium);
-  }
-</style>
 
 <script>
   import { each } from '../../scripts/page';

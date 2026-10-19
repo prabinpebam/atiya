@@ -1,0 +1,14 @@
+---
+import Example from '../../library/Example.astro';
+import Fieldset from '../kit/Fieldset.astro';
+import Checkbox from '../../components/fundamentals/Checkbox.astro';
+import Text from '../../components/fundamentals/Text.astro';
+---
+
+<Example title="A named group of choices" description="Its legend names the group, so each checkbox is read with it; words can sit between the choices." layout="stack">
+  <Fieldset legend="Publish pages">
+    <Text variant="small" tone="muted">Tick a draft to publish it with this save.</Text>
+    <Checkbox name="story-publish" value="pond" label="A walk round the pond" hint="For everyone" />
+    <Checkbox name="story-publish" value="case" label="A case for later" hint="Private page: for the readers you share it with" />
+  </Fieldset>
+</Example>

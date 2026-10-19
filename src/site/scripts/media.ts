@@ -3,6 +3,7 @@
  * lightbox's stepping and swipes, the carousel's position, keys, shape and peek, and a strip's room to
  * peek into. Unit-tested; the components' scripts (and `carousel.ts`, `collectionStrip.ts`) do the DOM.
  */
+import { cssNumber } from './units';
 
 /** Step through n items, wrapping at both ends. */
 export function wrap(i: number, n: number): number {
@@ -34,6 +35,17 @@ export const counter = (i: number, n: number): string => `${i + 1} of ${n}`;
 
 /** Clamp to the slides that exist (a carousel doesn't wrap: its ends are real). */
 export const clampIndex = (i: number, n: number): number => Math.max(0, Math.min(n - 1, i));
+
+/** A video file as the Video fundamental takes it: an MP4 as its src, a WebM as its webm (a carousel's slide, a gallery's cell). */
+export function videoSources(video: { src: string; type: string }): { src?: string; webm?: string } {
+  return { src: video.type === 'video/mp4' ? video.src : undefined, webm: video.type === 'video/webm' ? video.src : undefined };
+}
+
+/**
+ * Whether a component is narrower than its container query's size token (its computed value, "36.45rem"):
+ * what its `@container (width < …)` says, for its script (a peek has no room in a phone's column).
+ */
+export const narrowerThan = (width: number, limit: string, remPx = 16): boolean => width < cssNumber(limit, remPx);
 
 /**
  * How far to scroll a strip so an item is in view with `pad` to spare: 0 if it already is. Positions

@@ -13,6 +13,7 @@ import Tag from '../../components/fundamentals/Tag.astro';
 import Link from '../../components/fundamentals/Link.astro';
 import Button from '../../components/fundamentals/Button.astro';
 import Text from '../../components/fundamentals/Text.astro';
+import ActionBar from '../../components/compounds/ActionBar.astro';
 import { withBase } from '../../design/meta';
 import { STATUS_LABEL, type ArticleRow } from '../server/screens';
 
@@ -97,7 +98,8 @@ const tone = (r: ArticleRow) => (r.published ? 'positive' : r.status === 'draft'
             <td>
               <Text as="time" variant="small" datetime={r.updatedAt}>{r.updatedAt}</Text>
             </td>
-            <td class="actions">
+            <td>
+              <ActionBar align="end" gap="sm">
               {r.path && (
                 <Link href={withBase(r.path)} variant="quiet" external>
                   View
@@ -111,6 +113,7 @@ const tone = (r: ArticleRow) => (r.published ? 'positive' : r.status === 'draft'
                   Delete
                 </Button>
               )}
+              </ActionBar>
               <span class="sr-only" id={`title-${r.id}`}>{r.title}</span>
             </td>
           </tr>
@@ -157,13 +160,6 @@ const tone = (r: ArticleRow) => (r.published ? 'positive' : r.status === 'draft'
     font-weight: var(--weight-semibold);
   }
 
-  .actions {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: end;
-    align-items: center;
-    gap: var(--space-2);
-  }
 
   .tags {
     display: flex;

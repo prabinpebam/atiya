@@ -126,7 +126,7 @@ Below 760 px wide it's one column at the backpack's width: the book (two rows th
 
 ### 4.4 The thin scrollbar
 
-- One rule for `.dialog`, `.inv-panel` and `.scroll-thin` (`components.css`): the menu and landmark dialogs, the inventory and crafting panels, and the recipe grid.
+- One rule for `.dialog`, `.inv-panel` and `.scroll-thin` (the thin scrollbar, written by `ScrollArea`'s, the dialog's and the panel's stylesheets in `src/game/ui/styles/` since the styles moved beside their components: [design system](design-system.md) §4): the menu and landmark dialogs, the inventory and crafting panels, and the recipe grid.
 - `scrollbar-width: thin` and `scrollbar-color: var(--surface-text-muted) transparent`; `::-webkit-scrollbar` at `--c-scrollbar` (6 px) with a rounded thumb.
 - It reads on wood and on paper because the thumb is the surface's own muted text colour.
 
@@ -134,11 +134,11 @@ Below 760 px wide it's one column at the backpack's width: the book (two rows th
 
 | Step | What | Where |
 |---|---|---|
-| 1 | Header icon buttons; the compass alone; Menu → View | `ui/Hud.tsx`, `ui/ViewControls.tsx`, `ui/MenuDialog.tsx`, `hud.css` |
+| 1 | Header icon buttons; the compass alone; Menu → View | `ui/Hud.tsx`, `ui/ViewControls.tsx`, `ui/MenuDialog.tsx`, `ui/styles/play-header.css`, `view-controls.css`, `menu-dialog.css` |
 | 2 | Tokens: `c.recipe.cell`, `c.recipe.result`, `c.scrollbar`; drop the view pad's (`c.view.btn`, `c.view.btn-touch`) | `design/tokens.json` → `build-tokens.mjs` |
 | 3 | `MAX_NEEDS`, and which slots a craft filled (pure) | `world/craft/recipes.ts` |
 | 4 | The inventory panel takes a top part (the crafting pane), a title and a close | `ui/InventoryPanel.tsx` |
-| 5 | The crafting pane: recipe grid, detail, material slots, quantity, craft; the landing animation | `world/craft/ui.tsx`, `panels.css` |
+| 5 | The crafting pane: recipe grid, detail, material slots, quantity, craft; the landing animation | `world/craft/ui.tsx`, `ui/styles/craft-pane.css` |
 | 6 | Tests: unit (every recipe ≤ 4 needs; the landing slots; the need slots have / need); E2E (the crafting test in the new layout, the landing, the header names, the menu's View group); one look on a real GPU, desktop and phone | `tests/` |
 
 ## 6. Definition of Done

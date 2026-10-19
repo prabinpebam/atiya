@@ -1,0 +1,17 @@
+---
+import Example from '../../library/Example.astro';
+import ArticleForm from '../components/ArticleForm.astro';
+import { SECTION_OPTIONS } from './samples';
+---
+
+<Example title="A new page" description="Its title, summary, kind and section; Who can see it when private pages are set up. Here a page's kind is chosen first." layout="block">
+  <ArticleForm mode="new" kind="page" sections={SECTION_OPTIONS} section="work" protectable />
+</Example>
+
+<Example title="A new gallery, private pages not set up" description="In Atiya Studio, a line says where to set up private pages." layout="block">
+  <ArticleForm mode="new" kind="gallery" sections={SECTION_OPTIONS} privateSetup="#private-setup" />
+</Example>
+
+<Example title="Deleting a draft" description="The confirmation's body: what goes, and the choice to take its unused pictures too." layout="block">
+  <ArticleForm mode="delete" article="a-walk-round-the-pond" />
+</Example>

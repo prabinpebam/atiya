@@ -1,0 +1,23 @@
+---
+/**
+ * A value a form carries without showing it: what a script keeps in step with a field drawn another way (a
+ * rich field's Markdown), or an ID the form sends back with what was changed. Nothing to see, press or read.
+ * @tier fundamental
+ * @a11y Not shown and not announced: never use it for anything a person needs to see or change.
+ */
+
+interface Props {
+  /** The form field's name. */
+  name: string;
+  /** The value it sends; a script may change it. */
+  value?: string;
+  /** The input's id. */
+  id?: string;
+  /** Data attributes pass through to the input. */
+  [data: `data-${string}`]: string | undefined;
+}
+
+const { name, value = '', id, ...rest } = Astro.props;
+---
+
+<input type="hidden" id={id} name={name} value={value} {...rest} />

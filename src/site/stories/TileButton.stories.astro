@@ -1,0 +1,86 @@
+---
+import Example from '../library/Example.astro';
+import TileButton from '../components/fundamentals/TileButton.astro';
+import Icon from '../components/fundamentals/Icon.astro';
+import Image from '../components/fundamentals/Image.astro';
+import Tag from '../components/fundamentals/Tag.astro';
+import { sample } from '../design/samples';
+
+const p = sample('waterfall');
+---
+
+<Example title="Outlined: a choice among kinds" description="Each holds an icon, a name and a line on what it does, tied to it with aria-describedby. The one a block already is stays current; one that can't be used is disabled.">
+  <div class="demo-grid">
+    <TileButton aria-describedby="demo-tile-paragraph">
+      <Icon name="paragraph" size="lg" />
+      <span class="demo-name">Paragraph</span>
+      <span class="demo-what" id="demo-tile-paragraph">Words, with bold, italic, code and links</span>
+    </TileButton>
+    <TileButton variant="outlined" current aria-describedby="demo-tile-heading">
+      <Icon name="heading" size="lg" />
+      <span class="demo-name">Heading</span>
+      <span class="demo-what" id="demo-tile-heading">A section title; the minimap lists it</span>
+    </TileButton>
+    <TileButton disabled aria-describedby="demo-tile-quote">
+      <Icon name="quote" size="lg" />
+      <span class="demo-name">Quote</span>
+      <span class="demo-what" id="demo-tile-quote">Words someone said, in the column or pulled out</span>
+    </TileButton>
+  </div>
+</Example>
+
+<Example title="Framed: a picture in a grid" description="The frame shows on hover, and with the accent when it's picked (pressed) or the one shown (current).">
+  <div class="demo-grid">
+    <TileButton variant="framed" pressed={false} aria-label={p.alt}>
+      <Image src={p.src} alt="" width={p.width} height={p.height} ratio="4/3" display="fit" rounded={false} />
+      <span class="demo-id">waterfall</span>
+    </TileButton>
+    <TileButton variant="framed" pressed={true} aria-label={p.alt}>
+      <Image src={p.src} alt="" width={p.width} height={p.height} ratio="4/3" display="fit" rounded={false} />
+      <span class="demo-id">waterfall</span>
+      <Tag size="sm">Not used</Tag>
+    </TileButton>
+  </div>
+</Example>
+
+<Example title="Chip and thumbnail" description="Small and inline: a colour with its words, and a picture to take colours from.">
+  <TileButton variant="chip">
+    <span class="demo-chip" aria-hidden="true"></span>
+    <span>Use these colours</span>
+  </TileButton>
+  <TileButton variant="thumbnail" aria-label="Take colours from the waterfall">
+    <span class="demo-thumb"><Image src={p.src} alt="" width={p.width} height={p.height} ratio="1/1" display="fill" rounded={false} /></span>
+  </TileButton>
+</Example>
+
+<style>
+  .demo-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, calc(var(--size-avatar-lg) * 2)), 1fr));
+    gap: var(--space-3);
+    inline-size: 100%;
+  }
+
+  .demo-name {
+    font-weight: var(--weight-semibold);
+  }
+
+  .demo-what,
+  .demo-id {
+    color: var(--color-text-muted);
+    font-size: var(--text-sm);
+    line-height: var(--leading-ui);
+  }
+
+  .demo-chip {
+    inline-size: var(--space-4);
+    block-size: var(--space-8);
+    border-radius: var(--radius-xs);
+    background: var(--color-accent);
+  }
+
+  .demo-thumb {
+    display: block;
+    inline-size: var(--size-avatar-md);
+  }
+</style>

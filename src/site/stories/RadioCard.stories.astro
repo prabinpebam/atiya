@@ -1,0 +1,57 @@
+---
+import Example from '../library/Example.astro';
+import RadioCard from '../components/fundamentals/RadioCard.astro';
+---
+
+<Example title="Themes to pick from" layout="stack" description="A swatch strip before each name, and a line of detail under it; the picked card takes the accent.">
+  <div class="demo-list" role="radiogroup" aria-label="Themes">
+    <RadioCard name="demo-theme" value="atiya" checked>
+      <span slot="start" class="demo-strip" aria-hidden="true"><span class="demo-chip page"></span><span class="demo-chip text"></span><span class="demo-chip accent"></span><span class="demo-chip highlight"></span></span>
+      Atiya
+      <span slot="detail">Preset · In use</span>
+    </RadioCard>
+    <RadioCard name="demo-theme" value="studio">
+      <span slot="start" class="demo-strip" aria-hidden="true"><span class="demo-chip text"></span><span class="demo-chip page"></span><span class="demo-chip highlight"></span><span class="demo-chip accent"></span></span>
+      Studio
+      <span slot="detail">Yours · Unsaved</span>
+    </RadioCard>
+    <RadioCard name="demo-theme" value="paper" disabled>Paper</RadioCard>
+  </div>
+</Example>
+
+<style>
+  .demo-list {
+    display: grid;
+    gap: var(--space-2);
+    inline-size: 100%;
+    max-inline-size: var(--size-measure-narrow);
+  }
+
+  .demo-strip {
+    display: flex;
+    overflow: hidden;
+    border-radius: var(--radius-sm);
+    box-shadow: 0 0 0 var(--border-hairline) var(--color-rule);
+  }
+
+  .demo-chip {
+    inline-size: var(--space-4);
+    block-size: var(--space-6);
+  }
+
+  .page {
+    background: var(--color-bg);
+  }
+
+  .text {
+    background: var(--color-text);
+  }
+
+  .accent {
+    background: var(--color-accent);
+  }
+
+  .highlight {
+    background: var(--color-highlight);
+  }
+</style>

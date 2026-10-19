@@ -8,6 +8,7 @@
 import { readFileSync, readdirSync, statSync, existsSync } from 'node:fs';
 import { join, basename } from 'node:path';
 import postcss from 'postcss';
+import { copiedBlocks as copiedIn, sharedClassNames as sharedIn } from './lib/cssCopies.mjs';
 
 const ROOT = new URL('..', import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, '$1');
 const at = (...p) => join(ROOT, ...p);
@@ -16,35 +17,24 @@ const walk = (d, re) =>
   existsSync(d) ? readdirSync(d).flatMap((f) => { const p = join(d, f); return statSync(p).isDirectory() ? walk(p, re) : re.test(f) ? [p] : []; }) : [];
 const lines = (f) => read(f).split('\n').length;
 const styles = (s) => (s.match(/<style[\s\S]*?<\/style>/g) ?? []).join('\n');
-const markup = (s) => s.replace(/<style[\s\S]*?<\/style>/g, '').replace(/<script[\s\S]*?<\/script>/g, '');
+// a self-closing data script first (<script … />), so it never swallows the markup after it
+const markup = (s) => s.replace(/<style[\s\S]*?<\/style>/g, '').replace(/<script\b[^>]*\/>/g, '').replace(/<script[\s\S]*?<\/script>/g, '');
 const cssOf = (f) => (f.endsWith('.css') ? read(f) : styles(read(f)).replace(/<\/?style[^>]*>/g, ''));
 const parse = (css) => { try { return postcss.parse(css); } catch { return postcss.parse(''); } };
 
 const FUNDAMENTALS = at('src/site/components/fundamentals');
 const COMPOUNDS = at('src/site/components/compounds');
 const EDITOR_PARTS = [...walk(at('src/site/editor/components'), /\.astro$/), ...walk(at('src/site/editor/kit'), /\.astro$/)];
-const GAME_STYLES = walk(at('src/styles'), /\.css$/).filter((f) => !/[\\/](tokens|cursors|global)\.css$/.test(f));
+// every game stylesheet: base.css and each component's own in src/game/ (DS2-04); the generated tokens.css and
+// cursors.css and the entry (global.css, the layer order and imports) aside
+const GAME_STYLES = [...walk(at('src/styles'), /\.css$/).filter((f) => !/[\\/](tokens|cursors|global)\.css$/.test(f)), ...walk(at('src/game'), /\.css$/)];
 const GAME_UI = [...walk(at('src/game/ui'), /\.tsx$/), at('src/game/world/craft/ui.tsx'), at('src/game/world/home/TalkBox.tsx')].filter(existsSync);
 
-/** Identical declaration blocks (60 or more characters) found in 2 or more files. */
-function copiedBlocks(files) {
-  const seen = new Map();
-  for (const f of files) {
-    for (const m of read(f).matchAll(/\{([^{}]{60,})\}/g)) {
-      const b = m[1].replace(/\s+/g, ' ').trim();
-      if (!/:\s/.test(b) || /^\s*\w+\??:\s*(string|number|boolean)/.test(b)) continue;
-      (seen.get(b) ?? seen.set(b, new Set()).get(b)).add(f);
-    }
-  }
-  return [...seen.values()].filter((s) => s.size >= 2).length;
-}
-
+const sources = (files) => files.map((f) => ({ name: basename(f), src: read(f) }));
+/** Identical declaration blocks (60 or more characters) found in 2 or more files (scripts/lib/cssCopies.mjs). */
+const copiedBlocks = (files) => copiedIn(sources(files)).length;
 /** Class names defined in the styles of 3 or more files. */
-function sharedClassNames(files) {
-  const by = new Map();
-  for (const f of files) for (const c of new Set([...styles(read(f)).matchAll(/\.([a-z][\w-]*)/g)].map((m) => m[1]))) (by.get(c) ?? by.set(c, []).get(c)).push(basename(f));
-  return [...by.entries()].filter(([, fs]) => fs.length >= 3).map(([c, fs]) => `${c} (${fs.length})`);
-}
+const sharedClassNames = (files) => sharedIn(sources(files)).map((c) => `${c.name} (${c.files.length})`);
 
 const RAW_CONTROL = /<(button|input|select|textarea|dialog)\b/g;
 const PHYSICAL = /^(margin|padding|border)-(top|right|bottom|left)(-|$)|^(top|right|bottom|left)$/;
@@ -60,10 +50,17 @@ const stories = walk(at('src/site/stories'), /\.stories\.astro$/);
 add('Screenshot specs / baseline images', `${visualSpecs.length} / ${baselines.length}`, 'a visual project with baselines for every story', visualSpecs.length > 0 && baselines.length >= stories.length, 'DS2-01');
 
 // ---- game styles (WS2)
-let topLevel = 0;
-let layered = 0;
-for (const f of GAME_STYLES) parse(read(f)).each((n) => { if (n.type === 'rule') topLevel++; if (n.type === 'atrule' && n.name === 'layer') layered++; });
-add('Game top-level rules outside a layer, in shared stylesheets', topLevel, 0, topLevel === 0, 'DS2-04');
+// a rule outside a cascade layer (at any depth), in any game stylesheet; and the stylesheets shared by no one
+// component (src/styles/ beyond the entry, base and the generated two)
+let outsideLayer = 0;
+for (const f of GAME_STYLES)
+  parse(read(f)).walkRules((r) => {
+    let p = r.parent;
+    while (p && !(p.type === 'atrule' && p.name === 'layer')) p = p.parent;
+    if (!p) outsideLayer++;
+  });
+const shared = walk(at('src/styles'), /\.css$/).filter((f) => !/[\\/](tokens|cursors|global|base)\.css$/.test(f)).length;
+add('Game rules outside a cascade layer / shared stylesheets beyond base.css', `${outsideLayer} / ${shared}`, '0 / 0', outsideLayer === 0 && shared === 0, 'DS2-04');
 const gallery = walk(at('src/game/gallery'), /\.(tsx|astro)$/);
 const galleryText = gallery.map(read).join('\n');
 const primitives = ['Button', 'IconButton', 'KeyCap', 'Dialog', 'Panel', 'ScrollArea'];
@@ -98,17 +95,21 @@ add('Token changelogs', `${changelogs.length} of 2`, 'both systems', changelogs.
 
 // ---- edit mode (WS5)
 const raw = EDITOR_PARTS.map((f) => [basename(f), (markup(read(f)).match(RAW_CONTROL) ?? []).length]).filter(([, n]) => n > 0);
-const rawTotal = raw.reduce((n, [, k]) => n + k, 0);
-add('Raw controls in edit mode parts', rawTotal ? `${rawTotal} in ${raw.length} parts` : 0, 0, rawTotal === 0, 'DS2-11');
+// a control the test names with its reason is allowed (tests/unit/editorDesignSystem.test.ts ALLOWED)
+const allowed = [...read(at('tests/unit/editorDesignSystem.test.ts')).matchAll(/'src\/site\/editor\/[\w/]+\/([\w.]+): (<\w+)[^']*':/g)].map((m) => [m[1], m[2]]);
+for (const [file] of allowed) { const r = raw.find(([f]) => f === file); if (r) r[1]--; }
+const rawLeft = raw.filter(([, n]) => n > 0);
+const rawTotal = rawLeft.reduce((n, [, k]) => n + k, 0);
+add('Raw controls in edit mode parts, beyond those named with a reason', rawTotal ? `${rawTotal} in ${rawLeft.length} parts` : `0 (${allowed.length} named)`, '0, or each named with its reason', rawTotal === 0, 'DS2-11');
 const editorCopied = copiedBlocks(EDITOR_PARTS);
 add('Identical rule bodies copied between edit mode parts', editorCopied, 'fewer than 10', editorCopied < 10, 'DS2-12');
 const VOCABULARY = ['issue', 'actions', 'split', 'form', 'row', 'list'];
-const editorShared = sharedClassNames(walk(at('src/site/editor/components'), /\.astro$/)).filter((c) => VOCABULARY.includes(c.split(' ')[0]));
+const editorShared = sharedClassNames(EDITOR_PARTS).filter((c) => VOCABULARY.includes(c.split(' ')[0]));
 add('Edit mode pieces rebuilt in 3 or more parts (issue, actions, split, form, row, list)', editorShared.length ? editorShared.join(', ') : 0, 0, editorShared.length === 0, 'DS2-12');
-const partNames = walk(at('src/site/editor/components'), /\.astro$/).map((f) => basename(f, '.astro'));
+const partNames = EDITOR_PARTS.map((f) => basename(f, '.astro'));
 const editorStories = new Set(walk(at('src/site/editor/stories'), /\.stories\.astro$/).map((f) => basename(f).replace('.stories.astro', '')));
 const storied = partNames.filter((n) => editorStories.has(n)).length;
-add('Edit mode parts with a story', `${storied} of ${partNames.length}`, 'all', storied === partNames.length, 'DS2-13');
+add('Edit mode parts and kit pieces with a story', `${storied} of ${partNames.length}`, 'all', storied === partNames.length, 'DS2-13');
 const siteTokens = JSON.parse(read(at('src/site/design/tokens.json')));
 const editorGroups = Object.entries(siteTokens.c).filter(([k]) => k === 'editor' || k.startsWith('editor-'));
 const editorOwned = editorGroups.filter(([, v]) => v.$extensions?.['site.owner'] && v.$extensions['site.owner'] !== 'shared').length;

@@ -16,6 +16,8 @@ import { stableId } from '../../design/stableId';
 import Image from '../fundamentals/Image.astro';
 import Video from '../fundamentals/Video.astro';
 import Caption from '../fundamentals/Caption.astro';
+import { videoSources } from '../../scripts/media';
+import type { PictureSource } from '../../design/pictures';
 
 export interface GalleryItem {
   /** The displayed image. */
@@ -39,7 +41,7 @@ export interface GalleryItem {
   /** Which part stays in a crop. */
   focus?: string;
   /** Its dark mode version, shown when the page is dark. */
-  dark?: { src: string; srcset?: string; width: number; height: number; full?: string; thumb?: string; poster?: string; bg?: string };
+  dark?: PictureSource & { full?: string; thumb?: string; poster?: string };
   /** Its own edge colour (media.md §9.1), for a background behind it. */
   bg?: string;
   /**
@@ -106,8 +108,7 @@ const ratio = layout === 'row' ? '4/3' : layout === 'mosaic' ? '1/1' : undefined
             <div class="card" data-gallery-item data-video-cell data-width={item.width} data-height={item.height} data-shadow={shadow ? '' : undefined}>
               <span class="image-shell">
                 <Video
-                  src={item.video.type === 'video/mp4' ? item.video.src : undefined}
-                  webm={item.video.type === 'video/webm' ? item.video.src : undefined}
+                  {...videoSources(item.video)}
                   label={item.alt}
                   poster={item.src || undefined}
                   width={item.width}
@@ -190,12 +191,12 @@ const ratio = layout === 'row' ? '4/3' : layout === 'mosaic' ? '1/1' : undefined
 
   /* the shadow on the cell, which clips the picture: drawn outside the clip, in the picture's shape */
   .gallery[data-shadow] .image-shell {
-    filter: drop-shadow(0 var(--c-image-shadow-y) var(--c-image-shadow-blur) var(--c-image-shadow));
+    filter: var(--c-image-shadow-filter);
   }
 
   /* a row scrolls sideways, which would cut the shadows off: room for them under the cells */
   .gallery[data-shadow][data-layout='row'] .items {
-    padding-block-end: calc(var(--c-image-shadow-y) + var(--c-image-shadow-blur));
+    padding-block-end: var(--c-image-shadow-room);
   }
 
   .gallery[data-layout='row'] .items {

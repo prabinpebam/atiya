@@ -1,0 +1,20 @@
+---
+import Example from '../../library/Example.astro';
+import PanelGrid from '../kit/PanelGrid.astro';
+import Panel from '../kit/Panel.astro';
+import Heading from '../../components/fundamentals/Heading.astro';
+import Text from '../../components/fundamentals/Text.astro';
+---
+
+<Example title="Cards side by side" description="As many columns as fit, each at least a narrow measure; one under another when there's no room." layout="block">
+  <PanelGrid>
+    <Panel labelledby="story-grid-site">
+      <Heading level={3} size="h4" id="story-grid-site">The site</Heading>
+      <Text variant="small" tone="muted">content/site.json</Text>
+    </Panel>
+    <Panel labelledby="story-grid-profile">
+      <Heading level={3} size="h4" id="story-grid-profile">Your profile</Heading>
+      <Text variant="small" tone="muted">content/people/ada.json</Text>
+    </Panel>
+  </PanelGrid>
+</Example>

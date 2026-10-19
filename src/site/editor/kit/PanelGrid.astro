@@ -1,0 +1,27 @@
+---
+/**
+ * Panels side by side: as many columns as fit, each at least a narrow measure wide (30 rem), one under another
+ * when there's no room (the Settings screen's cards: the site, your profile, Contact, Visitor counts). Each
+ * panel keeps its own height, from the top.
+ * @tier kit
+ * @a11y A layout only: it adds no role, so the panels keep their own headings and names, in the source's order.
+ */
+
+interface Props {
+  /** Data attributes pass through to the grid (a region's hooks: data-region, data-busy-line). */
+  [data: `data-${string}`]: string | undefined;
+}
+
+const { ...rest } = Astro.props;
+---
+
+<div class="panel-grid" {...rest}><slot /></div>
+
+<style>
+  .panel-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, var(--size-measure-narrow)), 1fr));
+    gap: var(--space-8);
+    align-items: start;
+  }
+</style>

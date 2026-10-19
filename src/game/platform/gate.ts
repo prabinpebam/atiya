@@ -11,6 +11,8 @@ import { withBase } from './base';
 import { hideLoadScene, startLoadScene, warmCriticalAssets } from './greeting';
 import { createHost } from './host';
 import { mount } from '../entry';
+// its panels (the fallback, the offer, an error) are the overlay's card (no JS: CSS is hoisted into the page)
+import '../ui/styles/overlay.css';
 
 const container = document.getElementById('game-container') as HTMLElement;
 

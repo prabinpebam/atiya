@@ -24,6 +24,8 @@ export interface PropDoc {
   optional: boolean;
   default?: string;
   description: string;
+  /** Its JSDoc `@deprecated` note (what to use instead), when it's deprecated: still works, never passed. */
+  deprecated?: string;
 }
 
 export interface TypeDoc {
@@ -104,7 +106,9 @@ function members(decl: ts.InterfaceDeclaration, defaults: Map<string, string>): 
   for (const m of decl.members) {
     if (ts.isPropertySignature(m)) {
       const name = m.name.getText().replace(/^['"]|['"]$/g, '');
-      out.push({ name, type: m.type ? m.type.getText().replace(/\s+/g, ' ') : 'unknown', optional: !!m.questionToken, default: defaults.get(name), description: jsdoc(m) });
+      const dep = ts.getJSDocTags(m).find((t) => t.tagName.text === 'deprecated');
+      const deprecated = dep ? (typeof dep.comment === 'string' ? dep.comment : ts.getTextOfJSDocComment(dep.comment) ?? '').replace(/\s+/g, ' ').trim() : undefined;
+      out.push({ name, type: m.type ? m.type.getText().replace(/\s+/g, ' ') : 'unknown', optional: !!m.questionToken, default: defaults.get(name), description: jsdoc(m), ...(dep ? { deprecated } : {}) });
     } else if (ts.isIndexSignatureDeclaration(m)) {
       const key = m.parameters[0]?.type?.getText() ?? '';
       if (key.includes('data-')) out.push({ name: 'data-*', type: 'string', optional: true, description: 'Data attributes pass through to the root element.' });
@@ -135,6 +139,24 @@ export function propsOf(fm: string): { props: PropDoc[]; types: TypeDoc[] } {
     else if (s.modifiers?.some((x) => x.kind === ts.SyntaxKind.ExportKeyword)) types.push({ name: s.name.text, props: members(s, new Map()) });
   }
   return { props, types };
+}
+
+/**
+ * Types a component re-exports from tier 0 (`export type { A, B } from '../../scripts/x'`), documented on its
+ * page as its own, in the order it names them: `dir` is the component's folder.
+ */
+export function reexportedTypes(fm: string, dir: string): TypeDoc[] {
+  const out: TypeDoc[] = [];
+  for (const m of fm.matchAll(/export\s+type\s*\{([^}]+)\}\s*from\s*['"]([^'"]+)['"]/g)) {
+    const file = join(dir, /\.ts$/.test(m[2]) ? m[2] : `${m[2]}.ts`);
+    if (!existsSync(file)) continue;
+    const sf = ts.createSourceFile(file, readFileSync(file, 'utf8'), ts.ScriptTarget.Latest, true);
+    for (const name of m[1].split(',').map((x) => x.trim()).filter(Boolean)) {
+      const decl = sf.statements.find((x): x is ts.InterfaceDeclaration => ts.isInterfaceDeclaration(x) && x.name.text === name);
+      if (decl) out.push({ name, props: members(decl, new Map()) });
+    }
+  }
+  return out;
 }
 
 export function tokensOf(src: string): string[] {
@@ -193,7 +215,8 @@ export function catalog(): Entry[] {
       const source = readFileSync(join(dir, f), 'utf8');
       const fm = frontmatter(source);
       const doc = docComment(fm);
-      const { props, types } = propsOf(fm);
+      const { props, types: own } = propsOf(fm);
+      const types = [...own, ...reexportedTypes(fm, dir)];
       const imports = importsOf(fm);
       const storyFile = join(ROOT, 'src/site/stories', `${name}.stories.astro`);
       entries.push({

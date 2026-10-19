@@ -1,0 +1,9 @@
+---
+import Example from '../../library/Example.astro';
+import ServicesForms from '../components/ServicesForms.astro';
+import { SITE } from './samples';
+---
+
+<Example title="Contact and visitor counts" description="Each a choice of options from the services catalogue, saying what each gives and asks; the chosen one shows its steps." layout="block">
+  <ServicesForms site={{ ...SITE, services: { contact: { kind: 'email', address: 'ada@example.com' } } }} siteVersion="sample" address="https://example.com/" contactHref="" />
+</Example>

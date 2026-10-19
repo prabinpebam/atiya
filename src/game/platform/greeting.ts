@@ -5,6 +5,7 @@
  * drawn planet and a progress bar) that the real planet replaces. Part of the gate, so it stays tiny:
  * no React, no three.js.
  */
+import '../ui/styles/load-scene.css';
 
 interface Greeting {
   lines: string[];

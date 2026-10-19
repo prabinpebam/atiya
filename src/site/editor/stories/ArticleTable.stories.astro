@@ -1,0 +1,9 @@
+---
+import Example from '../../library/Example.astro';
+import ArticleTable from '../components/ArticleTable.astro';
+import { ARTICLE_ROWS } from './samples';
+---
+
+<Example title="Every page" description="A draft, a published gallery and a private page, with Find, Status and Section to narrow the list." layout="block">
+  <ArticleTable rows={ARTICLE_ROWS} />
+</Example>

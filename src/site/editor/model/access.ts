@@ -49,6 +49,12 @@ export const STATE_OF = Object.fromEntries(GRANT_STATES.map((s) => [s.state, s])
 
 export const KIND_LABEL: Record<Grant['kind'], string> = { code: 'Access code', link: 'Magic link' };
 
+/** How someone gets in, as the forms for a new code or link offer it (a ChoiceGroup's options). */
+export const KIND_CHOICES: { value: Grant['kind']; label: string; hint: string }[] = [
+  { value: 'code', label: KIND_LABEL.code, hint: 'A password they type on the Sign in page.' },
+  { value: 'link', label: KIND_LABEL.link, hint: 'A link that opens it with nothing to type.' },
+];
+
 /** Grants grouped by state, in GRANT_STATES' order, newest first in each; empty groups left out. */
 export function grantGroups<T extends { state: State; createdAt: string }>(grants: T[]): { state: State; label: string; grants: T[] }[] {
   return GRANT_STATES.map((s) => ({
@@ -105,6 +111,54 @@ export function scopeGroups(view: Pick<SharingView, 'pages' | 'sections'>, scope
   const pages = new Set(view.pages.map((p) => p.id));
   return { sections, unknown: { sections: (scope.sections ?? []).filter((s) => !known.has(s)), pages: (scope.pages ?? []).filter((p) => !pages.has(p)) } };
 }
+
+/** A section in the list of what a grant opens, with what it shows: its count, what's chosen in it, and whether it starts open. */
+export interface ScopeChoice extends ScopeSection {
+  /** The section's own choice: every private page in it, now and later. */
+  all: boolean;
+  /** "3 private pages", or that it has none yet. */
+  count: string;
+  /** What's chosen in it: all, or how many pages (empty for nothing). */
+  chosen: string;
+  /** Starts open: something in it is chosen, or the whole list is short (and it has pages). */
+  open: boolean;
+  /** The IDs of its pages the grant names itself (not through the section). */
+  own: Set<string>;
+}
+
+/** The list of what a grant opens (the Access screen): each section's state, and the line over the list. */
+export function scopeChoices(options: { sections: ScopeSection[] }, scope: Grant['scope'] = {}): { line: string; sections: ScopeChoice[] } {
+  const sections = new Set(scope.sections ?? []);
+  const pages = new Set(scope.pages ?? []);
+  const total = options.sections.reduce((n, s) => n + s.pages.length, 0);
+  const titleOfSection = new Map(options.sections.map((s) => [s.id, s.title]));
+  const titleOfPage = new Map(options.sections.flatMap((s) => s.pages.map((p) => [p.id, p.title] as const)));
+  // a page a chosen section already covers isn't named again
+  const covered = (id: string) => options.sections.some((s) => sections.has(s.id) && s.pages.some((p) => p.id === id));
+  const line = scopeLine(
+    [...sections].map((id) => titleOfSection.get(id) ?? id),
+    [...pages].filter((id) => !covered(id)).map((id) => titleOfPage.get(id) ?? id),
+  );
+  return {
+    line,
+    sections: options.sections.map((s) => {
+      const all = sections.has(s.id);
+      const n = s.pages.filter((p) => pages.has(p.id)).length;
+      return {
+        ...s,
+        all,
+        count: s.pages.length ? `${s.pages.length} private ${s.pages.length === 1 ? 'page' : 'pages'}` : 'No private pages yet',
+        chosen: all ? 'All, now and later' : n ? `${n} chosen` : '',
+        // a short list opens whole (but sections with nothing in them yet); a long one opens only where something's chosen
+        open: all || n > 0 || (total <= 12 && s.pages.length > 0),
+        own: new Set(s.pages.filter((p) => pages.has(p.id)).map((p) => p.id)),
+      };
+    }),
+  };
+}
+
+/** What a private page's choice says under it: published, or that it opens once it is. */
+export const pageHint = (published: boolean): string => (published ? 'Published' : 'Not published yet: it opens once it is');
 
 /** Everything a grant can be found by in the Access screen's list, lowercased: who, why, notes, its code's name, what it opens. */
 export function findText(g: ListedGrant): string {

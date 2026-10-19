@@ -2,6 +2,17 @@
 import { withBase } from '../game/platform/base';
 import { faCaretDown, faXmark } from '@fortawesome/free-solid-svg-icons';
 import BaseLayout from '../layouts/BaseLayout.astro';
+// the page's own markup at its first paint, before any game script: the top bar, the loading scene, the welcome
+// and the no-script card bring their stylesheets with them (documentation/game-ui/design-system.md §4, §9)
+import '../game/ui/styles/button.css';
+import '../game/ui/styles/key-cap.css';
+import '../game/ui/styles/icon.css';
+import '../game/ui/styles/card.css';
+import '../game/ui/styles/lane.css';
+import '../game/ui/styles/play-page.css';
+import '../game/ui/styles/play-header.css';
+import '../game/ui/styles/load-scene.css';
+import '../game/ui/styles/talk-box.css';
 import { validateLandmarks } from '../game/math/landmarks';
 import { welcomeLines } from '../game/world/home/welcome';
 import { TOUCH_COPY } from '../game/input/touchCopy';

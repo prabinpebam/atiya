@@ -1,0 +1,60 @@
+/* The floating stick (touch.md §5.2; input/touch.ts): drawn where a finger lands on the planet, its knob, gold while running.
+ * Its owner imports it (input/touch.ts); tokens only (tests/unit/designSystem.test.ts). */
+@layer tokens, base, primitives, components, cursors;
+
+@layer components {
+  /* The floating stick (touch.md §5.2): drawn where a finger lands on the planet, over the lanes (it's under
+   * the thumb and never takes a touch). The touch chunk moves it (transform) and its knob; its range is half this ring. */
+  .stick {
+    position: absolute;
+    inset-inline-start: 0;
+    inset-block-start: 0;
+    z-index: var(--layer-stick);
+    display: grid;
+    place-items: center;
+    width: var(--c-stick-size);
+    height: var(--c-stick-size);
+    border: var(--border-base) solid var(--surface-border);
+    border-radius: var(--radius-round);
+    background: var(--surface-bg-glass);
+    box-shadow: var(--shadow-press);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity var(--dur-fast) var(--ease-out);
+  }
+
+  .stick.on {
+    opacity: 1;
+  }
+
+  .stick-knob {
+    width: var(--c-stick-knob);
+    height: var(--c-stick-knob);
+    border: var(--border-base) solid var(--surface-text);
+    border-radius: var(--radius-round);
+    background: var(--surface-bg);
+    box-shadow: var(--shadow-lift);
+  }
+
+  /* running: the ring and knob turn gold */
+  .stick.run {
+    border-color: var(--surface-accent);
+  }
+
+  .stick.run .stick-knob {
+    border-color: var(--surface-on-accent);
+    background: var(--surface-accent);
+  }
+
+  @media (forced-colors: active) {
+    .stick,
+    .stick-knob {
+      border: var(--border-base) solid CanvasText;
+    }
+
+    .stick.run,
+    .stick.run .stick-knob {
+      border-color: Highlight;
+    }
+  }
+}

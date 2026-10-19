@@ -1,0 +1,9 @@
+---
+import Example from '../../library/Example.astro';
+import SectionForms from '../components/SectionForms.astro';
+import { SECTION_SETTINGS, STRUCTURE } from './samples';
+---
+
+<Example title="A section's settings" description="Its title, menu label, summary, address, view and place in the navigation, with Move up and Move down; only the chosen section's form shows." layout="block">
+  <SectionForms sections={SECTION_SETTINGS} selected="work" structure={STRUCTURE} version="sample" />
+</Example>

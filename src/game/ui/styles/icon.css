@@ -1,0 +1,15 @@
+/* Icon (ui/Icon.tsx): a Font Awesome Free icon as inline SVG, sized by the text.
+ * Its owners import it (ui/Icon.tsx, src/pages/play.astro); tokens only (tests/unit/designSystem.test.ts). */
+@layer tokens, base, primitives, components, cursors;
+
+@layer primitives {
+  /* ---------- Icons (Font Awesome Free, solid, inline SVG via ui/Icon.tsx) ---------- */
+  .icon {
+    display: inline-block;
+    flex: none;
+    width: 1em;
+    height: 1em;
+    vertical-align: var(--c-icon-shift);
+    overflow: visible;
+  }
+}

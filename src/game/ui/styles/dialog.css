@@ -1,0 +1,61 @@
+/* Dialog (ui/overlays.tsx; §4.1): a modal sheet in the browser’s top layer, its body, headings and lists.
+ * Its owners import it (ui/overlays.tsx, ui/MenuDialog.tsx, ui/ChopperCard.tsx); tokens only (tests/unit/designSystem.test.ts). */
+@layer tokens, base, primitives, components, cursors;
+
+@layer primitives {
+  /* Dialog: a modal paper sheet (native <dialog>, the browser's top layer) */
+  .dialog {
+    inset: var(--safe-top) var(--safe-right) var(--safe-bottom) var(--safe-left);
+    width: min(var(--c-dialog-width), calc(100vw - var(--safe-left) - var(--safe-right) - var(--space-8)));
+    max-height: calc(100dvh - var(--safe-top) - var(--safe-bottom) - var(--space-12));
+    padding: 0;
+    border: var(--border-base) solid var(--surface-border);
+    border-radius: var(--radius-xl);
+    background: var(--surface-bg);
+    box-shadow: var(--shadow-card);
+    color: var(--surface-text);
+  }
+
+  .dialog::backdrop {
+    background: var(--color-scrim);
+  }
+
+  .dialog-body {
+    padding: var(--space-6);
+  }
+
+  .dialog h2 {
+    margin: 0 0 var(--space-2);
+    font-size: var(--text-3xl);
+  }
+
+  .dialog h3 {
+    margin: var(--space-5) 0 var(--space-2);
+    font-size: var(--text-md);
+  }
+
+  .dialog ul {
+    padding-inline-start: var(--c-dialog-list-indent);
+  }
+
+  /* A thin scrollbar that reads on wood and on paper (crafting-screen.md §4.4): the surface's muted text on no track */
+  /* (on every dialog and wood panel too) */
+  .dialog {
+    scrollbar-width: thin;
+    scrollbar-color: var(--surface-text-muted) transparent;
+  }
+
+  .dialog::-webkit-scrollbar {
+    width: var(--c-scrollbar);
+    height: var(--c-scrollbar);
+  }
+
+  .dialog::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .dialog::-webkit-scrollbar-thumb {
+    border-radius: var(--radius-pill);
+    background: var(--surface-text-muted);
+  }
+}

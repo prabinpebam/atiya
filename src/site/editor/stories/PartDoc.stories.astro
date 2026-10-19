@@ -1,0 +1,20 @@
+---
+import Example from '../../library/Example.astro';
+import PartDoc from '../components/PartDoc.astro';
+import Text from '../../components/fundamentals/Text.astro';
+---
+
+<Example title="A kit piece's page" description="Its tier and source, its examples (the default slot), its props (the props slot) and its accessibility notes and keys." layout="block">
+  <PartDoc name="ListLink" tier="kit" source="https://github.com/prabinpebam/atiya/blob/main/src/site/editor/kit/ListLink.astro" index="#parts" a11y={['A link named by everything it shows.']} keys={[{ keys: 'Enter', action: 'Shows its details' }]}>
+    <Text variant="ui" tone="muted">Its stories show here.</Text>
+    <Fragment slot="props">
+      <Text variant="ui" tone="muted">Its props table shows here.</Text>
+    </Fragment>
+  </PartDoc>
+</Example>
+
+<Example title="A part without notes" description="tier 'part', with no keys of its own." layout="block">
+  <PartDoc name="ContentIssues" tier="part" source="https://github.com/prabinpebam/atiya/blob/main/src/site/editor/components/ContentIssues.astro" index="#parts" a11y={[]} keys={[]}>
+    <Text variant="ui" tone="muted">Its stories show here.</Text>
+  </PartDoc>
+</Example>

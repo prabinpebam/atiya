@@ -1,0 +1,34 @@
+/* The action prompt (Hud.tsx’s ActionPrompt): what E does now, a real button; seated on the pond bench, two.
+ * Its owner imports it (ui/Hud.tsx); tokens only (tests/unit/designSystem.test.ts). */
+@layer tokens, base, primitives, components, cursors;
+
+@layer components {
+  .action-prompt {
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .seat-prompt .btn {
+    gap: var(--space-2);
+    box-shadow: var(--shadow-lift);
+  }
+
+  /* two choices side by side (on the pond bench: feed the ducks, stand up) */
+  .seat-prompt[data-kind='feed'] {
+    display: flex;
+    gap: var(--space-2);
+    white-space: nowrap;
+  }
+
+  @media (forced-colors: active) {
+    .seat-prompt .btn {
+      border: var(--border-base) solid ButtonText;
+    }
+
+    .seat-prompt .btn:focus-visible {
+      outline-color: Highlight;
+    }
+  }
+}

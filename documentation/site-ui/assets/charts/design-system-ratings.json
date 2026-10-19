@@ -1,7 +1,7 @@
 {
   "chart": "GroupedBarChart",
-  "title": "Design system ratings out of 10, 19 October 2026",
-  "alt": "The website rates 8.5 to 9.5 on every aspect but quality checks and governance. Edit mode matches it on tokens but drops to 5 to 6 on component architecture, reuse and documentation. The game UI is strict on tokens and reuse but weakest on responsiveness, accessibility and documentation.",
+  "title": "Design system ratings out of 10, after the DS2 round (19 October 2026)",
+  "alt": "After the DS2 round every aspect of every system rates 8 or more: the website 8.5 to 9.5, edit mode 8.5 to 9 and the game UI 8 to 9. Edit mode rose most (component architecture 5.5 to 8.5, reuse 5 to 8.5), and the game UI next (responsiveness 4.5 to 8).",
   "props": {
     "data": [
       {
@@ -12,12 +12,12 @@
       {
         "aspect": "Token architecture",
         "system": "Edit mode",
-        "rating": 8
+        "rating": 9
       },
       {
         "aspect": "Token architecture",
         "system": "Game UI",
-        "rating": 8
+        "rating": 8.5
       },
       {
         "aspect": "Token discipline",
@@ -47,32 +47,32 @@
       {
         "aspect": "Accessibility",
         "system": "Game UI",
-        "rating": 6
+        "rating": 8
       },
       {
         "aspect": "Component architecture",
         "system": "Website",
-        "rating": 8.5
+        "rating": 9
       },
       {
         "aspect": "Component architecture",
         "system": "Edit mode",
-        "rating": 5.5
+        "rating": 8.5
       },
       {
         "aspect": "Component architecture",
         "system": "Game UI",
-        "rating": 6.5
+        "rating": 8
       },
       {
         "aspect": "Reuse in practice",
         "system": "Website",
-        "rating": 8.5
+        "rating": 9
       },
       {
         "aspect": "Reuse in practice",
         "system": "Edit mode",
-        "rating": 5
+        "rating": 8.5
       },
       {
         "aspect": "Reuse in practice",
@@ -87,12 +87,12 @@
       {
         "aspect": "Documentation",
         "system": "Edit mode",
-        "rating": 6
+        "rating": 8.5
       },
       {
         "aspect": "Documentation",
         "system": "Game UI",
-        "rating": 6
+        "rating": 8
       },
       {
         "aspect": "Responsive and RTL",
@@ -107,37 +107,37 @@
       {
         "aspect": "Responsive and RTL",
         "system": "Game UI",
-        "rating": 4.5
+        "rating": 8
       },
       {
         "aspect": "Quality checks",
         "system": "Website",
-        "rating": 7.5
+        "rating": 9
       },
       {
         "aspect": "Quality checks",
         "system": "Edit mode",
-        "rating": 7.5
+        "rating": 9
       },
       {
         "aspect": "Quality checks",
         "system": "Game UI",
-        "rating": 7
+        "rating": 8.5
       },
       {
         "aspect": "Governance",
         "system": "Website",
-        "rating": 7
+        "rating": 8.5
       },
       {
         "aspect": "Governance",
         "system": "Edit mode",
-        "rating": 6.5
+        "rating": 8.5
       },
       {
         "aspect": "Governance",
         "system": "Game UI",
-        "rating": 6.5
+        "rating": 8
       }
     ],
     "categoryAccessor": "aspect",

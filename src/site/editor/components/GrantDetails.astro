@@ -5,15 +5,12 @@
  * it's for, why, notes, what it opens and its last day, saved together, and Stop sharing (Withdraw now,
  * which keeps its record, and Delete, which doesn't; each asks first). For a new one, the same form with How
  * they get in and Share it. With nothing yet, what to do. What it opens is every section of the site with
- * its private pages under it, in collapsible groups with a search, so it stays usable with many pages: a
- * section's own choice opens every private page in it, now and later, and covers its pages.
+ * its private pages under it (GrantScope, which the page puts in the scope slot).
  * @tier editor
  * @a11y One h2 names what's shown (and the details region); each part has an h3, its fields labelled, a problem announced (role="alert") beside Save.
- * @a11y What it opens is a fieldset per section inside a disclosure that says its count and what's chosen; pages a section covers show checked and can't be changed, and say why; the line over the list (a live region) says what it opens.
  * @a11y Withdraw now and Delete ask first in a modal dialog; Copy says what it copied in the save status.
  */
 import Button from '../../components/fundamentals/Button.astro';
-import Checkbox from '../../components/fundamentals/Checkbox.astro';
 import Heading from '../../components/fundamentals/Heading.astro';
 import Icon from '../../components/fundamentals/Icon.astro';
 import Link from '../../components/fundamentals/Link.astro';
@@ -22,7 +19,11 @@ import Text from '../../components/fundamentals/Text.astro';
 import TextField from '../../components/fundamentals/TextField.astro';
 import ChoiceGroup from '../../components/compounds/ChoiceGroup.astro';
 import Dialog from '../../components/compounds/Dialog.astro';
-import { KIND_LABEL, STATE_OF, daysAfter, longDate, scopeLine, type ListedGrant, type ScopeSection } from '../model/access';
+import ActionBar from '../../components/compounds/ActionBar.astro';
+import Form from '../kit/Form.astro';
+import Panel from '../kit/Panel.astro';
+import IssueNote from '../kit/IssueNote.astro';
+import { KIND_CHOICES, KIND_LABEL, STATE_OF, daysAfter, longDate, scopeChoices, type ListedGrant, type ScopeSection } from '../model/access';
 
 type Scope = ListedGrant['scope'];
 
@@ -48,23 +49,8 @@ interface Props {
 const { mode, grant: g, share, options, preset, made = false, posthog, count } = Astro.props;
 const withdrawn = g?.state === 'withdrawn';
 const scope: Scope = (mode === 'grant' ? g?.scope : preset) ?? {};
-const inScope = { sections: new Set(scope.sections ?? []), pages: new Set(scope.pages ?? []) };
-const totalPages = options.sections.reduce((n, s) => n + s.pages.length, 0);
-const titleOfSection = new Map(options.sections.map((s) => [s.id, s.title]));
-const titleOfPage = new Map(options.sections.flatMap((s) => s.pages.map((p) => [p.id, p.title] as const)));
-const line = scopeLine(
-  [...inScope.sections].map((id) => titleOfSection.get(id) ?? id),
-  [...inScope.pages].filter((id) => !options.sections.some((s) => inScope.sections.has(s.id) && s.pages.some((p) => p.id === id))).map((id) => titleOfPage.get(id) ?? id),
-);
-const pageCount = (n: number) => (n ? `${n} private ${n === 1 ? 'page' : 'pages'}` : 'No private pages yet');
-const chosenLine = (s: ScopeSection) => {
-  if (inScope.sections.has(s.id)) return 'All, now and later';
-  const n = s.pages.filter((p) => inScope.pages.has(p.id)).length;
-  return n ? `${n} chosen` : '';
-};
-// a short list opens whole (but sections with nothing in them yet); a long one opens only where something's chosen
-const opened = (s: ScopeSection) => inScope.sections.has(s.id) || s.pages.some((p) => inScope.pages.has(p.id)) || (totalPages <= 12 && s.pages.length > 0);
-const pageHint = (published: boolean) => (published ? 'Published' : 'Not published yet: it opens once it is');
+// what it opens, in words: the line itself once it's withdrawn (else GrantScope shows it over the list)
+const line = scopeChoices(options, scope).line;
 const first = g?.recipient.name.split(/\s+/)[0] ?? '';
 const ends = g?.expiresAt?.slice(0, 10) ?? '';
 const prefix = mode === 'new' ? 'new-grant' : 'grant';
@@ -72,7 +58,7 @@ const prefix = mode === 'new' ? 'new-grant' : 'grant';
 
 {
   mode === 'none' && (
-    <div class="none" data-grant-details="none">
+    <Panel as="div" data-grant-details="none">
       <Heading level={2} size="h3" id="access-detail-title">
         {count ? 'Choose a code or link' : 'Nobody has access yet'}
       </Heading>
@@ -81,12 +67,12 @@ const prefix = mode === 'new' ? 'new-grant' : 'grant';
           ? 'Choose one in the list to see its details and change them, or share with someone new.'
           : 'Share private pages with someone: an access code they type on the Sign in page, or a magic link that opens them with nothing to type. One per person, so you can end or withdraw each without touching anyone else’s.'}
       </Text>
-      <div class="actions">
+      <ActionBar>
         <Button variant="primary" icon="plus" href="?grant=new" data-access-go="new">
           Share with someone
         </Button>
-      </div>
-    </div>
+      </ActionBar>
+    </Panel>
   )
 }
 
@@ -145,7 +131,7 @@ const prefix = mode === 'new' ? 'new-grant' : 'grant';
       )}
 
       {mode === 'grant' && g && !withdrawn && share && (
-        <section class="part send" aria-labelledby="grant-send">
+        <Panel labelledby="grant-send">
           <Heading level={3} size="h4" id="grant-send">
             Send it
           </Heading>
@@ -172,10 +158,10 @@ const prefix = mode === 'new' ? 'new-grant' : 'grant';
               Copy message
             </Button>
           </div>
-        </section>
+        </Panel>
       )}
 
-      <form class="form" novalidate data-grant-form={mode === 'new' ? 'new' : g!.id}>
+      <Form gap="lg" data-grant-form={mode === 'new' ? 'new' : g!.id}>
         {mode === 'new' && (
           <ChoiceGroup
             legend="How they get in"
@@ -184,14 +170,11 @@ const prefix = mode === 'new' ? 'new-grant' : 'grant';
             value="code"
             variant="cards"
             orientation="horizontal"
-            options={[
-              { value: 'code', label: 'Access code', hint: 'A password they type on the Sign in page.' },
-              { value: 'link', label: 'Magic link', hint: 'A link that opens it with nothing to type.' },
-            ]}
+            options={KIND_CHOICES}
           />
         )}
 
-        <section class="part" aria-labelledby={`${prefix}-who`}>
+        <Panel labelledby={`${prefix}-who`}>
           <Heading level={3} size="h4" id={`${prefix}-who`}>
             Who it’s for
           </Heading>
@@ -211,114 +194,21 @@ const prefix = mode === 'new' ? 'new-grant' : 'grant';
             </div>
           )}
           <TextField label="Why you’re sharing it" name="purpose" id={`${prefix}-purpose`} value={g?.purpose ?? ''}           optional hint="Shown to them on the agreement: they agree to use what they see only for this." autocomplete="off" />
-                    <TextField label="Notes" name="notes" id={`${prefix}-notes`} value={g?.notes ?? ''} optional multiline rows={3} hint="For you only: never shown to them or published." />
-        </section>
+          <TextField label="Notes" name="notes" id={`${prefix}-notes`} value={g?.notes ?? ''} optional multiline rows={3} hint="For you only: never shown to them or published." />
+        </Panel>
 
-        <section class="part" aria-labelledby={`${prefix}-opens`}>
+        <Panel labelledby={`${prefix}-opens`}>
           <Heading level={3} size="h4" id={`${prefix}-opens`}>
             What it opens
           </Heading>
           {withdrawn ? (
             <Text variant="ui">{line.replace(/^Opens/, 'Opened')}</Text>
           ) : (
-            <div class="scope" data-scope>
-              <p class="scope-line" aria-live="polite" data-scope-line>
-                {line}
-              </p>
-              <TextField label="Find a section or page" type="search" icon="search" id={`${prefix}-scope-find`} data-scope-find="" />
-              <div class="scope-list" data-scrollbar data-scope-list>
-                {options.sections.map((s) => (
-                  <details class="group" open={opened(s)} data-scope-group={s.id} data-title={s.title.toLowerCase()} data-open={opened(s) ? '' : undefined}>
-                    <summary class="group-head">
-                      <span class="chevron">
-                        <Icon name="chevron-right" />
-                      </span>
-                      <span class="group-name" data-scope-name>
-                        {s.title}
-                      </span>
-                      <span class="group-count">
-                        {pageCount(s.pages.length)}
-                        <span class="group-chosen" data-scope-chosen>
-                          {chosenLine(s) && ` · ${chosenLine(s)}`}
-                        </span>
-                      </span>
-                    </summary>
-                    <fieldset class="group-body">
-                      <legend class="sr-only">{s.title}</legend>
-                      <Checkbox
-                        id={`${prefix}-section-${s.id}`}
-                        name="sections"
-                        value={s.id}
-                        checked={inScope.sections.has(s.id)}
-                        label={`Every private page in ${s.title}`}
-                        hint="Now and later: new private pages here open too."
-                        data-scope-section={s.id}
-                      />
-                      {s.pages.length > 0 && (
-                        <ul class="pages">
-                          {s.pages.map((p) => {
-                            const covered = inScope.sections.has(s.id);
-                            return (
-                              <li data-scope-page={p.id} data-title={p.title.toLowerCase()} data-name={p.title} data-hint={pageHint(p.published)}>
-                                <Checkbox
-                                  id={`${prefix}-page-${p.id}`}
-                                  name="pages"
-                                  value={p.id}
-                                  checked={covered || inScope.pages.has(p.id)}
-                                  disabled={covered}
-                                  label={p.title}
-                                  hint={covered ? `Opened by ${s.title}` : pageHint(p.published)}
-                                  data-own={inScope.pages.has(p.id) ? 'true' : 'false'}
-                                />
-                              </li>
-                            );
-                          })}
-                        </ul>
-                      )}
-                    </fieldset>
-                  </details>
-                ))}
-                {(options.unknown.sections.length > 0 || options.unknown.pages.length > 0) && (
-                  <details class="group" open data-scope-group="_gone" data-title="no longer on the site" data-open="">
-                    <summary class="group-head">
-                      <span class="chevron">
-                        <Icon name="chevron-right" />
-                      </span>
-                      <span class="group-name" data-scope-name>
-                        No longer on the site
-                      </span>
-                    </summary>
-                    <fieldset class="group-body">
-                      <legend class="sr-only">No longer on the site</legend>
-                      <Text variant="small" tone="muted">
-                        It still names these, but they’re no longer a section or a private page. Clear them and save.
-                      </Text>
-                      <ul class="pages">
-                        {options.unknown.sections.map((id) => (
-                          <li data-scope-page={`_s_${id}`} data-title={id} data-name={id}>
-                            <Checkbox id={`${prefix}-gone-section-${id}`} name="sections" value={id} checked label={id} hint="A section" />
-                          </li>
-                        ))}
-                        {options.unknown.pages.map((id) => (
-                          <li data-scope-page={id} data-title={id} data-name={id}>
-                            <Checkbox id={`${prefix}-gone-page-${id}`} name="pages" value={id} checked label={id} hint="A page" />
-                          </li>
-                        ))}
-                      </ul>
-                    </fieldset>
-                  </details>
-                )}
-                <p class="nomatch" data-scope-nomatch hidden>
-                  <Text as="span" variant="small" tone="muted">
-                    No section or page matches.
-                  </Text>
-                </p>
-              </div>
-            </div>
+            <slot name="scope" />
           )}
-        </section>
+        </Panel>
 
-        <section class="part" aria-labelledby={`${prefix}-ends`}>
+        <Panel labelledby={`${prefix}-ends`}>
           <Heading level={3} size="h4" id={`${prefix}-ends`}>
             When it ends
           </Heading>
@@ -336,11 +226,11 @@ const prefix = mode === 'new' ? 'new-grant' : 'grant';
               />
             </div>
           )}
-        </section>
+        </Panel>
 
         <div class="savebar">
-          <p class="issue" role="alert" data-grant-issue hidden />
-          <div class="actions">
+          <IssueNote data-grant-issue="" />
+          <ActionBar>
             {mode === 'new' ? (
               <Fragment>
                 <Button variant="primary" type="submit" icon="key" id="grant-save">
@@ -360,12 +250,12 @@ const prefix = mode === 'new' ? 'new-grant' : 'grant';
                 </Button>
               </Fragment>
             )}
-          </div>
+          </ActionBar>
         </div>
-      </form>
+      </Form>
 
       {mode === 'grant' && g && (
-        <section class="part stop" aria-labelledby="grant-stop">
+        <Panel labelledby="grant-stop">
           <Heading level={3} size="h4" id="grant-stop">
             Stop sharing
           </Heading>
@@ -417,26 +307,17 @@ const prefix = mode === 'new' ? 'new-grant' : 'grant';
               </Button>
             </Fragment>
           </Dialog>
-        </section>
+        </Panel>
       )}
     </article>
   )
 }
 
 <style>
-  .none,
   .grant {
     display: grid;
     gap: var(--space-6);
     min-inline-size: 0;
-  }
-
-  .none {
-    gap: var(--space-4);
-    padding: var(--space-6);
-    border: var(--border-hairline) solid var(--color-rule);
-    border-radius: var(--radius-lg);
-    background: var(--color-bg-raised);
   }
 
   .head {
@@ -477,19 +358,6 @@ const prefix = mode === 'new' ? 'new-grant' : 'grant';
     background: var(--color-bg-sunk);
   }
 
-  .form {
-    display: grid;
-    gap: var(--space-6);
-  }
-
-  .part {
-    display: grid;
-    gap: var(--space-4);
-    padding: var(--space-6);
-    border: var(--border-hairline) solid var(--color-rule);
-    border-radius: var(--radius-lg);
-    background: var(--color-bg-raised);
-  }
 
   .secret {
     display: grid;
@@ -500,8 +368,7 @@ const prefix = mode === 'new' ? 'new-grant' : 'grant';
 
   .label {
     grid-column: 1 / -1;
-    font-size: var(--text-sm);
-    font-weight: var(--weight-semibold);
+    font: var(--type-label);
   }
 
   .secret-value,
@@ -539,111 +406,6 @@ const prefix = mode === 'new' ? 'new-grant' : 'grant';
     max-inline-size: var(--size-measure-narrow);
   }
 
-  .scope {
-    display: grid;
-    gap: var(--space-3);
-  }
-
-  .scope-line {
-    margin: 0;
-    font-weight: var(--weight-medium);
-  }
-
-  /* the sections and their pages: as long as the site grows, scrolling on its own past a point */
-  .scope-list {
-    display: grid;
-    align-content: start;
-    gap: var(--space-2);
-    max-block-size: var(--c-editor-scope-list);
-    overflow: auto;
-    scrollbar-width: none;
-    padding: var(--space-2);
-    border: var(--border-hairline) solid var(--color-rule);
-    border-radius: var(--radius-md);
-    background: var(--color-bg);
-  }
-
-  .group {
-    border-radius: var(--radius-md);
-  }
-
-  .group[hidden],
-  .pages li[hidden],
-  .nomatch[hidden],
-  .issue[hidden] {
-    display: none;
-  }
-
-  .group-head {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: var(--space-1) var(--space-2);
-    min-block-size: var(--size-touch);
-    padding: var(--space-1) var(--space-2);
-    border-radius: var(--radius-md);
-    cursor: pointer;
-    list-style: none;
-  }
-
-  .group-head::-webkit-details-marker {
-    display: none;
-  }
-
-  @media (hover: hover) {
-    .group-head:hover {
-      background: var(--color-bg-hover);
-    }
-  }
-
-  .group-head:active {
-    background: var(--color-bg-hover);
-  }
-
-  .group-head:focus-visible {
-    outline: var(--border-focus) solid var(--color-focus);
-    outline-offset: calc(var(--border-focus) * -1);
-  }
-
-  .chevron {
-    display: grid;
-    transition: transform var(--duration-fast) var(--ease-standard);
-  }
-
-  .group[open] > .group-head .chevron {
-    transform: rotate(90deg);
-  }
-
-  .group-name {
-    font-weight: var(--weight-semibold);
-  }
-
-  .group-count {
-    color: var(--color-text-muted);
-    font-size: var(--text-sm);
-  }
-
-  .group-body {
-    display: grid;
-    gap: var(--space-1);
-    margin: 0;
-    padding: 0 var(--space-2) var(--space-3) var(--space-8);
-    border: 0;
-  }
-
-  .pages {
-    display: grid;
-    gap: var(--space-1);
-    margin: 0;
-    padding: 0 0 0 var(--space-6);
-    list-style: none;
-  }
-
-  .nomatch {
-    margin: 0;
-    padding: var(--space-2);
-  }
-
   /* Save stays in reach at the foot of the screen while a long form scrolls */
   .savebar {
     position: sticky;
@@ -658,19 +420,6 @@ const prefix = mode === 'new' ? 'new-grant' : 'grant';
     box-shadow: var(--shadow-md);
   }
 
-  .issue {
-    margin: 0;
-    color: var(--color-negative);
-    font-size: var(--text-sm);
-    font-weight: var(--weight-medium);
-  }
-
-  .actions {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: var(--space-3);
-  }
 
   .stop-row {
     display: flex;
@@ -687,12 +436,6 @@ const prefix = mode === 'new' ? 'new-grant' : 'grant';
     flex: 1;
     gap: var(--space-1);
     min-inline-size: min(100%, var(--size-measure-narrow));
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    .chevron {
-      transition: none;
-    }
   }
 </style>
 

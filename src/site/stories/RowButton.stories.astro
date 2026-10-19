@@ -1,0 +1,48 @@
+---
+import Example from '../library/Example.astro';
+import RowButton from '../components/fundamentals/RowButton.astro';
+import Icon from '../components/fundamentals/Icon.astro';
+---
+
+<Example title="A list of sections" layout="stack" description="Each row shows one section of a form; the one shown is current. Up and Down move along the list in edit mode's inspector.">
+  <div class="demo-list">
+    <RowButton current>Title and summary</RowButton>
+    <RowButton>
+      Publishing
+      <span slot="detail">Draft</span>
+    </RowButton>
+    <RowButton>
+      Lead picture
+      <span slot="detail">A waterfall in the forest, falling over mossy rocks into a pool</span>
+    </RowButton>
+  </div>
+</Example>
+
+<Example title="With an icon, and pressed" layout="stack" description="Where several can be picked, each picked row is pressed; the one shown among them is also current, with a bar at its start.">
+  <div class="demo-list">
+    <RowButton pressed={false}>
+      <span slot="icon"><Icon name="heading" /></span>
+      Heading 2
+      <span slot="detail">Where it began</span>
+    </RowButton>
+    <RowButton pressed={true} current>
+      <span slot="icon"><Icon name="paragraph" /></span>
+      Paragraph
+      <span slot="detail">It started with a question about maps.</span>
+    </RowButton>
+    <RowButton pressed={true}>
+      <span slot="icon"><Icon name="image" /></span>
+      Picture
+      <span slot="detail">A hand-drawn map of the valley</span>
+    </RowButton>
+  </div>
+</Example>
+
+<style>
+  .demo-list {
+    display: grid;
+    gap: var(--space-0-5);
+    inline-size: 100%;
+    max-inline-size: var(--size-measure-narrow);
+  }
+</style>

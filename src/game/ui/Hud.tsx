@@ -28,6 +28,12 @@ import { Icon } from './Icon';
 import { Button, IconButton, KeyCap } from './primitives';
 import { focusLane } from './lanes';
 import { RESIDENTS } from '../platform/residents';
+import './styles/lane.css';
+import './styles/action-prompt.css';
+import './styles/toast.css';
+import './styles/character-picker.css';
+import './styles/time-badge.css';
+import './styles/travel-fade.css';
 
 // (the targets a chunk adds bring their own icon: the crafting table, the site, the watering can, the plants)
 const TARGET_ICONS = { tree: faTree, boulder: faHammer, flower: faSeedling, chest: faBoxOpen, bench: faChair, dog: faPaw, npc: faComment, notice: faClipboardList } as const;
@@ -346,6 +352,12 @@ function MenuButton({ controller, target }: { controller: GameController; target
   );
 }
 
+/**
+ * The game's HUD (design-system.md §5): the preview card and the prompt in the focus lane, the hotbar, the
+ * view controls, the character picker, the toast, the live region and the travel fade, with the dialogs and
+ * screens that load on demand (the place's page, the menu, the backpack, Chopper's card, the crafting chunk's
+ * screens, the home chunk's talk box) and the header's clock, Sound, Fast travel and Menu buttons.
+ */
 export function Hud({ controller }: { controller: GameController }) {
   // the crafting screen, the palette and the site card come with the crafting chunk (crafting.md)
   const CraftScreens = controller.craft?.Screens ?? null;

@@ -42,7 +42,7 @@ export function initManager(root: HTMLElement, signal: AbortSignal) {
   const param = root.dataset.param ?? 'section';
   const on = (el: EventTarget, type: string, fn: (e: Event) => void) => el.addEventListener(type, fn, { signal });
   const links = () => [...root.querySelectorAll<HTMLAnchorElement>('[data-manager-section]')];
-  const nameOf = (id: string) => root.querySelector(`[data-manager-section="${id}"] .section-name`)?.textContent?.trim() ?? '';
+  const nameOf = (id: string) => root.querySelector(`[data-manager-section="${id}"] [data-link-name]`)?.textContent?.trim() ?? '';
   const panelOf = (id: string) => root.querySelector<HTMLElement>(`[data-manager-pages="${id}"]`);
   const rowsOf = (id: string) => [...(panelOf(id)?.querySelectorAll<HTMLElement>('[data-manager-row]') ?? [])];
   const pageOf = (row: HTMLElement) => row.dataset.managerRow!;

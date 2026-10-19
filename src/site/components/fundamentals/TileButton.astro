@@ -1,0 +1,151 @@
+---
+/**
+ * A tile you press to pick what it shows: a block to add with its icon, name and a line on what it does; a
+ * picture in a library; a colour swatch; a small picture to take colours from. What it holds is its own
+ * (the slot); the tile frames it, and takes the accent on hover and when it's the one picked.
+ * @tier fundamental
+ * @a11y A native button named by what it holds (or its aria-label); a line that explains it is tied with aria-describedby.
+ * @a11y The picked tile is pressed (aria-pressed="true") or current (aria-current="true"), and its border says so as well as its fill; disabled, it's faded and can't be pressed.
+ * @a11y At least 44 px tall in every variant.
+ * @key Enter: presses it
+ * @key Space: presses it
+ */
+
+interface Props {
+  /** outlined: a ruled card that fills with the accent on hover (a choice among kinds); framed: a frame shows on hover and when picked (a picture in a grid); chip: a small inline swatch with words; thumbnail: a small picture, edge to edge. */
+  variant?: 'outlined' | 'framed' | 'chip' | 'thumbnail';
+  /** Marks it as the one shown (aria-current="true"); a script may move it. */
+  current?: boolean;
+  /** In a set where several can be picked: whether this one is (aria-pressed). Left out, it isn't a toggle. */
+  pressed?: boolean;
+  /** Can't be pressed (a choice that doesn't apply here); a script may set it too. */
+  disabled?: boolean;
+  /** Its accessible name, when what it holds doesn't say it (a picture). */
+  'aria-label'?: string;
+  /** The id of the line that explains it. */
+  'aria-describedby'?: string;
+  /** The element's id. */
+  id?: string;
+  /** Data attributes pass through to the button. */
+  [data: `data-${string}`]: string | undefined;
+}
+
+const { variant = 'outlined', current = false, pressed, disabled = false, ...rest } = Astro.props;
+const toggle = pressed === undefined ? undefined : pressed ? 'true' : 'false';
+---
+
+<button
+  class="tile"
+  data-press
+  type="button"
+  data-variant={variant}
+  aria-current={current ? 'true' : undefined}
+  aria-pressed={toggle}
+  disabled={disabled ? true : undefined}
+  {...rest}
+>
+  <slot />
+</button>
+
+<style>
+  .tile {
+    display: grid;
+    align-content: start;
+    gap: var(--space-1-5);
+    min-block-size: var(--size-touch);
+    padding: var(--space-4);
+    border: var(--border-hairline) solid var(--color-rule);
+    border-radius: var(--radius-md);
+    background: var(--color-bg-raised);
+    color: var(--color-text);
+    font-family: var(--font-ui);
+    text-align: start;
+    cursor: pointer;
+    transition:
+      border-color var(--duration-fast) var(--ease-standard),
+      background-color var(--duration-fast) var(--ease-standard);
+  }
+
+  .tile[hidden] {
+    display: none;
+  }
+
+  /* outlined: the accent fills it on hover; the one current keeps the accent's border */
+  @media (hover: hover) {
+    .tile[data-variant='outlined']:hover:not(:disabled) {
+      border-color: var(--color-accent);
+      background: var(--color-accent-soft);
+    }
+  }
+
+  .tile[data-variant='outlined']:active:not(:disabled) {
+    border-color: var(--color-accent);
+    background: var(--color-accent-soft);
+  }
+
+  .tile[data-variant='outlined'][aria-current='true'],
+  .tile[data-variant='outlined'][aria-pressed='true'] {
+    border-color: var(--color-accent);
+  }
+
+  /* framed: no frame until hovered or picked */
+  .tile[data-variant='framed'] {
+    inline-size: 100%;
+    padding: var(--space-2);
+    border: var(--border-strong) solid transparent;
+    transition: border-color var(--duration-fast) var(--ease-standard);
+  }
+
+  @media (hover: hover) {
+    .tile[data-variant='framed']:hover:not(:disabled) {
+      border-color: var(--color-border-strong);
+    }
+  }
+
+  .tile[data-variant='framed']:active:not(:disabled) {
+    border-color: var(--color-border-strong);
+  }
+
+  .tile[data-variant='framed'][aria-pressed='true'],
+  .tile[data-variant='framed'][aria-current='true'] {
+    border-color: var(--color-accent);
+    background: var(--color-accent-soft);
+  }
+
+  /* chip and thumbnail: small, inline, on the page's own colour */
+  .tile[data-variant='chip'],
+  .tile[data-variant='thumbnail'] {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+    padding: var(--space-1) var(--space-3) var(--space-1) var(--space-1);
+    border-radius: var(--radius-sm);
+    background: var(--color-bg);
+    font-size: var(--text-sm);
+    transition: none;
+  }
+
+  .tile[data-variant='thumbnail'] {
+    padding: 0;
+    overflow: hidden;
+  }
+
+  @media (hover: hover) {
+    .tile[data-variant='chip']:hover:not(:disabled),
+    .tile[data-variant='thumbnail']:hover:not(:disabled) {
+      border-color: var(--color-border);
+    }
+  }
+
+  .tile[data-variant='chip']:active:not(:disabled),
+  .tile[data-variant='thumbnail']:active:not(:disabled) {
+    border-color: var(--color-border-strong);
+  }
+
+  .tile[data-variant='chip'][aria-pressed='true'],
+  .tile[data-variant='thumbnail'][aria-pressed='true'],
+  .tile[data-variant='chip'][aria-current='true'],
+  .tile[data-variant='thumbnail'][aria-current='true'] {
+    border-color: var(--color-accent);
+  }
+</style>

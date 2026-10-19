@@ -1,0 +1,132 @@
+/* Slot (ui/Inventory.tsx): an inset square holding an item (Minecraft’s: darker inside, a light lower-right edge), its icon, count and key; the hotbar’s backpack and whistle are slots too.
+ * Its owner imports it (ui/Inventory.tsx); tokens only (tests/unit/designSystem.test.ts). */
+@layer tokens, base, primitives, components, cursors;
+
+@layer primitives {
+  [data-input='touch'] .slot-key {
+    display: none;
+  }
+
+  /* Slot: an inset square holding an item (Minecraft's: darker inside, a light lower-right edge) */
+  .slot {
+    position: relative;
+    display: grid;
+    place-items: center;
+    width: var(--slot);
+    height: var(--slot);
+    padding: 0;
+    border: 0;
+    border-radius: var(--radius-xs);
+    background: var(--surface-bg-soft);
+    box-shadow: var(--shadow-slot);
+    color: var(--surface-text);
+    cursor: pointer;
+    touch-action: none;
+  }
+
+  @media (hover: hover) {
+    .slot:hover {
+      background: var(--surface-bg-warm);
+    }
+  }
+
+  .slot:active {
+    background: var(--surface-bg-warm);
+  }
+
+  .slot:focus-visible {
+    outline: var(--border-focus) solid var(--surface-focus);
+    outline-offset: var(--border-focus-offset-sm);
+  }
+
+  .slot.selected {
+    box-shadow:
+      inset 0 0 0 var(--border-focus) var(--surface-text),
+      0 0 0 var(--border-base) var(--surface-bg);
+    transform: translateY(calc(-1 * var(--shift-md)));
+  }
+
+  .item-icon {
+    width: 82%;
+    height: 82%;
+    object-fit: contain;
+    pointer-events: none;
+    filter: var(--shadow-icon);
+  }
+
+  .slot-count {
+    position: absolute;
+    inset-inline-end: var(--c-slot-count-x);
+    inset-block-end: var(--c-slot-count-y);
+    font-family: var(--font-text);
+    font-size: var(--text-xs);
+    font-weight: var(--weight-heavy);
+    line-height: var(--leading-none);
+    color: var(--color-count-text);
+    text-shadow: var(--shadow-text-count);
+    pointer-events: none;
+  }
+
+  .slot-key {
+    position: absolute;
+    inset-inline-start: var(--c-slot-key-x);
+    inset-block-start: var(--c-slot-key-y);
+    font-family: var(--font-text);
+    font-size: var(--text-2xs);
+    font-weight: var(--weight-bold);
+    line-height: var(--leading-none);
+    color: var(--surface-text-muted);
+    opacity: 0.8;
+    pointer-events: none;
+  }
+
+  .backpack-btn {
+    margin-inline-start: var(--space-1-5);
+    font-size: var(--text-lg);
+    background: var(--color-backpack);
+    color: var(--color-count-text);
+  }
+
+  .whistle-btn {
+    font-size: var(--text-lg);
+    background: var(--color-whistle);
+    color: var(--color-count-text);
+  }
+
+  @media (hover: hover) {
+    .backpack-btn:hover,
+    .whistle-btn:hover {
+      color: var(--surface-text);
+    }
+  }
+
+  .backpack-btn:active,
+  .whistle-btn:active {
+    color: var(--surface-text);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .slot.selected {
+      transform: none;
+    }
+  }
+
+  /* Forced colours (design-system.md §8): a slot or a swatch is drawn by its fill and an inset shadow, which forced
+   * colours drop, so it gets a ButtonText border; the selected, spread-over, drop and landed states a Highlight one;
+   * panels and tooltips an outline (they'd melt into the scrim); the paint chip keeps its colour (it's the choice) */
+  @media (forced-colors: active) {
+    .slot,
+    .backpack-btn,
+    .whistle-btn {
+      border: var(--border-hair) solid ButtonText;
+    }
+
+    .slot.selected {
+      border: var(--border-focus) solid Highlight;
+    }
+
+    .slot:focus-visible {
+      outline-color: Highlight;
+    }
+  }
+}

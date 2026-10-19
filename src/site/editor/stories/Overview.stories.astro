@@ -1,0 +1,13 @@
+---
+import Example from '../../library/Example.astro';
+import Overview from '../components/Overview.astro';
+import { ARTICLE_ROWS } from './samples';
+---
+
+<Example title="The dashboard" description="Start something, how many pages, what's waiting to be saved, what changed lately and what needs attention." layout="block">
+  <Overview counts={{ published: 2, draft: 1, other: 0 }} recent={ARTICLE_ROWS} pending={3} attention={[{ text: 'The bridge has no alt text', href: '#' }]} />
+</Example>
+
+<Example title="Still checking" description="Before git has been asked, it says so." layout="block">
+  <Overview counts={{ published: 0, draft: 0, other: 0 }} recent={[]} pending={null} attention={[]} />
+</Example>

@@ -1,0 +1,24 @@
+---
+import Example from '../../library/Example.astro';
+import InsertForms from '../components/InsertForms.astro';
+---
+
+<Example title="A quote" description="kind 'quote': its words, who said it and its style." layout="block">
+  <InsertForms kind="quote" />
+</Example>
+
+<Example title="A collection" description="kind 'collection': in sections, as the inspector's, starting with one item." layout="block">
+  <InsertForms kind="collection" />
+</Example>
+
+<Example title="A video" description="kind 'video': its address, title and length." layout="block">
+  <InsertForms kind="video" />
+</Example>
+
+<Example title="A carousel" description="kind 'carousel': the label that names it." layout="block">
+  <InsertForms kind="carousel" />
+</Example>
+
+<Example title="A link" description="kind 'link': an address, or an article it follows." layout="block">
+  <InsertForms kind="link" articles={[{ value: 'the-bridge', label: 'The bridge' }]} />
+</Example>

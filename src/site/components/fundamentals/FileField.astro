@@ -32,29 +32,20 @@ const icon = svgOf('upload');
 const described = hint ? `${id}-hint` : undefined;
 ---
 
-<div class="file-field" data-file-field {...rest}>
+<div class="file-field" data-file-field data-field-part="root" {...rest}>
   <label class="label" for={id}>{label}</label>
-  <label class="zone" for={id}>
-    <input class="input" type="file" id={id} name={name} accept={accept} multiple={multiple} aria-describedby={described} />
+  <label class="zone" for={id} data-focus-ring="within">
+    <input class="input sr-only" type="file" id={id} name={name} accept={accept} multiple={multiple} aria-describedby={described} />
     <svg class="icon" viewBox={icon.viewBox} aria-hidden="true" focusable="false" data-icon={icon.name}><Fragment set:html={icon.body} /></svg>
     <span class="call">{multiple ? 'Choose files, or drop them here' : 'Choose a file, or drop it here'}</span>
-    <span class="chosen" aria-live="polite" data-file-chosen>Nothing chosen yet</span>
+    <span class="chosen" aria-live="polite" data-file-chosen data-field-part="hint">Nothing chosen yet</span>
   </label>
-  {hint && <p class="hint" id={described}>{hint}</p>}
+  {hint && <p class="hint" id={described} data-field-part="hint">{hint}</p>}
 </div>
 
 <style>
-  .file-field {
-    display: grid;
-    gap: var(--space-2);
-    font-family: var(--font-ui);
-    color: var(--color-text);
-  }
-
   .label {
-    font-size: var(--text-sm);
-    font-weight: var(--weight-semibold);
-    line-height: var(--leading-ui);
+    font: var(--type-label);
   }
 
   .zone {
@@ -84,20 +75,6 @@ const described = hint ? `${id}-hint` : undefined;
     background: var(--color-accent-soft);
   }
 
-  .zone:focus-within {
-    outline: var(--border-focus) solid var(--color-focus);
-    outline-offset: var(--border-focus-offset);
-  }
-
-  .input {
-    position: absolute;
-    inline-size: 1px;
-    block-size: 1px;
-    overflow: hidden;
-    clip-path: inset(50%);
-    white-space: nowrap;
-  }
-
   .icon {
     inline-size: var(--size-icon-lg);
     block-size: var(--size-icon-lg);
@@ -107,12 +84,6 @@ const described = hint ? `${id}-hint` : undefined;
     font-weight: var(--weight-semibold);
   }
 
-  .chosen,
-  .hint {
-    margin: 0;
-    color: var(--color-text-muted);
-    font-size: var(--text-sm);
-  }
 </style>
 
 <script>

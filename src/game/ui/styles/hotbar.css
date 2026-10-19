@@ -1,0 +1,51 @@
+/* Hotbar (R5; ui/Inventory.tsx): nine slots, the backpack and the whistle on a glass tray, and the held item’s name.
+ * Its owner imports it (ui/Inventory.tsx); tokens only (tests/unit/designSystem.test.ts). */
+@layer tokens, base, primitives, components, cursors;
+
+@layer components {
+  .hotbar-wrap {
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  /* the hotbar (R5): nine slots, the backpack and the whistle */
+  .hotbar-wrap {
+    position: absolute;
+    inset-inline-start: 50%;
+    inset-block-end: calc(var(--c-lane-edge) + var(--safe-bottom));
+    z-index: var(--layer-hud);
+    display: grid;
+    justify-items: center;
+    gap: var(--space-1-5);
+    transform: translateX(-50%);
+  }
+
+  .hotbar {
+    display: flex;
+    gap: var(--space-0-5);
+    padding: var(--space-1);
+    border-radius: var(--radius-sm);
+    background: var(--surface-bg-glass);
+    box-shadow: var(--shadow-tray);
+    backdrop-filter: blur(var(--blur-glass));
+  }
+
+  .hotbar-label {
+    padding: var(--space-1) var(--space-3);
+    border-radius: var(--radius-pill);
+    background: var(--surface-bg);
+    color: var(--surface-text);
+    font-size: var(--text-sm);
+    font-weight: var(--weight-bold);
+    pointer-events: none;
+    animation: card-fade var(--dur-fast) var(--ease-out);
+  }
+
+  @media (forced-colors: active) {
+    .hotbar {
+      outline: var(--border-hair) solid CanvasText;
+    }
+  }
+}

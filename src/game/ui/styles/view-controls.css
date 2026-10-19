@@ -1,0 +1,145 @@
+/* ViewControls (R3; ui/ViewControls.tsx): the compass, always pointing to map north, and Reset.
+ * Its owner imports it (ui/ViewControls.tsx); tokens only (tests/unit/designSystem.test.ts). */
+@layer tokens, base, primitives, components, cursors;
+
+@layer components {
+  .view-controls {
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  /* R3: view controls (the compass and reset), right edge */
+  .view-controls {
+    position: absolute;
+    inset-inline-end: calc(var(--space-4) + var(--safe-right));
+    inset-block-end: calc(var(--space-6) + var(--safe-bottom));
+    z-index: var(--layer-hud);
+    display: grid;
+    justify-items: center;
+    gap: var(--space-2-5);
+  }
+
+  .compass {
+    display: grid;
+    place-items: center;
+    padding: 0;
+    border: var(--border-base) solid var(--surface-border);
+    background: var(--surface-bg);
+    color: var(--surface-text);
+    cursor: pointer;
+    box-shadow: var(--shadow-press);
+  }
+
+  .compass:active {
+    transform: translateY(var(--shift-md));
+    box-shadow: var(--shadow-press-down);
+  }
+
+  .compass {
+    width: var(--c-view-compass);
+    height: var(--c-view-compass);
+    border-radius: var(--radius-round);
+    background: var(--color-compass-face);
+  }
+
+  .compass-rose {
+    width: var(--c-view-rose);
+    height: var(--c-view-rose);
+    overflow: visible;
+  }
+
+  .rose-ring {
+    fill: none;
+    stroke: var(--color-compass-ring);
+    stroke-width: 2;
+  }
+
+  .rose-tick {
+    stroke: var(--color-compass-tick);
+    stroke-width: 2;
+    stroke-linecap: round;
+  }
+
+  .needle-north {
+    fill: var(--color-needle-north);
+  }
+
+  .needle-south {
+    fill: var(--color-needle-south);
+  }
+
+  .rose-n,
+  .rose-l {
+    font-family: var(--font-text);
+    font-size: var(--text-2xs);
+    font-weight: var(--weight-heavy);
+    line-height: var(--leading-none);
+    text-anchor: middle;
+    dominant-baseline: central;
+  }
+
+  .rose-n {
+    fill: var(--color-needle-north-label);
+    font-size: var(--text-xs);
+  }
+
+  .rose-l {
+    fill: var(--color-compass-label);
+  }
+
+  .view-home {
+    min-height: var(--c-view-home);
+    padding: 0 var(--space-3-5);
+    font-size: var(--text-sm);
+  }
+
+  @media (max-width: 51.25rem) {
+    .view-controls {
+      inset-block-end: var(--lane-bottom);
+    }
+  }
+
+  @media (max-width: 45rem) {
+    .view-controls {
+      /* below the character picker */
+      inset-block-start: calc(var(--c-view-top) + var(--safe-top));
+      inset-block-end: auto;
+      inset-inline-end: calc(var(--space-3) + var(--safe-right));
+    }
+  }
+
+  [data-input='touch'] .view-home {
+    min-height: var(--c-btn-h);
+  }
+
+  /* a small phone upright (≤ 600 px tall): Reset sits beside the compass, so a preview card can't cover it */
+  @media (max-width: 45rem) and (max-height: 37.5rem) {
+    [data-input='touch'] .view-controls {
+      grid-auto-flow: column;
+      align-items: start;
+    }
+
+    [data-input='touch'] .view-home {
+      order: -1;
+    }
+  }
+
+  /* Forced colours (design-system.md §8): the HUD's controls keep a boundary and a Highlight focus ring, and the
+   * chosen character, photo and running stick show it with Highlight (their gold and shadows are dropped) */
+  @media (forced-colors: active) {
+    .compass {
+      border: var(--border-base) solid ButtonText;
+    }
+
+    /* the compass is a picture (its face, ring and needle): it keeps its own colours inside the boundary */
+    .compass {
+      forced-color-adjust: none;
+    }
+
+    .compass:focus-visible {
+      outline-color: Highlight;
+    }
+  }
+}

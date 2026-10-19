@@ -1,0 +1,28 @@
+---
+import Example from '../../library/Example.astro';
+import GrantDetails from '../components/GrantDetails.astro';
+import GrantScope from '../components/GrantScope.astro';
+import { GRANTS, SCOPE } from './samples';
+
+const share = { message: 'Grace, here is the access code to my private work: engine-lantern-orbit. Type it on the Sign in page.', link: 'https://example.com/sign-in/', code: 'engine-lantern-orbit' };
+---
+
+<Example title="A code, just made" description="mode 'grant': Send it (the code and the message, each copied with one press), then one form for who, why, what it opens and its last day, and Stop sharing." layout="block">
+  <GrantDetails mode="grant" grant={GRANTS[0]} share={share} options={SCOPE} made count={4}>
+    <Fragment slot="scope">
+      <GrantScope options={SCOPE} scope={GRANTS[0].scope} prefix="story-grant" />
+    </Fragment>
+  </GrantDetails>
+</Example>
+
+<Example title="Sharing with someone new" description="mode 'new': How they get in first, then the same form." layout="block">
+  <GrantDetails mode="new" options={SCOPE} preset={{ pages: ['a-case-for-later'] }} count={4}>
+    <Fragment slot="scope">
+      <GrantScope options={SCOPE} scope={{ pages: ['a-case-for-later'] }} prefix="story-new-grant" />
+    </Fragment>
+  </GrantDetails>
+</Example>
+
+<Example title="Nothing chosen yet" description="mode 'none': what the screen says, with Share with someone." layout="block">
+  <GrantDetails mode="none" options={SCOPE} count={0} />
+</Example>

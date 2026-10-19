@@ -1,0 +1,126 @@
+---
+/**
+ * A row in a list that you press to show or pick what it names: its name, an optional line of detail under
+ * it (the detail slot) and an optional icon before them (the icon slot), as wide as its list. The one shown
+ * is current; in a list where several can be picked, each picked one is pressed. Edit mode's lists of
+ * sections and its outline of blocks are made of them.
+ * @tier fundamental
+ * @a11y A native button named by its words (the name, then the detail), or by its aria-label.
+ * @a11y The current row (aria-current="true") and pressed rows (aria-pressed="true") take the accent's soft fill; a script may move either state.
+ * @a11y At least 44 px tall; a long detail is cut with an ellipsis rather than wrapping under the next row.
+ * @key Enter: presses it
+ * @key Space: presses it
+ */
+
+interface Props {
+  /** Marks it as the one shown (aria-current="true"); a script may move it to another row. */
+  current?: boolean;
+  /** In a list where several can be picked: whether this one is (aria-pressed). Left out, it isn't a toggle. */
+  pressed?: boolean;
+  /** Its accessible name, when its words alone don't say enough. */
+  'aria-label'?: string;
+  /** The element's id. */
+  id?: string;
+  /** Data attributes pass through to the button. */
+  [data: `data-${string}`]: string | undefined;
+}
+
+const { current = false, pressed, ...rest } = Astro.props;
+const toggle = pressed === undefined ? undefined : pressed ? 'true' : 'false';
+const icon = Astro.slots.has('icon');
+const detail = Astro.slots.has('detail');
+---
+
+<button class="row-button" type="button" aria-current={current ? 'true' : undefined} aria-pressed={toggle} {...rest}>
+  {
+    icon && (
+      <span class="icon">
+        <slot name="icon" />
+      </span>
+    )
+  }
+  <span class="words">
+    <span class="name"><slot /></span>
+    {
+      detail && (
+        <span class="detail">
+          <slot name="detail" />
+        </span>
+      )
+    }
+  </span>
+</button>
+
+<style>
+  .row-button {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    inline-size: 100%;
+    min-inline-size: 0;
+    min-block-size: var(--size-touch);
+    padding: var(--space-1) var(--space-2);
+    border: 0;
+    border-radius: var(--radius-md);
+    background: transparent;
+    color: var(--color-text);
+    font-family: var(--font-ui);
+    text-align: start;
+    cursor: pointer;
+  }
+
+  .row-button[hidden] {
+    display: none;
+  }
+
+  @media (hover: hover) {
+    .row-button:hover {
+      background: var(--color-bg-hover);
+    }
+  }
+
+  .row-button:active {
+    background: var(--color-bg-hover);
+  }
+
+  .row-button[aria-current='true'],
+  .row-button[aria-pressed='true'] {
+    background: var(--color-accent-soft);
+    color: var(--color-on-accent-soft);
+  }
+
+  /* the one shown, among several picked */
+  .row-button[aria-pressed='true'][aria-current='true'] {
+    box-shadow: inset var(--border-strong) 0 0 var(--color-accent);
+  }
+
+  .icon {
+    display: inline-grid;
+    flex: none;
+  }
+
+  .words {
+    display: grid;
+    min-inline-size: 0;
+  }
+
+  .name {
+    font-size: var(--text-sm);
+    font-weight: var(--weight-semibold);
+    line-height: var(--leading-ui);
+  }
+
+  .detail {
+    overflow: hidden;
+    color: var(--color-text-muted);
+    font-size: var(--text-sm);
+    line-height: var(--leading-ui);
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .row-button[aria-current='true'] .detail,
+  .row-button[aria-pressed='true'] .detail {
+    color: var(--color-on-accent-soft);
+  }
+</style>

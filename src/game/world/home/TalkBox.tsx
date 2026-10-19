@@ -6,6 +6,9 @@ import { selectReducedMotion } from '../../state/store';
 import { Icon } from '../../ui/Icon';
 import { Button, KeyCap } from '../../ui/primitives';
 import { withBase } from '../../platform/base';
+import '../../ui/styles/talk-box.css';
+import '../../ui/styles/card.css';
+import '../../ui/styles/lane.css';
 
 /** Who has a talking head (a portrait rendered from their model: `scripts/render-npc-portraits.mjs`). */
 const HEADS = new Set(['prabin', 'rojina', 'laija', 'lingjel']);

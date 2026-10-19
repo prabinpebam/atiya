@@ -1,6 +1,6 @@
 /**
  * The game UI's controls (design-system.md §4.1): every button and key cap in the game is one of these,
- * so its anatomy (the `.btn` family in components.css), its accessible name and its states live in one
+ * so its anatomy (the `.btn` family in ui/styles/button.css), its accessible name and its states live in one
  * place. The containers the on-demand screens use (`Dialog`, `Panel`, `ScrollArea`) are in `overlays.tsx`.
  * These sit in the initial bundle, just under its 450 KB budget (scripts/size-report.mjs): keep
  * them tiny, and import nothing but React's runtime and `Icon`.
@@ -8,6 +8,8 @@
 import type { ComponentPropsWithRef } from 'react';
 import type { IconDefinition } from '@fortawesome/free-solid-svg-icons';
 import { Icon } from './Icon';
+import './styles/button.css';
+import './styles/key-cap.css';
 
 export type ButtonProps = ComponentPropsWithRef<'button'> & {
   /** `default` (the soft surface), `primary` (the accent: one per view) or `bare` (no `.btn`: a slot, a tile, the compass, a swatch, which bring their own anatomy in `className`). */

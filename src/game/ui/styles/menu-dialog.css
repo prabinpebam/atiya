@@ -1,0 +1,60 @@
+/* MenuDialog (ui/MenuDialog.tsx): the menu’s groups, settings rows (checks and radio groups), How to play’s list, and Close kept in reach.
+ * Its owner imports it (ui/MenuDialog.tsx); tokens only (tests/unit/designSystem.test.ts). */
+@layer tokens, base, primitives, components, cursors;
+
+@layer components {
+  /* the menu's View group: turn and tilt (the single-pointer alternative to dragging the view) */
+  .menu-view {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-1-5);
+  }
+
+  /* How to play (the menu's help page): a key per item, the keycaps inline */
+  .help-list li {
+    margin-block: var(--space-1-5);
+    line-height: var(--leading-snug);
+  }
+
+  /* Check and radio rows (settings) */
+  .check {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2-5);
+    min-height: var(--c-btn-h);
+  }
+
+  .check input {
+    width: var(--c-check-size);
+    height: var(--c-check-size);
+  }
+
+  .radio-group {
+    margin: var(--space-2) 0 0;
+    padding: 0;
+    border: 0;
+  }
+
+  .radio-group legend {
+    padding: 0;
+    font-weight: var(--weight-bold);
+  }
+
+  .radio-group .check {
+    min-height: var(--c-btn-h-sm);
+  }
+
+  .radio-group p {
+    margin: var(--space-1) 0 0;
+  }
+
+  /* Keep Close reachable when the menu scrolls on short viewports. */
+  .menu-dialog .actions {
+    position: sticky;
+    inset-block-end: 0;
+    margin: var(--space-4) calc(-1 * var(--space-6)) calc(-1 * var(--space-6));
+    padding: var(--space-3) var(--space-6) var(--space-4);
+    background: var(--surface-bg);
+    border-block-start: var(--border-hair) solid var(--surface-line);
+  }
+}

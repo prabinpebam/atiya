@@ -2646,6 +2646,29 @@ test.describe('planet', () => {
     await expect(dialog).toBeHidden();
   });
 
+  test('in Windows high contrast (forced colours), the HUD and the open menu pass axe', async ({ page }) => {
+    test.setTimeout(150_000);
+    // design-system.md §8; review DS2-06: the HUD and panels take the system's colours (the 3D view can't)
+    await page.emulateMedia({ forcedColors: 'active' });
+    await startPlanet(page);
+    expect(await page.evaluate(() => matchMedia('(forced-colors: active)').matches)).toBe(true);
+    await page.getByTestId('menu-button').click();
+    const dialog = page.getByTestId('menu-dialog');
+    await expect(dialog.getByRole('heading', { name: 'Menu' })).toBeVisible();
+    // a control keeps its boundary in a system colour
+    expect(await dialog.getByRole('button', { name: /Fast travel/ }).evaluate((b) => getComputedStyle(b).borderTopStyle)).toBe('solid');
+    const results = await new AxeBuilder({ page })
+      .include('.play-header')
+      .include('[data-testid="menu-dialog"]')
+      .include('[data-testid="hotbar-wrap"]')
+      .include('[data-testid="view-controls"]')
+      .exclude('canvas')
+      .analyze();
+    expect(results.violations.map((v) => `${v.id} (${v.impact}): ${v.nodes.map((n) => n.target.join(' ')).join(', ')}`)).toEqual([]);
+    await page.keyboard.press('Space');
+    await expect(dialog).toBeHidden();
+  });
+
   test('spawn view shows the Workshop straight ahead', async ({ page }) => {
     await startPlanet(page);
     for (const part of ['base', 'door'] as const) {

@@ -1,0 +1,150 @@
+/* ChopperCard (chopper.md §5; ui/ChopperCard.tsx): his photo, his details and a little 3D Chopper, a paper dialog.
+ * Its owner imports it (ui/ChopperCard.tsx); tokens only (tests/unit/designSystem.test.ts). */
+@layer tokens, base, primitives, components, cursors;
+
+@layer components {
+  /* ---------- Chopper's profile card: his photo, his details, a little 3D Chopper (a paper dialog) ---------- */
+  .dialog.chopper-dialog {
+    width: min(var(--c-chopper-width), calc(100vw - var(--safe-left) - var(--safe-right) - var(--space-6)));
+    border-block-start: var(--border-rule-lg) solid var(--color-chopper-rule);
+    background: var(--surface-bg);
+  }
+
+  .chopper-body {
+    position: relative;
+    display: grid;
+    grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr) minmax(0, 0.9fr);
+    gap: var(--space-5);
+    align-items: start;
+  }
+
+  .chopper-close {
+    position: absolute;
+    inset-block-start: var(--space-2-5);
+    inset-inline-end: var(--space-2-5);
+    z-index: var(--layer-base);
+  }
+
+  .chopper-photo {
+    margin: 0;
+    display: grid;
+    gap: var(--space-2);
+  }
+
+  .chopper-photo > img {
+    width: 100%;
+    height: auto;
+    border: var(--border-base) solid var(--surface-border);
+    border-radius: var(--radius-md);
+    object-fit: cover;
+    aspect-ratio: 900 / 738;
+  }
+
+  .chopper-thumbs {
+    display: flex;
+    gap: var(--space-2);
+  }
+
+  .chopper-thumb {
+    padding: 0;
+    border: var(--border-base) solid transparent;
+    border-radius: var(--radius-sm);
+    overflow: hidden;
+    background: none;
+    cursor: pointer;
+    line-height: 0;
+    min-width: var(--c-btn-h);
+    min-height: var(--c-btn-h);
+  }
+
+  .chopper-thumb img {
+    width: var(--c-chopper-thumb-width);
+    height: var(--c-chopper-thumb-height);
+    object-fit: cover;
+  }
+
+  .chopper-thumb.selected {
+    border-color: var(--surface-border);
+  }
+
+  .chopper-facts {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: var(--space-1) var(--space-3);
+    margin: 0;
+  }
+
+  .chopper-facts dt {
+    font-weight: var(--weight-bold);
+  }
+
+  .chopper-facts dd {
+    margin: 0;
+  }
+
+  .chopper-list {
+    margin: 0;
+    display: grid;
+    gap: var(--space-1);
+  }
+
+  .chopper-memorial {
+    margin: var(--space-4) 0 0;
+    font-style: italic;
+    color: var(--surface-text-muted);
+  }
+
+  .chopper-stage {
+    position: relative;
+    align-self: stretch;
+    min-height: var(--c-chopper-stage);
+    border-radius: var(--radius-md);
+    background: radial-gradient(ellipse at 50% 70%, var(--color-stage-light) 0%, var(--color-stage-mid) 60%, var(--color-stage-edge) 100%);
+    cursor: grab;
+    touch-action: none;
+  }
+
+  .chopper-stage:active {
+    cursor: grabbing;
+  }
+
+  .chopper-stage canvas {
+    position: absolute;
+    inset: 0;
+  }
+
+  @media (max-width: 51.25rem) {
+    .chopper-body {
+      grid-template-columns: 1fr 1fr;
+    }
+
+    .chopper-stage {
+      grid-column: 1 / -1;
+      min-height: var(--c-chopper-stage-sm);
+    }
+  }
+
+  @media (max-width: 35rem) {
+    .chopper-body {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  @media (forced-colors: active) {
+    .chopper-thumb {
+      border: var(--border-base) solid ButtonText;
+    }
+
+    .chopper-thumb.selected {
+      border-color: Highlight;
+    }
+
+    .chopper-thumb:focus-visible {
+      outline-color: Highlight;
+    }
+
+    .chopper-stage {
+      border: var(--border-base) solid CanvasText;
+    }
+  }
+}

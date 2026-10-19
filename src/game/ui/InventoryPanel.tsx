@@ -21,6 +21,9 @@ import { Button, IconButton } from './primitives';
 import { Panel } from './overlays';
 import { SlotFace } from './Inventory';
 import { spaceBack } from '../input/keyboard';
+import './styles/panel.css';
+import './styles/inventory-panel.css';
+import './styles/help-popover.css';
 
 type Keys = ReadonlyArray<readonly [string, string]>;
 /** The panel's controls (its help popover): what each gesture or key does. */
@@ -98,12 +101,6 @@ function HelpPopover({ groups }: { groups: ReadonlyArray<{ title: string; keys: 
   );
 }
 
-/**
- * The inventory / chest screen (docs: collection-inventory.md §4.3), loaded on demand by `InventoryScreen`.
- * The crafting table uses it too (crafting-screen.md §4.3): its recipes and detail are the `top`, over
- * the backpack and the hotbar, with its own title and close.
- */
-
 type Section = { title: string; c: ContainerId; from: number; to: number; id: string };
 /**
  * A press on a slot that may become a drag: `spread` (a stack held: spread it on release), `quick`
@@ -125,6 +122,11 @@ const LIFT_PX = 62;
 const keyOf = (r: SlotRef) => `${r.c}:${r.i}`;
 const items = (n: number) => `${n} item${n === 1 ? '' : 's'}`;
 
+/**
+ * The inventory / chest screen (docs: collection-inventory.md §4.3), loaded on demand by `InventoryScreen`.
+ * The crafting table uses it too (crafting-screen.md §4.3): its recipes and detail are the `top`, over
+ * the backpack and the hotbar, with its own title and close.
+ */
 export default function InventoryPanel({
   controller,
   screen,

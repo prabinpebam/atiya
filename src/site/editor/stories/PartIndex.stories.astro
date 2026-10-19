@@ -1,0 +1,13 @@
+---
+import Example from '../../library/Example.astro';
+import PartIndex from '../components/PartIndex.astro';
+
+const groups = [
+  { title: 'Kit', blurb: 'The pieces several parts are made of.', entries: [{ name: 'IssueNote', href: '#issue-note', summary: 'What went wrong, said where it happened.' }] },
+  { title: 'Parts', blurb: "Edit mode's screens are composed of these.", entries: [{ name: 'ContentIssues', href: '#content-issues', summary: "The content's problems, when a file no longer passes the check." }] },
+];
+---
+
+<Example title="The library's contents" description="Each group's pieces, a link each with its summary under it." layout="block">
+  <PartIndex groups={groups} />
+</Example>

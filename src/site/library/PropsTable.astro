@@ -4,6 +4,7 @@
  * does. Library-only.
  */
 import type { PropDoc } from './registry';
+import Tag from '../components/fundamentals/Tag.astro';
 
 interface Props {
   props: PropDoc[];
@@ -26,12 +27,20 @@ const { props, caption } = Astro.props;
             <th scope="row">
               <code>{p.name}</code>
               {!p.optional && <span class="required">required</span>}
+              {p.deprecated !== undefined && (
+                <span class="deprecated" data-deprecated>
+                  <Tag tone="negative" size="sm">Deprecated</Tag>
+                </span>
+              )}
             </th>
             <td>
               <code class="type">{p.type}</code>
             </td>
             <td>{p.default ? <code>{p.default}</code> : <span class="none">none</span>}</td>
-            <td>{p.description}</td>
+            <td>
+              {p.description}
+              {p.deprecated && <span class="instead">{p.deprecated}</span>}
+            </td>
           </tr>
         ))
       }
@@ -96,5 +105,11 @@ const { props, caption } = Astro.props;
 
   .none {
     color: var(--color-text-muted);
+  }
+
+  .deprecated,
+  .instead {
+    display: block;
+    margin-block-start: var(--space-1);
   }
 </style>

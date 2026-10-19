@@ -15,6 +15,7 @@ import type { GameController } from '../controller';
 import type { GameAction } from '../input/keyboard';
 import type { OverviewMode } from '../types';
 import { OVERVIEW, ease, keyTurn, overviewDistance, stepWeight, turnWorld } from './overviewMath';
+import '../ui/styles/full-planet.css';
 
 /**
  * Font Awesome Free's solid "earth-asia" (CC BY 4.0, assets-src/CREDITS.md), as its path: importing the

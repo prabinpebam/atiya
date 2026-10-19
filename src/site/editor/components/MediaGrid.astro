@@ -28,9 +28,13 @@ import Text from '../../components/fundamentals/Text.astro';
 import Icon from '../../components/fundamentals/Icon.astro';
 import Heading from '../../components/fundamentals/Heading.astro';
 import Tag from '../../components/fundamentals/Tag.astro';
+import TileButton from '../../components/fundamentals/TileButton.astro';
 import Select from '../../components/fundamentals/Select.astro';
 import Progress from '../../components/fundamentals/Progress.astro';
 import Skeleton from '../../components/fundamentals/Skeleton.astro';
+import ActionBar from '../../components/compounds/ActionBar.astro';
+import IssueNote from '../kit/IssueNote.astro';
+import StatusNote from '../kit/StatusNote.astro';
 
 export interface MediaCard {
   id: string;
@@ -86,7 +90,7 @@ const anyPrivate = media.some((m) => m.private);
 const groups = [...new Set(media.map((m) => m.owner))].map((o) => ({ owner: o, label: media.find((m) => m.owner === o)!.ownerLabel, items: media.filter((m) => m.owner === o) }));
 ---
 
-<div class="media-grid" data-region="media-grid" data-editor-media-grid data-mode={mode} data-owner={owner} data-picker-pending={pending ? '' : undefined} data-media-next={paging?.next ?? undefined}>
+<div class="media-grid" data-busy-line data-region="media-grid" data-editor-media-grid data-mode={mode} data-owner={owner} data-picker-pending={pending ? '' : undefined} data-media-next={paging?.next ?? undefined}>
   <details class="upload" open={media.length === 0 && !pending ? true : undefined}>
     <summary><Icon name="upload" /><span>Upload a picture or a video</span></summary>
     <form class="upload-form" data-editor-upload novalidate>
@@ -98,11 +102,11 @@ const groups = [...new Set(media.map((m) => m.owner))].map((o) => ({ owner: o, l
           </div>
         </div>
         <video class="clip" data-upload-video controls muted playsinline preload="metadata" hidden></video>
-        <p class="facts" data-upload-facts aria-live="polite"></p>
-        <div class="preview-actions">
+        <StatusNote data-upload-facts="" />
+        <ActionBar gap="sm">
           <span data-upload-crop-wrap hidden><Button variant="secondary" size="sm" icon="crop" data-upload-crop="">Crop it</Button></span>
           <span data-upload-uncrop-wrap hidden><Button variant="quiet" size="sm" icon="restore" data-upload-uncrop="">Undo the crop</Button></span>
-        </div>
+        </ActionBar>
       </div>
       <div class="fields" data-upload-for="image">
         <TextField label="Alt text" name="alt" multiline rows={2} hint="What it shows, for someone who can't see it (250 characters at most). Leave it empty only if it's decorative." />
@@ -112,10 +116,10 @@ const groups = [...new Set(media.map((m) => m.owner))].map((o) => ({ owner: o, l
         <TextField label="Title" name="title" hint="What the video is, in a few words: it names the player for someone who can't see it, and the video in the library." />
       </div>
       <TextField label="Caption" name="caption" optional />
-      <p class="issue" role="alert" data-editor-form-issue hidden></p>
-      <div class="actions">
+      <IssueNote data-editor-form-issue="" />
+      <ActionBar align="end">
         <Button variant="primary" type="submit" icon="upload">Upload it</Button>
-      </div>
+      </ActionBar>
     </form>
   </details>
   <div class="finders" data-private-filter={mode === 'library' && anyPrivate ? '' : undefined}>
@@ -136,7 +140,7 @@ const groups = [...new Set(media.map((m) => m.owner))].map((o) => ({ owner: o, l
       )
     }
   </div>
-  <p class="count" aria-live="polite" data-editor-media-found data-total={total}>{total}</p>
+  <StatusNote data-editor-media-found="" data-total={String(total)}>{total}</StatusNote>
   {
     preparing && (
       <div class="preparing" data-media-preparing>
@@ -160,7 +164,7 @@ const groups = [...new Set(media.map((m) => m.owner))].map((o) => ({ owner: o, l
         <ul class="grid">
           {g.items.map((m) => (
         <li data-media-card={m.id} data-media-kind={m.kind ?? 'image'} data-find={`${m.id} ${m.alt}`.toLowerCase()} data-private={m.private ? '' : undefined}>
-          <button class="card" type="button" aria-pressed={mode === 'pick' ? 'false' : undefined} aria-current={mode === 'library' && m.id === selected ? 'true' : undefined} data-editor-media={m.id} aria-label={m.kind === 'video' ? `Video: ${m.alt || m.id}` : m.alt || m.id}>
+          <TileButton variant="framed" pressed={mode === 'pick' ? false : undefined} current={mode === 'library' && m.id === selected} data-editor-media={m.id} aria-label={m.kind === 'video' ? `Video: ${m.alt || m.id}` : m.alt || m.id}>
             {m.thumb ? <Image src={m.thumb} alt="" width={m.width} height={m.height} ratio="4/3" display="fit" rounded={false} /> : <span class="no-poster"><Icon name="video" size="lg" /></span>}
             <span class="id">{m.id.split('/').pop()}</span>
             {mode === 'library' && m.used === false && <Tag size="sm">Not used</Tag>}
@@ -173,7 +177,7 @@ const groups = [...new Set(media.map((m) => m.owner))].map((o) => ({ owner: o, l
                 <Text as="span" variant="small" tone="negative">No alt text</Text>
               </span>
             )}
-          </button>
+          </TileButton>
         </li>
           ))}
         </ul>
@@ -219,8 +223,7 @@ const groups = [...new Set(media.map((m) => m.owner))].map((o) => ({ owner: o, l
   .preview[hidden],
   .stage[hidden],
   .clip[hidden],
-  .fields[hidden],
-  .preview-actions > [hidden] {
+  .fields[hidden] {
     display: none;
   }
 
@@ -280,39 +283,13 @@ const groups = [...new Set(media.map((m) => m.owner))].map((o) => ({ owner: o, l
     block-size: auto;
   }
 
-  .facts {
-    margin: 0;
-    color: var(--color-text-muted);
-    font-size: var(--text-sm);
-  }
-
-  .preview-actions {
-    display: flex;
-    flex-wrap: wrap;
-    gap: var(--space-2);
-  }
-
-  .actions {
-    display: flex;
-    justify-content: end;
-    align-items: center;
-    gap: var(--space-3);
-  }
-
-  .issue {
-    margin: 0;
-    color: var(--color-negative);
-    font-size: var(--text-sm);
-    font-weight: var(--weight-medium);
-  }
 
   .group {
     display: grid;
     gap: var(--space-3);
   }
 
-  .group[hidden],
-  .count:empty {
+  .group[hidden] {
     display: none;
   }
 
@@ -332,11 +309,6 @@ const groups = [...new Set(media.map((m) => m.owner))].map((o) => ({ owner: o, l
     }
   }
 
-  .count {
-    margin: 0;
-    color: var(--color-text-muted);
-    font-size: var(--text-sm);
-  }
 
   .grid {
     display: grid;
@@ -349,37 +321,6 @@ const groups = [...new Set(media.map((m) => m.owner))].map((o) => ({ owner: o, l
 
   li[hidden] {
     display: none;
-  }
-
-  .card {
-    display: grid;
-    gap: var(--space-1-5);
-    inline-size: 100%;
-    padding: var(--space-2);
-    border: var(--border-strong) solid transparent;
-    border-radius: var(--radius-md);
-    background: var(--color-bg-raised);
-    color: var(--color-text);
-    font-family: var(--font-ui);
-    text-align: start;
-    cursor: pointer;
-    transition: border-color var(--duration-fast) var(--ease-standard);
-  }
-
-  @media (hover: hover) {
-    .card:hover {
-      border-color: var(--color-border-strong);
-    }
-  }
-
-  .card:active {
-    border-color: var(--color-border-strong);
-  }
-
-  .card[aria-pressed='true'],
-  .card[aria-current='true'] {
-    border-color: var(--color-accent);
-    background: var(--color-accent-soft);
   }
 
   .id {
@@ -400,40 +341,6 @@ const groups = [...new Set(media.map((m) => m.owner))].map((o) => ({ owner: o, l
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(var(--c-editor-thumb), 1fr));
     gap: var(--space-3);
-  }
-  /* drawn again from the server (editor spec §2.2): what it shows stays while it updates, with a line
-     along its top past the delay */
-  .media-grid[data-busy='on'] {
-    position: relative;
-  }
-
-  .media-grid[data-busy='on']::before {
-    content: '';
-    position: absolute;
-    inset-inline: 0;
-    inset-block-start: 0;
-    z-index: var(--layer-raised);
-    block-size: var(--border-strong);
-    background: linear-gradient(90deg, transparent, var(--color-accent), transparent) no-repeat;
-    background-size: 40% 100%;
-    animation: region-busy var(--duration-slower) var(--ease-standard) infinite alternate;
-    pointer-events: none;
-  }
-
-  @keyframes region-busy {
-    from {
-      background-position: 0 0;
-    }
-    to {
-      background-position: 100% 0;
-    }
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    .media-grid[data-busy='on']::before {
-      animation: none;
-      background: var(--color-accent);
-    }
   }
 </style>
 

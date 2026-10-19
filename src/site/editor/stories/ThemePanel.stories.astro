@@ -1,0 +1,18 @@
+---
+import Example from '../../library/Example.astro';
+import ThemePanel from '../components/ThemePanel.astro';
+import { siteThemeBase } from '../../design/siteTheme';
+import { resolveTheme } from '../../theme/css';
+import { DEFAULT_THEME, PALETTES, PRESETS, presetById } from '../../theme/model';
+import { swatchesOf, type ThemeEntry } from '../model/theme';
+
+// the presets only (code, not content): a story never shows a site's own themes
+const base = siteThemeBase();
+const entries: ThemeEntry[] = PRESETS.map(({ about: _, ...t }) => ({ theme: t, version: null }));
+const atiya = presetById(DEFAULT_THEME)!;
+const paletteSwatches = Object.fromEntries(PALETTES.map((p) => [p.id, swatchesOf(resolveTheme({ ...atiya, colors: p.seed ? { seed: p.seed } : {} }, base))]));
+---
+
+<Example title="The themes panel" description="Without the site beside it (preview off): the theme in use, its actions, and its colour, type and spacing." layout="block">
+  <ThemePanel base={base} entries={entries} fonts={[]} active={DEFAULT_THEME} siteVersion={null} paletteSwatches={paletteSwatches} preview={false} />
+</Example>

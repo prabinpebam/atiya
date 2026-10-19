@@ -1,4 +1,5 @@
 import type { IconDefinition } from '@fortawesome/free-solid-svg-icons';
+import './styles/icon.css';
 
 /**
  * A Font Awesome (Free, solid) icon as inline SVG: the icon's own path data rendered directly, so

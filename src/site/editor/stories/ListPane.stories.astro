@@ -1,0 +1,26 @@
+---
+import Example from '../../library/Example.astro';
+import ListPane from '../kit/ListPane.astro';
+import ListLink from '../kit/ListLink.astro';
+import PlainList from '../kit/PlainList.astro';
+import Button from '../../components/fundamentals/Button.astro';
+---
+
+<Example title="The whole panel scrolls" description="A list of sections and a tool under it: taller than the window, the whole panel scrolls (whole)." layout="block">
+  <ListPane label="Sections (sample)" data-scrollbar="">
+    <PlainList gap="xs">
+      <li><ListLink href="#work" name="Work" meta={['/work/']} current /></li>
+      <li><ListLink href="#writing" name="Writing" meta={['/writing/']} /></li>
+    </PlainList>
+    <Button variant="secondary" size="sm" icon="plus">New section</Button>
+  </ListPane>
+</Example>
+
+<Example title="Its tools stay on top" description="scroll='last': only its last part scrolls (the caller's own scroller), Add recommendation staying in view; as='div' when it isn't a navigation." layout="block">
+  <ListPane as="div" scroll="last">
+    <Button variant="primary" icon="plus" block>Add recommendation</Button>
+    <PlainList gap="xs">
+      <li><ListLink href="#grace" name="Grace Hopper" meta={['Rear admiral, Navy Research']} /></li>
+    </PlainList>
+  </ListPane>
+</Example>

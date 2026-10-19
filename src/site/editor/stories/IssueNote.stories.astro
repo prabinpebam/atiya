@@ -1,0 +1,12 @@
+---
+import Example from '../../library/Example.astro';
+import IssueNote from '../kit/IssueNote.astro';
+---
+
+<Example title="What went wrong" description="A refused save's reasons, as a script sets them; read out at once (role alert)." layout="stack">
+  <IssueNote text="Not saved: the summary is longer than 240 characters." />
+</Example>
+
+<Example title="Waiting for a script" description="Empty, it's hidden and says nothing; the hook (here data-story-issue) is how its script finds it." layout="stack">
+  <IssueNote data-story-issue="" />
+</Example>

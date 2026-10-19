@@ -1,0 +1,15 @@
+---
+import Example from '../../library/Example.astro';
+import RichField from '../kit/RichField.astro';
+---
+
+<Example title="Words edited as they'll read" description="Its label with Optional beside it, the toolbar, the words, and a hint; the Markdown goes in a hidden field." layout="block">
+  <RichField
+    label="Item 1: words"
+    toolsLabel="Item 1: formatting"
+    inputId="story-rich-0"
+    name="story.items.0.text"
+    markdown="Every morning, once round the pond **before** a word was written."
+    hint="Written as it will read: Enter starts a new paragraph, and the toolbar (or its keys) sets bold, italic, strikethrough, code, links and lists."
+  />
+</Example>

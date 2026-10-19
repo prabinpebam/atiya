@@ -1,0 +1,117 @@
+---
+/**
+ * A rich field: words edited as they'll read (the inspector's and the insert form's collection items), under a
+ * label and a toolbar of formats (bold, italic, strikethrough, code, links and lists), with the Markdown they
+ * make carried in a hidden field. scripts/richtext.ts runs it: it finds the field by data-rich-field, edits in
+ * data-rich-input, presses the toolbar's data-rich-op buttons and writes data-rich-value. It's drawn as a
+ * TextField is (base.css's field parts: its label with Optional beside it, its hint under it).
+ * @tier kit
+ * @a11y The words are a labelled multi-line textbox, described by the hint when there is one; the toolbar is a labelled toolbar that controls it, every button named with its key, the toggles pressed while what they mark is selected.
+ */
+import HiddenField from '../../components/fundamentals/HiddenField.astro';
+import IconButton from '../../components/fundamentals/IconButton.astro';
+import Prose from '../../components/fundamentals/Prose.astro';
+import { RICH_GROUPS, RICH_TOOLS, richHtml } from '../model/richText';
+
+interface Props {
+  /** The field's label ("Item 1: words"). */
+  label: string;
+  /** Names the toolbar ("Item 1: formatting"). */
+  toolsLabel: string;
+  /** The words' element id: its label is `<id>-label`, its hint `<id>-hint`. */
+  inputId: string;
+  /** The hidden field's name, which carries the Markdown. */
+  name: string;
+  /** The words as Markdown, to start with (none: empty). */
+  markdown?: string;
+  /** A line under the field on how it's edited. */
+  hint?: string;
+}
+
+const { label, toolsLabel, inputId, name, markdown, hint } = Astro.props;
+// the toolbar's buttons that stay pressed while the words they mark are selected
+const TOGGLES = new Set<string>(['bold', 'italic', 'strikethrough', 'bulleted', 'numbered']);
+---
+
+<div class="rich-field" data-field-part="root" data-rich-field>
+  <span class="rich-label">
+    <span id={`${inputId}-label`}>{label}</span>
+    <span data-field-part="note">Optional</span>
+  </span>
+  <div class="rich-tools" role="toolbar" aria-label={toolsLabel} aria-controls={inputId}>
+    {
+      RICH_GROUPS.map((group) => (
+        <span class="tool-group">
+          {RICH_TOOLS.filter((tool) => tool.group === group).map((tool) => (
+            <IconButton label={`${tool.label} (${tool.key})`} icon={tool.icon} size="sm" shape="square" tooltip="bottom" pressed={TOGGLES.has(tool.op) ? false : undefined} disabled={tool.op === 'indent' || tool.op === 'outdent'} data-rich-op={tool.op} />
+          ))}
+        </span>
+      ))
+    }
+  </div>
+  <div class="rich-box" data-focus-ring="within">
+    <Prose size="compact">
+      <div
+        class="rich-input"
+        id={inputId}
+        contenteditable="true"
+        role="textbox"
+        aria-multiline="true"
+        aria-labelledby={`${inputId}-label`}
+        aria-describedby={hint ? `${inputId}-hint` : undefined}
+        data-rich-input
+        set:html={markdown ? richHtml(markdown) : ''}
+      />
+    </Prose>
+  </div>
+  <HiddenField name={name} value={markdown ?? ''} data-rich-value="" />
+  {
+    hint && (
+      <p class="rich-hint" id={`${inputId}-hint`} data-field-part="hint">
+        {hint}
+      </p>
+    )
+  }
+</div>
+
+<style>
+  /* its label, with Optional beside it, as a TextField's */
+  .rich-label {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: var(--space-3);
+    font: var(--type-label);
+  }
+
+  .rich-hint {
+    margin: 0;
+  }
+
+  .rich-tools {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-0-5) var(--space-3);
+  }
+
+  /* the toolbar's groups: marks, then words that go somewhere, then lists */
+  .tool-group {
+    display: flex;
+    gap: var(--space-0-5);
+  }
+
+  /* the words' box, drawn as a text field's; its ring shows the focus inside it */
+  .rich-box {
+    min-block-size: calc(var(--size-touch) * 2);
+    padding: var(--space-3) var(--space-4);
+    border: var(--border-control) solid var(--c-control-border);
+    border-radius: var(--c-control-radius);
+    background: var(--c-control-fill);
+    cursor: text;
+  }
+
+  .rich-input {
+    min-block-size: calc(var(--size-touch) * 1.5);
+    outline: none;
+  }
+</style>

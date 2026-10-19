@@ -1,0 +1,31 @@
+---
+import Example from '../../library/Example.astro';
+import Pane from '../kit/Pane.astro';
+import Grip from '../kit/Grip.astro';
+import IconButton from '../../components/fundamentals/IconButton.astro';
+import TextField from '../../components/fundamentals/TextField.astro';
+---
+
+<Example title="A section of a form" description="Its heading first, under a rule, then its fields." layout="block">
+  <Pane name="story-basics" title="Title and summary" titleId="story-pane-basics">
+    <TextField label="Title" name="title" id="story-pane-title" />
+  </Pane>
+</Example>
+
+<Example title="An item, with its handle and buttons" description="item: under a dashed rule; the start slot holds its drag handle and the end slot its buttons." layout="block">
+  <Pane name="story-item" title="Item 1" titleId="story-pane-item" item>
+    <Fragment slot="start"><Grip data-story-drag="0" /></Fragment>
+    <Fragment slot="end">
+      <IconButton label="Move item 1 down" icon="arrow-down" size="sm" tooltip="none" />
+      <IconButton label="Remove item 1" icon="delete" size="sm" tooltip="none" />
+    </Fragment>
+    <TextField label="Item 1: heading" name="heading" id="story-pane-heading" optional />
+  </Pane>
+</Example>
+
+<Example title="A group of fields, in a dialog" description="group: a named group, as a fieldset is; level 3 under a dialog's title; the title slot for words a script renumbers." layout="block">
+  <Pane name="story-group" title="Item 1" titleId="story-pane-group" level={3} item group>
+    <span slot="title">Item 1</span>
+    <TextField label="When" name="when" id="story-pane-when" optional />
+  </Pane>
+</Example>

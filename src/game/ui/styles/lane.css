@@ -1,0 +1,21 @@
+/* The focus lane (R4; ui/lanes.ts): the bottom-centre slot one of the talk box, the prompt and the preview card holds at a time.
+ * Its owners import it (ui/Hud.tsx, ui/Dialogs.tsx, world/home/TalkBox.tsx, src/pages/play.astro); tokens only (tests/unit/designSystem.test.ts). */
+@layer tokens, base, primitives, components, cursors;
+
+@layer primitives {
+  /* R4: the focus lane. One of the talk box, the prompt and the preview card at a time (ui/lanes.ts) */
+  .lane {
+    position: absolute;
+    inset-inline-start: 50%;
+    inset-block-end: var(--lane-bottom);
+    z-index: var(--layer-lane);
+    transform: translateX(-50%);
+    animation: card-in var(--dur-slow) var(--ease-pop);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .lane {
+      animation: none;
+    }
+  }
+}

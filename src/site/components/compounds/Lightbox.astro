@@ -143,11 +143,11 @@ const { id = 'site-lightbox' } = Astro.props;
      and the stage (which doesn't clip) keeps the picture far enough in for the whole shadow */
   .stage[data-shadow] {
     padding: var(--c-image-shadow-blur);
-    padding-block-end: calc(var(--c-image-shadow-y) + var(--c-image-shadow-blur));
+    padding-block-end: var(--c-image-shadow-room);
   }
 
   .stage[data-shadow] .stage-image {
-    filter: drop-shadow(0 var(--c-image-shadow-y) var(--c-image-shadow-blur) var(--c-image-shadow));
+    filter: var(--c-image-shadow-filter);
   }
 
   .stage[data-fading] .stage-image {

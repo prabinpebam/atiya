@@ -1,0 +1,105 @@
+---
+/**
+ * One section of a form in Sections (its default slot holds the section's fields): its heading first, with what
+ * goes before it (the start slot: a drag handle) and after it (the end slot: Move up, Move down, Remove).
+ * Narrow, each section starts under a rule (an item's under a dashed one); in a wide Sections, only the chosen
+ * one shows (scripts/inspector.ts marks it data-current), without its rule or its drag handle.
+ * @tier kit
+ * @a11y A region named by its heading (an h4).
+ * @a11y A drag handle is decorative (aria-hidden): the buttons after the heading do the same.
+ */
+import Heading from '../../components/fundamentals/Heading.astro';
+
+interface Props {
+  /** Its key: the row that shows it picks it (data-section). */
+  name: string;
+  /** Its heading (or the title slot, for words a script rewrites). */
+  title: string;
+  /** The heading's id, which names the section. */
+  titleId: string;
+  /** The heading's level: 4 under a form's own heading (the inspector's), 3 in a dialog. */
+  level?: 3 | 4;
+  /** An item in a PaneGroup (one of a collection's items): under a dashed rule. */
+  item?: boolean;
+  /** A group of fields (role="group", as a fieldset is) rather than a region: a new collection's items. */
+  group?: boolean;
+  /** Data attributes pass through to the section (data-sort-row, for items that drag). */
+  [data: `data-${string}`]: string | undefined;
+}
+
+const { name, title, titleId, level = 4, item = false, group = false, ...rest } = Astro.props;
+const start = Astro.slots.has('start');
+const end = Astro.slots.has('end');
+const titled = Astro.slots.has('title');
+---
+
+<section class="pane" data-section={name} data-item={item ? '' : undefined} data-drop-line="spaced" role={group ? 'group' : undefined} aria-labelledby={titleId} {...rest}>
+  <div class="pane-head">
+    {
+      start && (
+        <span class="pane-start">
+          <slot name="start" />
+        </span>
+      )
+    }
+    <Heading level={level} size="ui" id={titleId}>{titled ? <slot name="title" /> : title}</Heading>
+    {
+      end && (
+        <span class="pane-end">
+          <slot name="end" />
+        </span>
+      )
+    }
+  </div>
+  <slot />
+</section>
+
+<style>
+  /* each section starts under a rule, its heading first */
+  .pane {
+    position: relative;
+    display: grid;
+    gap: var(--space-4);
+    min-inline-size: 0;
+    padding-block-start: var(--space-4);
+    border-block-start: var(--border-hairline) solid var(--color-rule);
+  }
+
+  .pane[data-item] {
+    padding-block-start: var(--space-3);
+    border-block-start-style: dashed;
+  }
+
+  .pane-head {
+    display: flex;
+    align-items: center;
+    gap: var(--space-1);
+    min-block-size: var(--size-touch);
+  }
+
+  .pane-start {
+    display: inline-flex;
+  }
+
+  .pane-end {
+    display: flex;
+    margin-inline-start: auto;
+  }
+
+  @container sections (min-width: 40rem) {
+    /* only the chosen section, without its rule: the list beside it says where it is (and has the handles) */
+    .pane:not([data-current]) {
+      display: none;
+    }
+
+    .pane,
+    .pane[data-item] {
+      padding-block-start: var(--space-0);
+      border-block-start: 0;
+    }
+
+    .pane-start {
+      display: none;
+    }
+  }
+</style>

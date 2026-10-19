@@ -1,0 +1,29 @@
+---
+/**
+ * Edit mode's parts library (documentation/editor/spec.md §10): its kit pieces and parts, each a link to its
+ * page with its stories and props. Dev only: injected by integrations/editor.mjs (on a source checkout), so its
+ * stories never reach a build.
+ */
+import EditorLayout from '../EditorLayout.astro';
+import PartIndex from '../components/PartIndex.astro';
+import { PART_TIERS, partCatalog } from '../server/library';
+import { withBase } from '../../design/meta';
+
+export const prerender = false;
+
+const entries = partCatalog();
+const groups = PART_TIERS.map((t) => ({
+  title: t.title,
+  blurb: t.blurb,
+  entries: entries.filter((e) => e.tier === t.tier).map((e) => ({ name: e.name, href: withBase(`/_edit/library/${e.slug}/`), summary: e.summary })),
+}));
+---
+
+<EditorLayout
+  title="Parts library"
+  screen="library"
+  heading="Parts library"
+  intro="Edit mode's own pieces, shown as the design library shows the website's: each part and kit piece with its stories, made from sample data, its props and its accessibility notes. Here while you work on edit mode; it never reaches the site."
+>
+  <PartIndex groups={groups} />
+</EditorLayout>

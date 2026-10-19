@@ -36,51 +36,20 @@ const hasSlot = Astro.slots.has('default');
 const described = hint ? `${id}-hint` : undefined;
 ---
 
-<label class="radio" data-disabled={disabled ? '' : undefined} {...rest}>
-  <span class="circle">
+<label class="radio" data-check-part="root" data-disabled={disabled ? '' : undefined} data-press {...rest}>
+  <span class="circle" data-check-part="box">
     <input class="input" type="radio" id={id} name={name} value={value} checked={checked} disabled={disabled} required={required} aria-describedby={described} />
     <span class="dot"></span>
   </span>
-  <span class="content">
+  <span class="content" data-check-part="words">
     <span class="label">{hasSlot ? <slot /> : label}</span>
-    {hint && <span class="hint" id={`${id}-hint`}>{hint}</span>}
+    {hint && <span class="hint" id={`${id}-hint`} data-field-part="hint">{hint}</span>}
   </span>
 </label>
 
 <style>
-  .radio {
-    display: grid;
-    grid-template-columns: var(--c-check-size) minmax(0, 1fr);
-    align-items: center;
-    gap: var(--space-3);
-    min-height: var(--size-touch);
-    font-family: var(--font-ui);
-    color: var(--color-text);
-    cursor: pointer;
-  }
-
-  .radio[data-disabled] {
-    opacity: var(--opacity-disabled);
-    cursor: not-allowed;
-  }
-
-  /* with a hint under it, the circle sits on the label's line, not between the two */
-  .radio:has(.hint) {
-    align-items: start;
-  }
-
-  .radio:has(.hint) .circle {
-    margin-block-start: calc((var(--leading-ui) * var(--text-md) - var(--c-check-size)) / 2);
-  }
-
-  .circle {
-    position: relative;
-    display: grid;
-    place-items: center;
-    inline-size: var(--c-check-size);
-    block-size: var(--c-check-size);
-  }
-
+  /* its layout (the circle beside its words, on the label's line when there's a hint) is base.css's
+     check recipe (data-check-part), shared with Checkbox */
   .input {
     appearance: none;
     inline-size: var(--c-check-size);
@@ -130,21 +99,7 @@ const described = hint ? `${id}-hint` : undefined;
     transform: scale(1);
   }
 
-  .content {
-    display: grid;
-    gap: var(--space-1);
-    min-width: 0;
-  }
-
   .label {
-    font-size: var(--text-md);
-    font-weight: var(--weight-medium);
-    line-height: var(--leading-ui);
-  }
-
-  .hint {
-    color: var(--color-text-muted);
-    font-size: var(--text-sm);
-    line-height: var(--leading-ui);
+    font: var(--type-control);
   }
 </style>

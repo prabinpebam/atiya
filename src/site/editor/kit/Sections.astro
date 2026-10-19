@@ -1,0 +1,70 @@
+---
+/**
+ * A form in sections (documentation/editor/spec.md §3.5): narrow, every section in turn under its heading; from
+ * 40 rem wide (a container query on itself), two columns, the list of sections (the nav slot: NavGroups of
+ * NavRows) ruled off beside the chosen one's fields (the default slot: Panes and PaneGroups). Which section
+ * shows is scripts/inspector.ts's (it marks the chosen pane data-current and its row aria-current).
+ * @tier kit
+ * @a11y The list of sections is a named navigation; narrow, it isn't shown, as every section is.
+ */
+
+interface Props {
+  /** The kind of form, which keeps its chosen section while edit mode is open (data-sections). */
+  name: string;
+  /** Names the list of sections ("Picture settings"). */
+  label: string;
+}
+
+const { name, label } = Astro.props;
+---
+
+<div class="sections" data-sections={name}>
+  <div class="section-columns">
+    <nav class="section-nav" aria-label={label}><slot name="nav" /></nav>
+    <div class="section-panes"><slot /></div>
+  </div>
+</div>
+
+<style>
+  /* the sections take the form's height, so a wide list is ruled to the bottom */
+  .sections {
+    container: sections / inline-size;
+    flex: 1;
+    display: grid;
+    min-inline-size: 0;
+  }
+
+  .section-columns,
+  .section-panes {
+    display: grid;
+    align-content: start;
+    min-inline-size: 0;
+  }
+
+  .section-panes {
+    gap: var(--space-5);
+  }
+
+  .section-nav {
+    display: none;
+  }
+
+  @container sections (min-width: 40rem) {
+    /* the list's rule is the column's, drawn down the whole of it whatever the list's length */
+    .section-columns {
+      grid-template-columns: var(--c-editor-inspector-nav) minmax(0, 1fr);
+      align-items: start;
+      gap: var(--space-6);
+      background: linear-gradient(var(--color-rule), var(--color-rule)) no-repeat var(--c-editor-inspector-nav) 0 / var(--border-hairline) 100%;
+    }
+
+    .section-nav {
+      position: sticky;
+      inset-block-start: var(--space-0);
+      display: grid;
+      align-content: start;
+      gap: var(--space-3);
+      padding-inline-end: var(--space-3);
+    }
+  }
+</style>

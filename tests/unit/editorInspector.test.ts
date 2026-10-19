@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { clampWidth, followMove, followRemove, itemKey, widest, widthForKey, type WidthBounds } from '../../src/site/editor/model/inspector';
+import { duration, fieldId, onPlanet, statusChoices, videoUrl, WIDTHS } from '../../src/site/editor/model/inspectorFields';
 
 const B: WidthBounds = { min: 24, max: 60, room: 100, canvasMin: 24 };
 
@@ -44,5 +45,37 @@ describe("the inspector's sections", () => {
     expect(followRemove(itemKey(3), 1)).toBe('item-2');
     expect(followRemove(itemKey(1), 3)).toBe('item-1');
     expect(followRemove('pictures', 0)).toBe('pictures');
+  });
+});
+
+describe("the inspector's fields (model/inspectorFields.ts, shared by its parts)", () => {
+  it('names a field by its block and its name, so two forms never share an ID', () => {
+    expect(fieldId(3, 'caption')).toBe('f-3-caption');
+    expect(fieldId(0, 'item-2-autoplay')).toBe('f-0-item-2-autoplay');
+    expect(fieldId(1, 's.item 4')).toBe('f-1-s-item-4');
+    expect(fieldId(2, 'width')).not.toBe(fieldId(3, 'width'));
+  });
+
+  it("writes a video's length and address as the person would", () => {
+    expect(duration(140)).toBe('2:20');
+    expect(duration(59)).toBe('0:59');
+    expect(duration(undefined)).toBe('');
+    expect(videoUrl({ type: 'video', embed: { provider: 'youtube', id: 'abc' } } as never)).toBe('https://youtu.be/abc');
+    expect(videoUrl({ type: 'video', embed: { provider: 'vimeo', id: '42' } } as never)).toBe('https://vimeo.com/42');
+    expect(videoUrl({ type: 'video', media: 'x' } as never)).toBe('');
+  });
+
+  it("offers every status, and keeps one a page has that isn't otherwise offered", () => {
+    expect(statusChoices('draft').map((s) => s.value)).toEqual(['draft', 'factReview', 'editorialReview', 'approved', 'published']);
+    expect(statusChoices('stale').map((s) => s.value)).toContain('stale');
+    expect(statusChoices('archived').map((s) => s.value)).toContain('archived');
+    expect(WIDTHS.map((w) => w.value)).toEqual(['content', 'popout', 'wide', 'full']);
+  });
+
+  it('says where a page is on the planet: never when private, else in the building that shows its section', () => {
+    expect(onPlanet(true, 'Library', true)).toMatch(/^Not on the planet: private pages never are/);
+    expect(onPlanet(false, 'Library', true)).toBe('In the Library, which shows its section.');
+    expect(onPlanet(false, 'Library', false)).toBe('In the Library, which shows its section, once it’s published.');
+    expect(onPlanet(false, '', true)).toMatch(/no building shows its section/);
   });
 });

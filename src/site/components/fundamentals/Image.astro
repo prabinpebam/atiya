@@ -27,7 +27,7 @@
  * @a11y Tiled, the frame is the image (role="img", named by the alt text), whatever draws it.
  * @a11y The shimmer stops for prefers-reduced-motion: the place is a still colour until the picture fades in.
  */
-import { fittedSizes, fittedWidth } from '../../design/pictures';
+import { fittedSizes, fittedWidth, type PictureSource } from '../../design/pictures';
 
 interface Props {
   /** The picture (the size a middle-sized screen needs). */
@@ -59,7 +59,7 @@ interface Props {
   /** Fill the container's height too (a gallery cell, a carousel slide). */
   fill?: boolean;
   /** Its dark mode version (its own src, srcset and size), shown when the page is dark. Without one, the picture shows in both modes. */
-  dark?: { src: string; srcset?: string; width: number; height: number; poster?: string };
+  dark?: PictureSource & { poster?: string };
   /** A colour behind it (the picture's own edge colour, and its dark version's), filling the space round it and its transparent parts. Left out, nothing behind it. */
   bg?: { light: string; dark?: string };
   /** Rounded corners on the picture itself (the radius above); false squares them. */
@@ -214,7 +214,7 @@ const imgAlt = tile ? '' : alt;
   /* a drop shadow that follows what shows: a fitted or transparent picture casts the shape of the picture */
   .image[data-shadow],
   .frame[data-shadow] {
-    filter: drop-shadow(0 var(--c-image-shadow-y) var(--c-image-shadow-blur) var(--c-image-shadow));
+    filter: var(--c-image-shadow-filter);
   }
 
   .image[data-ratio='1/1'],

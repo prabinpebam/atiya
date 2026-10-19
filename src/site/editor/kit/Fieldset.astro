@@ -1,0 +1,42 @@
+---
+/**
+ * A group of choices under its name, without a box: a fieldset whose legend names what its checkboxes or radio
+ * cards choose (pages to publish with a save, a theme's palette), its choices one under another a set space apart.
+ * For a group of plain options, the website's ChoiceGroup draws the whole thing; this one holds choices a part
+ * draws itself (RadioCards, Checkboxes with their own hooks) and words between them.
+ * @tier kit
+ * @a11y A fieldset named by its legend, so each choice is announced with the group's name.
+ */
+
+interface Props {
+  /** The group's name (its legend). */
+  legend: string;
+  /** Data attributes pass through to the fieldset: the hook its screen's script finds it by. */
+  [data: `data-${string}`]: string | undefined;
+}
+
+const { legend, ...rest } = Astro.props;
+---
+
+<fieldset class="bare-fieldset" {...rest}>
+  <legend class="bare-legend">{legend}</legend>
+  <slot />
+</fieldset>
+
+<style>
+  .bare-fieldset {
+    display: grid;
+    gap: var(--space-2);
+    min-inline-size: 0;
+    margin: 0;
+    padding: 0;
+    border: 0;
+  }
+
+  /* a legend isn't a grid item: its space below is its own; its type is a field label's, as ChoiceGroup's legend */
+  .bare-legend {
+    margin-block-end: var(--space-2);
+    padding: 0;
+    font: var(--type-label);
+  }
+</style>

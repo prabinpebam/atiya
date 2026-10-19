@@ -9,6 +9,11 @@ import { Icon } from './Icon';
 import { Button, KeyCap } from './primitives';
 import { Dialog } from './overlays';
 import { focusLane, laneBeneath, overlayOpen } from './lanes';
+import './styles/preview-card.css';
+import './styles/card.css';
+import './styles/lane.css';
+import './styles/overlay.css';
+import './styles/reading-overlay.css';
 
 const toClassic = () => prefs.setMode('classic');
 const FROM = 'planet-frame';

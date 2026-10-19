@@ -1,0 +1,88 @@
+---
+/**
+ * A group of choice tiles under its heading: each tile a big icon, a name and a line on what it does, in as many
+ * columns as fit (the block palette's kinds of block, Turn into's kinds of change). Pressing a tile is its
+ * screen's script's: each tile carries the choice in the data attribute the group names (hook).
+ * @tier kit
+ * @a11y A region named by its heading; each tile is a button named by its name and described by its line.
+ */
+import Heading from '../../components/fundamentals/Heading.astro';
+import Icon from '../../components/fundamentals/Icon.astro';
+import TileButton from '../../components/fundamentals/TileButton.astro';
+import type { IconName } from '../../design/icons';
+
+/** One tile. */
+export interface TileChoice {
+  /** What it chooses: the value of the hook attribute. */
+  value: string;
+  /** Its name. */
+  name: string;
+  /** What it does, in a line. */
+  what: string;
+  /** Its icon. */
+  icon: IconName;
+}
+
+interface Props {
+  /** The group's heading. */
+  title: string;
+  /** The heading's id, which names the group. */
+  titleId: string;
+  /** The tiles, in order. */
+  choices: TileChoice[];
+  /** The data attribute each tile carries its value in (data-editor-add, data-editor-turn-to). */
+  hook: `data-${string}`;
+  /** The start of each tile's line's id (the line is `<prefix><value>`, which describes the tile). */
+  whatPrefix: string;
+  /** Hidden until a script shows it. */
+  hidden?: boolean;
+  /** Data attributes pass through to the group. */
+  [data: `data-${string}`]: string | undefined;
+}
+
+const { title, titleId, choices, hook, whatPrefix, hidden = false, ...rest } = Astro.props;
+---
+
+<section class="choice-tiles" aria-labelledby={titleId} hidden={hidden} {...rest}>
+  <Heading level={3} size="ui" id={titleId}>{title}</Heading>
+  <div class="tiles">
+    {
+      choices.map((c) => (
+        <TileButton {...{ [hook]: c.value }} aria-describedby={`${whatPrefix}${c.value}`}>
+          <Icon name={c.icon} size="lg" />
+          <span class="name">{c.name}</span>
+          <span class="what" id={`${whatPrefix}${c.value}`}>
+            {c.what}
+          </span>
+        </TileButton>
+      ))
+    }
+  </div>
+</section>
+
+<style>
+  .choice-tiles {
+    display: grid;
+    gap: var(--space-3);
+  }
+
+  .choice-tiles[hidden] {
+    display: none;
+  }
+
+  .tiles {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, var(--c-editor-thumb)), 1fr));
+    gap: var(--space-3);
+  }
+
+  .name {
+    font-weight: var(--weight-semibold);
+  }
+
+  .what {
+    color: var(--color-text-muted);
+    font-size: var(--text-sm);
+    line-height: var(--leading-ui);
+  }
+</style>

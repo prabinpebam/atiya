@@ -11,9 +11,15 @@
 import Heading from '../../components/fundamentals/Heading.astro';
 import Text from '../../components/fundamentals/Text.astro';
 import TextField from '../../components/fundamentals/TextField.astro';
+import HiddenField from '../../components/fundamentals/HiddenField.astro';
 import Button from '../../components/fundamentals/Button.astro';
 import IconButton from '../../components/fundamentals/IconButton.astro';
 import Image from '../../components/fundamentals/Image.astro';
+import ActionBar from '../../components/compounds/ActionBar.astro';
+import Panel from '../kit/Panel.astro';
+import PanelGrid from '../kit/PanelGrid.astro';
+import PlainList from '../kit/PlainList.astro';
+import IssueNote from '../kit/IssueNote.astro';
 import type { Person, SiteSettings } from '../../content/schema';
 
 export interface SettingsThumb {
@@ -26,9 +32,11 @@ export interface SettingsThumb {
 interface Props {
   /** The site settings as on disk, and their version. */
   site: SiteSettings;
+  /** The site settings' version, which their save sends back (a conflict if it changed meanwhile). */
   siteVersion: string;
   /** The owner's profile as on disk, and its version. */
   person: Person;
+  /** The profile's version, which its save sends back (a conflict if it changed meanwhile). */
   personVersion: string;
   /** Thumbnails of the pictures the forms show (the social image, the portrait). */
   thumbs: Record<string, SettingsThumb>;
@@ -43,8 +51,8 @@ const pictureOf = (form: string) => pictures.filter((p) => p.form === form);
 const state = JSON.stringify({ site, siteVersion, person, personVersion }).replace(/</g, '\\u003c');
 ---
 
-<div class="settings" data-region="settings" data-editor-settings>
-  <form class="card" data-settings-form="site" novalidate aria-labelledby="settings-site-title">
+<PanelGrid data-region="settings" data-editor-settings="" data-busy-line="">
+  <Panel as="form" gap="lg" data-settings-form="site" labelledby="settings-site-title">
     <div class="head">
       <Heading level={2} size="h4" id="settings-site-title">The site</Heading>
       <Text variant="small" tone="muted">content/site.json</Text>
@@ -63,25 +71,25 @@ const state = JSON.stringify({ site, siteVersion, person, personVersion }).repla
             </div>
             <div class="picture-words">
               <div data-settings-alt><Text variant="small" tone="muted">{p.value ? thumbs[p.value]?.alt || p.value : 'None'}</Text></div>
-              <div class="row">
+              <ActionBar gap="sm">
                 <Button variant="secondary" size="sm" icon="image" data-settings-pick={p.name}>{p.value ? 'Replace' : 'Choose'}</Button>
                 <Button variant="quiet" size="sm" disabled={!p.value} data-settings-clear={p.name}>Remove</Button>
-              </div>
+              </ActionBar>
             </div>
           </div>
           <Text variant="small" tone="muted">{p.hint}</Text>
-          <input type="hidden" name={p.name} value={p.value ?? ''} />
+          <HiddenField name={p.name} value={p.value ?? ''} />
         </div>
       ))
     }
     <Text variant="small" tone="muted">{`The owner is ${person.name} (content/people/${person.id}.json), whose profile is below.`}</Text>
-    <p class="issue" role="alert" data-editor-form-issue hidden />
-    <div class="actions">
+    <IssueNote data-editor-form-issue="" />
+    <ActionBar align="end">
       <Button variant="primary" type="submit">Save the site settings</Button>
-    </div>
-  </form>
+    </ActionBar>
+  </Panel>
 
-  <form class="card" data-settings-form="person" novalidate aria-labelledby="settings-person-title">
+  <Panel as="form" gap="lg" data-settings-form="person" labelledby="settings-person-title">
     <div class="head">
       <Heading level={2} size="h4" id="settings-person-title">Your profile</Heading>
       <Text variant="small" tone="muted">{`content/people/${person.id}.json`}</Text>
@@ -99,20 +107,20 @@ const state = JSON.stringify({ site, siteVersion, person, personVersion }).repla
             </div>
             <div class="picture-words">
               <div data-settings-alt><Text variant="small" tone="muted">{p.value ? thumbs[p.value]?.alt || p.value : 'None'}</Text></div>
-              <div class="row">
+              <ActionBar gap="sm">
                 <Button variant="secondary" size="sm" icon="image" data-settings-pick={p.name}>{p.value ? 'Replace' : 'Choose'}</Button>
                 <Button variant="quiet" size="sm" disabled={!p.value} data-settings-clear={p.name}>Remove</Button>
-              </div>
+              </ActionBar>
             </div>
           </div>
           <Text variant="small" tone="muted">{p.hint}</Text>
-          <input type="hidden" name={p.name} value={p.value ?? ''} />
+          <HiddenField name={p.name} value={p.value ?? ''} />
         </div>
       ))
     }
     <fieldset class="links">
       <legend class="label">Links</legend>
-      <ul class="link-list" data-settings-links>
+      <PlainList gap="md" data-settings-links="">
         {
           (person.links ?? []).map((l) => (
             <li class="link-row" data-settings-link>
@@ -122,7 +130,7 @@ const state = JSON.stringify({ site, siteVersion, person, personVersion }).repla
             </li>
           ))
         }
-      </ul>
+      </PlainList>
       <template data-settings-link-template>
         <li class="link-row" data-settings-link>
           <TextField label="Label" name="link-label" id="settings-new-label" />
@@ -130,35 +138,19 @@ const state = JSON.stringify({ site, siteVersion, person, personVersion }).repla
           <IconButton label="Remove this link" icon="delete" size="sm" data-settings-remove-link="" />
         </li>
       </template>
-      <div class="foot">
+      <ActionBar gap="sm">
         <Button variant="secondary" size="sm" icon="plus" data-settings-add-link="">Add a link</Button>
-      </div>
+      </ActionBar>
     </fieldset>
-    <p class="issue" role="alert" data-editor-form-issue hidden />
-    <div class="actions">
+    <IssueNote data-editor-form-issue="" />
+    <ActionBar align="end">
       <Button variant="primary" type="submit">Save your profile</Button>
-    </div>
-  </form>
+    </ActionBar>
+  </Panel>
   <script is:inline type="application/json" data-settings-state set:html={state} />
-</div>
+</PanelGrid>
 
 <style>
-  .settings {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(min(100%, var(--size-measure-narrow)), 1fr));
-    gap: var(--space-8);
-    align-items: start;
-  }
-
-  .card {
-    display: grid;
-    gap: var(--space-5);
-    padding: var(--space-6);
-    border: var(--border-hairline) solid var(--color-rule);
-    border-radius: var(--radius-lg);
-    background: var(--color-bg-raised);
-  }
-
   .head {
     display: grid;
     gap: var(--space-1);
@@ -194,12 +186,6 @@ const state = JSON.stringify({ site, siteVersion, person, personVersion }).repla
     gap: var(--space-2);
   }
 
-  .row,
-  .foot {
-    display: flex;
-    flex-wrap: wrap;
-    gap: var(--space-2);
-  }
 
   .links {
     display: grid;
@@ -214,13 +200,6 @@ const state = JSON.stringify({ site, siteVersion, person, personVersion }).repla
     margin-block-end: var(--space-3);
   }
 
-  .link-list {
-    display: grid;
-    gap: var(--space-3);
-    margin: 0;
-    padding: 0;
-    list-style: none;
-  }
 
   .link-row {
     display: grid;
@@ -229,55 +208,9 @@ const state = JSON.stringify({ site, siteVersion, person, personVersion }).repla
     gap: var(--space-2);
   }
 
-  .actions {
-    display: flex;
-    justify-content: end;
-  }
-
-  .issue {
-    margin: 0;
-    color: var(--color-negative);
-    font-size: var(--text-sm);
-    font-weight: var(--weight-medium);
-  }
-
   @media (max-width: 40rem) {
     .link-row {
       grid-template-columns: minmax(0, 1fr) auto;
-    }
-  }
-  /* drawn again from the server (editor spec §2.2): what it shows stays while it updates, with a line
-     along its top past the delay */
-  .settings[data-busy='on'] {
-    position: relative;
-  }
-
-  .settings[data-busy='on']::before {
-    content: '';
-    position: absolute;
-    inset-inline: 0;
-    inset-block-start: 0;
-    z-index: var(--layer-raised);
-    block-size: var(--border-strong);
-    background: linear-gradient(90deg, transparent, var(--color-accent), transparent) no-repeat;
-    background-size: 40% 100%;
-    animation: region-busy var(--duration-slower) var(--ease-standard) infinite alternate;
-    pointer-events: none;
-  }
-
-  @keyframes region-busy {
-    from {
-      background-position: 0 0;
-    }
-    to {
-      background-position: 100% 0;
-    }
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    .settings[data-busy='on']::before {
-      animation: none;
-      background: var(--color-accent);
     }
   }
 </style>

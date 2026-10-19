@@ -1,0 +1,45 @@
+---
+/**
+ * A list beside the details of what's chosen in it: the list in a column of its own (the list slot) and the
+ * details taking the rest of the width (the default slot), both from the top. Under 56 rem the list sits
+ * above the details. The list and the details are the caller's own elements (a navigation, a section), so
+ * their landmarks, names and behaviour stay theirs: it only lays them out.
+ * @tier compound
+ * @a11y A layout only: it adds no role or name. The list comes first in the source, as it does on screen, so the reading order and the visual order agree; make it a navigation landmark when its links show the details.
+ */
+interface Props {
+  /** The list's column: narrow (18 rem) for a name and a short line, wide (22 rem) for a name and two lines under it. */
+  list?: 'narrow' | 'wide';
+  /** Data attributes pass through to the layout. */
+  [data: `data-${string}`]: string | undefined;
+}
+
+const { list = 'narrow', ...rest } = Astro.props;
+---
+
+<div class="split-view" data-list={list} {...rest}>
+  <slot name="list" />
+  <slot />
+</div>
+
+<style>
+  .split-view {
+    display: grid;
+    grid-template-columns: var(--c-split-view-list) minmax(0, 1fr);
+    gap: var(--space-8);
+    align-items: start;
+  }
+
+  .split-view[data-list='wide'] {
+    grid-template-columns: var(--c-split-view-list-wide) minmax(0, 1fr);
+  }
+
+  /* one column: the list above the details */
+  @media (max-width: 56rem) {
+    .split-view,
+    .split-view[data-list='wide'] {
+      grid-template-columns: minmax(0, 1fr);
+      gap: var(--space-6);
+    }
+  }
+</style>

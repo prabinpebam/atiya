@@ -1,0 +1,43 @@
+/* The planet’s region: the root the game mounts into (game-mount.tsx) and the focusable region over the canvas (GameApp.tsx).
+ * Its owners import it (GameApp.tsx, game-mount.tsx); tokens only (tests/unit/designSystem.test.ts). */
+@layer tokens, base, primitives, components, cursors;
+
+@layer components {
+  .game-root {
+    position: absolute;
+    inset: 0;
+  }
+
+  .game-region {
+    position: absolute;
+    inset: 0;
+    touch-action: none;
+  }
+
+  .game-region:focus {
+    outline: none;
+  }
+
+  .game-region:focus-visible {
+    outline: var(--border-focus-lg) solid var(--color-focus);
+    outline-offset: calc(-1 * var(--border-focus-inset));
+  }
+
+  .game-region.dragging {
+    cursor: grabbing;
+  }
+
+  /* touch (touch.md §5.5): no long-press callout, text selection or tap flash on the planet and the HUD's controls */
+  .game-region {
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  @media (forced-colors: active) {
+    .game-region:focus-visible {
+      outline-color: Highlight;
+    }
+  }
+}

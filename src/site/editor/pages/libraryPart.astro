@@ -1,0 +1,35 @@
+---
+/**
+ * A part's or a kit piece's page in edit mode's parts library (documentation/editor/spec.md §10): its stories
+ * (src/site/editor/stories/<Name>.stories.astro, each <Example> with its code), its props and its accessibility
+ * notes, as the design library's component pages show the website's. Dev only: injected by
+ * integrations/editor.mjs (on a source checkout), so its stories never reach a build.
+ */
+import EditorLayout from '../EditorLayout.astro';
+import PartDoc from '../components/PartDoc.astro';
+import PropsTable from '../../library/PropsTable.astro';
+import { examplesOf } from '../../library/registry';
+import { findPart } from '../server/library';
+import { withBase } from '../../design/meta';
+
+export const prerender = false;
+
+const stories = import.meta.glob<{ default: (props: Record<string, unknown>) => unknown }>('../stories/*.stories.astro', { eager: true });
+const entry = findPart(Astro.params.slug ?? '');
+if (!entry) return new Response('No such part', { status: 404 });
+const Story = stories[`../stories/${entry.name}.stories.astro`]?.default;
+Astro.locals.storyCode = entry.story ? examplesOf(entry.story) : {};
+---
+
+<EditorLayout title={`${entry.name} · Parts library`} screen="library" heading={entry.name} intro={entry.summary}>
+  <PartDoc name={entry.name} tier={entry.tier} source={`https://github.com/prabinpebam/atiya/blob/main/${entry.file}`} index={withBase('/_edit/library/')} a11y={entry.a11y} keys={entry.keys}>
+    {Story && <Story />}
+    {
+      entry.props.length > 0 && (
+        <Fragment slot="props">
+          <PropsTable props={entry.props} caption={`${entry.name} props`} />
+        </Fragment>
+      )
+    }
+  </PartDoc>
+</EditorLayout>

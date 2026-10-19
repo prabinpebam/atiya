@@ -1,0 +1,18 @@
+---
+import Example from '../../library/Example.astro';
+import ChoiceTiles from '../kit/ChoiceTiles.astro';
+
+const KINDS = [
+  { value: 'text', name: 'Paragraph', what: 'Words, with bold, italic, code and links', icon: 'paragraph' as const },
+  { value: 'heading', name: 'Heading', what: 'A section title; the minimap lists it', icon: 'heading' as const },
+  { value: 'figure', name: 'Picture', what: 'One picture with its caption', icon: 'image' as const },
+];
+---
+
+<Example title="A group of tiles" description="Each tile carries its choice in the attribute the group names (here data-editor-add): the screen's script does the rest." layout="block">
+  <ChoiceTiles title="Text" titleId="story-tiles-text" choices={KINDS} hook="data-editor-add" whatPrefix="story-tiles-" />
+</Example>
+
+<Example title="Hidden until it applies" description="Turn into hides the groups that don't fit the selection: hidden, it takes no room." layout="block">
+  <ChoiceTiles title="One block from several" titleId="story-tiles-hidden" choices={KINDS.slice(0, 1)} hook="data-story-turn" whatPrefix="story-tiles-hidden-" hidden />
+</Example>

@@ -33,13 +33,13 @@ const pad = (n: number) => String(n).padStart(2, '0');
 <ol class="contents" aria-label={label}>
   {
     entries.map((e, i) => (
-      <li class="entry">
+      <li class="entry" data-card>
         <span class="numeral" aria-hidden="true">
           {pad(i + 1)}
         </span>
         <div class="words">
           <Heading level={headingLevel} size="h2">
-            <a class="title" href={e.href}>
+            <a class="title" href={e.href} data-card-link>
               {e.title}
             </a>
           </Heading>
@@ -59,7 +59,6 @@ const pad = (n: number) => String(n).padStart(2, '0');
   }
 
   .entry {
-    position: relative;
     display: grid;
     grid-template-columns: minmax(var(--c-contents-number-min), var(--c-contents-number-max)) minmax(0, 1fr);
     gap: var(--space-6);
@@ -91,26 +90,7 @@ const pad = (n: number) => String(n).padStart(2, '0');
     max-width: var(--size-measure);
   }
 
-  .title {
-    color: var(--color-text);
-    text-decoration: none;
-  }
-
-  .title::after {
-    content: '';
-    position: absolute;
-    inset: 0;
-  }
-
-  @media (hover: hover) {
-    .entry:hover .title {
-      text-decoration: underline;
-      text-decoration-thickness: var(--underline-thickness-strong);
-      text-decoration-color: var(--color-highlight);
-      text-underline-offset: var(--underline-offset);
-    }
-  }
-
+  /* each entry is one link on its name (base.css: data-card, data-card-link) */
   @media (hover: hover) {
     .entry:hover .numeral {
       color: var(--color-accent);
@@ -126,12 +106,7 @@ const pad = (n: number) => String(n).padStart(2, '0');
     transition: color var(--duration-base) var(--ease-standard);
   }
 
-  .title:focus-visible {
-    outline: none;
-  }
-
   .title:focus-visible::after {
-    outline: var(--border-focus) solid var(--color-focus);
     outline-offset: calc(var(--border-focus-offset) * -1);
     border-radius: var(--radius-lg);
   }

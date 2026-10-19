@@ -1,0 +1,16 @@
+---
+import Example from '../../library/Example.astro';
+import AccessManager from '../components/AccessManager.astro';
+import Heading from '../../components/fundamentals/Heading.astro';
+import Text from '../../components/fundamentals/Text.astro';
+import { GRANTS } from './samples';
+---
+
+<Example title="Codes and links by state" description="Ends soon, Active, Expired, Withdrawn: what needs you first, beside the chosen one's details (the detail slot, here a stand-in)." layout="block" bleed>
+  <AccessManager grants={GRANTS} selected="g-grace">
+    <Fragment slot="detail">
+      <Heading level={2} size="h3" id="access-detail-title">Grace Hopper</Heading>
+      <Text variant="ui" tone="muted">The chosen one's details: GrantDetails, in the Access screen.</Text>
+    </Fragment>
+  </AccessManager>
+</Example>

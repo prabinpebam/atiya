@@ -9,6 +9,7 @@ import sealer from './integrations/seal.mjs';
 import siteOnly from './integrations/site-only.mjs';
 import perf from './integrations/perf.mjs';
 import services from './integrations/services.mjs';
+import gameGallery from './integrations/game-gallery.mjs';
 
 // GitHub Pages serves this repository as a project site, https://<user>.github.io/<repo>/, so the
 // deploy workflow (.github/workflows/deploy.yml) builds with SITE_URL and BASE_PATH set. Locally, in
@@ -44,8 +45,9 @@ export default defineConfig({
   // devIsolation: a running dev server's caches are its own, never rewritten by a build or a check (app-separation.md §1)
   // services: the contact endpoint and the telemetry key, from content/site.json (documentation/desktop/spec.md §6.3)
   // perf: dev only, where each dev request's time goes (documentation/engineering/performance.md §3)
+  // gameGallery: the game UI's gallery at /play/gallery/, in dev and test builds only (documentation/game-ui/design-system.md §9.1)
   // the sealer runs last: it seals what the others have written (documentation/access/spec.md §6.2)
-  integrations: [devIsolation(), perf(), services(), react(), docsSite(), contentFiles(), editor(), siteOnly(), sealer()],
+  integrations: [devIsolation(), perf(), services(), react(), docsSite(), contentFiles(), editor(), gameGallery(), siteOnly(), sealer()],
   devToolbar: { enabled: false },
   vite: {
     plugins: [stripShaderComments()],

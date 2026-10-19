@@ -9,6 +9,8 @@ import { ICONS } from '../inventory/iconManifest';
 import { Icon } from './Icon';
 import { Button } from './primitives';
 import { withBase } from '../platform/base';
+import './styles/slot.css';
+import './styles/hotbar.css';
 
 /** Minecraft-style hotbar and inventory / chest screens (docs: collection-inventory.md §4). */
 
@@ -17,11 +19,13 @@ const iconUrl = (id: ItemId) => {
   return url ? withBase(url) : undefined;
 };
 
+/** An item's generated icon (decorative: the slot carries its name), or an empty placeholder if it has none. */
 export function ItemIcon({ id }: { id: ItemId }) {
   const url = iconUrl(id);
   return url ? <img className="item-icon" src={url} alt="" width={40} height={40} draggable={false} decoding="async" /> : <span className="item-icon" />;
 }
 
+/** What a slot shows: its stack's icon and, for more than one, the count. Nothing for an empty slot. */
 export function SlotFace({ stack }: { stack: Slot }) {
   if (!stack) return null;
   return (

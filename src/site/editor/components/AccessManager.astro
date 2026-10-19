@@ -18,6 +18,10 @@ import Icon from '../../components/fundamentals/Icon.astro';
 import Select from '../../components/fundamentals/Select.astro';
 import Text from '../../components/fundamentals/Text.astro';
 import TextField from '../../components/fundamentals/TextField.astro';
+import SplitView from '../../components/compounds/SplitView.astro';
+import ListPane from '../kit/ListPane.astro';
+import ListLink from '../kit/ListLink.astro';
+import PlainList from '../kit/PlainList.astro';
 import { KIND_LABEL, dateLine, findText, grantGroups, type ListedGrant } from '../model/access';
 
 interface Props {
@@ -46,8 +50,9 @@ const count = (n: number) => `${n} ${n === 1 ? 'code or link' : 'codes and links
 ---
 
 <div class="access" data-access-manager>
-  <div class="split">
-    <nav class="list" aria-label="Access codes and magic links" data-access-list>
+  <SplitView list="wide">
+    <Fragment slot="list">
+    <ListPane label="Access codes and magic links" scroll="last" data-access-list="">
       <div class="list-head">
         <Button variant="primary" icon="plus" href="?grant=new" block data-access-go="new" data-chosen={selected === 'new' ? '' : undefined}>Share with someone</Button>
         <TextField label="Find someone" type="search" icon="search" hint="By name, organisation, why, notes or what it opens." data-access-find="" />
@@ -59,7 +64,7 @@ const count = (n: number) => `${n} ${n === 1 ? 'code or link' : 'codes and links
           <Text as="span" variant="small" tone="muted">{count(grants.length)}</Text>
         </p>
       </div>
-      <div class="groups" data-scrollbar data-region="access-list">
+      <div class="groups" data-scrollbar data-region="access-list" data-busy-line>
         {
           groups.map((g) => (
             <section class="group" aria-labelledby={`access-group-${g.state}`} data-access-group={g.state}>
@@ -67,22 +72,17 @@ const count = (n: number) => `${n} ${n === 1 ? 'code or link' : 'codes and links
                 {g.label}
                 <span class="group-count" data-access-group-count>{` (${g.grants.length})`}</span>
               </Heading>
-              <ul class="items">
+              <PlainList gap="xs">
                 {g.grants.map((x) => (
                   <li data-access-item={x.id} data-state={x.state} data-kind={x.kind} data-find={findText(x)}>
-                    <a class="item" href={`?grant=${x.id}`} aria-current={x.id === selected ? 'true' : undefined} data-access-go={x.id}>
-                      <span class="mark">
+                    <ListLink href={`?grant=${x.id}`} current={x.id === selected} name={x.recipient.name} meta={[[KIND_LABEL[x.kind], x.recipient.organisation].filter(Boolean).join(' · '), dateLine(x)]} align="start" data-access-go={x.id}>
+                      <Fragment slot="mark">
                         <Icon name={x.kind === 'code' ? 'key' : 'link'} />
-                      </span>
-                      <span class="words">
-                        <span class="name">{x.recipient.name}</span>
-                        <span class="meta">{[KIND_LABEL[x.kind], x.recipient.organisation].filter(Boolean).join(' · ')}</span>
-                        <span class="meta">{dateLine(x)}</span>
-                      </span>
-                    </a>
+                      </Fragment>
+                    </ListLink>
                   </li>
                 ))}
-              </ul>
+              </PlainList>
             </section>
           ))
         }
@@ -101,12 +101,13 @@ const count = (n: number) => `${n} ${n === 1 ? 'code or link' : 'codes and links
           </Text>
         </p>
       </div>
-    </nav>
+    </ListPane>
+    </Fragment>
 
-    <section class="detail" aria-labelledby="access-detail-title" data-region="access-detail" data-access-detail>
+    <section class="detail" aria-labelledby="access-detail-title" data-region="access-detail" data-access-detail data-busy-line>
       <slot name="detail" />
     </section>
-  </div>
+  </SplitView>
 </div>
 
 <style>
@@ -114,25 +115,7 @@ const count = (n: number) => `${n} ${n === 1 ? 'code or link' : 'codes and links
     min-inline-size: 0;
   }
 
-  .split {
-    display: grid;
-    grid-template-columns: var(--c-editor-access-list) minmax(0, 1fr);
-    gap: var(--space-8);
-    align-items: start;
-  }
-
   /* the list stays in view, its tools on top and its codes and links scrolling under them, beside a long form */
-  .list {
-    position: sticky;
-    inset-block-start: var(--space-4);
-    display: grid;
-    grid-template-rows: auto minmax(0, 1fr);
-    max-block-size: calc(100dvh - var(--c-editor-topbar) - var(--space-8));
-    border: var(--border-hairline) solid var(--color-rule);
-    border-radius: var(--radius-lg);
-    background: var(--color-bg-raised);
-  }
-
   .list-head {
     display: grid;
     gap: var(--space-3);
@@ -175,75 +158,6 @@ const count = (n: number) => `${n} ${n === 1 ? 'code or link' : 'codes and links
     font-weight: var(--weight-regular);
   }
 
-  .items {
-    display: grid;
-    gap: var(--space-0-5);
-    margin: 0;
-    padding: 0;
-    list-style: none;
-  }
-
-  .item {
-    display: grid;
-    grid-template-columns: auto minmax(0, 1fr);
-    align-items: start;
-    gap: var(--space-2);
-    min-block-size: var(--size-touch);
-    padding: var(--space-2);
-    border-radius: var(--radius-md);
-    color: var(--color-text);
-    text-decoration: none;
-  }
-
-  @media (hover: hover) {
-    .item:hover {
-      background: var(--color-bg-hover);
-    }
-  }
-
-  .item:active {
-    background: var(--color-bg-hover);
-  }
-
-  .item[aria-current='true'] {
-    background: var(--color-accent-soft);
-    color: var(--color-on-accent-soft);
-  }
-
-  .item:focus-visible {
-    outline: var(--border-focus) solid var(--color-focus);
-    outline-offset: calc(var(--border-focus) * -1);
-  }
-
-  .mark {
-    display: grid;
-    padding-block-start: var(--space-0-5);
-  }
-
-  .words {
-    display: grid;
-    min-inline-size: 0;
-  }
-
-  .name {
-    overflow: hidden;
-    font-weight: var(--weight-semibold);
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  .meta {
-    overflow: hidden;
-    color: var(--color-text-muted);
-    font-size: var(--text-sm);
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  .item[aria-current='true'] .meta {
-    color: inherit;
-  }
-
   .empty {
     margin: 0;
   }
@@ -259,55 +173,8 @@ const count = (n: number) => `${n} ${n === 1 ? 'code or link' : 'codes and links
 
   /* one column: the list above the details, short enough that the details are close */
   @media (max-width: 56rem) {
-    .split {
-      grid-template-columns: minmax(0, 1fr);
-      gap: var(--space-6);
-    }
-
-    .list {
-      position: static;
-      max-block-size: none;
-    }
-
     .groups {
       max-block-size: var(--c-editor-scope-list);
-    }
-  }
-  /* drawn again from the server (editor spec §2.2): what it shows stays while it updates, with a line
-     along its top past the delay */
-  .groups[data-busy='on'],
-  .detail[data-busy='on'] {
-    position: relative;
-  }
-
-  .groups[data-busy='on']::before,
-  .detail[data-busy='on']::before {
-    content: '';
-    position: absolute;
-    inset-inline: 0;
-    inset-block-start: 0;
-    z-index: var(--layer-raised);
-    block-size: var(--border-strong);
-    background: linear-gradient(90deg, transparent, var(--color-accent), transparent) no-repeat;
-    background-size: 40% 100%;
-    animation: region-busy var(--duration-slower) var(--ease-standard) infinite alternate;
-    pointer-events: none;
-  }
-
-  @keyframes region-busy {
-    from {
-      background-position: 0 0;
-    }
-    to {
-      background-position: 100% 0;
-    }
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    .groups[data-busy='on']::before,
-  .detail[data-busy='on']::before {
-      animation: none;
-      background: var(--color-accent);
     }
   }
 </style>

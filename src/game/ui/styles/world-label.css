@@ -1,0 +1,21 @@
+/* A landmark’s name in the world (world/Landmark.tsx): a chip over the building.
+ * Its owner imports it (world/Landmark.tsx); tokens only (tests/unit/designSystem.test.ts). */
+@layer tokens, base, primitives, components, cursors;
+
+@layer components {
+  /* Chip: a landmark's name in the world (spatial UI) */
+  .world-label {
+    padding: var(--space-1) var(--space-3);
+    border: var(--border-base) solid var(--surface-border);
+    border-radius: var(--radius-pill);
+    background: var(--surface-bg);
+    color: var(--surface-text);
+    font-family: var(--font-text);
+    font-size: var(--text-md);
+    font-weight: var(--weight-bold);
+    line-height: var(--leading-snug);
+    white-space: nowrap;
+    box-shadow: 0 var(--shift-lg) 0 var(--accent, var(--surface-accent));
+    pointer-events: none;
+  }
+}

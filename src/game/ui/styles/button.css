@@ -1,0 +1,93 @@
+/* Button and IconButton (ui/primitives.tsx; §4.1): a pill, .primary (the one main action), .icon-btn (an icon only, named by aria-label); a link styled as one is a.btn.
+ * Its owners import it (ui/primitives.tsx, src/pages/play.astro); tokens only (tests/unit/designSystem.test.ts). */
+@layer tokens, base, primitives, components, cursors;
+
+@layer primitives {
+  /* Button: a pill. Variants: .primary (the one main action), .big (a page's call to action),
+   * .sm (secondary controls inside panels), .icon-btn (an icon only: needs an aria-label). */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--c-btn-gap);
+    min-height: var(--c-btn-h);
+    padding: 0 var(--c-btn-pad-x);
+    border: var(--border-base) solid var(--surface-border);
+    border-radius: var(--radius-pill);
+    background: var(--surface-bg);
+    color: var(--surface-text);
+    font-family: var(--font-text);
+    font-size: var(--text-md);
+    font-weight: var(--weight-semibold);
+    line-height: var(--leading-none);
+    white-space: nowrap;
+    text-decoration: none;
+    cursor: pointer;
+    transition:
+      transform var(--dur-fast) var(--ease-standard),
+      background-color var(--dur-fast) var(--ease-standard);
+  }
+
+  /* hover only where a pointer can hover (a tap would leave it stuck on a touch screen); :active is its twin for touch */
+  @media (hover: hover) {
+    .btn:hover {
+      background: var(--surface-bg-warm);
+    }
+  }
+
+  .btn:active {
+    background: var(--surface-bg-warm);
+    transform: translateY(var(--shift-sm));
+  }
+
+  .btn.primary {
+    background: var(--surface-accent);
+    border-color: var(--surface-accent);
+    color: var(--surface-on-accent);
+  }
+
+  @media (hover: hover) {
+    .btn.primary:hover {
+      background: var(--surface-accent-hover);
+      border-color: var(--surface-accent-hover);
+    }
+  }
+
+  .btn.primary:active {
+    background: var(--surface-accent-hover);
+    border-color: var(--surface-accent-hover);
+  }
+
+  .btn.icon-btn {
+    width: var(--c-btn-h);
+    padding: 0;
+  }
+
+  .btn[aria-disabled='true'] {
+    opacity: 0.55;
+  }
+
+  /* Forced colours (design-system.md §8): the buttons, tiles, list rows and the clock keep their boundary and a
+   * Highlight focus ring; a state shown by a fill alone (the place you're at, a busy button) gets a border too */
+  @media (forced-colors: active) {
+    .btn,
+    .icon-btn {
+      border-color: ButtonText;
+    }
+
+    .btn:focus-visible {
+      outline-color: Highlight;
+    }
+
+    .btn[aria-disabled='true'] {
+      border-color: GrayText;
+      color: GrayText;
+    }
+  }
+
+  /* Touch (touch.md §5.3–5.4): the HUD follows the last input. Keycaps and slot numbers are for keys,
+   * and Reset grows to the 44 px target. */
+  [data-input='touch'] .btn kbd {
+    display: none;
+  }
+}

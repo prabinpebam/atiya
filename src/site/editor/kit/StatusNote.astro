@@ -1,0 +1,35 @@
+---
+/**
+ * A short line of muted words a screen's script keeps up to date: how many show, what's being checked, why a
+ * choice isn't offered, what a picture about to be uploaded is. Empty, it takes no room. Its words can be read out
+ * as they change (live), politely or as a status.
+ * @tier kit
+ * @a11y live="polite" (aria-live) or live="status" (role="status") reads new words out without moving the focus; "off" says nothing until it's reached.
+ */
+
+interface Props {
+  /** How new words are read out: politely (aria-live), as a status (role="status"), or not until it's reached. */
+  live?: 'polite' | 'status' | 'off';
+  /** Hidden until a script shows it. */
+  hidden?: boolean;
+  /** Data attributes pass through to the line: the hook its script finds it by. */
+  [data: `data-${string}`]: string | undefined;
+}
+
+const { live = 'polite', hidden = false, ...rest } = Astro.props;
+---
+
+<p class="status-note" role={live === 'status' ? 'status' : undefined} aria-live={live === 'polite' ? 'polite' : undefined} hidden={hidden} {...rest}><slot /></p>
+
+<style>
+  .status-note {
+    margin: 0;
+    color: var(--color-text-muted);
+    font: var(--type-hint);
+  }
+
+  .status-note:empty,
+  .status-note[hidden] {
+    display: none;
+  }
+</style>

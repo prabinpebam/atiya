@@ -14,6 +14,7 @@ import Image from '../fundamentals/Image.astro';
 import Caption from '../fundamentals/Caption.astro';
 import { svgOf } from '../../design/icons';
 import { linkAttrs } from '../../design/links';
+import type { PictureSource } from '../../design/pictures';
 
 interface Props {
   /** file: local media; youtube or vimeo: a facade that swaps to an iframe. */
@@ -31,7 +32,7 @@ interface Props {
   /** Responsive sources for the poster. */
   posterSrcset?: string;
   /** The poster's dark mode version, shown on an embed's poster when the page is dark. */
-  posterDark?: { src: string; srcset?: string; width: number; height: number };
+  posterDark?: PictureSource;
   /** What the poster shows when it is not inside the labelled play link. */
   posterAlt?: string;
   /** The media’s own width. */
@@ -135,7 +136,6 @@ const embedSrc =
   .video-embed {
     display: grid;
     gap: var(--space-3);
-    margin: 0;
   }
 
   /* rounded like the poster, so the placeholder never shows at its corners; exactly the video's shape, as

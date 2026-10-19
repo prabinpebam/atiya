@@ -21,6 +21,7 @@ import Text from '../components/fundamentals/Text.astro';
 import Heading from '../components/fundamentals/Heading.astro';
 import Select from '../components/fundamentals/Select.astro';
 import '../styles/editor-tokens.css';
+import '../styles/editor-recipes.css';
 import { SITE_FEATURES, withBase } from '../design/meta';
 import { THEME_OPTIONS } from '../scripts/theme';
 import { changes, peekChanges, pendingCount } from './server/git';
@@ -40,7 +41,7 @@ interface Props {
   /** The document title: the screen's name. */
   title: string;
   /** Which screen, for the navigation's current item. */
-  screen: 'dashboard' | 'articles' | 'article' | 'sections' | 'navigation' | 'planet' | 'ways' | 'media' | 'settings' | 'access' | 'publish' | 'tests' | 'theme' | 'recommendations';
+  screen: 'dashboard' | 'articles' | 'article' | 'sections' | 'navigation' | 'planet' | 'ways' | 'media' | 'settings' | 'access' | 'publish' | 'tests' | 'theme' | 'recommendations' | 'library';
   /** Show the side navigation (the article editor hides it for its studio). */
   nav?: boolean;
   /** Docked beside the site in Atiya Studio (the themes panel): no top bar of its own, the screen fills the view. */
@@ -186,7 +187,7 @@ const groups = (['Content', 'Site', 'Checks'] as const)
 <style>
   .editor {
     display: grid;
-    grid-template-columns: var(--c-editor-nav) minmax(0, 1fr);
+    grid-template-columns: var(--c-editor-layout-nav) minmax(0, 1fr);
     grid-template-rows: var(--c-editor-topbar) minmax(0, 1fr);
     block-size: 100dvh;
     background: var(--color-bg);

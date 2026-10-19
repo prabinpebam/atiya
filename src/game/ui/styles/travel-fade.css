@@ -1,0 +1,15 @@
+/* The travel fade (Hud.tsx): the screen dims while fast travel lands.
+ * Its owner imports it (ui/Hud.tsx); tokens only (tests/unit/designSystem.test.ts). */
+@layer tokens, base, primitives, components, cursors;
+
+@layer components {
+  /* the travel fade */
+  .fade-overlay {
+    position: absolute;
+    inset: 0;
+    z-index: var(--layer-fade);
+    background: var(--color-fade);
+    opacity: 0;
+    pointer-events: none;
+  }
+}

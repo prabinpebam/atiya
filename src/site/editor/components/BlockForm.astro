@@ -1,0 +1,268 @@
+---
+/**
+ * One block's settings in the inspector (documentation/editor/spec.md §3.5): a form named by the block's kind and
+ * place, hidden until its block is selected, with Duplicate and Delete in a footer kept in view at the inspector's
+ * bottom. Every field is named by its path in the article (`body.3.caption`), so the editor maps a change straight
+ * into the document; a value the contract refuses is marked on its field with the reason. Text kinds say where
+ * their words are edited; a picture, a video and a table group their settings in sections (kit/Sections). A
+ * set's and a collection's fields are their own parts, which the page puts in the default slot.
+ * @tier editor
+ * @a11y A form named by the block's kind; every field labelled, hints tied to their fields; the list of sections is a named navigation of buttons, the one shown marked aria-current.
+ * @a11y A refused value is announced beside the actions (role="alert").
+ * @key Up / Down: in the list of sections, the previous / next one
+ */
+import Button from '../../components/fundamentals/Button.astro';
+import Heading from '../../components/fundamentals/Heading.astro';
+import Select from '../../components/fundamentals/Select.astro';
+import Switch from '../../components/fundamentals/Switch.astro';
+import Text from '../../components/fundamentals/Text.astro';
+import TextField from '../../components/fundamentals/TextField.astro';
+import Sections from '../kit/Sections.astro';
+import NavGroup from '../kit/NavGroup.astro';
+import NavRow from '../kit/NavRow.astro';
+import Pane from '../kit/Pane.astro';
+import PictureField from '../kit/PictureField.astro';
+import ActionBar from '../../components/compounds/ActionBar.astro';
+import Form from '../kit/Form.astro';
+import FormFoot from '../kit/FormFoot.astro';
+import IssueNote from '../kit/IssueNote.astro';
+import { TABLE_MAX_COLUMNS, TABLE_MAX_ROWS, type Block } from '../../content/schema';
+import { kindOf } from '../model/ops';
+import { tableToText } from '../model/table';
+import { shapeLabel } from '../model/videoShape';
+import { DISPLAYS, QUOTE_STYLES, SHAPES, WIDTHS, duration, fieldId as id, videoUrl, type Thumb } from '../model/inspectorFields';
+
+interface Props {
+  /** The block. */
+  block: Block;
+  /** Its place in the article (0 is the first). */
+  index: number;
+  /** How many blocks the article has. */
+  count: number;
+  /** The kind of the block before it, if any (a subheading belongs under a heading). */
+  prev?: Block['type'];
+  /** The kind of the block after it, if any (a heading offers a subheading when none follows). */
+  next?: Block['type'];
+  /** The pictures it can show, by media ID. */
+  media: Record<string, Thumb>;
+  /** Shown from the start (a story's); else hidden until the inspector shows the selected block's. */
+  shown?: boolean;
+}
+
+const { block: b, index: i, count, prev, next, media, shown = false } = Astro.props;
+const thumbOf = (m?: string) => (m ? media[m] : undefined);
+const TEXT = new Set(['text', 'heading', 'marker', 'subheading', 'quote']);
+---
+
+<Form fill hidden={!shown} data-block-form={String(i)} label={`${kindOf(b)} settings`}>
+  <div class="form-head">
+    <Heading level={3} size="ui">{kindOf(b)}</Heading>
+    <Text as="span" variant="small" tone="muted" data-editor-block-of="">{`Block ${i + 1} of ${count}`}</Text>
+  </div>
+
+  {b.type === 'text' && <Text variant="ui" tone="muted">Its words are edited on the page: click them and type. The bar that shows over a selection has bold, italic, strikethrough, code, links and lists (and, in a list, its indents).</Text>}
+  {b.type === 'text' && !/^\s*([-*]|\d+\.) /.test(b.markdown) && <Switch label="Drop cap" name={`body.${i}.dropcap`} id={id(i, 'dropcap')} checked={!!b.dropcap} data-type="bool" />}
+
+  {
+    b.type === 'heading' && (
+      <>
+        <Select label="Level" name={`body.${i}.level`} id={id(i, 'level')} value={String(b.level)} data-type="number" options={[{ value: '2', label: 'Heading 2', description: 'A section' }, { value: '3', label: 'Heading 3', description: 'Within a section' }, { value: '4', label: 'Heading 4', description: 'A small heading' }]} />
+        <TextField label="Anchor" name={`body.${i}.id`} id={id(i, 'anchor')} value={b.id ?? ''} optional hint="The address of this heading on the page (#…). Left empty, it's made from its words, with -2, -3 if another heading has the same." />
+        {b.level === 2 && <TextField label="Margin mark" name={`body.${i}.marker`} id={id(i, 'marker')} value={b.marker ?? ''} optional maxlength={40} hint="Set large in the margin beside it, like 1 or 2 for a chapter (over it, on a narrow screen)." />}
+        {b.level === 2 && <Switch label="Show margin mark" name={`body.${i}.showMarker`} id={id(i, 'show-marker')} checked={b.showMarker !== false} data-type="bool-default-true" />}
+      </>
+    )
+  }
+
+  {b.type === 'marker' && <Text variant="ui" tone="muted">Its words are edited on the page: a number or a word or two, like 1 or Chapter 1, in big marigold type.</Text>}
+
+  {b.type === 'subheading' && <Text variant="ui" tone="muted">Its words are edited on the page. It reads as part of the heading just above it, in a quieter voice.</Text>}
+  {b.type === 'subheading' && prev !== 'heading' && <Text variant="ui" tone="muted">It isn't under a heading: move it to just after one, or turn it into a paragraph.</Text>}
+
+  {
+    b.type === 'quote' && (
+      <>
+        <Text variant="ui" tone="muted">Its words are edited on the page.</Text>
+        <Select label="Style" name={`body.${i}.variant`} id={id(i, 'variant')} value={b.variant} options={QUOTE_STYLES} />
+        <TextField label="Who said it" name={`body.${i}.cite`} id={id(i, 'cite')} value={b.cite ?? ''} optional />
+      </>
+    )
+  }
+
+  {
+    TEXT.has(b.type) && (
+      <ActionBar gap="sm">
+        <Button variant="secondary" size="sm" icon="convert" data-editor-turn-open={String(i)}>Turn into…</Button>
+        {b.type === 'heading' && next !== 'subheading' && <Button variant="secondary" size="sm" icon="subheading" data-editor-subheading={String(i)}>Add subheading</Button>}
+      </ActionBar>
+    )
+  }
+
+  {
+    b.type === 'figure' && (
+      <Sections name="figure" label="Picture settings">
+        <Fragment slot="nav">
+          <NavGroup>
+            <NavRow pick="picture">Picture</NavRow>
+            <NavRow pick="frame">Frame</NavRow>
+            <NavRow pick="caption">Caption and credit</NavRow>
+          </NavGroup>
+        </Fragment>
+        <Pane name="picture" title="Picture" titleId={id(i, 's-picture')}>
+          <PictureField thumb={thumbOf(b.media)} ratio="4/3" words={thumbOf(b.media)?.alt || 'No alt text'}>
+            <Button variant="secondary" size="sm" icon="image" data-editor-pick={`body.${i}.media`} data-pick-mode="single">Replace</Button>
+            <Button variant="secondary" size="sm" icon="crop" data-editor-crop={`body.${i}.media`}>Crop</Button>
+          </PictureField>
+          <Switch label="Open in the lightbox" name={`body.${i}.lightbox`} id={id(i, 'lightbox')} checked={!!b.lightbox} data-type="bool" />
+        </Pane>
+        <Pane name="frame" title="Frame" titleId={id(i, 's-frame')}>
+          <Select label="Width" name={`body.${i}.width`} id={id(i, 'width')} value={b.width} options={WIDTHS} />
+          <Select label="Shape" name={`body.${i}.ratio`} id={id(i, 'ratio')} value={b.ratio ?? ''} options={SHAPES} hint="The frame it's shown in." />
+          <Select label="Shown as" name={`body.${i}.display`} id={id(i, 'display')} value={b.display ?? 'fit'} options={DISPLAYS} hint={b.ratio ? undefined : 'In its own shape, Fill and Fit look the same.'} />
+          <Switch label="Colour behind it" name={`body.${i}.background`} id={id(i, 'background')} checked={!!b.background} data-type="bool" />
+          <Switch label="Rounded corners" name={`body.${i}.rounded`} id={id(i, 'rounded')} checked={b.rounded !== false} data-type="bool-default-true" />
+          <Switch label="Drop shadow" name={`body.${i}.shadow`} id={id(i, 'shadow')} checked={!!b.shadow} data-type="bool" />
+        </Pane>
+        <Pane name="caption" title="Caption and credit" titleId={id(i, 's-caption')}>
+          <Switch label="Show the caption and credit" name={`body.${i}.showCaption`} id={id(i, 'showCaption')} checked={b.showCaption !== false} data-type="bool-default-true" />
+          <TextField label="Caption" name={`body.${i}.caption`} id={id(i, 'caption')} value={b.caption ?? ''} multiline rows={2} optional hint="Left empty, the picture's own caption shows." />
+          <TextField label="Credit" name={`body.${i}.credit`} id={id(i, 'credit')} value={b.credit ?? ''} optional />
+        </Pane>
+      </Sections>
+    )
+  }
+
+  {
+    b.type === 'video' && (
+      <Sections name="video" label="Video settings">
+        <Fragment slot="nav">
+          <NavGroup>
+            <NavRow pick="video">Video</NavRow>
+            <NavRow pick="poster">Poster</NavRow>
+            <NavRow pick="caption">Caption and credit</NavRow>
+          </NavGroup>
+        </Fragment>
+        <Pane name="video" title="Video" titleId={id(i, 's-video')}>
+          {b.media && (
+            <PictureField thumb={thumbOf(b.media)} ratio="4/3" words={thumbOf(b.media)?.alt || b.media.split('/').pop()}>
+              <Button variant="secondary" size="sm" icon="video" data-editor-pick={`body.${i}.media`} data-pick-mode="single" data-pick-kind="video">Replace</Button>
+            </PictureField>
+          )}
+          {b.embed && <TextField label="Address" type="url" name={`body.${i}.embed`} id={id(i, 'embed')} value={videoUrl(b)} data-type="video-url" hint={b.embed.width && b.embed.height ? `A YouTube or Vimeo link. Shown at its own shape, ${shapeLabel({ width: b.embed.width, height: b.embed.height })}.` : "A YouTube or Vimeo link. Shown 16:9: its own shape wasn't read from it (change the link to read it again)."} />}
+          {b.embed ? (
+            <TextField label="Title" name={`body.${i}.title`} id={id(i, 'title')} value={b.title ?? ''} required hint="Names the player." />
+          ) : (
+            <TextField label="Title" name={`body.${i}.title`} id={id(i, 'title')} value={b.title ?? ''} optional hint="Names the player. Left empty, the video's own title does." />
+          )}
+          {b.embed && <TextField label="Length" name={`body.${i}.duration`} id={id(i, 'duration')} value={duration(b.duration)} data-type="duration" optional hint="Minutes and seconds (2:20), shown on the poster." />}
+          <Select label="Width" name={`body.${i}.width`} id={id(i, 'width')} value={b.width ?? 'wide'} options={b.media ? [...WIDTHS, { value: 'actual', label: 'Actual size', description: 'Its own size, centred; never wider than the page' }] : WIDTHS} />
+          {b.media && <Switch label="Autoplay (muted, while in view)" name={`body.${i}.autoplay`} id={id(i, 'autoplay')} checked={!!b.autoplay} data-type="bool" />}
+          {b.media && <Switch label="Loop" name={`body.${i}.loop`} id={id(i, 'loop')} checked={!!b.loop} data-type="bool" />}
+        </Pane>
+        <Pane name="poster" title="Poster" titleId={id(i, 's-poster')}>
+          <PictureField thumb={thumbOf(b.poster) ?? (b.media ? thumbOf(b.media) : undefined)} ratio="4/3" words={b.poster ? thumbOf(b.poster)?.alt || 'No alt text' : 'Its own frame, taken when it was uploaded'}>
+            <Button variant="secondary" size="sm" icon="image" data-editor-pick={`body.${i}.poster`} data-pick-mode="single">{b.poster || !b.media ? 'Replace' : 'Choose a picture'}</Button>
+            {b.poster && <Button variant="secondary" size="sm" icon="crop" data-editor-crop={`body.${i}.poster`}>Crop</Button>}
+            {b.poster && b.media && <Button variant="quiet" size="sm" icon="restore" data-editor-unset={`body.${i}.poster`}>Use its own frame</Button>}
+          </PictureField>
+        </Pane>
+        <Pane name="caption" title="Caption and credit" titleId={id(i, 's-caption')}>
+          <Switch label="Show the caption and credit" name={`body.${i}.showCaption`} id={id(i, 'showCaption')} checked={b.showCaption !== false} data-type="bool-default-true" />
+          <TextField label="Caption" name={`body.${i}.caption`} id={id(i, 'caption')} value={b.caption ?? ''} multiline rows={2} optional hint={b.media ? "Left empty, the video's own caption shows." : undefined} />
+          <TextField label="Credit" name={`body.${i}.credit`} id={id(i, 'credit')} value={b.credit ?? ''} optional />
+        </Pane>
+      </Sections>
+    )
+  }
+
+  <slot />
+
+  {b.type === 'divider' && <Text variant="ui" tone="muted">A divider has no settings: it marks a turn in the story.</Text>}
+
+  {
+    b.type === 'table' && (
+      <Sections name="table" label="Table settings">
+        <Fragment slot="nav">
+          <NavGroup>
+            <NavRow pick="cells" detail={`${b.columns.length} columns, ${b.rows.length} rows`}>Rows and columns</NavRow>
+            <NavRow pick="details">Caption and width</NavRow>
+          </NavGroup>
+        </Fragment>
+        <Pane name="cells" title="Rows and columns" titleId={id(i, 's-cells')}>
+          <Switch label="First column names each row" name={`body.${i}.rowHeadings`} id={id(i, 'rowHeadings')} checked={!!b.rowHeadings} data-type="bool" />
+          <details class="bulk-table">
+            <summary>Bulk edit table</summary>
+            <div class="bulk-table-body">
+              <TextField
+                label="Bulk edit table"
+                name={`body.${i}.cells`}
+                id={id(i, 'cells')}
+                value={tableToText(b)}
+                multiline
+                rows={Math.min(14, b.rows.length + 2)}
+                data-type="table-cells"
+                hint={`The rich-text column headings are on the first line, then a row a line, with cells split by | (write a | in a cell as \\|). Bold, italic, strikethrough, code and links work in every cell. At most ${TABLE_MAX_COLUMNS} columns and ${TABLE_MAX_ROWS} rows.`}
+              />
+            </div>
+          </details>
+        </Pane>
+        <Pane name="details" title="Caption and width" titleId={id(i, 's-details')}>
+          <TextField label="Caption" name={`body.${i}.caption`} id={id(i, 'caption')} value={b.caption ?? ''} optional hint="What it shows, said above it. Left empty, nothing is." />
+          <Select label="Width" name={`body.${i}.width`} id={id(i, 'width')} value={b.width ?? 'content'} options={WIDTHS.filter((w) => w.value !== 'full')} hint="Wider than its place, it scrolls sideways in its frame." />
+        </Pane>
+      </Sections>
+    )
+  }
+
+  <IssueNote data-editor-issue="" />
+  <FormFoot>
+    <ActionBar gap="sm">
+      <Button variant="quiet" size="sm" icon="duplicate" data-editor-block-op="duplicate" data-index={String(i)}>Duplicate</Button>
+      <Button variant="quiet" size="sm" icon="delete" data-editor-block-op="delete" data-index={String(i)}>Delete</Button>
+    </ActionBar>
+  </FormFoot>
+</Form>
+
+<style>
+  /* a column at least as tall as the inspector's panel: its sections stretch, and its actions sit at the bottom */
+
+  .form-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: var(--space-2);
+  }
+
+
+  .bulk-table {
+    display: grid;
+    gap: var(--space-3);
+  }
+
+  .bulk-table summary {
+    display: flex;
+    min-block-size: var(--size-touch);
+    align-items: center;
+    padding-inline: var(--space-2);
+    border-radius: var(--radius-md);
+    color: var(--color-text);
+    font-family: var(--font-ui);
+    font-weight: var(--weight-semibold);
+    cursor: pointer;
+  }
+
+  @media (hover: hover) {
+    .bulk-table summary:hover {
+      background: var(--color-bg-hover);
+    }
+  }
+
+  .bulk-table summary:active {
+    background: var(--color-bg-hover);
+  }
+
+  .bulk-table-body {
+    padding-block-start: var(--space-2);
+  }
+
+</style>

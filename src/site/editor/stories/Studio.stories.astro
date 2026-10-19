@@ -1,0 +1,13 @@
+---
+import Example from '../../library/Example.astro';
+import Studio from '../components/Studio.astro';
+import Text from '../../components/fundamentals/Text.astro';
+---
+
+<Example title="The article editor's studio" description="The outline, the canvas and the inspector side by side, the inspector's edge a separator that resizes it; here each slot holds a stand-in." layout="block" bleed>
+  <Studio>
+    <Fragment slot="outline"><Text variant="ui" tone="muted">The outline</Text></Fragment>
+    <Fragment slot="canvas"><Text variant="ui" tone="muted">The canvas</Text></Fragment>
+    <Fragment slot="inspector"><Text variant="ui" tone="muted">The inspector</Text></Fragment>
+  </Studio>
+</Example>

@@ -100,6 +100,9 @@
   --color-paper-accent-hover: var(--p-color-blue-700);
   --color-paper-on-accent: var(--p-color-white);
   --color-paper-link: var(--p-color-blue-600);
+  --color-paper-text-muted-strong: var(--p-color-ink-900);
+  --color-paper-border-strong: var(--p-color-ink-900);
+  --color-paper-line-strong: var(--p-color-ink-700);
   --color-wood-bg: rgb(38 30 24 / 0.94);
   --color-wood-bg-glass: rgb(28 22 18 / 0.62);
   --color-wood-bg-soft: rgb(58 47 38 / 0.72);
@@ -118,6 +121,9 @@
   --color-wood-accent-hover: var(--p-color-gold-200);
   --color-wood-on-accent: var(--p-color-wood-950);
   --color-wood-link: var(--p-color-blue-200);
+  --color-wood-text-muted-strong: rgb(255 244 222 / 0.9);
+  --color-wood-border-strong: rgb(255 244 222 / 0.6);
+  --color-wood-line-strong: rgb(255 244 222 / 0.45);
   --space-1: 0.25rem;
   --space-2: 0.5rem;
   --space-3: 0.75rem;
@@ -279,14 +285,18 @@
   --c-picker-avatar: 3.75rem;
   --c-picker-avatar-sm: 3rem;
   --c-chopper-width: 62.5rem;
-  --c-chopper-thumb-w: 4rem;
-  --c-chopper-thumb-h: 3rem;
+  --c-chopper-thumb-width: 4rem;
+  --c-chopper-thumb-height: 3rem;
+  --c-chopper-thumb-w: var(--c-chopper-thumb-width);
+  --c-chopper-thumb-h: var(--c-chopper-thumb-height);
   --c-chopper-stage: 18.75rem;
   --c-chopper-stage-sm: 16.25rem;
   --c-help-width: 22.5rem;
   --c-paint-width: 32.5rem;
   --c-paint-chip: 2.375rem;
   --c-icon-shift: -0.125em;
+  --c-gallery-width: 72rem;
+  --c-gallery-scroll: 10rem;
 }
 
 :root,
@@ -309,6 +319,9 @@
   --surface-accent-hover: var(--color-paper-accent-hover);
   --surface-on-accent: var(--color-paper-on-accent);
   --surface-link: var(--color-paper-link);
+  --surface-text-muted-strong: var(--color-paper-text-muted-strong);
+  --surface-border-strong: var(--color-paper-border-strong);
+  --surface-line-strong: var(--color-paper-line-strong);
 }
 
 .surface-wood {
@@ -330,4 +343,7 @@
   --surface-accent-hover: light-dark(var(--color-paper-accent-hover), var(--color-wood-accent-hover));
   --surface-on-accent: light-dark(var(--color-paper-on-accent), var(--color-wood-on-accent));
   --surface-link: light-dark(var(--color-paper-link), var(--color-wood-link));
+  --surface-text-muted-strong: light-dark(var(--color-paper-text-muted-strong), var(--color-wood-text-muted-strong));
+  --surface-border-strong: light-dark(var(--color-paper-border-strong), var(--color-wood-border-strong));
+  --surface-line-strong: light-dark(var(--color-paper-line-strong), var(--color-wood-line-strong));
 }

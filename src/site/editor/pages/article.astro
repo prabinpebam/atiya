@@ -4,7 +4,11 @@ import EditorLayout from '../EditorLayout.astro';
 import Studio from '../components/Studio.astro';
 import Outline from '../components/Outline.astro';
 import CanvasFrame from '../components/CanvasFrame.astro';
-import Inspector, { type Thumb } from '../components/Inspector.astro';
+import Inspector from '../components/Inspector.astro';
+import BlockForm from '../components/BlockForm.astro';
+import SetFields from '../components/SetFields.astro';
+import CollectionFields from '../components/CollectionFields.astro';
+import PageForm from '../components/PageForm.astro';
 import BlockPalette from '../components/BlockPalette.astro';
 import MediaGrid, { type MediaCard } from '../components/MediaGrid.astro';
 import InsertForms from '../components/InsertForms.astro';
@@ -34,6 +38,7 @@ import { placeOfPage } from '../model/planet';
 import { excerptOf, kindOf } from '../model/ops';
 import { SITE_FEATURES, withBase } from '../../design/meta';
 import { privateSetupHref } from '../model/desktop';
+import type { Thumb } from '../model/inspectorFields';
 import type { Article, Block, Overlay, PlanetStructure, SiteStructure } from '../../content/schema';
 import type { IconName } from '../../design/icons';
 
@@ -134,7 +139,19 @@ const json = JSON.stringify(state).replace(/</g, '\\u003c');
       <Studio>
         {draw('outline') && <Outline slot="outline" blocks={blocks} icons={ICON} />}
         <CanvasFrame slot="canvas" src={state.canvas} />
-        {draw('inspector') && <Inspector slot="inspector" article={article} media={thumbs} sections={sectionOptions(loaded.index)} section={section} access={protectable ? access : undefined} privateSetup={privateSetup} place={place} published={published} path={route?.path ?? null} />}
+        {draw('inspector') && (
+          <Inspector slot="inspector">
+            <Fragment slot="block">
+              {article.body.map((b, i) => (
+                <BlockForm block={b} index={i} count={article.body.length} prev={article.body[i - 1]?.type} next={article.body[i + 1]?.type} media={thumbs}>
+                  {(b.type === 'gallery' || b.type === 'carousel') && <SetFields block={b} index={i} media={thumbs} />}
+                  {b.type === 'collection' && <CollectionFields block={b} index={i} media={thumbs} />}
+                </BlockForm>
+              ))}
+            </Fragment>
+            <PageForm slot="page" article={article} media={thumbs} sections={sectionOptions(loaded.index)} section={section} access={protectable ? access : undefined} privateSetup={privateSetup} place={place} published={published} path={route?.path ?? null} />
+          </Inspector>
+        )}
         <script is:inline type="application/json" data-region="state" data-editor-state set:html={json} />
         <Dialog id="editor-palette" title="Add a block" size="lg">
           <BlockPalette />

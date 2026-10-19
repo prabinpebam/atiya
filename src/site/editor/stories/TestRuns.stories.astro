@@ -1,0 +1,8 @@
+---
+import Example from '../../library/Example.astro';
+import TestRuns from '../components/TestRuns.astro';
+---
+
+<Example title="Test runs" description="The run's health, its phases and progress, its failures and its tree of tests, filled in live by its script (here, whatever run this computer has, or none)." layout="block">
+  <TestRuns run="current" />
+</Example>

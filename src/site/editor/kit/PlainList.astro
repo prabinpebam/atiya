@@ -1,0 +1,49 @@
+---
+/**
+ * A list without bullets or indent, its items one under another a set space apart: the rows of a screen's list
+ * (the changes to save, the content's issues, a picture's uses, a section's links). Its items are the caller's
+ * own `<li>`s, styled by the caller.
+ * @tier kit
+ * @a11y Still a list (ul or ol) to assistive tech, with its count of items; name it (label) when there are several lists near it.
+ */
+
+interface Props {
+  /** The element: ordered when the order means something (the navigation's entries), else unordered. */
+  as?: 'ul' | 'ol';
+  /** The space between its items: none (rows ruled apart by their own borders), xs, sm or md. */
+  gap?: 'none' | 'xs' | 'sm' | 'md';
+  /** Names the list (aria-label). */
+  label?: string;
+  /** Data attributes pass through to the list (the screen's hooks). */
+  [data: `data-${string}`]: string | undefined;
+}
+
+const { as: Tag = 'ul', gap = 'none', label, ...rest } = Astro.props;
+---
+
+<Tag class="plain-list" data-gap={gap} aria-label={label} {...rest}><slot /></Tag>
+
+<style>
+  .plain-list {
+    display: grid;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .plain-list[data-gap='xs'] {
+    gap: var(--space-0-5);
+  }
+
+  .plain-list[data-gap='sm'] {
+    gap: var(--space-2);
+  }
+
+  .plain-list[data-gap='md'] {
+    gap: var(--space-3);
+  }
+
+  .plain-list[hidden] {
+    display: none;
+  }
+</style>

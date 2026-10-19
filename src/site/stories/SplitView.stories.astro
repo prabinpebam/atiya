@@ -1,0 +1,45 @@
+---
+import Example from '../library/Example.astro';
+import SplitView from '../components/compounds/SplitView.astro';
+import Heading from '../components/fundamentals/Heading.astro';
+import Text from '../components/fundamentals/Text.astro';
+import Link from '../components/fundamentals/Link.astro';
+---
+
+<Example title="A narrow list" description="Names and a short line: the list's column is 18 rem. Under 56 rem it sits above the details." layout="block">
+  <SplitView>
+    <nav slot="list" class="sample-list" aria-label="Sections (sample)">
+      <Link href="#work" variant="quiet">Work</Link>
+      <Link href="#writing" variant="quiet">Writing</Link>
+      <Link href="#about" variant="quiet">About</Link>
+    </nav>
+    <section class="sample-detail" aria-labelledby="split-narrow-title">
+      <Heading level={4} size="h4" id="split-narrow-title">Work</Heading>
+      <Text variant="ui" tone="muted">The chosen one's details take the rest of the width, from the top.</Text>
+    </section>
+  </SplitView>
+</Example>
+
+<Example title="A wide list" description="A name and two lines under it: the list's column is 22 rem." layout="block">
+  <SplitView list="wide">
+    <nav slot="list" class="sample-list" aria-label="People (sample)">
+      <Link href="#ada" variant="quiet">Ada Lovelace, Analytical Engines Ltd, until 30 November</Link>
+      <Link href="#grace" variant="quiet">Grace Hopper, Navy Research, until 9 December</Link>
+    </nav>
+    <section class="sample-detail" aria-labelledby="split-wide-title">
+      <Heading level={4} size="h4" id="split-wide-title">Ada Lovelace</Heading>
+      <Text variant="ui" tone="muted">A long form can sit here; the list beside it keeps its place.</Text>
+    </section>
+  </SplitView>
+</Example>
+
+<style>
+  .sample-list,
+  .sample-detail {
+    display: grid;
+    gap: var(--space-2);
+    padding: var(--space-4);
+    border: var(--border-hairline) solid var(--color-rule);
+    border-radius: var(--radius-lg);
+  }
+</style>

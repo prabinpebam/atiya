@@ -126,19 +126,13 @@ const panels = await Promise.all(tabs.map(async (t) => ({ ...t, html: Astro.slot
     box-shadow: var(--shadow-sm);
   }
 
-  .tab:focus-visible {
-    outline: var(--border-focus) solid var(--color-focus);
-    outline-offset: var(--border-focus-offset);
-  }
-
   .icon {
     inline-size: var(--size-icon);
     block-size: var(--size-icon);
   }
 
+  /* the ring is base.css's, rounded to the panel */
   .panel:focus-visible {
-    outline: var(--border-focus) solid var(--color-focus);
-    outline-offset: var(--border-focus-offset);
     border-radius: var(--radius-sm);
   }
 </style>

@@ -36,9 +36,10 @@ const SCREENS: (EditScreen & { needs?: 'planet' | 'source' })[] = [
   { id: 'access', label: 'Access', path: 'access/', group: 'Site', words: ['private', 'share', 'codes', 'links', 'sharing'], about: 'Who your private pages are shared with.', icon: 'lock' },
   { id: 'publish', label: 'Save to remote', path: 'publish/', group: 'Site', words: ['publish', 'push', 'deploy', 'git', 'upload', 'go live'], about: 'Put your changes on the live site.', icon: 'publish' },
   { id: 'tests', label: 'Tests', path: 'tests/', group: 'Checks', words: ['checks', 'e2e', 'test runs'], about: "The site's test runs, live.", icon: 'success', needs: 'source' },
+  { id: 'library', label: 'Parts library', path: 'library/', group: 'Checks', words: ['design system', 'components', 'stories', 'parts', 'kit', 'storybook'], about: "Edit mode's own parts and kit, each with its stories and props.", icon: 'book', needs: 'source' },
 ];
 
-/** Edit mode's screens, as this site has them: the Planet while it's on, Tests on a source checkout. */
+/** Edit mode's screens, as this site has them: the Planet while it's on, Tests and the parts library on a source checkout. */
 export function editScreens(features: { planet: boolean; managed: boolean }): EditScreen[] {
   return SCREENS.filter((s) => (s.needs === 'planet' ? features.planet : s.needs === 'source' ? !features.managed : true)).map(({ needs: _, ...s }) => s);
 }
