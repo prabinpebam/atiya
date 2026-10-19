@@ -230,15 +230,32 @@ Re-measure these when a workstream closes. Where the 19 October count used a dif
 
 ## 8. Definition of Done
 
+**The acceptable level:** the website at **9.0 or more** overall, edit mode at **8.5 or more**, the game UI at **8.0 or more**, and **no aspect below 7.5** in any system. A score moves only when its evidence is in the code and held by a test; the measures are re-taken by `node scripts/design-system-audit.mjs`, never by hand.
+
+| Aspect | Website now, target | Edit mode now, target | Game UI now, target | Earned by |
+|---|---|---|---|---|
+| Token architecture | 9.5, 9.5 | 8, 9 | 8, 8.5 | Every component token group has an owner (DS2-14, DS2-16) |
+| Token discipline | 9.5, 9.5 | 9, 9 | 9, 9 | Held as it is |
+| Accessibility | 9.5, 9.5 | 8.5, 8.5 | 6, 8 | Game: high contrast and forced colours for the HUD and panels, hover only where it can hover (DS2-06, DS2-15) |
+| Component architecture | 8.5, 9 | 5.5, 8.5 | 6.5, 8 | Website: room under the size limit (DS2-08). Edit mode: its parts under the limit, controls only through fundamentals (DS2-07, DS2-11). Game: styles beside their components, in layers (DS2-04) |
+| Reuse in practice | 8.5, 9 | 5, 8.5 | 8, 8 | Website: recipes written once (DS2-18). Edit mode: no raw controls, its shared pieces as components (DS2-11, DS2-12) |
+| Documentation | 9, 9 | 6, 8.5 | 6, 8 | Edit mode: parts documented and shown like components (DS2-13). Game: a gallery and documented components (DS2-05, DS2-17) |
+| Responsiveness and right-to-left | 9, 9 | 8.5, 8.5 | 4.5, 8 | Website: container queries (DS2-08). Game: logical properties only (DS2-06) |
+| Quality checks | 7.5, 9 | 7.5, 9 | 7, 8.5 | Screenshot tests of every story, the key pages, edit mode's parts and the game's gallery (DS2-01 to DS2-03) |
+| Governance | 7, 8.5 | 6.5, 8.5 | 6.5, 8 | A token changelog and a deprecation rule (DS2-09, DS2-10); the audit script; each rule written in its system's page |
+| **Overall** | **8.7, 9.2** | **7.2, 8.7** | **6.8, 8.2** | |
+
 - [ ] Every item in §6 is closed, each with the test named in its "Done when".
-- [ ] The measures in §7 are at their targets, re-measured by script.
+- [ ] The measures in §7 are at their targets, re-measured by `node scripts/design-system-audit.mjs`.
 - [ ] The design-system unit suites, `npm run check` and `npm run verify:prod` pass; the `visual`, "site design system", "site on a phone", editor and game UI groups pass.
-- [ ] The ratings in §2 are re-scored with the new evidence.
+- [ ] The ratings in §2 are re-scored with the new evidence, and every aspect is at its target above.
 - [ ] The site and game design-system pages, the edit mode spec (§10) and AGENTS.md describe the new rules, and this page gains an "As built" section.
 
-## 9. Open questions
+## 9. Decisions
 
-- **Where the screenshot baselines are made.** Fonts render differently on Windows and on the Ubuntu deploy runner, so baselines made on one fail on the other. Either make them in CI (and fetch them to update), or in a pinned Linux container locally.
-- **Whether the game's gallery belongs in the website's design library.** The two systems never import each other, so the gallery would need its own page that loads the game's tokens and styles, or a separate route under `/play/`.
-- **How strict the game's high-contrast support should be.** The 3D view itself can't follow forced colours; the rule would cover the HUD and panels only.
-- **Where edit mode's shared pieces live (DS2-12).** The list-and-details layout and the action bar could serve the website too (and Atiya Studio, which reads the website's tokens), so they may belong in its compounds. The issue note and the inspector's rows are edit mode's alone. Adding an editor kit tier changes the rule that a part never imports another part, so the edit mode spec has to say which pieces go where.
+The open questions, decided on 19 October 2026 so the work could start:
+
+- **Screenshot baselines are made and checked on Windows, locally.** No workflow runs the browser tests (CI runs the unit tests only), so there's no second platform to agree with; Playwright keeps a baseline per platform, so a Linux run later would make its own.
+- **The game's gallery is its own page, never in production.** It exists only in development and `--mode test` builds (like the test hook), loads the game's tokens and styles, and the production check fails if it reaches `dist/`. The website's design library stays the website's.
+- **High contrast covers the HUD and panels only.** The 3D view can't follow forced colours.
+- **Edit mode's shared pieces go where they could be used.** A piece the website could use (the list-and-details layout, the action bar) becomes a website compound, with its story. A piece only edit mode needs (the issue note, the inspector's rows) goes in a new editor kit tier, `src/site/editor/kit/`, made of fundamentals, compounds and tier 0, which parts may import. The edit mode spec (§10) records the new tier.
