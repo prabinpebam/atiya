@@ -1,0 +1,43 @@
+{
+  "style": "ink-sketch",
+  "article": "who-am-i",
+  "theme": "The inventor's workshop: a maker who switches between a jeweller's loupe and a spyglass, the finest detail and the far horizon, and who takes everything apart to find out why it works.",
+  "castAnchor": "the-loupe-and-the-spyglass",
+  "cast": "THE MAKER, the recurring hero: a small, round, fuzzy creature with huge, slightly mismatched round eyes, a jeweller's loupe screwed into one eye, a battered brass spyglass tucked under one arm, a single curly antenna-like tuft of hair on top of his head, patched dungarees and a tool belt stuffed with pencils, screwdrivers and a tiny hammer; endlessly curious, delighted and a little obsessive. THE SIDEKICK (only where the subject asks for him): a scrappy, hand-built little robot made of tin cans and a dented kettle, with a bendy desk lamp for a head that glows, riveted patches and mismatched bolt eyes; eager, helpful and a little clumsy. THE TOWNSFOLK: tall, solemn, slightly droopy creatures in bowler hats and long buttoned coats, mostly bemused or astonished by the maker.",
+  "images": [
+    {
+      "name": "the-loupe-and-the-spyglass",
+      "use": "hero",
+      "format": "hero",
+      "subject": "A huge, wonderful, ramshackle machine stands in a workshop yard: towers of gears, pipes, chimneys, a big flywheel. High up on its scaffold, the maker hangs upside down by his knees from a scaffold bar. His head and arms are deep inside an open hatch, and through a cutaway we see him peering through his loupe at one tiny cog among hundreds, a tweezer in his hand. At the same time one of his feet sticks up and out of the top of the machine, holding the brass spyglass, pointed at a far horizon of rolling hills, odd towers and a rising sun. A couple of townsfolk on the ground stare up at him, hats tipping back.",
+      "alt": "A small fuzzy maker hangs upside down inside a giant machine, studying a tiny cog through a loupe, while one foot sticks out of the top holding a spyglass towards a far horizon."
+    },
+    {
+      "name": "why-it-ticks",
+      "use": "figure",
+      "format": "figure",
+      "width": "popout",
+      "after": "I'm also annoyingly curious.",
+      "subject": "In the maker's workshop, a cuckoo clock that a townsperson brought in to be fixed has been completely taken apart: hundreds of gears, springs, screws, the little cuckoo bird and the pendulum laid out in tidy rows across a long workbench and onto the floor. The maker holds up a single tiny spring with tweezers right in front of his loupe, eyes enormous with wonder. Behind him the tall townsperson in a bowler hat still waits, holding a teacup, deadpan, while a spider has spun a cobweb between the brim of their hat and their shoulder. The empty clock case hangs on the wall.",
+      "alt": "A maker has taken a cuckoo clock apart into hundreds of neatly laid-out pieces and gazes in wonder at one tiny spring, while its owner waits with a teacup and a cobweb grows on their hat."
+    },
+    {
+      "name": "off-the-instructions",
+      "use": "figure",
+      "format": "figure",
+      "width": "popout",
+      "after": "I was [building Figma plugins with AI]",
+      "subject": "On one side, a long shelf of identical little toy cars, each sitting neatly on its kit box whose picture shows exactly that car. In the middle, the maker and the tin-can robot sidekick have built the very same kit into a towering, joyful contraption: the little toy car is still at its base, but it now carries a patchwork sail, a crane, a propeller, a periscope, extra wheels and two small rockets, with smoke puffing out. The robot holds the other end of a huge wrench; the maker sits at the top, tightening a final bolt. The kit's instruction leaflet drifts away on the wind, ignored. Two townsfolk gape at it, one dropping their hat.",
+      "alt": "Beside a shelf of identical toy cars built exactly as their boxes show, a maker and a tin-can robot have built the same kit into a towering contraption with a sail, crane and rockets."
+    },
+    {
+      "name": "weeds-and-horizon",
+      "use": "figure",
+      "format": "comic",
+      "width": "wide",
+      "after": "For me, these aren't separate ways of thinking.",
+      "subject": "PANEL 1: deep in the cramped engine room of a little steam ship, among tangled pipes and overgrown weeds, the maker crouches with his loupe and finds one cracked cog among many. PANEL 2: the maker has climbed to the top of the ship's mast with his spyglass and sees that the ship is heading straight for a gloomy, rocky island; he points urgently the other way, towards a bright island with a lighthouse. PANEL 3: back in the engine room, the maker ignores a heap of shiny but useless parts and replaces just that one cracked cog; through the porthole behind him, the ship has turned and is now sailing towards the bright island.",
+      "alt": "A three-panel comic: in a ship's engine room a maker finds one cracked cog; from the mast he sees the ship heading for the wrong island; back below he fixes only that cog and the ship turns for the right one."
+    }
+  ]
+}

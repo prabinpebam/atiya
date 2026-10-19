@@ -1,0 +1,92 @@
+{
+  "id": "who-am-i",
+  "type": "article",
+  "kind": "note",
+  "slug": "who-am-i",
+  "title": "Who am I?",
+  "summary": "A maker at heart: annoyingly curious, comfortable moving between the finest detail and the larger strategy, and always building something new.",
+  "status": "draft",
+  "visibility": "public",
+  "publishedAt": "2026-10-19",
+  "updatedAt": "2026-10-19",
+  "locale": "en",
+  "topics": [
+    "about",
+    "curiosity",
+    "making",
+    "ai",
+    "leadership"
+  ],
+  "body": [
+    {
+      "type": "text",
+      "markdown": "I'm inherently a maker. I like getting hands-on, understanding how things work, and building things myself. One of my strengths is the ability to move between levels of abstraction: diving into an intricate technical detail one moment, shaping the strategic narrative of how we're defining a category in the industry the next, and connecting every tactical effort to that larger strategic intent.",
+      "dropcap": true
+    },
+    {
+      "type": "text",
+      "markdown": "I'm also annoyingly curious. Almost every conversation with me becomes an enquiry, an attempt to build a deeper understanding of the subject at hand. I rarely find myself satisfied with knowing *what* something is. I want to understand *why* it is the way it is, what makes it work, and what else might be possible."
+    },
+    {
+      "type": "figure",
+      "media": "articles/who-am-i/why-it-ticks",
+      "width": "popout",
+      "lightbox": true,
+      "display": "fit",
+      "background": false,
+      "rounded": false,
+      "showCaption": false
+    },
+    {
+      "type": "text",
+      "markdown": "I'm driven by the desire to excel, to push boundaries, and to create things that impress me as much as they impress others. I'm always learning and making something, whether at work or in my personal life."
+    },
+    {
+      "type": "text",
+      "markdown": "My fascination with AI was a natural extension of this instinct. What captivated me from day one was the ability to create things I couldn't have created before. AI opened up entirely new possibilities for someone who likes to build. I could experiment with ideas that previously would have required skills, resources, or teams I didn't have access to."
+    },
+    {
+      "type": "text",
+      "markdown": "I was [building Figma plugins with AI](https://medium.com/design-bootcamp/i-used-ai-to-create-a-figma-plugin-520e952fbff7) back in early 2023, long before it became mainstream. I explored the rough edges of Automatic1111 Stable Diffusion WebUI and the complexity of ComfyUI, built my own [custom nodes](https://github.com/prabinpebam/anyPython), trained LoRAs, and created my own agentic clients for LLMs. I've always enjoyed pushing beyond what a tool offers out of the box to discover what else might be possible."
+    },
+    {
+      "type": "figure",
+      "media": "articles/who-am-i/off-the-instructions",
+      "width": "popout",
+      "lightbox": true,
+      "display": "fit",
+      "background": false,
+      "rounded": false,
+      "showCaption": false
+    },
+    {
+      "type": "text",
+      "markdown": "I'm comfortable getting into the weeds without losing sight of the bigger picture. I enjoy the technical challenge of making something work, but I'm equally interested in understanding why it should exist, what problem it solves, and how it fits into a larger vision."
+    },
+    {
+      "type": "text",
+      "markdown": "For me, these aren't separate ways of thinking. Understanding the details helps me make better strategic decisions, and having a clear strategic intent helps me decide which details matter."
+    },
+    {
+      "type": "figure",
+      "media": "articles/who-am-i/weeds-and-horizon",
+      "width": "wide",
+      "lightbox": true,
+      "display": "fit",
+      "background": false,
+      "rounded": false,
+      "showCaption": false
+    },
+    {
+      "type": "text",
+      "markdown": "Ultimately, I'm driven by curiosity and the desire to make things better than they were before. I want to understand more, create more, and continually expand what I'm capable of doing. The satisfaction comes not just from arriving at an answer, but from discovering possibilities I couldn't see before."
+    }
+  ],
+  "hero": {
+    "media": "articles/who-am-i/the-loupe-and-the-spyglass",
+    "display": "fit",
+    "background": false,
+    "rounded": false,
+    "showCaption": false
+  }
+}

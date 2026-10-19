@@ -34,6 +34,14 @@
         "view": "features",
         "children": [
           {
+            "id": "who-am-i",
+            "kind": "item",
+            "item": {
+              "type": "article",
+              "id": "who-am-i"
+            }
+          },
+          {
             "id": "my-journey-with-designup",
             "kind": "item",
             "item": {
