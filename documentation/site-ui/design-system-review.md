@@ -307,6 +307,7 @@ The DS2 round ran on 19 October 2026 as seven parallel threads, each owning its 
   - `npm run check` found 0 errors.
   - `npm run verify:prod` met every budget, including game JS at 449.7 of 450 KB, and found no edit mode and no game gallery in the build.
   - The audit holds 18 of 18 measures.
+  - `node scripts/build-parity.mjs` passes: the engine release makes the same site as the source, except for `docs/`. It first failed on Windows because the design library showed a story's code with the checkout's CRLF line endings; `examplesOf` now normalises them, and a test holds it.
   - The `visual` project passed twice in a row.
   - The full browser suite: every site and game test passed except one. The edit mode project passed 73 tests, with 3 failing and 15 not run after them. Those 4 failures are the same on the commit before the round (each project was run on a clean worktree of it), so none comes from this round:
     - the website's "each section lists its pages" counts every `main article.card`, which includes About's recommendation cards;
