@@ -6,13 +6,13 @@ Which AI services edit mode's AI editing could use, how each can really be conne
 > - **Most of the wishlist can be supported, but not all of it the way it sounds.** Every API (OpenAI, Claude, Gemini, Azure) and every local runner (Ollama, LM Studio) can return answers held to a JSON schema, which is what safe editing needs.
 > - **Subscriptions are the catch.** Anthropic forbids third-party apps from using a Claude Pro or Max sign-in; Google has banned accounts for connecting tools to a Gemini sign-in; OpenAI's position on a ChatGPT sign-in in Codex is unstated. GitHub is the exception: its Copilot SDK is documented for apps that use a person's Copilot subscription.
 > - **So there are two directions.** Edit mode *calls* a service with a key (or a local model with none), or your own agent, signed in its own way, *calls edit mode* through an MCP server. The second is how Claude Code, Codex, Copilot CLI, OpenClaw and Hermes Agent fit, within their terms.
-> - **Recommended:** a thin harness of our own (three adapters, no new dependency) for the APIs and local models first; then edit mode as an MCP server, with a terminal in Atiya Studio to run your agent beside the article; then the Copilot SDK.
+> - **Recommended:** a thin connector of our own (three adapters, no new dependency) for the APIs and local models first. It's not an agent harness: one request, one answer, no tools. Then edit mode as an MCP server, with a terminal in Atiya Studio to run your agent beside the article, and then the Copilot SDK. Both of those bring their own harness.
 > - **Two items need you:** "Jev API" is a real but tiny pre-release product that decides rather than writes (did you mean Google's Jules?), and "Hermes" is both a model and an agent.
 
 <figure class="slate-figure" data-diagram="ai-services">
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 520" role="img" aria-labelledby="ed-ai-services__title ed-ai-services__desc" preserveAspectRatio="xMidYMid meet" data-slate-svg-motion="viewport" data-slate-safe-margin="24">
-<title id="ed-ai-services__title">AI services: a harness for APIs, an MCP server for agents</title>
-<desc id="ed-ai-services__desc">The article editor sends edit requests to an AI harness in the dev server, where the keys stay. The harness has one adapter per kind of API: cloud APIs (OpenAI, Claude, Gemini, Azure), models on this computer (Ollama, LM Studio), and later agent SDKs such as GitHub's Copilot SDK. It checks every answer. The other way in runs the opposite direction: edit mode is an MCP server, and the owner's own agent (Claude Code, Codex, Copilot CLI, OpenClaw, Hermes Agent), signed in its own way and run in Atiya Studio's terminal, calls its tools; what it proposes comes back to the editor for review like any other answer.</desc>
+<title id="ed-ai-services__title">AI services: a connector for APIs, an MCP server for agents</title>
+<desc id="ed-ai-services__desc">The article editor sends edit requests to an AI connector in the dev server, where the keys stay. The connector isn't an agent: it sends one request and gets one answer, with no tools, no files and no loop. It has one adapter per kind of API: cloud APIs (OpenAI, Claude, Gemini, Azure), models on this computer (Ollama, LM Studio), and later agent SDKs such as GitHub's Copilot SDK, whose own harness runs the agent. It checks every answer. The other way in runs the opposite direction: edit mode is an MCP server, and the owner's own agent (Claude Code, Codex, Copilot CLI, OpenClaw, Hermes Agent), signed in its own way and run in Atiya Studio's terminal, calls its tools; what it proposes comes back to the editor for review like any other answer.</desc>
 <g id="ed-ai-services__editor" data-slate-svg-step="1" data-slate-svg-effect="fade-rise">
 <rect id="ed-ai-services__body-1" x="40" y="40" width="220" height="150" rx="18" fill="var(--color-neutral-bg-1)" stroke="var(--color-neutral-stroke-1)" stroke-width="1.5" />
 <text x="60" y="72" text-anchor="start" font-family="Segoe UI, system-ui, -apple-system, sans-serif" fill="var(--color-neutral-fg-1)" font-size="17" font-weight="600" data-slate-fit-target="ed-ai-services__body-1" data-slate-fit-padding="16">Article editor</text>
@@ -20,9 +20,9 @@ Which AI services edit mode's AI editing could use, how each can really be conne
 <text x="60" y="132" text-anchor="start" font-family="Segoe UI, system-ui, -apple-system, sans-serif" fill="var(--color-neutral-fg-1)" font-size="14" data-slate-fit-target="ed-ai-services__body-1" data-slate-fit-padding="16">Edit requests</text>
 <text x="60" y="162" text-anchor="start" font-family="Segoe UI, system-ui, -apple-system, sans-serif" fill="var(--color-neutral-fg-1)" font-size="14" data-slate-fit-target="ed-ai-services__body-1" data-slate-fit-padding="16">Review and apply</text>
 </g>
-<g id="ed-ai-services__harness" data-slate-svg-step="2" data-slate-svg-effect="fade-rise">
+<g id="ed-ai-services__connector" data-slate-svg-step="2" data-slate-svg-effect="fade-rise">
 <rect id="ed-ai-services__body-2" x="340" y="40" width="240" height="150" rx="18" fill="var(--color-status-warning-bg)" stroke="var(--color-status-warning-stroke)" stroke-width="1.5" />
-<text x="360" y="72" text-anchor="start" font-family="Segoe UI, system-ui, -apple-system, sans-serif" fill="var(--color-neutral-fg-1)" font-size="17" font-weight="600" data-slate-fit-target="ed-ai-services__body-2" data-slate-fit-padding="16">AI harness</text>
+<text x="360" y="72" text-anchor="start" font-family="Segoe UI, system-ui, -apple-system, sans-serif" fill="var(--color-neutral-fg-1)" font-size="17" font-weight="600" data-slate-fit-target="ed-ai-services__body-2" data-slate-fit-padding="16">AI connector</text>
 <text x="360" y="94" text-anchor="start" font-family="Segoe UI, system-ui, -apple-system, sans-serif" fill="var(--color-status-warning-fg)" font-size="13" data-slate-fit-target="ed-ai-services__body-2" data-slate-fit-padding="16">dev server, keys stay here</text>
 <text x="360" y="132" text-anchor="start" font-family="Segoe UI, system-ui, -apple-system, sans-serif" fill="var(--color-neutral-fg-1)" font-size="14" data-slate-fit-target="ed-ai-services__body-2" data-slate-fit-padding="16">One adapter per API</text>
 <text x="360" y="162" text-anchor="start" font-family="Segoe UI, system-ui, -apple-system, sans-serif" fill="var(--color-neutral-fg-1)" font-size="14" data-slate-fit-target="ed-ai-services__body-2" data-slate-fit-padding="16">Checks every answer</text>
@@ -82,7 +82,7 @@ Which AI services edit mode's AI editing could use, how each can really be conne
 <polygon points="150,191 155,200 145,200" fill="var(--color-neutral-fg-2)" />
 </g>
 </svg>
-<figcaption>Two ways in: edit mode calls an API or a local model through its harness, or your own agent calls edit mode's MCP server. Both end in the same review.</figcaption>
+<figcaption>Two ways in: edit mode calls an API or a local model through its connector, or your own agent calls edit mode's MCP server. Both end in the same review.</figcaption>
 </figure>
 
 ## 1. What a service must do here
@@ -138,7 +138,7 @@ The way to use any of them within its terms is to run **the vendor's own tool, y
 
 ## 3. Where the AI is called from
 
-Edit mode's server already runs only on your computer and only for edit mode's own pages (the dev server's editor middleware, loopback and same origin). The harness lives there too:
+Edit mode's server already runs only on your computer and only for edit mode's own pages (the dev server's editor middleware, loopback and same origin). The connector lives there too:
 
 - **Keys never reach the browser:** the editor's page asks its own server, which calls the service.
 - **The same code serves Atiya Studio and plain `npm run dev`;** only where the key comes from differs (§6).
@@ -146,7 +146,9 @@ Edit mode's server already runs only on your computer and only for edit mode's o
 
 ## 4. Five ways to build it
 
-### A. Our own thin harness (recommended first)
+### A. Our own thin connector (recommended first)
+
+**A connector, not an agent harness.** It sends one edit request and gets one answer back. There's no agent loop, and the model gets no tools, no files and no memory ([AI editing §9](ai-editing.md#9-safety-and-privacy)). Anything agentic, like drafting from notes or working through several steps, runs in an agent that brings its own harness: your agent through the MCP server (option D), or GitHub's through the Copilot SDK (option C).
 
 Three adapters behind one interface (`propose(request, signal) → stream of text, then an answer`): an **OpenAI-compatible** one (OpenAI, Azure OpenAI, Ollama, LM Studio, OpenRouter, Mistral, Groq: a base URL and a key), **Anthropic Messages**, and **Gemini**'s own API (its OpenAI-compatible mode wasn't confirmed to honour schemas). Each sends the schema in its own way; our Zod check is the final word for all.
 
@@ -183,7 +185,7 @@ Two different things under one name:
 
 ### Side by side
 
-| | A. Own harness | B. Unified SDK | C. Agents as providers | D. MCP server | E. Terminal |
+| | A. Own connector | B. Unified SDK | C. Agents as providers | D. MCP server | E. Terminal |
 |---|---|---|---|---|---|
 | Wishlist covered | APIs, Azure, Ollama, Hermes model | The same, more APIs | Claude Code, Codex, Copilot (SDK) | Every agent | Anything scriptable; your agents |
 | Uses your subscriptions | No | No | Copilot only | **Yes** | Yes, with D |
@@ -194,7 +196,7 @@ Two different things under one name:
 
 ## 5. Recommendation and phases
 
-1. **A, our own harness,** with the OpenAI-compatible adapter first: one adapter reaches OpenAI, Azure OpenAI, Ollama, LM Studio and OpenRouter. Then Anthropic and Gemini. Settings: a provider, a model and a key per service, and which is used for public and for private articles.
+1. **A, our own connector,** with the OpenAI-compatible adapter first: one adapter reaches OpenAI, Azure OpenAI, Ollama, LM Studio and OpenRouter. Then Anthropic and Gemini. Settings: a provider, a model and a key per service, and which is used for public and for private articles.
 2. **D, edit mode as an MCP server,** so Claude Code, Codex, Copilot CLI, OpenClaw and Hermes Agent work with your own sign-ins.
 3. **E, a terminal in Atiya Studio,** to run those agents beside the article; and the command provider for anything else.
 4. **C, GitHub's Copilot SDK,** if you want Copilot inside the editor's own prompt rather than in a terminal.
