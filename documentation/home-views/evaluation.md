@@ -22,6 +22,7 @@ A personal site gets few hiring visits, so the people tests decide and telemetry
 >   - under 10% of visits leave within 10 seconds;
 >   - résumé and contact conversion compared with today's home page over a matching period, not an A/B test.
 > - **Decision rules:** a capability missed in every view is a content problem (a proof page), not a layout problem.
+> - **Site owners are tested too,** on their own work: finishing the first run, whether the suggested strengths and proof are the ones they'd choose, and whether their own visitors miss a strength (§6).
 
 ## 1. What each goal is measured by
 
@@ -132,7 +133,51 @@ Telemetry runs only on the published site. It respects GPC, Do Not Track and `?t
 | Visitors who switch views mostly go to the same one | Offer it more prominently, or make it the default |
 | Recruiters don't forward The short version | Move it into the résumé page, where they already go |
 
-## 6. Open decisions
+## 6. Tests with site owners
+
+The same failure has a cause one step earlier: a strength the person never named, or whose proof the rules didn't find, can't be shown to anyone. So the curation and the Home screen are tested with the people who make home pages ([for every site §1](for-every-site.md)), on their own work.
+
+**Who:** 5 to 8 per round, at least one of each of O1 to O4 (a newcomer, an experienced job hunter, a freelancer, a maker or writer). Never the owner, and never someone who helped design it.
+
+**On what:** a copy of their own site, or their own work imported into a fresh one, with their consent, on the editor's fixture setup so nothing is published. Judging whether proof is right needs one's own work; made-up content tests only the screen.
+
+**The session** (about 45 minutes, moderated, remote):
+
+| Step | Prompt | Measures | Scenario |
+|---|---|---|---|
+| 1. Before anything | "What are you best at? Name three to six things." Written down, not shown again | Their own strengths, to compare with the result | |
+| 2. First run | "Make your home page. Think aloud." No help unless stuck for 2 minutes | Completion, time, where they stop | [H-S1](owner-flows.md) |
+| 3. Strengths | "Are these yours? What's missing?" | **Strength agreement:** step 1's strengths found among the final ones | |
+| 4. Proof | "For each strength, is this the work you'd show first?" | **Proof agreement:** of each strength's top 3 Auto picks, how many they keep | |
+| 5. A new page | Publish a page prepared from their work. "Where did it go? Is that right?" | Whether the placement and its note make sense | [H-S3](owner-flows.md) |
+| 6. Controls | Three tasks: put a strength first; keep one page off the home; make a link for a job they'd apply to | Task success without help; which layer they look in first ([controls](controls.md)) | [H-S4](owner-flows.md), [H-S5](owner-flows.md) |
+| 7. With AI | When the round has it: the first run again on a second copy, with Suggest | Time, and proposals accepted ([AI curation §10](ai-curation.md)) | [H-S2](owner-flows.md) |
+| 8. Their visitor | Afterwards, one of their likely visitors does steps 2 to 5 of §2.2 on the home they made | Whether a strength is missed | |
+
+**Targets:**
+
+| Measure | Target |
+|---|---|
+| First run finished without help | At least 4 in 5 |
+| Time to a first home page | Under 10 minutes; under 5 with AI |
+| Strength agreement | At least 80% of step 1's strengths among the final ones; none lost that the person says matters most |
+| Proof agreement | At least 2 of each strength's top 3 kept |
+| Control tasks without help | At least 80%, and nobody opens More options for a task Tune covers |
+| Strengths missed by their visitor | Zero, the same rule as §2.2 |
+
+Edit mode sends nothing anywhere: these are measured in sessions, and the AI measures are counted on the person's own computer ([AI curation §10](ai-curation.md)).
+
+**What would change the plan:**
+
+| If | Then |
+|---|---|
+| Strength agreement is low | The suggestions or the common strengths change ([for every site §3.1](for-every-site.md)), not the person's words |
+| Proof agreement is low | Matching and the score change ([curation §4](curation.md), [§5](curation.md)), first the topic vocabulary, then the weights |
+| People stop at step 2 of the first run | Lead with Common strengths, or with Suggest where AI is set up |
+| People open More options for ordinary tasks | That control moves into Tune |
+| A strength is missed by their visitor but was found by the rules | It's a view's L1 problem, as in §5 |
+
+## 7. Open decisions
 
 | # | Decision | Options | Recommendation |
 |---|---|---|---|
@@ -140,3 +185,4 @@ Telemetry runs only on the published site. It respects GPC, Do Not Track and `?t
 | E2 | Recruiting participants | The owner's network (second degree); a panel service | Second-degree network for hiring managers; a panel for recruiters |
 | E3 | Round 0 on mockups | Yes; wait for built pages | Yes: it's cheap, and it tests the spine's words before anything is built |
 | E4 | Recording sessions | Video with consent; notes only | Notes, plus video only with written consent, kept off the repository |
+| E5 | What site owners are tested on | Their own work, copied with consent; the starter's samples | Their own work: only the person can judge whether the proof is right |

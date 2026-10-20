@@ -1,6 +1,6 @@
 # The capability spine
 
-Every home view reads one curated piece of content, the **capability spine**: the owner's six capabilities, each with a line that says it, the evidence that proves it, a colleague's voice and a picture, plus the highlights, facts and positioning the views share. This page defines the spine, the three levels of information every view shows, the coverage rule that guards against the failure case, the role lens, and what's on screen in every view. It's part of [Home page views](README.md).
+Every home view reads one curated piece of content, the **capability spine**: the owner's six capabilities, each with a line that says it, the evidence that proves it, a colleague's voice and a picture, plus the highlights, facts and positioning the views share. This page defines the spine, the three levels of information every view shows, the coverage rule that guards against the failure case, the role lens, and what's on screen in every view. It's written for the owner's site; [Home views for every site](for-every-site.md) turns it into a model any site fills with its own 3 to 6 strengths, and [Curating the home page](curation.md) says how the proof is found. It's part of [Home page views](README.md).
 
 > **TL;DR.**
 > - **Three levels, in every view.** L1, the map: all six capabilities, seen in about 10 seconds with no action. L2, the signal: one capability's proof line, picture and voice. L3, the detail: its evidence, opened in place. The full pages are one step beyond (§1).
@@ -96,7 +96,6 @@ The spine is a content file, `content/showcase.json`, edited like any other cont
 
 ```json
 {
-  "positioning": "Design leader · Product strategy · AI transformation",
   "facts": [
     { "id": "years", "text": "18 years", "source": "ref:article/resume" }
   ],
@@ -126,7 +125,7 @@ The spine is a content file, `content/showcase.json`, edited like any other cont
 
 | Field | What it is |
 |---|---|
-| `positioning` | The one line under the name; today the résumé's summary |
+| `positioning` | The one line under the name: the site setting `positioning` (`content/site.json`), which already exists, not a field of the spine. Today the résumé's summary says it |
 | `facts` | Short verified facts (years, team size, people reached), each with its source |
 | `capabilities[].line` | The proof line: a fact, not an adjective, in about five words |
 | `capabilities[].proof` | The evidence: `kind` is one of `shipped`, `led`, `built`, `wrote`, `said`; it points at a page (`ref`), a résumé line (`resume`, a fragment the check finds in the résumé's text) or a recommendation |
@@ -140,6 +139,8 @@ The spine is a content file, `content/showcase.json`, edited like any other cont
 - every `ref` resolves to a published, open page; a private page or a draft is refused (the same rule as modes, V25 and V13 in [navigation modes](../desktop/modes.md));
 - every `resume` fragment and every `quote` appears word for word in its source, so an edit there can't leave the home page saying something its source no longer does;
 - every highlight's capability exists.
+
+**On every site, most of this is found, not written.** The `proof` list above is the owner's hand-picked one; in the general model a `proof` list holds only **pins**, and the rules find the rest in the site's published pages each time it's built. The decisions the curation adds (the goal, what each strength matches, hides, the curation settings) and what's computed instead of stored are in [curation §2](curation.md).
 
 ## 3. The six capabilities
 
@@ -155,6 +156,8 @@ The proposed taxonomy, built from the résumé, the articles and the recommendat
 | **Systems and operating models** | Systems | Design systems, ways of working, the machinery of a design org | Belong Design System |
 
 The default order follows the positioning line (leader, strategy, AI) and then the depth of evidence.
+
+These six are the owner's. Another site has its own 3 to 6, named by the person (in edit mode, **strengths**), suggested from their pages or picked from a list of common ones ([for every site §3](for-every-site.md)), and every view adapts its layout to the count ([for every site §4](for-every-site.md)).
 
 ## 4. The evidence, and where it's thin
 
@@ -193,7 +196,7 @@ How each view meets it:
 | Proof grid | The rows |
 | Questions | Question 1 is open at rest, and its answer is the six capabilities |
 
-How it's tested: each capability's L1 element carries `data-capability="<id>"` in the page's first HTML (not added by a script later). An E2E test opens each offered view at both sizes and checks that all six are in the viewport and visible. A new view can't be offered until it passes.
+How it's tested: each capability's L1 element carries `data-capability="<id>"` in the page's first HTML (not added by a script later). An E2E test opens each offered view at both sizes and checks that all six are in the viewport and visible. A new view can't be offered until it passes. On any site, the test runs at that site's own count of strengths, 3 to 6, so the rule holds for everyone, not only at six.
 
 ## 6. The role lens
 
@@ -211,6 +214,8 @@ A recruiter often knows the role. The lens lets a link say it: `/?for=ai` opens 
 - **It's kept only for the visit** (session storage), not remembered across visits: the next visit starts neutral.
 - **It travels:** the view's own Copy link keeps it, so a recruiter can send a hiring manager the same first screen.
 - **It changes order and the lead voice only:** the same capabilities, proof and evidence, so the coverage rule holds under every lens.
+
+**On every site,** the lenses are the goal's presets (by role for Get hired, by service or industry for Win clients, by theme for Share my work) plus any the person makes, and a person can make a link for one job: the same lens behind a generated code, with who it's for kept privately ([owner flows §5](owner-flows.md)).
 
 ## 7. Always on screen
 
@@ -271,6 +276,6 @@ Each view adds its own (the highlights seen, the reel's chapters, the keyword pi
 | # | Decision | Options | Recommendation |
 |---|---|---|---|
 | F1 | Six capabilities, or fewer | Six; four (Leadership, Strategy, AI, Making) | Six: Craft and Systems are where the "complete design leader" shows, and they're cheap at L1 |
-| F2 | The lens values | `leader`, `ai`, `strategy`, `maker`; free text matched against keywords | The four fixed values; free text later, with Keywords |
-| F3 | A capability with only résumé lines | Show it with Ask me about it; hide it until it has a page | Show it: hiding it is the failure case |
-| F4 | Where `showcase.json` is edited | A new edit mode screen; inside the home hub's settings | A Home screen in edit mode, with a coverage preview per view |
+| F2 | The lens values | `leader`, `ai`, `strategy`, `maker`; free text matched against keywords | The four fixed values for the owner; on every site, the goal's presets and the person's own lenses ([owner flows §5](owner-flows.md)) |
+| F3 | A capability with only résumé lines | Show it with Ask me about it; hide it until it has a page | Show it: hiding it is the failure case. A capability with no proof at all is hidden ([curation §10](curation.md), CU7) |
+| F4 | Where `showcase.json` is edited | A new edit mode screen; inside the home hub's settings | Resolved: the Home screen, with the real home page as its preview and the coverage meter over it ([owner flows §1](owner-flows.md)) |

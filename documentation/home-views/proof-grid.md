@@ -272,6 +272,7 @@ Nothing moves on its own.
 | Components | A Proof grid compound (a table, its own container queries for the accordion), reusing Bento's evidence drawer; a print stylesheet |
 | Tests | Coverage at 1280 and 360; counts equal the spine's; the cell states; keyboard; `#cap-<id>-<kind>` addresses; axe; screenshots; print |
 | Telemetry | `capability_l3_open` with `kind` (or `all` for a row), plus the shared events |
+| On every site | 3 to 6 rows ([for every site §4](for-every-site.md)); the columns are the five kinds of proof the site uses most, `spoke` and `recognised` among the candidates ([for every site §3.3](for-every-site.md)). Offered with 3 kinds in use and 8 proof items ([§5](for-every-site.md)). Settings: Density, Order, Columns and Empty cells ([controls §3](controls.md)) |
 
 ## 11. Risks
 

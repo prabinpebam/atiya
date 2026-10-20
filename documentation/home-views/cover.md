@@ -189,6 +189,7 @@ Both answer the visitor's own scroll or press, so neither needs an exception to 
 | Content | The spine; a highlight marked as the cover story; the cover picture, light and dark |
 | Components | A Cover layout (masthead, picture, story band, contents list) and a Feature compound for the spread; both from existing fundamentals |
 | Tests | Coverage at 1280 and 360; axe; screenshots in both modes at three widths |
+| On every site | 3 to 6 cover lines, larger with fewer ([for every site §4](for-every-site.md)). Offered with Bento's minimum and a cover picture ([§5](for-every-site.md)). The default view for Share my work. Settings: Density, Order, Cover picture and Cover story ([controls §3](controls.md)) |
 
 ## 11. Risks
 

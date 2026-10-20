@@ -197,7 +197,7 @@ At rest, question 1 is open, so the six capabilities are on the first screen.
 - **Matching in the browser:** the typed question is matched against the nine questions, the spine's capability names and keywords, their synonyms (shared with [Keywords](keywords.md)) and the pages' titles. The index is built into the page; nothing typed leaves the browser.
 - **What it shows:** the closest question's answer, or the matching capabilities' evidence, with "Closest answer:" above it so it never pretends to be a direct reply.
 - **Nothing matched:** "There's no answer to that here yet." and Ask me about it, which opens the contact form with the question filled in.
-- **No AI at launch.** A grounded AI answer (one that answers only from the site's public pages and cites them) would need a server the site doesn't have, and an answer the owner hasn't signed off. It's a later option (A2).
+- **No AI while a visitor reads.** A grounded AI answer (one that answers only from the site's public pages and cites them) would need a server the site doesn't have, and an answer the owner hasn't signed off. AI helps earlier instead: it drafts the answers while the person edits, each citing its source, for them to sign off ([AI curation §1](ai-curation.md), A2).
 
 ## 6. Task flows
 
@@ -247,6 +247,7 @@ Nothing moves on its own.
 | Index | Built at build time into the page, shared with Keywords |
 | Tests | Coverage at 1280 and 360 (question 1 open at rest); no-script reading; keyboard; `#q<n>` addresses; the no-match path; axe; screenshots |
 | Telemetry | `question_open` (`id`), `question_asked` (`matched`: a question id or none; never the text), plus the shared events |
+| On every site | The question set is the goal's ([for every site §2](for-every-site.md)), edited by the person; question 1's answer lists 3 to 6 strengths ([§4](for-every-site.md)). The person writes the answers, or AI drafts them while they edit, each citing its source ([AI curation §4](ai-curation.md), job 8), and the rules fill in each answer's evidence. Offered with 5 questions answered ([§5](for-every-site.md)). Settings: Order, Questions and Ask something else ([controls §3](controls.md)) |
 
 ## 11. Risks
 
@@ -262,6 +263,6 @@ Nothing moves on its own.
 | # | Decision | Options | Recommendation |
 |---|---|---|---|
 | A1 | The questions | The IA's nine; fewer; the visitors' own, from what they type | The IA's nine, shortened on screen; revisit with `question_asked` after a few months |
-| A2 | Ask something else | Local matching; a grounded AI answer | Local matching at launch; a grounded AI answer later, only with citations and signed-off limits |
+| A2 | Ask something else | Local matching; a grounded AI answer | Local matching. An AI answer at visit time is set aside, since AI runs only while the person edits ([AI curation §1](ai-curation.md), AI1 and AI2); AI can draft the answers then, each cited, for the person to sign off |
 | A3 | Question 8 | Answer it; leave it out | Answer it |
 | A4 | The open question at rest | Question 1; the lens's | Question 1 always (it carries L1), with its six capabilities in the lens's order |

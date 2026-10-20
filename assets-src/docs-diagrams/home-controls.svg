@@ -1,0 +1,65 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 520">
+<title>Controls in three layers</title>
+<desc>The owner's controls come in three layers, each one step deeper and never more than two. Essentials, for everyone in the first five minutes: the goal, three to six strengths and the default view. Tune, for when something looks wrong: each strength's line and proof, highlights and voices, up to five settings per view, and links for a role or a job. Advanced, behind More options: matching rules, Prefer recent work, Hold automatic changes, the length of the detail and the topic vocabulary. Every item the rules pick is Auto, Pinned or Hidden, and every view shares one vocabulary of presentation settings: Lead, Density, Pictures, Motion and Order.</desc>
+<g id="essentials">
+<rect class="out" x="40" y="40" width="290" height="270" rx="18" />
+<text class="out-name" x="60" y="72">Essentials</text>
+<text class="out-note" x="60" y="94">everyone, in the first five minutes</text>
+<text class="out-note" x="60" y="140">Your goal</text>
+<text class="out-note" x="60" y="168">Your 3 to 6 strengths</text>
+<text class="out-note" x="60" y="196">The default view</text>
+<text class="out-note" x="60" y="278">Enough for a good home page</text>
+</g>
+<g id="tune">
+<rect class="gate" x="355" y="40" width="290" height="270" rx="18" />
+<text class="name" x="375" y="72">Tune</text>
+<text class="note" x="375" y="94">when something looks wrong</text>
+<text class="line" x="375" y="140">Each strength: line, proof</text>
+<text class="line" x="375" y="168">Highlights and voices</text>
+<text class="line" x="375" y="196">Views: up to 5 settings each</text>
+<text class="line" x="375" y="224">Links for a role or a job</text>
+<text class="note" x="375" y="278">One tab each on the Home screen</text>
+</g>
+<g id="advanced">
+<rect class="docs" x="670" y="40" width="290" height="270" rx="18" />
+<text class="name" x="690" y="72">Advanced</text>
+<text class="note" x="690" y="94">behind one More options</text>
+<text class="line" x="690" y="140">Matching rules</text>
+<text class="line" x="690" y="168">Prefer recent work</text>
+<text class="line" x="690" y="196">Hold automatic changes</text>
+<text class="line" x="690" y="224">Detail length, 3 to 8</text>
+<text class="line" x="690" y="252">Topic vocabulary</text>
+<text class="note" x="690" y="278">Most people never open it</text>
+</g>
+<g id="states">
+<rect class="box" x="40" y="340" width="440" height="150" rx="18" />
+<text class="name" x="60" y="372">Every item, three states</text>
+<rect class="chip" x="60" y="392" width="124" height="36" rx="10" />
+<text class="chip-name" x="76" y="415">Auto</text>
+<text class="note" x="60" y="452">the rules decide</text>
+<rect class="gate" x="196" y="392" width="124" height="36" rx="10" />
+<text class="chip-name" x="212" y="415">Pinned</text>
+<text class="note" x="196" y="452">always shown</text>
+<rect class="chip" x="332" y="392" width="128" height="36" rx="10" />
+<text class="chip-name" x="348" y="415">Hidden</text>
+<text class="note" x="332" y="452">never shown</text>
+<text class="note" x="60" y="476">Every pick says why it was picked</text>
+</g>
+<g id="vocabulary">
+<rect class="box" x="520" y="340" width="440" height="150" rx="18" />
+<text class="name" x="540" y="372">One vocabulary for every view</text>
+<rect class="chip" x="540" y="392" width="76" height="36" rx="10" />
+<text class="label" x="556" y="415">Lead</text>
+<rect class="chip" x="622" y="392" width="92" height="36" rx="10" />
+<text class="label" x="638" y="415">Density</text>
+<rect class="chip" x="720" y="392" width="96" height="36" rx="10" />
+<text class="label" x="736" y="415">Pictures</text>
+<rect class="chip" x="822" y="392" width="84" height="36" rx="10" />
+<text class="label" x="838" y="415">Motion</text>
+<rect class="chip" x="540" y="436" width="76" height="36" rx="10" />
+<text class="label" x="556" y="459">Order</text>
+<text class="note" x="632" y="459">plus at most two of its own</text>
+</g>
+<path class="arrow" d="M330 175 H352" />
+<path class="arrow" d="M645 175 H667" />
+</svg>

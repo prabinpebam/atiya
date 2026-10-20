@@ -1,0 +1,54 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 420">
+<title>Bento at three, four, five and six strengths</title>
+<desc>The same Bento view for a site with three, four, five or six strengths, on a wide screen. Above the tiles, always the lead (who you are) and In their words. Three strengths make one row of tall tiles, each showing two proofs at level 2. Four make a two-by-two grid. Five make a row of two wide tiles and a row of three. Six make two rows of three. Every strength is still on the first screen.</desc>
+<g id="s3">
+<text class="chip-name" x="40" y="52">3 strengths</text>
+<rect class="src" x="40" y="64" width="200" height="260" rx="14" />
+<rect class="chip" x="56" y="80" width="104" height="70" rx="8" />
+<rect class="chip" x="168" y="80" width="56" height="70" rx="8" />
+<rect class="derived" x="56" y="158" width="53" height="150" rx="8" />
+<rect class="derived" x="113" y="158" width="54" height="150" rx="8" />
+<rect class="derived" x="171" y="158" width="53" height="150" rx="8" />
+<text class="note" x="40" y="352">One row, tall tiles</text>
+<text class="note" x="40" y="374">Two proofs each at L2</text>
+</g>
+<g id="s4">
+<text class="chip-name" x="280" y="52">4 strengths</text>
+<rect class="src" x="280" y="64" width="200" height="260" rx="14" />
+<rect class="chip" x="296" y="80" width="104" height="70" rx="8" />
+<rect class="chip" x="408" y="80" width="56" height="70" rx="8" />
+<rect class="derived" x="296" y="158" width="82" height="72" rx="8" />
+<rect class="derived" x="382" y="158" width="82" height="72" rx="8" />
+<rect class="derived" x="296" y="236" width="82" height="72" rx="8" />
+<rect class="derived" x="382" y="236" width="82" height="72" rx="8" />
+<text class="note" x="280" y="352">Two by two</text>
+<text class="note" x="280" y="374">One proof, one picture</text>
+</g>
+<g id="s5">
+<text class="chip-name" x="520" y="52">5 strengths</text>
+<rect class="src" x="520" y="64" width="200" height="260" rx="14" />
+<rect class="chip" x="536" y="80" width="104" height="70" rx="8" />
+<rect class="chip" x="648" y="80" width="56" height="70" rx="8" />
+<rect class="derived" x="536" y="158" width="82" height="72" rx="8" />
+<rect class="derived" x="622" y="158" width="82" height="72" rx="8" />
+<rect class="derived" x="536" y="236" width="53" height="72" rx="8" />
+<rect class="derived" x="593" y="236" width="54" height="72" rx="8" />
+<rect class="derived" x="651" y="236" width="53" height="72" rx="8" />
+<text class="note" x="520" y="352">Two wide, then three</text>
+<text class="note" x="520" y="374">The two strongest go wide</text>
+</g>
+<g id="s6">
+<text class="chip-name" x="760" y="52">6 strengths</text>
+<rect class="src" x="760" y="64" width="200" height="260" rx="14" />
+<rect class="chip" x="776" y="80" width="104" height="70" rx="8" />
+<rect class="chip" x="888" y="80" width="56" height="70" rx="8" />
+<rect class="derived" x="776" y="158" width="53" height="72" rx="8" />
+<rect class="derived" x="833" y="158" width="54" height="72" rx="8" />
+<rect class="derived" x="891" y="158" width="53" height="72" rx="8" />
+<rect class="derived" x="776" y="236" width="53" height="72" rx="8" />
+<rect class="derived" x="833" y="236" width="54" height="72" rx="8" />
+<rect class="derived" x="891" y="236" width="53" height="72" rx="8" />
+<text class="note" x="760" y="352">Two rows of three</text>
+<text class="note" x="760" y="374">As designed on Bento</text>
+</g>
+</svg>

@@ -1,0 +1,86 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 640">
+<title>The Home screen in edit mode</title>
+<desc>Edit mode's Home screen is a split view. On the left, five tabs: Strengths, Highlights, Views, Links and Health. The Strengths tab lists the site's strengths, each with its state; the chosen one opens to its short name, its line and its proof, best first, each item Auto, Pinned or Hidden, with Suggest to ask for more. On the right, a live preview of the home page as a visitor sees it, with the view, the width and the lens chosen above it and a coverage meter that says how many strengths are on the first screen. Selecting a tile in the preview selects that strength on the left.</desc>
+<g id="bar">
+<rect class="src" x="40" y="40" width="920" height="56" rx="14" />
+<text class="chip-name" x="56" y="74">Home</text>
+<rect class="chip" x="470" y="50" width="130" height="36" rx="10" />
+<text class="label" x="486" y="73">View: Bento</text>
+<rect class="chip" x="610" y="50" width="120" height="36" rx="10" />
+<text class="label" x="626" y="73">Wide · Phone</text>
+<rect class="chip" x="740" y="50" width="110" height="36" rx="10" />
+<text class="label" x="756" y="73">Lens: none</text>
+<rect class="out" x="860" y="50" width="84" height="36" rx="10" />
+<text class="out-note" x="876" y="73">Suggest</text>
+</g>
+<g id="tabs">
+<rect class="box" x="40" y="112" width="420" height="488" rx="16" />
+<rect class="gate" x="56" y="128" width="86" height="32" rx="10" />
+<text class="label" x="72" y="149">Strengths</text>
+<rect class="chip" x="147" y="128" width="92" height="32" rx="10" />
+<text class="label" x="163" y="149">Highlights</text>
+<rect class="chip" x="244" y="128" width="61" height="32" rx="10" />
+<text class="label" x="260" y="149">Views</text>
+<rect class="chip" x="310" y="128" width="61" height="32" rx="10" />
+<text class="label" x="326" y="149">Links</text>
+<rect class="chip" x="376" y="128" width="68" height="32" rx="10" />
+<text class="label" x="392" y="149">Health</text>
+</g>
+<g id="strengths">
+<rect class="chip" x="56" y="176" width="388" height="40" rx="10" />
+<text class="chip-name" x="72" y="202">Leadership</text>
+<text class="note" x="394" y="202">Ready</text>
+<rect class="chip" x="56" y="222" width="388" height="40" rx="10" />
+<text class="chip-name" x="72" y="248">Strategy</text>
+<text class="note" x="366.8" y="248">1 warning</text>
+<rect class="docs" x="56" y="268" width="388" height="226" rx="10" />
+<text class="chip-name" x="72" y="294">AI</text>
+<text class="note" x="340" y="294">Ready</text>
+<text class="note" x="72" y="320">Line</text>
+<rect class="chip" x="72" y="330" width="356" height="32" rx="10" />
+<text class="line" x="88" y="351">Handoff is now code</text>
+<text class="note" x="72" y="384">Proof, best first</text>
+<rect class="chip" x="72" y="394" width="356" height="30" rx="8" />
+<text class="label" x="86" y="414">Pinned</text>
+<text class="line" x="160" y="414">The AI program (résumé)</text>
+<rect class="chip" x="72" y="428" width="356" height="30" rx="8" />
+<text class="label" x="86" y="448">Auto</text>
+<text class="line" x="160" y="448">Cloner Pro</text>
+<rect class="chip" x="72" y="462" width="356" height="30" rx="8" />
+<text class="label" x="86" y="482">Hidden</text>
+<text class="line" x="160" y="482">An older note</text>
+<rect class="chip" x="56" y="502" width="388" height="40" rx="10" />
+<text class="chip-name" x="72" y="528">Making</text>
+<text class="note" x="394" y="528">Ready</text>
+<rect class="chip" x="56" y="548" width="388" height="40" rx="10" />
+<text class="chip-name" x="72" y="574">Craft, Systems</text>
+<text class="note" x="387.2" y="574">2 more</text>
+</g>
+<g id="preview">
+<rect class="box" x="476" y="112" width="484" height="488" rx="16" />
+<text class="name" x="492" y="144">Preview</text>
+<text class="note" x="572" y="144">as a visitor sees it</text>
+<rect class="gate" x="752" y="124" width="192" height="32" rx="10" />
+<text class="label" x="768" y="145">6 of 6 on the first screen</text>
+<rect class="src" x="492" y="168" width="452" height="380" rx="12" />
+<rect class="chip" x="508" y="184" width="240" height="110" rx="10" />
+<text class="chip-name" x="524" y="244">Lead: who you are</text>
+<rect class="chip" x="756" y="184" width="172" height="110" rx="10" />
+<text class="chip-name" x="772" y="244">In their words</text>
+<rect class="chip" x="508" y="302" width="134" height="100" rx="10" />
+<text class="chip-name" x="524" y="357">Leadership</text>
+<rect class="chip" x="651" y="302" width="134" height="100" rx="10" />
+<text class="chip-name" x="667" y="357">Strategy</text>
+<rect class="out" x="794" y="302" width="134" height="100" rx="10" />
+<text class="out-name" x="810" y="344">AI</text>
+<text class="out-note" x="810" y="368">Selected</text>
+<rect class="chip" x="508" y="410" width="134" height="100" rx="10" />
+<text class="chip-name" x="524" y="465">Making</text>
+<rect class="chip" x="651" y="410" width="134" height="100" rx="10" />
+<text class="chip-name" x="667" y="465">Craft</text>
+<rect class="chip" x="794" y="410" width="134" height="100" rx="10" />
+<text class="chip-name" x="810" y="465">Systems</text>
+<text class="note" x="492" y="576">Select a tile to edit that strength on the left</text>
+</g>
+<path class="dashed" d="M794 352 H700 V340 H447" />
+</svg>

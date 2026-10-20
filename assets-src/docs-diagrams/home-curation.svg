@@ -1,0 +1,74 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 590">
+<title>Curating the home page: store decisions, compute the rest</title>
+<desc>The site's content (published open pages, the résumé, recommendations, topics and sections) is read into an evidence index, one row per piece of proof with its signals. For each strength, the rules match and score that evidence, pins first. The slots of each view are then filled: coverage first, one page per strength, hides always respected. The result is the picks for every view, at three levels, computed at each build and live in edit mode, never stored. What is stored is the owner's decisions, in content/showcase.json: the goal, the strengths and their lines, pins, hides, voices and links. An optional AI helper reads a digest of the evidence index and proposes decisions, each word cited, which the owner accepts or rejects. A health report lists what's blocking, warnings and opportunities, each with its fix.</desc>
+<g id="ai">
+<rect class="later" x="40" y="40" width="440" height="120" rx="18" />
+<text class="name" x="60" y="72">AI helper</text>
+<text class="note" x="60" y="94">optional, at authoring time only</text>
+<text class="line" x="60" y="122">Suggests strengths, lines and places</text>
+<text class="line" x="60" y="146">Every word cited; you accept it or not</text>
+</g>
+<g id="decisions">
+<rect class="gate" x="520" y="40" width="440" height="120" rx="18" />
+<text class="name" x="540" y="72">Your decisions</text>
+<text class="code" x="540" y="94">content/showcase.json</text>
+<text class="line" x="540" y="122">Goal, strengths and their lines</text>
+<text class="line" x="540" y="146">Pins, hides, voices, links</text>
+</g>
+<text class="label" x="40" y="206">Computed at each build, and live in edit mode</text>
+<g id="content">
+<rect class="src" x="40" y="220" width="200" height="160" rx="16" />
+<text class="name" x="56" y="252">content/</text>
+<text class="note" x="56" y="274">what the site holds</text>
+<text class="line" x="56" y="306">Open, published pages</text>
+<text class="line" x="56" y="330">Résumé, voices</text>
+<text class="line" x="56" y="354">Topics, sections</text>
+</g>
+<g id="index">
+<rect class="box" x="280" y="220" width="200" height="160" rx="16" />
+<text class="name" x="296" y="252">Evidence index</text>
+<text class="note" x="296" y="274">one row per proof</text>
+<text class="line" x="296" y="306">Section, topics, kind</text>
+<text class="line" x="296" y="330">Your part, dates</text>
+<text class="line" x="296" y="354">Depth, pictures, links</text>
+</g>
+<g id="match">
+<rect class="box" x="520" y="220" width="200" height="160" rx="16" />
+<text class="name" x="536" y="252">Match and score</text>
+<text class="note" x="536" y="274">per strength</text>
+<text class="line" x="536" y="306">Pins first</text>
+<text class="line" x="536" y="330">Topics, sections, words</text>
+<text class="line" x="536" y="354">Kind, depth, recency</text>
+</g>
+<g id="fill">
+<rect class="box" x="760" y="220" width="200" height="160" rx="16" />
+<text class="name" x="776" y="252">Fill the slots</text>
+<text class="note" x="776" y="274">per view</text>
+<text class="line" x="776" y="306">Coverage first</text>
+<text class="line" x="776" y="330">One page, one strength</text>
+<text class="line" x="776" y="354">Hides always win</text>
+</g>
+<g id="health">
+<rect class="docs" x="40" y="440" width="440" height="120" rx="18" />
+<text class="name" x="60" y="472">Health report</text>
+<text class="note" x="60" y="494">in edit mode, never shown to visitors</text>
+<text class="line" x="60" y="522">Blocking, warnings, opportunities</text>
+<text class="line" x="60" y="546">Each with the fix beside it</text>
+</g>
+<g id="picks">
+<rect class="out" x="520" y="440" width="440" height="120" rx="18" />
+<text class="out-name" x="540" y="472">The picks, for every view</text>
+<text class="out-note" x="540" y="494">computed, never stored</text>
+<text class="out-note" x="540" y="522">L1 every strength, L2 its best proof</text>
+<text class="out-note" x="540" y="546">L3 the rest, ranked, within its budget</text>
+</g>
+<path class="arrow" d="M240 300 H277" />
+<path class="arrow" d="M480 300 H517" />
+<path class="arrow" d="M720 300 H757" />
+<path class="arrow" d="M620 160 V217" />
+<path class="arrow" d="M860 160 V217" />
+<path class="dashed" d="M480 100 H517" />
+<path class="dashed" d="M380 220 V163" />
+<path class="arrow" d="M860 380 V437" />
+<path class="arrow" d="M780 380 V410 H260 V437" />
+</svg>

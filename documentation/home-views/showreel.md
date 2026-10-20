@@ -278,6 +278,7 @@ Each line follows the [copy rules](foundation.md): facts, word-for-word quotes, 
 | Rules | The visual language amendment (H4) |
 | Tests | Coverage at 1280 and 360 (the chapter bar, the still line); no play under reduced motion; no play on a link visit; Pause reachable and working; stops after three loops; axe; screenshots of chapter stills |
 | Telemetry | `reel_chapter` (`index`, `how`: play, seek, next, link), plus the shared events (Open this sends `capability_l3_open`) |
+| On every site | 5 to 8 chapters, about 60 to 90 seconds ([for every site §4](for-every-site.md)). Without a hand-made `reel` block, the chapters follow the strengths and highlights in order, with the standard templates, and the captions are the highlights' titles and the strengths' lines (AI can draft captions, each cited: [AI curation §4](ai-curation.md), job 10). Offered with 5 highlights with pictures and a picture for every strength ([§5](for-every-site.md)). Settings: Order, Pace and The film ([controls §3](controls.md)) |
 
 ## 11. Risks
 

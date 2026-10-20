@@ -275,6 +275,7 @@ The drift is motion on its own, so it falls under the same amendment as the Show
 | Index | Built at build time into the page: keywords, synonyms and matches. No server and no external search |
 | Tests | Coverage at 1280 and 360 (the group labels, and the six summaries with nothing picked); picking by keyboard; `?pick=` restores; the no-evidence path; drift stops under reduced motion and on hover; axe; screenshots |
 | Telemetry | `keyword_pick` (`id`, `on`), `skill_typed` (`matched`: true or false only, never the text), plus the shared events |
+| On every site | 3 to 6 groups, one per strength, up to 8 keywords each ([for every site §4](for-every-site.md)). The keywords are each strength's `keywords`, offered from the topic vocabulary's labels and synonyms ([curation §4.1](curation.md)) for the person to edit. Offered with 12 keywords and 8 proof items ([§5](for-every-site.md)). Settings: Motion, Order, Typing a skill and Per group ([controls §3](controls.md)) |
 
 ## 11. Risks
 

@@ -273,6 +273,7 @@ Nothing moves on its own, in keeping with [visual language §6](../site-ui/visua
 | Components | A Bento grid compound (a container, with its own `c.bento` size queries), a capability tile and an evidence drawer, both made of existing fundamentals; In their words reuses the recommendations' quote |
 | Tests | The coverage test (all six `data-capability` in view at 1280 and 360); the drawer's keyboard and `#cap-` address; axe; screenshots in light and dark at 360, 768 and 1280 |
 | Telemetry | `capability_l2_open` (hover or focus held over 1 s), `capability_l3_open` (drawer), plus the shared events |
+| On every site | 3 to 6 tiles: one row of three tall tiles, two by two, two wide then three, or two rows of three ([for every site §4](for-every-site.md)). Offered once there are 3 strengths, each with proof ([§5](for-every-site.md)). Settings: Lead, Density, Pictures, Order and In their words ([controls §3](controls.md)) |
 
 ## 11. Risks
 

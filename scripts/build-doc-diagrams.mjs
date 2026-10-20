@@ -44,6 +44,10 @@ const DIAGRAMS = [
   { name: 'home-proof-grid', page: 'documentation/home-views/proof-grid.md', prefix: 'hv-proof' },
   { name: 'home-questions', page: 'documentation/home-views/questions.md', prefix: 'hv-questions' },
   { name: 'home-ideas', page: 'documentation/home-views/more-ideas.md', prefix: 'hv-ideas' },
+  { name: 'home-scale', page: 'documentation/home-views/for-every-site.md', prefix: 'hv-scale' },
+  { name: 'home-curation', page: 'documentation/home-views/curation.md', prefix: 'hv-curation' },
+  { name: 'home-editor', page: 'documentation/home-views/owner-flows.md', prefix: 'hv-editor' },
+  { name: 'home-controls', page: 'documentation/home-views/controls.md', prefix: 'hv-controls' },
 ];
 
 const V = (n) => `var(--color-${n})`;

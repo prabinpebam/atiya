@@ -241,6 +241,7 @@ Nothing advances on its own, so Spotlight needs no exception to [visual language
 | Components | A Spotlight layout composing the site's Carousel compound for the stage, a capability index and a rail; the details reuse Bento's evidence drawer |
 | Tests | Coverage at 1280 and 360; keyboard (Next, the rail, Jump to, the details); `#h-` addresses; no autoplay; axe; screenshots |
 | Telemetry | `highlight_view` (`id`, `how`: next, rail, jump, link), plus the shared events |
+| On every site | Jump to holds 3 to 6 buttons; the rail keeps every highlight, at most 8, picked as [curation §6](curation.md) says ([for every site §4](for-every-site.md)). Offered with 4 highlights that have pictures ([§5](for-every-site.md)). Settings: Motion, Order, Highlights (4 to 8) and The rail ([controls §3](controls.md)) |
 
 ## 11. Risks
 

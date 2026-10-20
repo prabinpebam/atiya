@@ -576,6 +576,51 @@
       "group": "Ways to explore/Home page views"
     },
     {
+      "path": "home-views/for-every-site.md",
+      "title": "Home views for every site",
+      "order": 50.62,
+      "icon": "public",
+      "status": "draft",
+      "updated": "2026-10-20",
+      "group": "Ways to explore/Home page views/For site owners"
+    },
+    {
+      "path": "home-views/curation.md",
+      "title": "Curating the home page",
+      "order": 50.63,
+      "icon": "filter_alt",
+      "status": "draft",
+      "updated": "2026-10-20",
+      "group": "Ways to explore/Home page views/For site owners"
+    },
+    {
+      "path": "home-views/ai-curation.md",
+      "title": "Curating with AI",
+      "order": 50.64,
+      "icon": "auto_awesome",
+      "status": "draft",
+      "updated": "2026-10-20",
+      "group": "Ways to explore/Home page views/For site owners"
+    },
+    {
+      "path": "home-views/owner-flows.md",
+      "title": "Making your home page",
+      "order": 50.65,
+      "icon": "edit_note",
+      "status": "draft",
+      "updated": "2026-10-20",
+      "group": "Ways to explore/Home page views/For site owners"
+    },
+    {
+      "path": "home-views/controls.md",
+      "title": "Controls",
+      "order": 50.66,
+      "icon": "tune",
+      "status": "draft",
+      "updated": "2026-10-20",
+      "group": "Ways to explore/Home page views/For site owners"
+    },
+    {
       "path": "poc-3d-navigation/spec.md",
       "title": "Planet spec",
       "order": 51,

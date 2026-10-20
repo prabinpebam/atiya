@@ -156,14 +156,16 @@ Which views are offered, and which is the default, are content: a `home` key in 
   "primary": "site",
   "home": {
     "default": "bento",
-    "offered": ["bento", "cover", "proof-grid"]
+    "offered": ["bento", "cover", "proof-grid"],
+    "settings": { "bento": { "density": "full" } }
   }
 }
 ```
 
-- Edited on edit mode's **Ways to explore** screen, in a Home views group: a switch per built view, and a choice of default among those switched on. Each row has Preview, which opens the view in a new tab.
-- The check refuses a default that isn't offered, an offered view that isn't built, and a view that fails the coverage rule ([foundation §5](foundation.md)).
-- With no `home` key, the site offers Bento alone, as its default.
+- Edited on edit mode's **Home** screen, in its Views tab: a switch per built view, a choice of default among those switched on, each view's settings, and Preview, which opens the view in a new tab ([owner flows §1](owner-flows.md), OF1). **Ways to explore** shows one line for the home page, linking there.
+- **`settings`** holds each view's presentation settings, only where they differ from the defaults: one shared vocabulary (Lead, Density, Pictures, Motion, Order) and at most two of a view's own ([controls §3](controls.md)).
+- The check refuses a default that isn't offered, an offered view that isn't built, a view below its minimum ([for every site §5](for-every-site.md)), and a view that fails the coverage rule ([foundation §5](foundation.md)).
+- With no `home` key, the home page is the Classic hub until the person makes their home page ([for every site §8](for-every-site.md)); the owner's site sets Bento as its default.
 
 ## 6. Views and modes
 

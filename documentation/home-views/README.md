@@ -1,6 +1,6 @@
 # Home page views
 
-The home page has one job: a hiring manager or recruiter who lands on it should leave with a complete, correct picture of what the owner can do, and enough confidence to shortlist him. These pages design several ways to present that home page, called **home views**. Every view reads the same content, the **capability spine**, and shows it at three levels of detail. A visitor can switch views at any time, and the site has a default. This is a design spec only: nothing here is built yet.
+The home page has one job: a hiring manager or recruiter who lands on it should leave with a complete, correct picture of what the owner can do, and enough confidence to shortlist him. These pages design several ways to present that home page, called **home views**. Every view reads the same content, the **capability spine**, and shows it at three levels of detail. A visitor can switch views at any time, and the site has a default. The views were designed on the owner's site and are specified for every site Atiya makes: anyone's strengths, proof found in their own pages, and the controls to curate it. This is a design spec only: nothing here is built yet.
 
 > **TL;DR.**
 > - **The failure to design against:** a hiring manager misses a strong capability that the site *does* show. So every view puts all six capabilities on its first screen, with no click, and a test holds that (the coverage rule, [foundation §5](foundation.md)).
@@ -9,6 +9,10 @@ The home page has one job: a hiring manager or recruiter who lands on it should 
 > - **The recommended default is Bento:** the highest coverage and scan speed for the least risk. Cover and Proof grid come next, then Showreel as the high-impact option the visitor chooses (§6).
 > - **Switching is a visitor's choice, kept on their device,** with a link per view so a recruiter can share the one they like ([switcher](switcher.md)).
 > - **The biggest finding isn't a layout:** AI transformation and product strategy, two of the strongest capabilities, rest mostly on résumé lines. Short proof pages for them would lift every view ([foundation §4](foundation.md)).
+> - **For every site, not only the owner's:**
+>   - a goal (Get hired, Win clients, Share my work), 3 to 6 strengths, and proof the rules find in the person's published pages ([for every site](for-every-site.md));
+>   - curated by rules that are reproducible and explain every pick, with pins and hides on top ([curation](curation.md)); AI helps only while the person edits, and every word it proposes is quoted from their own pages ([AI curation](ai-curation.md));
+>   - made on one edit mode screen, Home, with a first run of about ten minutes ([owner flows](owner-flows.md)), and controls in three layers so the first run needs three answers ([controls](controls.md)).
 
 <figure class="slate-figure" data-diagram="home-overview">
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 630" role="img" aria-labelledby="hv-overview__title hv-overview__desc" preserveAspectRatio="xMidYMid meet" data-slate-svg-motion="viewport" data-slate-safe-margin="24">
@@ -117,6 +121,8 @@ Today the home page is a hub of sections, and its summary says the site is under
 
 The audiences and priorities follow the [goals, audiences and journeys](../ia-navigation/01-goals-audiences-and-journeys.md) page of the IA work.
 
+**The people who make the home page** are a second audience: everyone who makes a site with Atiya Studio, from a student with three projects to a writer with two hundred notes. Their goals differ (getting hired, winning clients, sharing their work), and most will give the home page ten minutes, once. Their personas and what each needs are on [Home views for every site §1](for-every-site.md); their scenarios and flows on [Making your home page](owner-flows.md).
+
 ## 3. Goals and outcomes
 
 | Goal | Outcome we can observe | Target |
@@ -185,19 +191,24 @@ How each view does against the failure case and the other goals. "Miss risk" is 
 | [Choosing a view](switcher.md) | Change view, addresses, what's remembered, transitions, how views relate to modes |
 | [Bento](bento.md), [Cover](cover.md), [Spotlight](spotlight.md), [Showreel](showreel.md), [Keywords](keywords.md), [Proof grid](proof-grid.md), [Questions](questions.md) | Each view's design: levels, layout at 1280, 768 and 360, task flows, visuals, motion, accessibility, what it needs, risks |
 | [More ideas](more-ideas.md) | Career river, Two sides, The short version, Little planet's part, Constellation |
-| [How we'll know](evaluation.md) | Tests with hiring managers and recruiters, telemetry, targets |
+| [How we'll know](evaluation.md) | Tests with hiring managers and recruiters, and with site owners on their own work; telemetry; targets |
+| [Home views for every site](for-every-site.md) | The general model: goals, 3 to 6 strengths, kinds and sources of proof, each view at 3 to 6, minimums, budgets as a site grows, a new site |
+| [Curating the home page](curation.md) | Curation without AI: what's stored, the evidence index, matching, the score, filling the slots, what happens when content changes, the health report, scale |
+| [Curating with AI](ai-curation.md) | Where AI runs, the curation request, the grounding check, ten jobs and their rule-based twins, tailoring to a job, agents, privacy |
+| [Making your home page](owner-flows.md) | The Home screen in edit mode, the first run, eleven scenarios and their flows, curation where the person already is, links for a role or a job |
+| [Controls](controls.md) | Three layers of controls, advanced settings, one vocabulary for every view's settings, Auto, Pinned and Hidden, guardrails |
 
 ## 8. Phases
 
 | Phase | What ships | Why then |
 |---|---|---|
-| **1** | The capability spine and its coverage test; **Bento** as the default; Change view; the role lens | The default carries most visits; the spine is what every other view reads |
+| **1** | The capability spine and its coverage test; **Bento** as the default; Change view; the role lens. For every site: the curation rules and the health report; the Home screen with its first run, Strengths, Highlights and Views tabs; the topic vocabulary | The default carries most visits; the spine is what every other view reads, and the engine is generic from the start (H10) |
 | **2** | **Cover** and **Proof grid** | Low effort, two very different first impressions, both high on coverage |
 | **3** | **Spotlight**, **Showreel** and its MP4 cut | They share the highlights; the reel is the largest single piece of work |
 | **4** | **Keywords** | Needs the keyword field and its synonyms curated |
 | **5** | **Questions** | Needs an answer per question, with evidence, that the owner signs off |
 
-Alongside phase 1, the content work in [foundation §4](foundation.md) (short proof pages for AI transformation and product strategy) does more for every view than any layout.
+Alongside phase 1, the content work in [foundation §4](foundation.md) (short proof pages for AI transformation and product strategy) does more for every view than any layout. The Links tab (lenses and job links) can follow any phase; AI curation follows AI editing's first phase, in its own phases ([AI curation §11](ai-curation.md)).
 
 ## 9. Open decisions
 
@@ -214,4 +225,4 @@ Each view page lists its own. These decide the whole set.
 | H7 | Proof pages for AI transformation and product strategy | Write them; leave résumé lines | Write them, within what can be said publicly |
 | H8 | Which facts appear on the home page (years, team size, people reached) | All verified facts; a few | A few, each with its source |
 | H9 | The home hub's summary, which now says the site is under construction | Replace it with the positioning line; keep it | Replace it with the positioning line |
-| H10 | Home views as an engine feature for every Atiya site, or the owner's only | Engine; owner only | Owner only first; the spine's shape is generic enough to offer later |
+| H10 | Home views as an engine feature for every Atiya site, or the owner's only | Engine from the start, the owner's site first; owner only, generic later | Engine from the start, with the owner's site as its first user ([for every site §7](for-every-site.md), FS5) |
