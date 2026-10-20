@@ -369,6 +369,15 @@
       "group": "Content and publishing/Edit mode"
     },
     {
+      "path": "editor/ai-plan.md",
+      "title": "AI editing: plan and DoD",
+      "order": 25.62,
+      "icon": "checklist",
+      "status": "draft",
+      "updated": "2026-10-20",
+      "group": "Content and publishing/Edit mode"
+    },
+    {
       "path": "editor/drafts-and-publishing.md",
       "title": "Drafts and publishing: plan",
       "order": 25.65,

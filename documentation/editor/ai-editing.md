@@ -591,12 +591,12 @@ Tests never call a real service. Trying one is done on purpose, once per phase, 
 
 ## 15. Phases and Definition of Done
 
-One plan for both pages: [AI services](ai-services.md#5-recommendation-and-phases) refers to it.
+One plan for both pages: [AI services](ai-services.md#5-recommendation-and-phases) refers to it. The stages, each one's Definition of Done and their status are in the [plan](ai-plan.md).
 
 | Phase | What | Needs | Done when |
 |---|---|---|---|
-| 1. Foundations | Block keys and the migration. The contract and the check. The connector with the OpenAI-compatible adapter and rules-only Decide. The AI screen with cloud and local setup. The proposal store. The review. Ask AI on a block | — | The block flow passes its E2E against the stand-in, keyboard-only and axe included. Budgets are met. Build parity holds after the migration. Ollama and one cloud key have each been tried once for real |
-| 2. More reach | Turn into with AI. Section scope. The Anthropic and Gemini adapters. Jev as the decider. The needs-research route | 1 | Decide routes the same with Jev on and off. Jev's thresholds are set from at least 100 labelled requests and recorded in the as-built notes |
+| 1. Foundations | Block keys and the migration. The contract and the check. The connector with the OpenAI-compatible adapter and rules-only Decide. The AI screen with cloud and local setup. The proposal store. Ask AI on a block, reviewed in place. The needs-research route | — | The block flow passes its E2E against the stand-in, keyboard-only and axe included. Budgets are met. Build parity holds after the migration. Ollama and one cloud key have each been tried once for real |
+| 2. More reach | The Review tab. Turn into with AI. Section scope. The Anthropic and Gemini adapters. Jev as the decider | 1 | Decide routes the same with Jev on and off. Jev's thresholds are set from at least 100 labelled requests and recorded in the as-built notes |
 | 3. Comments | Anchors, storage, the Comments tab, adding, Fix with AI on one | 1 | Comments E2E passes. They're committed to the private repository with Save to remote. The fallback folder moves across when a private repository is set up |
 | 4. Whole article | Address comments with outcomes. Tighten, Restructure, Change the tone, Ask about the article, Review my article. AI's marks | 2, 3, the timeline's versions | A partly accepted rewrite passes E2E, with a version before and after |
 | 5. Empty page | Start with AI, the interview, the outline, the draft | 2 | The flow passes E2E, from the New article dialog and from an empty canvas |
