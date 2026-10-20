@@ -11,12 +11,12 @@
         { "id": "kind", "question": "What kind of leader?", "full": "What kind of leader is this person?" },
         { "id": "outcomes", "question": "What outcomes did they influence?", "full": "What outcomes have they influenced?" },
         { "id": "made", "question": "What did they lead or make?", "full": "What did they personally lead, decide, make, or enable?" },
-        { "id": "breadth", "question": "How broad, and where deepest?", "full": "How broad is the practice, and where is the deepest expertise?" },
+        { "id": "breadth", "question": "How broad, and where deepest?", "full": "How broad is the practice, and where is the deepest expertise?", "fill": "depth" },
         { "id": "together", "question": "How do they work with others?", "full": "How do they work with design, product, engineering, and leadership?" },
         { "id": "teams", "question": "How do they build teams?", "full": "How do they build teams and culture?" },
         { "id": "ai-and-code", "question": "How do they use AI and code?", "full": "How are AI and code used as part of the work?" },
-        { "id": "public", "question": "What can be discussed publicly?", "full": "What can be discussed publicly, given confidentiality constraints?" },
-        { "id": "contact", "question": "Contact, or a short résumé?", "full": "How can I contact them or review a concise résumé?" }
+        { "id": "public", "question": "What can be discussed publicly?", "full": "What can be discussed publicly, given confidentiality constraints?", "fill": "ask" },
+        { "id": "contact", "question": "Contact, or a short résumé?", "full": "How can I contact them or review a concise résumé?", "fill": "contact" }
       ]
     },
     "clients": {
@@ -30,7 +30,7 @@
         { "id": "for-whom", "question": "For whom?" },
         { "id": "results", "question": "What came of it?" },
         { "id": "how", "question": "How do you work?" },
-        { "id": "start", "question": "How do we start?" }
+        { "id": "start", "question": "How do we start?", "fill": "contact" }
       ]
     },
     "share": {

@@ -16,6 +16,8 @@ const SHOWCASE = `content/${SHOWCASE_FILE}`;
 const TOPICS = `content/${TOPICS_FILE}`;
 const WAYS = 'content/structures/ways.json';
 const PUBLIC = new Set(['public', 'publicRedacted', 'summaryOnly']);
+/** A quotation in an answer: “…” or "…". */
+const QUOTE = /[“"]([^”"]{2,})[”"]/g;
 
 type Index = Pick<ContentIndex, 'site' | 'articles' | 'origins' | 'routes' | 'recommendations' | 'media'> & { showcase: Showcase | null; topics: { topics: { id: string }[] } | null };
 
@@ -166,9 +168,19 @@ export function checkHome(index: Index, ways: { home?: HomeWays } | null, skip: 
       });
       if (l.voice) rec(l.voice, `lenses.${i}.voice`);
     });
+    // an answer's quotes are someone's words, or a page's: found word for word in a shown recommendation or an open page
+    let said: string[] | undefined;
+    const quoted = (q: string) => {
+      said ??= [...index.recommendations.filter((r) => !r.hidden).map((r) => normalise(r.text)), ...[...evidence.open].map((id) => fullText(index.articles.get(id)!))];
+      const n = normalise(q);
+      return said.some((t) => t.includes(n));
+    };
     showcase.questions?.forEach((q, i) => {
       q.capabilities.forEach((id, j) => needCap(id, `questions.${i}.capabilities.${j}`));
       q.proof?.forEach((p, j) => proof(p, `questions.${i}.proof.${j}`));
+      for (const m of q.answer.matchAll(QUOTE)) {
+        if (!quoted(m[1])) add2(`"${m[1]}" isn't in a recommendation or an open page word for word: copy it from there, or drop the quotation marks`, `questions.${i}.answer`);
+      }
     });
     showcase.reel?.chapters.forEach((ch, i) => {
       needCap(ch.capability, `reel.chapters.${i}.capability`);

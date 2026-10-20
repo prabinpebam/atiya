@@ -271,5 +271,204 @@
       ],
       "voice": "diego-baca"
     }
+  ],
+  "questions": [
+    {
+      "id": "kind",
+      "question": "What kind of design leader?",
+      "full": "What kind of design leader is Prabin?",
+      "answer": "A Principal Design Manager at Microsoft, leading design across Windows and Microsoft consumer experiences, from product strategy to AI transformation, while still building things himself. Diego Baca calls it “a rare combination of strong leadership, design craft, and hands-on technical ability”. Each of his strengths is below, with its proof.",
+      "capabilities": [
+        "leadership",
+        "strategy",
+        "ai",
+        "making",
+        "craft",
+        "systems"
+      ],
+      "proof": [
+        {
+          "recommendation": "diego-baca"
+        }
+      ]
+    },
+    {
+      "id": "outcomes",
+      "question": "What outcomes did he influence?",
+      "full": "What outcomes has he influenced?",
+      "answer": "He defined the strategy for Family Safety and its evolution into Microsoft Family; in 2026, Windows made a public commitment to families. At Belong, he took design’s influence into pricing, sales, organizational structure and governance. Cloner Pro, a plugin he built with AI assistance, is used by 3,530 people.",
+      "capabilities": [
+        "strategy",
+        "leadership",
+        "making"
+      ],
+      "proof": [
+        {
+          "kind": "shipped",
+          "ref": "ref:article/defining-microsoft-family"
+        },
+        {
+          "kind": "led",
+          "resume": "Extended Design's influence beyond Product and Engineering into pricing, sales, organizational structure, governance, and broader business decisions"
+        },
+        {
+          "kind": "built",
+          "ref": "ref:article/cloner-pro"
+        }
+      ]
+    },
+    {
+      "id": "made",
+      "question": "What did he lead or make?",
+      "full": "What did he personally lead, decide, make, or enable?",
+      "answer": "At Microsoft he leads teams of 5–9 designers, and turned his hands-on AI expertise into an AI transformation program for Design. At Belong he built the design organization and the design system from scratch. He builds his own tools too: Cloner Pro, Slate and Atiya, the system behind this site.",
+      "capabilities": [
+        "leadership",
+        "ai",
+        "making",
+        "systems"
+      ],
+      "proof": [
+        {
+          "kind": "led",
+          "ref": "ref:article/do-what-makes-you-proud"
+        },
+        {
+          "kind": "led",
+          "resume": "AI transformation program for Design",
+          "ask": true
+        },
+        {
+          "kind": "built",
+          "ref": "ref:article/cloner-pro"
+        },
+        {
+          "kind": "built",
+          "ref": "ref:article/slate"
+        },
+        {
+          "kind": "built",
+          "ref": "ref:article/atiya"
+        }
+      ]
+    },
+    {
+      "id": "breadth",
+      "question": "How broad, and where deepest?",
+      "full": "How broad is his practice, and where is his deepest expertise?",
+      "answer": "Broad: from building a design organization and setting product strategy to writing his own code and documentation systems. Below, his strengths are ordered by how much proof each has, deepest first.",
+      "capabilities": [
+        "leadership",
+        "strategy",
+        "ai",
+        "making",
+        "craft",
+        "systems"
+      ]
+    },
+    {
+      "id": "together",
+      "question": "How does he work with others?",
+      "full": "How does he work with design, product, engineering and leadership?",
+      "answer": "March Roger puts it simply: “He works where product strategy, design and technology meet”. At Belong he reported to the CEO as a member of the Core Leadership Team; at Microsoft he partnered with the M365 Copilot team on Copilot in Windows. Prabu Ambravaneswaran says he “can challenge the strongest product thinkers on their own turf”.",
+      "capabilities": [
+        "strategy",
+        "leadership"
+      ],
+      "proof": [
+        {
+          "recommendation": "march-roger"
+        },
+        {
+          "recommendation": "prabu-ambravaneswaran"
+        },
+        {
+          "kind": "led",
+          "resume": "Reported directly to the CEO"
+        },
+        {
+          "kind": "led",
+          "resume": "Partnered with M365 Copilot team to define deep integration of Copilot on Windows"
+        }
+      ]
+    },
+    {
+      "id": "teams",
+      "question": "How does he build teams?",
+      "full": "How does he build teams and culture?",
+      "answer": "He built Belong’s design organization from scratch: its hiring, interviewing, evaluation and onboarding, the Belong Design Community and a Task Relevant Maturity framework. He has been a core founding team member of DesignUp since 2016. March Roger says he “builds strong teams, develops people”.",
+      "capabilities": [
+        "leadership",
+        "systems",
+        "craft"
+      ],
+      "proof": [
+        {
+          "kind": "led",
+          "resume": "Built the Belong Design organization from scratch"
+        },
+        {
+          "kind": "led",
+          "resume": "Task Relevant Maturity framework"
+        },
+        {
+          "kind": "led",
+          "ref": "ref:article/do-what-makes-you-proud"
+        },
+        {
+          "ref": "ref:article/my-journey-with-designup"
+        }
+      ]
+    },
+    {
+      "id": "ai-and-code",
+      "question": "How does he use AI and code?",
+      "full": "How are AI and code part of his design work?",
+      "answer": "He led the shift toward coded prototyping: working prototypes, not Figma specifications, are now the primary handoff from Design to Engineering. He turned his own AI expertise into an AI transformation program for Design, and builds his tools with AI: Cloner Pro is used by 3,530 people.",
+      "capabilities": [
+        "ai",
+        "making"
+      ],
+      "proof": [
+        {
+          "kind": "led",
+          "resume": "Figma is no longer how Designers hand off specifications",
+          "ask": true
+        },
+        {
+          "kind": "led",
+          "resume": "Partnered with M365 Copilot team to define deep integration of Copilot on Windows"
+        },
+        {
+          "kind": "built",
+          "ref": "ref:article/cloner-pro"
+        },
+        {
+          "kind": "wrote",
+          "ref": "ref:article/the-best-learning-loop-will-win"
+        }
+      ]
+    },
+    {
+      "id": "public",
+      "question": "What can be discussed publicly?",
+      "full": "What can be discussed publicly, given confidentiality?",
+      "answer": "Some of his work can’t be shown in public. What can be is on this site; the rest is listed below as lines from his résumé, each with Ask me about it, so you can ask him directly.",
+      "capabilities": [
+        "leadership",
+        "strategy",
+        "ai",
+        "making",
+        "craft",
+        "systems"
+      ]
+    },
+    {
+      "id": "contact",
+      "question": "Contact, or a short résumé?",
+      "full": "How can I contact him or review a concise résumé?",
+      "answer": "Read his résumé for the short version, or write to him: both are one press away.",
+      "capabilities": []
+    }
   ]
 }

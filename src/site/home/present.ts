@@ -45,7 +45,7 @@ export interface EvidenceItem {
 /** The contact page with a topic filled in (Ask me about it). */
 export const askHref = (contact: string | undefined, topic: string) => (contact ? `${contact}?topic=${encodeURIComponent(topic)}` : undefined);
 
-export function evidenceItem(p: Placed, strength: StrengthPicks, env: PresentEnv): EvidenceItem | undefined {
+export function evidenceItem(p: Placed, strength: { capability: { name: string } }, env: PresentEnv): EvidenceItem | undefined {
   const kind = p.kind ? { kind: p.kind, kindLabel: KIND_LABEL[p.kind] } : {};
   const ask = askHref(env.contactHref, strength.capability.name);
   if (p.source === 'page' && p.id && p.title) {

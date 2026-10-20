@@ -53,8 +53,12 @@ export interface GoalSpec {
   counts: ProofKind[];
   view: ViewId;
   lenses: string;
-  questions: { id: string; question: string; full?: string }[];
+  /** The questions a visitor with this goal asks (questions.md §4.1); `fill` adds what a question's answer shows besides its words. */
+  questions: { id: string; question: string; full?: string; fill?: QuestionFill }[];
 }
+
+/** What an answer shows besides its words: the strengths deepest first, every résumé item to ask about, or the two ways to get in touch. */
+export type QuestionFill = 'depth' | 'ask' | 'contact';
 
 export interface Catalogue {
   goals: Record<Goal, GoalSpec>;

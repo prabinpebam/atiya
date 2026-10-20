@@ -154,15 +154,15 @@ The list and the answer fit in the first 800 px.
 
 | # | On screen (the IA's question) | The answer, in short | Shows | Evidence |
 |---|---|---|---|---|
-| 1 | What kind of design leader? (What kind of design leader is this person?) | Principal Design Manager at Microsoft, leading design across product strategy and AI transformation, and still building things himself. Then the six capabilities, each with its proof line | All six | The six capabilities, each a link to its evidence; Diego Baca: "a rare combination of strong leadership, design craft, and hands-on technical ability" |
-| 2 | What outcomes did he influence? (What outcomes have they influenced?) | Family Safety became Microsoft Family, launched in July 2020; in 2026, Windows made a public commitment to families. At Belong, design's influence reached pricing, sales and the org | Strategy, Leadership | Defining Microsoft Family; Belong (résumé); Cloner Pro, used by 3,530 people |
-| 3 | What did he lead or make? (What did they personally lead, decide, make, or enable?) | Leads teams of 5 to 9 designers and the AI transformation program for Design; built and published eight projects of his own | Leadership, AI, Making | Do what makes you proud; the AI program (résumé); Cloner Pro; Atiya; Slate |
-| 4 | How broad, and where deepest? (How broad is the practice, and where is the deepest expertise?) | Six capabilities, from building orgs to writing his own code; the deepest are leading design teams and making things | All six | A link to the Proof grid view; the six capabilities' evidence counts |
-| 5 | How does he work with others? (How do they work with design, product, engineering, and leadership?) | Where product strategy, design and technology meet; at Belong, he reported to the CEO in the Core Leadership Team | Strategy, Leadership | March Roger: "He works where product strategy, design and technology meet"; Prabu Ambravaneswaran: "can challenge the strongest product thinkers on their own turf"; Belong (résumé) |
-| 6 | How does he build teams? (How do they build teams and culture?) | Built Belong's design org from scratch, with its hiring, its community and a Task Relevant Maturity framework; DesignUp's core team since 2016 | Leadership, Systems, Craft | Do what makes you proud; My journey with DesignUp; March Roger: "builds strong teams, develops people"; Belong (résumé) |
-| 7 | How does he use AI and code? (How are AI and code used as part of the design process?) | He led the shift to coded prototypes: working code, not Figma specs, is what designers now hand to engineering | AI, Making | The AI program for Design (résumé, Ask me about it); Copilot on Windows (résumé); Cloner Pro (3,530 people); The best AI model won't win… |
-| 8 | What can be discussed publicly? (What can be discussed publicly, given confidentiality constraints?) | Most of the Windows and AI work is internal. What's public is on this site; the rest is listed here as résumé lines, each with Ask me about it | All six | Every résumé-only item in the spine, grouped by capability, each with Ask me about it |
-| 9 | Contact, or a short résumé? (How can I contact them or review a concise resume?) | Read the résumé, with its PDF, or write to him; both are one press away | None | Read résumé; Download PDF; Contact me |
+| 1 | What kind of design leader? (What kind of design leader is this person?) | Principal Design Manager at Microsoft, leading design across Windows and Microsoft consumer experiences, from product strategy to AI transformation, while still building things himself. Then the six capabilities, each with its proof line | All six | The six capabilities, each a link to its evidence; Diego Baca: "a rare combination of strong leadership, design craft, and hands-on technical ability" |
+| 2 | What outcomes did he influence? (What outcomes have they influenced?) | He defined the strategy for Family Safety and its evolution into Microsoft Family; in 2026, Windows made a public commitment to families. At Belong, design's influence reached pricing, sales, organizational structure and governance | Strategy, Leadership, Making | Defining Microsoft Family; Belong (résumé); Cloner Pro, used by 3,530 people |
+| 3 | What did he lead or make? (What did they personally lead, decide, make, or enable?) | Leads teams of 5–9 designers, and turned his own AI expertise into an AI transformation program for Design; built Belong's design organization and design system from scratch; builds his own tools | Leadership, AI, Making, Systems | Do what makes you proud; the AI program (résumé, Ask me about it); Cloner Pro; Slate; Atiya |
+| 4 | How broad, and where deepest? (How broad is the practice, and where is the deepest expertise?) | From building a design organization and setting product strategy to writing his own code; then the strengths ordered by how much proof each has, deepest first | All six | The strengths by depth, each with its evidence count; a link to the Proof grid view |
+| 5 | How does he work with others? (How do they work with design, product, engineering, and leadership?) | Where product strategy, design and technology meet; at Belong, he reported to the CEO in the Core Leadership Team; at Microsoft, he partnered with M365 Copilot on Copilot in Windows | Strategy, Leadership | March Roger: "He works where product strategy, design and technology meet"; Prabu Ambravaneswaran: "can challenge the strongest product thinkers on their own turf"; Belong and Copilot on Windows (résumé) |
+| 6 | How does he build teams? (How do they build teams and culture?) | Built Belong's design org from scratch, with its hiring, interviewing, evaluation and onboarding, its community and a Task Relevant Maturity framework; DesignUp's core founding team since 2016 | Leadership, Systems, Craft | Belong and its Task Relevant Maturity framework (résumé); Do what makes you proud; My journey with DesignUp; March Roger: "builds strong teams, develops people" |
+| 7 | How does he use AI and code? (How are AI and code used as part of the design process?) | He led the shift to coded prototyping: working prototypes, not Figma specifications, are the primary handoff from Design to Engineering; he builds his own tools with AI | AI, Making | Coded prototyping (résumé, Ask me about it); Copilot on Windows (résumé); Cloner Pro (3,530 people); The best AI model won't win… |
+| 8 | What can be discussed publicly? (What can be discussed publicly, given confidentiality constraints?) | Some of his work can't be shown in public. What can be is on this site; the rest is listed here as résumé lines, each with Ask me about it | All six | Every résumé item marked Ask me about it, grouped by strength |
+| 9 | Contact, or a short résumé? (How can I contact them or review a concise resume?) | Read the résumé for the short version, or write to him; both are one press away | None | Read résumé; Contact me (the résumé has no PDF yet) |
 
 ### 4.2 Tablet (768 px)
 
@@ -214,7 +214,7 @@ At rest, question 1 is open, so the six capabilities are on the first screen.
 1. Opens `/views/questions/#q8` from the hiring manager's note; reads what's public and what to ask about in the interview.
 
 **Recruiter**
-1. Presses question 9; presses Download PDF.
+1. Presses question 9; presses Read résumé.
 
 ## 7. Visual direction
 
@@ -266,3 +266,20 @@ Nothing moves on its own.
 | A2 | Ask something else | Local matching; a grounded AI answer | Local matching. An AI answer at visit time is set aside, since AI runs only while the person edits ([AI curation §1](ai-curation.md), AI1 and AI2); AI can draft the answers then, each cited, for the person to sign off |
 | A3 | Question 8 | Answer it; leave it out | Answer it |
 | A4 | The open question at rest | Question 1; the lens's | Question 1 always (it carries L1), with its six capabilities in the lens's order |
+
+## 13. As built (stage 7, in progress)
+
+Stage 7 is built in two parts. **7a, the answers and their model, is done;** 7b, the view itself (the list, the answer pane, Ask something else and its story), comes next. Until 7b, Questions isn't offered and its address shows the "not offered" page.
+
+| Part | Where |
+|---|---|
+| The answers | `questions` in [`content/showcase.json`](https://github.com/prabinpebam/atiya/blob/main/content/showcase.json): the nine in §4.1, drafted from the résumé, the pages and the recommendations, for the owner to sign off |
+| The check | [`check.ts`](https://github.com/prabinpebam/atiya/blob/main/src/site/home/check.ts): every quotation in an answer must be word for word in a shown recommendation or an open page (the résumé included), or the content check fails. The contract, [`schema.ts`](https://github.com/prabinpebam/atiya/blob/main/src/site/home/schema.ts), holds a question to 60 characters and an answer to 400 |
+| From the spine to the answers | [`questions.ts`](https://github.com/prabinpebam/atiya/blob/main/src/site/home/questions.ts) (pure, unit-tested in `homeQuestions.test.ts`): the settings (Order, Ask something else), each answer's number, full wording, tags, evidence and fill, and the words Ask something else matches |
+| What each goal's questions fill in | `fill` on the goal's questions in [`catalogue.json`](https://github.com/prabinpebam/atiya/blob/main/src/site/home/catalogue.json): `depth` (the strengths by how much proof each has), `ask` (the résumé lines marked Ask me about it, by strength) and `contact` (the résumé and the contact page) |
+
+Where the build differs from the design above:
+
+- **Question 1 is always the map,** whatever its ID: its answer is followed by the strengths in the person's order (or the lens's), each with its line and evidence count, and its own pins only.
+- **An answer's evidence** is its own pins first, then, for a question with no fill, the tagged strengths' evidence taken in turn, never the same item twice, at most five. A question with a fill shows only its pins and the fill.
+- **The résumé has no PDF,** so question 9 offers Read résumé and Contact me, not Download PDF.

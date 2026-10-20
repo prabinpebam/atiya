@@ -172,6 +172,17 @@ describe('the content check refuses', () => {
     expect(withShowcase((s) => (s.facts = [{ id: 'years', text: '20 years', source: 'ref:article/case' }]))).toMatch(/"20 years" isn't on "case" word for word/);
   });
 
+  it('a quotation in an answer that isn’t word for word in a shown recommendation or an open page', () => {
+    const answer = (text: string) => withShowcase((s) => (s.questions = [{ id: 'q', question: 'Q?', answer: text, capabilities: ['lead'] }]));
+    expect(answer('Ana calls her “a great manager who stays deeply involved”.')).toBe('');
+    // the résumé page is an open page too, and the words are matched as normalised
+    expect(answer('On the résumé: "managing  TEAMS of 5–9 designers".')).toBe('');
+    expect(answer('No quotation, so nothing to find.')).toBe('');
+    expect(answer('Ana calls her “a great manager who stays far away”.')).toMatch(/"a great manager who stays far away" isn't in a recommendation or an open page word for word/);
+    // a hidden recommendation, and a draft's words, aren't sources
+    expect(answer('Bo says “he builds things”.')).toMatch(/"he builds things" isn't in a recommendation/);
+  });
+
   it('a résumé line on a site without a résumé page', () => {
     const d = docs();
     const site = { ...(d['/content/site.json'] as Record<string, unknown>) };
