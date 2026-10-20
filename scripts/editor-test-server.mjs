@@ -40,6 +40,13 @@ const identity = (cwd) => {
   git(cwd, 'config', 'core.autocrlf', 'false');
 };
 
+/** The fixture's AI settings: the stand-in, on this computer, is the one service and the writer. */
+function writeAiSettings() {
+  mkdirSync(join(FIXTURE, '.atiya'), { recursive: true });
+  const standIn = { id: 'ollama', kind: 'openai-compatible', provider: 'ollama', name: 'Ollama', base: `${AI_STAND_IN}/v1`, model: 'stand-in', local: true, privatePages: true };
+  writeFileSync(join(FIXTURE, '.atiya', 'ai.json'), `${JSON.stringify({ version: 1, services: [standIn], writer: 'ollama', decider: { kind: 'rules' }, agents: { propose: false } }, null, 2)}\n`);
+}
+
 export function prepare() {
   for (const d of [FIXTURE, REMOTE, PRIVATE_REMOTE, SEED]) rmSync(d, { recursive: true, force: true });
   // the private pages: the fixtures, committed to their own remote
@@ -58,11 +65,9 @@ export function prepare() {
   mkdirSync(FIXTURE, { recursive: true });
   cpSync(join(ROOT, 'content'), join(FIXTURE, 'content'), { recursive: true });
   writeFileSync(join(FIXTURE, '.gitattributes'), 'content/**/*.json text eol=lf\n');
-  // AI settings (ai-services.md §11), kept through a reset: the writer is the stand-in (scripts/lib/ai-stand-in.mjs)
+  // AI settings (ai-services.md §11), written again by every reset: the writer is the stand-in (scripts/lib/ai-stand-in.mjs)
   writeFileSync(join(FIXTURE, '.gitignore'), '.atiya/\n');
-  mkdirSync(join(FIXTURE, '.atiya'), { recursive: true });
-  const standIn = { id: 'ollama', kind: 'openai-compatible', provider: 'ollama', name: 'Ollama', base: `${AI_STAND_IN}/v1`, model: 'stand-in', local: true, privatePages: true };
-  writeFileSync(join(FIXTURE, '.atiya', 'ai.json'), `${JSON.stringify({ version: 1, services: [standIn], writer: 'ollama', decider: { kind: 'rules' }, agents: { propose: false } }, null, 2)}\n`);
+  writeAiSettings();
   git(FIXTURE, 'init', '-q', '-b', 'main');
   identity(FIXTURE);
   gitFile(FIXTURE, 'submodule', 'add', '-q', '-b', 'main', PRIVATE_REMOTE, 'private-pages');
@@ -96,6 +101,7 @@ export function reset() {
   git(FIXTURE, 'clean', '-q', '-fd', '-e', 'private-pages');
   git(FIXTURE, 'push', '-q', '--force', '--no-recurse-submodules', 'origin', `${first}:main`);
   git(FIXTURE, 'fetch', '-q', 'origin');
+  writeAiSettings();
 }
 
 const isMain = process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1];
@@ -109,7 +115,7 @@ if (isMain) {
       stdio: 'inherit',
       shell: process.platform === 'win32',
       // no warm-up (performance-report.md R12): the tests open screens at once, and one test asks for the starting page itself
-      env: { ...process.env, CONTENT_ROOT: join(FIXTURE, 'content'), PRIVATE_ROOT: PRIVATE, SITE_VITE_CACHE: join(ROOT, 'node_modules', '.vite-editor-test'), SITE_STRICT_PORT: '1', SITE_EDITOR_WARM: 'off', SITE_EDITOR_PROFILE_PHOTOS: 'off', ATIYA_AI_OLLAMA_URL: AI_STAND_IN, ATIYA_AI_LMSTUDIO_URL: 'http://127.0.0.1:9' },
+      env: { ...process.env, CONTENT_ROOT: join(FIXTURE, 'content'), PRIVATE_ROOT: PRIVATE, SITE_VITE_CACHE: join(ROOT, 'node_modules', '.vite-editor-test'), SITE_STRICT_PORT: '1', SITE_EDITOR_WARM: 'off', SITE_EDITOR_PROFILE_PHOTOS: 'off', ATIYA_AI_OLLAMA_URL: AI_STAND_IN, ATIYA_AI_LMSTUDIO_URL: 'http://127.0.0.1:9', ATIYA_AI_OPENAI_KEY: '', ATIYA_AI_STAND_IN_CLOUD_KEY: 'not-a-real-key', ATIYA_AI_CREDENTIALS: 'off' },
     });
     const stop = () => {
       ai.close();

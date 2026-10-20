@@ -190,10 +190,10 @@ describe('settings (S3.6)', () => {
     expect(existsSync(`${file}.${process.pid}.tmp`)).toBe(false);
   });
 
-  it('reads a key only from the environment', () => {
+  it('reads a key from the environment, else Credential Manager unless that is off', async () => {
     expect(keyVariable('open-ai')).toBe('ATIYA_AI_OPEN_AI_KEY');
-    expect(keyFor('openai', { ATIYA_AI_OPENAI_KEY: 'k' })).toBe('k');
-    expect(keyFor('openai', {})).toBeUndefined();
+    expect(await keyFor('openai', { ATIYA_AI_OPENAI_KEY: 'k' })).toBe('k');
+    expect(await keyFor('openai', { ATIYA_AI_CREDENTIALS: 'off' })).toBeUndefined();
   });
 });
 

@@ -1,0 +1,95 @@
+---
+/**
+ * A service's card on the AI screen (documentation/editor/ai-services.md §8.2): its name, where it runs and its
+ * state; its model; Don't send private pages; where its words go; Test, Remove and the last test. A cloud
+ * service without its key names the Credential Manager entry to add, with Copy name. Each change saves at once.
+ * @tier editor
+ * @a11y A section named after its service; the state is text in a tag; the test's result is announced.
+ */
+import Heading from '../../components/fundamentals/Heading.astro';
+import Text from '../../components/fundamentals/Text.astro';
+import Select from '../../components/fundamentals/Select.astro';
+import TextField from '../../components/fundamentals/TextField.astro';
+import Switch from '../../components/fundamentals/Switch.astro';
+import Button from '../../components/fundamentals/Button.astro';
+import Link from '../../components/fundamentals/Link.astro';
+import Tag from '../../components/fundamentals/Tag.astro';
+import ActionBar from '../../components/compounds/ActionBar.astro';
+import Panel from '../kit/Panel.astro';
+import { cardState, disclaimerOf, keyMissingLine, testLine, type AiService } from '../model/aiServices';
+
+interface Props {
+  /** The service, as its settings hold it. */
+  service: AiService;
+  /** Its key is in the dev server's environment (a cloud service). */
+  keyFound: boolean;
+  /** Its models, when it lists them (a runner on this computer that answered); otherwise its model is typed. */
+  models?: string[] | null;
+  /** It's the writer. */
+  writer?: boolean;
+  /** Its key's Credential Manager entry (`atiya-ai-<id>`). */
+  entry: string;
+  /** Its key's environment variable (`ATIYA_AI_<ID>_KEY`). */
+  variable: string;
+  /** Now, for how long ago it was tested (a story fixes it). */
+  now?: number;
+}
+
+const { service: s, keyFound, models, writer = false, entry, variable, now = Date.now() } = Astro.props;
+const state = cardState(s, keyFound);
+const d = disclaimerOf(s.provider);
+const titleId = `ai-service-${s.id}`;
+const listed = models?.length ? (models.includes(s.model) ? models : [s.model, ...models]) : null;
+---
+
+<Panel gap="md" labelledby={titleId} data-ai-card={s.id} data-ai-name={s.name} data-ai-local={s.local ? '' : undefined}>
+  <div class="head">
+    <Heading level={2} size="h4" id={titleId}>{s.name}</Heading>
+    <ActionBar gap="sm">
+      <Tag size="sm" icon={s.local ? 'desktop' : 'share'}>{s.local ? 'This computer' : 'Cloud'}</Tag>
+      <span data-ai-state=""><Tag size="sm" tone={state.tone}>{state.label}</Tag></span>
+      {writer && <Tag size="sm" tone="accent">Writer</Tag>}
+    </ActionBar>
+  </div>
+  {listed ? <Select label="Model" name="model" value={s.model} options={listed.map((m) => ({ value: m, label: m }))} /> : <TextField label="Model" name="model" value={s.model} required />}
+  {
+    !s.local &&
+      (keyFound ? (
+        <Text variant="small" tone="positive">Key found.</Text>
+      ) : (
+        <div class="key" data-ai-key="">
+          <Text variant="small">{keyMissingLine(entry)}</Text>
+          <Text variant="small" tone="muted">{`In PowerShell: cmdkey /generic:${entry} /user:atiya /pass. Or set ${variable} in the site's environment.`}</Text>
+          <ActionBar gap="sm">
+            <Button variant="secondary" size="sm" icon="copy" data-ai-copy={entry}>Copy name</Button>
+          </ActionBar>
+        </div>
+      ))
+  }
+  <Switch label="Don't send private pages" name="noPrivate" checked={!s.privatePages} />
+  <Text variant="small" tone="muted">
+    {d.words}
+    {d.link && ' '}
+    {d.link && <Link href={d.link} external>Read the disclaimer</Link>}
+  </Text>
+  <div data-ai-last=""><Text variant="small">{testLine(s, now)}</Text></div>
+  <ActionBar gap="sm">
+    <Button variant="secondary" size="sm" icon="play" data-ai-test="">Test</Button>
+    <Button variant="quiet" size="sm" icon="delete" data-ai-remove="">Remove</Button>
+  </ActionBar>
+</Panel>
+
+<style>
+  .head,
+  .key {
+    display: grid;
+    gap: var(--space-2);
+  }
+</style>
+
+<script>
+  import { each } from '../../scripts/page';
+  import { initAiCard } from '../scripts/aiServices';
+
+  each<HTMLElement>('[data-ai-card]', (el, signal) => initAiCard(el, signal));
+</script>

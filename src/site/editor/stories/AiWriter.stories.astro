@@ -1,0 +1,13 @@
+---
+import Example from '../../library/Example.astro';
+import AiWriter from '../components/AiWriter.astro';
+import { AI_RUNNERS, AI_SERVICES } from './samples';
+---
+
+<Example title="A writer, and a runner found" description="The writer is chosen from the services set up; LM Studio answers on this computer and isn't added yet, so it's offered with its models." layout="block">
+  <AiWriter services={AI_SERVICES} writer="ollama" offers={AI_RUNNERS} />
+</Example>
+
+<Example title="No service yet" description="Nothing set up and nothing running here: Add a service, and Look again." layout="block">
+  <AiWriter services={[]} writer={null} offers={[]} />
+</Example>

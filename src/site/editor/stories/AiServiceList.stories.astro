@@ -1,0 +1,17 @@
+---
+import Example from '../../library/Example.astro';
+import AiServiceList from '../components/AiServiceList.astro';
+import AiServiceCard from '../components/AiServiceCard.astro';
+import AiAddService from '../components/AiAddService.astro';
+import { AI_NOW, AI_SERVICES } from './samples';
+
+const [local, cloud] = AI_SERVICES;
+---
+
+<Example title="Two services and Add a service" description="As many columns as fit: a card per service, then the form." layout="block">
+  <AiServiceList>
+    <AiServiceCard service={local} keyFound writer entry="atiya-ai-ollama" variable="ATIYA_AI_OLLAMA_KEY" now={AI_NOW} />
+    <AiServiceCard service={cloud} keyFound entry="atiya-ai-openai" variable="ATIYA_AI_OPENAI_KEY" now={AI_NOW} />
+    <AiAddService />
+  </AiServiceList>
+</Example>

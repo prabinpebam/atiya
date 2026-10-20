@@ -1,10 +1,20 @@
 /**
- * A stand-in AI service for edit mode's tests (documentation/editor/ai-plan.md, S3): it answers like Ollama
+ * A stand-in AI service for edit mode's tests (documentation/editor/ai-plan.md, S3, S4): it answers like Ollama
  * (`/api/tags`, and the OpenAI-compatible `/v1/chat/completions`, streamed), so tests never reach a real model.
- * Its answer is canned: the block the request names, cut to its first sentence. A request that says "slowly"
- * streams slowly enough to stop.
+ * Its answer is canned: the block the request names, cut to its first sentence; the AI screen's connection test
+ * gets `{"ok": true}`. A request that says "slowly" streams slowly enough to stop. A model named after a failure
+ * fails that way (`FAILURES`), so a test can choose it on a card.
  */
 import { createServer } from 'node:http';
+
+/** Models that fail, by name: an HTTP status and its body, or (`text`) an answer that isn't JSON. */
+export const FAILURES = {
+  'key-refused': { status: 401, body: '{"error":{"message":"invalid api key"}}' },
+  'no-credit': { status: 402, body: '{"error":{"message":"insufficient_quota"}}' },
+  busy: { status: 429, body: '{"error":{"message":"rate limited"}}' },
+  'no-shape': { text: 'Sure! It works.' },
+};
+const MODELS = ['stand-in', ...Object.keys(FAILURES)];
 
 /** The words a text block is cut to: its first sentence, or the whole of a short one. */
 const shorter = (s) => (/^[\s\S]*?[.!?](?=\s|$)/.exec(s)?.[0] ?? s).trim();
@@ -12,6 +22,7 @@ const shorter = (s) => (/^[\s\S]*?[.!?](?=\s|$)/.exec(s)?.[0] ?? s).trim();
 /** The answer to one request, from its messages. */
 export function answerFor(messages) {
   const system = messages.find((m) => m.role === 'system')?.content ?? '';
+  if (/connection test/i.test(system)) return { ok: true };
   const user = messages.find((m) => m.role === 'user')?.content ?? '';
   const key = /\(key ([a-z0-9]{6})\)/.exec(system)?.[1];
   const material = /<material>\n([\s\S]*)\n<\/material>/.exec(user)?.[1];
@@ -27,7 +38,7 @@ export function startStandIn(port) {
   const server = createServer((req, res) => {
     if (req.method === 'GET' && req.url === '/api/tags') {
       res.writeHead(200, { 'Content-Type': 'application/json' });
-      return res.end(JSON.stringify({ models: [{ name: 'stand-in' }] }));
+      return res.end(JSON.stringify({ models: MODELS.map((name) => ({ name })) }));
     }
     if (req.method !== 'POST' || req.url !== '/v1/chat/completions') {
       res.writeHead(404);
@@ -36,9 +47,14 @@ export function startStandIn(port) {
     let raw = '';
     req.on('data', (c) => (raw += c));
     req.on('end', async () => {
-      const { messages = [] } = JSON.parse(raw || '{}');
+      const { messages = [], model } = JSON.parse(raw || '{}');
+      const failure = FAILURES[model];
+      if (failure?.status) {
+        res.writeHead(failure.status, { 'Content-Type': 'application/json' });
+        return res.end(failure.body);
+      }
       const slow = /slowly/i.test(messages.find((m) => m.role === 'user')?.content ?? '');
-      const text = JSON.stringify(answerFor(messages));
+      const text = failure?.text ?? JSON.stringify(answerFor(messages));
       res.writeHead(200, { 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache' });
       const send = (o) => res.write(`data: ${JSON.stringify(o)}\n\n`);
       for (let i = 0; i < text.length && !res.destroyed; i += 12) {

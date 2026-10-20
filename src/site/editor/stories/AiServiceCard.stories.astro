@@ -1,0 +1,19 @@
+---
+import Example from '../../library/Example.astro';
+import AiServiceCard from '../components/AiServiceCard.astro';
+import { AI_NOW, AI_SERVICES } from './samples';
+
+const [local, cloud, failed] = AI_SERVICES;
+---
+
+<Example title="On this computer, the writer" description="Its models are listed, so the model is a choice; it worked two minutes ago." layout="block">
+  <AiServiceCard service={local} keyFound models={['qwen3:8b', 'gemma3:12b']} writer entry="atiya-ai-ollama" variable="ATIYA_AI_OLLAMA_KEY" now={AI_NOW} />
+</Example>
+
+<Example title="In the cloud, key missing" description="It names the Credential Manager entry to add, with Copy name; nothing can be tested until the key is there." layout="block">
+  <AiServiceCard service={cloud} keyFound={false} entry="atiya-ai-openai" variable="ATIYA_AI_OPENAI_KEY" now={AI_NOW} />
+</Example>
+
+<Example title="Its last test failed" description="The state tag and the line under it say what went wrong and what to do." layout="block">
+  <AiServiceCard service={failed} keyFound entry="atiya-ai-my-router" variable="ATIYA_AI_MY_ROUTER_KEY" now={AI_NOW} />
+</Example>

@@ -1,0 +1,84 @@
+---
+/**
+ * The AI screen's writer (documentation/editor/ai-services.md §8.1): the service every AI request goes to, chosen
+ * from those set up, and Found on this computer: Ollama or LM Studio answering and not added yet, offered with
+ * its models and Add. Changing the writer saves at once.
+ * @tier editor
+ * @a11y A section named by its heading; Found on this computer is its own group, named by its heading; each
+ * offer's Add names the runner.
+ */
+import Heading from '../../components/fundamentals/Heading.astro';
+import Text from '../../components/fundamentals/Text.astro';
+import Select from '../../components/fundamentals/Select.astro';
+import Button from '../../components/fundamentals/Button.astro';
+import ActionBar from '../../components/compounds/ActionBar.astro';
+import Panel from '../kit/Panel.astro';
+import { stableId } from '../../design/stableId';
+import { disclaimerOf, offerLine, type Runner } from '../model/aiServices';
+
+interface Props {
+  /** The services set up, in order: their ID, name and model. */
+  services: { id: string; name: string; model: string }[];
+  /** The writer's ID, or null. */
+  writer: string | null;
+  /** Runners on this computer that answer and aren't added yet. */
+  offers: Runner[];
+}
+
+const { services, writer, offers } = Astro.props;
+const id = `ai-writer-${stableId(Astro, 'AiWriter')}`;
+---
+
+<Panel gap="lg" labelledby={`${id}-title`} data-region="ai-writer" data-ai-writer="">
+  <Heading level={2} size="h4" id={`${id}-title`}>Writer</Heading>
+  {
+    services.length ? (
+      <Select label="Service" name="writer" value={writer ?? undefined} options={services.map((s) => ({ value: s.id, label: s.name, description: s.model }))} hint="Used for every AI request." />
+    ) : (
+      <div class="empty">
+        <Text variant="ui">No service yet.</Text>
+        <ActionBar>
+          <Button variant="secondary" size="sm" icon="plus" href="#ai-add">Add a service</Button>
+        </ActionBar>
+      </div>
+    )
+  }
+  <div class="found" role="group" aria-labelledby={`${id}-found`}>
+    <Heading level={3} size="ui" id={`${id}-found`}>Found on this computer</Heading>
+    {
+      offers.length ? (
+        offers.map((r) => (
+          <div class="offer" data-ai-offer={r.id}>
+            <Text variant="ui">{offerLine(r)}</Text>
+            <Text variant="small" tone="muted">{disclaimerOf(r.id).words}</Text>
+            <Select label={`${r.name}'s model`} name={`model-${r.id}`} value={r.models[0]} options={r.models.map((m) => ({ value: m, label: m }))} />
+            <ActionBar gap="sm">
+              <Button variant="primary" size="sm" icon="plus" data-ai-add-runner={r.id}>{`Add ${r.name}`}</Button>
+            </ActionBar>
+          </div>
+        ))
+      ) : (
+        <Text variant="small" tone="muted">Nothing new is running here. Start Ollama or LM Studio, then look again.</Text>
+      )
+    }
+    <ActionBar gap="sm">
+      <Button variant="quiet" size="sm" icon="search" data-ai-look="">Look again</Button>
+    </ActionBar>
+  </div>
+</Panel>
+
+<style>
+  .empty,
+  .found,
+  .offer {
+    display: grid;
+    gap: var(--space-3);
+  }
+</style>
+
+<script>
+  import { each } from '../../scripts/page';
+  import { initAiWriter } from '../scripts/aiServices';
+
+  each<HTMLElement>('[data-ai-writer]', (el, signal) => initAiWriter(el, signal));
+</script>

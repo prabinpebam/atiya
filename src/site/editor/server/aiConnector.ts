@@ -103,7 +103,7 @@ export async function propose(req: ProposeRequest, emit: (e: AiEvent) => void, s
     try {
       written = await d.write({
         base: writer.base,
-        key: keyFor(writer.id),
+        key: await keyFor(writer.id),
         model: writer.model,
         messages: sent,
         schema,

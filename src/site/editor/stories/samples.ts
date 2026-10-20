@@ -10,6 +10,8 @@ import type { Thumb } from '../model/inspectorFields';
 import type { ListedGrant, ScopeSection, SharingView } from '../model/access';
 import type { Recommendation } from '../model/recommendations';
 import type { ArticleRow, ListedPage } from '../server/screens';
+import type { AiService } from '../server/aiSettings';
+import type { Runner } from '../model/aiServices';
 
 const pond = sample('pond');
 const bridge = sample('bridge');
@@ -218,3 +220,12 @@ export const NAV_PREVIEW = [
   { label: 'Work', href: '#' },
   { label: 'Notes', href: '#' },
 ];
+
+/** The AI screen: a service on this computer, one in the cloud, and runners found here (made up). */
+export const AI_NOW = Date.parse('2026-10-20T12:00:00Z');
+export const AI_SERVICES: AiService[] = [
+  { id: 'ollama', kind: 'openai-compatible', provider: 'ollama', name: 'Ollama', base: 'http://localhost:11434/v1', model: 'qwen3:8b', local: true, privatePages: true, lastTest: { at: '2026-10-20T11:58:00Z', ok: true, ms: 1240 } },
+  { id: 'openai', kind: 'openai-compatible', provider: 'openai', name: 'OpenAI', base: 'https://api.openai.com/v1', model: 'gpt-5-mini', local: false, privatePages: false, acceptedAt: '2026-10-19T09:00:00Z' },
+  { id: 'my-router', kind: 'openai-compatible', provider: 'openrouter', name: 'My router', base: 'https://openrouter.ai/api/v1', model: 'some/model', local: false, privatePages: true, acceptedAt: '2026-10-19T09:00:00Z', lastTest: { at: '2026-10-20T09:00:00Z', ok: false, state: 'no-credit' } },
+];
+export const AI_RUNNERS: Runner[] = [{ id: 'lmstudio', name: 'LM Studio', base: 'http://localhost:1234/v1', models: ['gemma-3-12b', 'qwen3-14b'] }];

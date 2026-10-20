@@ -1,0 +1,48 @@
+---
+/**
+ * Add a service, on the AI screen (documentation/editor/ai-services.md §7.2, §7.3): a cloud service's kind, its
+ * name, base URL and model, where its words go (accepted once) and Don't send private pages. No key is typed
+ * here: once it's added, its card says where to put it.
+ * @tier editor
+ * @a11y A form named by its heading; the disclaimer's acceptance is a required checkbox; a refusal is named in a
+ * live alert above the button.
+ */
+import Heading from '../../components/fundamentals/Heading.astro';
+import Text from '../../components/fundamentals/Text.astro';
+import Select from '../../components/fundamentals/Select.astro';
+import TextField from '../../components/fundamentals/TextField.astro';
+import Switch from '../../components/fundamentals/Switch.astro';
+import Checkbox from '../../components/fundamentals/Checkbox.astro';
+import Button from '../../components/fundamentals/Button.astro';
+import ActionBar from '../../components/compounds/ActionBar.astro';
+import Panel from '../kit/Panel.astro';
+import IssueNote from '../kit/IssueNote.astro';
+import { CLOUD_KINDS, disclaimerOf, PRIVATE_LINE } from '../model/aiServices';
+
+const first = CLOUD_KINDS[0];
+const kinds = JSON.stringify(CLOUD_KINDS.map((k) => ({ ...k, words: disclaimerOf(k.provider).words }))).replace(/</g, '\\u003c');
+---
+
+<Panel as="form" gap="lg" id="ai-add" labelledby="ai-add-title" data-ai-add="">
+  <Heading level={2} size="h4" id="ai-add-title">Add a service</Heading>
+  <Select label="Kind" name="provider" value={first.provider} options={CLOUD_KINDS.map((k) => ({ value: k.provider, label: k.label }))} />
+  <TextField label="Name" name="name" value={first.label} required hint="Its key's name is made from it." />
+  <TextField label="Base URL" name="base" type="url" value={first.base} required />
+  <TextField label="Model" name="model" required />
+  <div data-ai-disclaimer=""><Text variant="small">{`${disclaimerOf(first.provider).words} ${PRIVATE_LINE}`}</Text></div>
+  <Switch label="Don't send private pages" name="noPrivate" />
+  <Checkbox label="I understand where my words go" name="accepted" required />
+  <Text variant="small" tone="muted">No key goes in this page: once it's added, its card says where to put it.</Text>
+  <IssueNote data-editor-form-issue="" />
+  <ActionBar>
+    <Button variant="primary" type="submit" icon="plus">Add the service</Button>
+  </ActionBar>
+  <script is:inline type="application/json" data-ai-kinds set:html={kinds} />
+</Panel>
+
+<script>
+  import { each } from '../../scripts/page';
+  import { initAiAdd } from '../scripts/aiServices';
+
+  each<HTMLFormElement>('[data-ai-add]', (form, signal) => initAiAdd(form, signal));
+</script>

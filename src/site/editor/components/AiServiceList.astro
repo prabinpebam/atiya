@@ -1,0 +1,11 @@
+---
+/**
+ * The AI screen's services, side by side (documentation/editor/ai-services.md §8): the page puts a card per
+ * service in it, then Add a service. The region the screen redraws after a change.
+ * @tier editor
+ * @a11y A layout only: it adds no role, so each card and the form keep their own headings, in the source's order.
+ */
+import PanelGrid from '../kit/PanelGrid.astro';
+---
+
+<PanelGrid data-region="ai-services" data-ai-services=""><slot /></PanelGrid>

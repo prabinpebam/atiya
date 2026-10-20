@@ -91,6 +91,9 @@ async function tests(parts: string[], url: URL, request: Request): Promise<Respo
 async function ai(parts: string[], method: string, request: Request): Promise<Response> {
   const { propose, writerLine } = await import('../server/aiConnector');
   if (method === 'GET' && parts[1] === 'status') return json({ ok: true, writer: writerLine() });
+  // the AI screen: services, the writer, Test (ai-services.md §7, §8)
+  const routed = await (await import('../server/aiServices')).aiServicesRoute(parts, method, request);
+  if (routed) return routed;
   if (method !== 'POST' || parts[1] !== 'propose') return json({ ok: false, issues: [{ file: '', message: 'unknown AI request' }] }, 404);
   const req = await body<import('../server/aiConnector').ProposeRequest>(request);
   const scopes = ['block', 'section', 'article', 'empty', 'comments'];

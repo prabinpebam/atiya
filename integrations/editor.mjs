@@ -43,6 +43,7 @@ const ROUTES = [
   ['/_edit/recommendations', 'recommendations.astro'],
   ['/_edit/settings', 'settings.astro'],
   ['/_edit/access', 'access.astro'],
+  ['/_edit/ai', 'ai.astro'],
   ['/_edit/publish', 'publish.astro'],
   ['/_edit/theme', 'theme.astro'],
   ['/_edit/tests', 'tests.astro'],
