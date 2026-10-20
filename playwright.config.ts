@@ -9,7 +9,7 @@ const EDITOR_PORT = 4330;
 const asked = process.argv.flatMap((a, i, all) => (a.startsWith('--project=') ? [a.slice(10)] : a === '--project' ? [all[i + 1]] : []));
 const wants = (name: string) => !asked.length || asked.includes(name);
 /** Edit mode's spec files: their own project, on the fixture server. */
-const EDITOR_SPECS = /editor(-access|-tests|-perf|-ways|-studio|-find|-services|-theme|-recommendations|-ai|-ai-screen)?\.spec\.ts$/;
+const EDITOR_SPECS = /editor(-access|-tests|-perf|-ways|-studio|-find|-services|-theme|-recommendations|-ai|-ai-screen|-ai-review)?\.spec\.ts$/;
 /** Screenshot comparisons (documentation/site-ui/design-system-review.md WS1): their own project, never in a plain run. */
 const VISUAL_SPECS = /visual(-[\w-]+)?\.spec\.ts$/;
 

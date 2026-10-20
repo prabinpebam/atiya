@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { Block } from '../../src/site/content/schema';
-import { applyDecisions, applyLabel, changesOf, conflictOf, headLine, kindTag, reviewItems, sameBlock, unchangedLine } from '../../src/site/editor/model/aiReview';
+import { applyDecisions, applyLabel, changesOf, conflictOf, headLine, kindTag, reviewItems, reviewView, sameBlock, unchangedLine } from '../../src/site/editor/model/aiReview';
 
 const t = (key: string, markdown: string): Block => ({ type: 'text', key, markdown }) as Block;
 const h = (key: string, text: string): Block => ({ type: 'heading', key, level: 2, text }) as Block;
@@ -101,5 +101,30 @@ describe('the review (ai-editing §8)', () => {
     expect(unchangedLine(12)).toBe('12 blocks unchanged');
     const retyped = changesOf(reviewItems([t('aaaaaa', 'x')], [{ type: 'list', key: 'aaaaaa', style: 'bullet', items: ['x'] } as unknown as Block]))[0];
     expect(kindTag(retyped, label)).toBe('Retyped (from Text to List)');
+  });
+
+  it('draws the Review tab: names, word diffs, decisions kept, conflicts and the count to apply', () => {
+    const proposed: Block[] = [t('aaaaaa', 'One, shorter.'), h('bbbbbb', 'Two'), t('cccccc', 'Three.'), t('newone', 'Added.'), t('eeeeee', 'Five.')];
+    const current: Block[] = [t('aaaaaa', 'One, mine.'), h('bbbbbb', 'Two'), t('cccccc', 'Three.'), t('eeeeee', 'Five.')];
+    const view = reviewView({ by: 'Ollama', summary: 'Tightened it.', base, proposed, decisions: { aaaaaa: 'accept', newone: 'accept', dddddd: 'accept' } }, current);
+    expect(view.head).toBe('Ollama proposed 3 changes: Tightened it.');
+    const rows = view.lines.flatMap((l) => ('row' in l ? [l.row] : []));
+    expect(rows.map((r) => [r.key, r.tag, r.decision, r.conflict])).toEqual([
+      ['aaaaaa', 'Changed', 'accept', 'mine'],
+      ['dddddd', 'Removed', null, 'removed'],
+      ['newone', 'Added', 'accept', null],
+    ]);
+    expect(rows[0].name).toBe('Paragraph: One, shorter.');
+    // a block you changed is compared with yours
+    expect(rows[0].diff).toEqual({ words: expect.arrayContaining([{ kind: 'del', text: 'mine.' }, { kind: 'add', text: 'shorter.' }]) });
+    // a removed block can't be accepted, so it isn't counted
+    expect(view.accepted).toBe(2);
+  });
+
+  it('shows what changed in a block that isn\'t words: each field that differs, on each side', () => {
+    const fig = (caption: string, extra: object = {}) => ({ key: 'ffffff', type: 'figure', media: 'samples/bridge', caption, width: 'content', ...extra }) as unknown as Block;
+    const view = reviewView({ by: 'Ollama', summary: '', base: [fig('The bridge.')], proposed: [fig('The *old* bridge.', { width: 'wide', crop: { x: 1 } })], decisions: {} }, [fig('The bridge.')]);
+    const row = view.lines.flatMap((l) => ('row' in l ? [l.row] : []))[0];
+    expect(row.diff).toEqual({ before: 'Caption: The bridge.; Width: content; Crop', after: 'Caption: The old bridge.; Width: wide; Crop (changed)' });
   });
 });

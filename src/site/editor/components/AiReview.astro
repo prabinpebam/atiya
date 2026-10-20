@@ -1,0 +1,207 @@
+---
+/**
+ * The Review tab (documentation/editor/ai-editing.md §8): a proposal wider than a block, change by change. The
+ * head says who proposed it and why; Accept all and Reject all; a row per change in the article's order (its
+ * kind, its name, which chooses the block, the words struck and inserted or before and after, and Accept or
+ * Reject), unchanged blocks folded into a line; then Apply, with the count accepted, and Discard. A change to
+ * a block you've changed since asks Use mine or Use AI's; one to a block you've removed can only be rejected.
+ * @tier editor
+ * @a11y A named region; Accept and Reject are toggles (aria-pressed), named with the block they decide; struck and inserted words carry hidden "removed" and "added" words; a conflict's line is tied to its choices.
+ * @key Enter or Space on a row's name: selects that block in the canvas
+ * @key Enter or Space on Accept or Reject: decides it, and again clears it
+ */
+import Button from '../../components/fundamentals/Button.astro';
+import ActionBar from '../../components/compounds/ActionBar.astro';
+import Icon from '../../components/fundamentals/Icon.astro';
+import RowButton from '../../components/fundamentals/RowButton.astro';
+import Tag from '../../components/fundamentals/Tag.astro';
+import TileButton from '../../components/fundamentals/TileButton.astro';
+import { applyLabel, CONFLICT_LINE, unchangedLine, type ChangeKind, type ReviewView } from '../model/aiReview';
+import '../../styles/editor-tokens.css';
+
+interface Props {
+  /** The proposal's ID: the script saves its decisions under it. */
+  id: string;
+  /** The proposal against the article as it is now (reviewView). */
+  view: ReviewView;
+}
+
+const { id, view } = Astro.props;
+const TONE: Record<ChangeKind, 'neutral' | 'positive' | 'negative'> = { changed: 'neutral', retyped: 'neutral', added: 'positive', removed: 'negative', moved: 'neutral' };
+const head = `ai-review-${id}-head`;
+---
+
+<section class="ai-review" aria-labelledby={head} data-ai-review={id}>
+  <p class="head" id={head} tabindex="-1" data-ai-review-head>{view.head}</p>
+  <ActionBar gap="sm">
+    <Button size="sm" variant="secondary" icon="check" data-ai-review-all="accept">Accept all</Button>
+    <Button size="sm" variant="secondary" icon="close" data-ai-review-all="reject">Reject all</Button>
+  </ActionBar>
+  <ol class="rows">
+    {
+      view.lines.map((line) => {
+        if (!('row' in line)) return <li class="unchanged">{unchangedLine(line.unchanged)}</li>;
+        const r = line.row;
+        const why = r.conflict ? `ai-review-${id}-why-${r.key}` : undefined;
+        return (
+          <li class="row" data-ai-review-row={r.key} data-kind={r.kind} data-decision={r.decision ?? ''} data-conflict={r.conflict ?? undefined}>
+            <div class="row-head">
+              <Tag size="sm" tone={TONE[r.kind]}>{r.tag}</Tag>
+              <RowButton data-ai-review-go={r.key}>{r.name}</RowButton>
+            </div>
+            {r.diff && 'words' in r.diff && (
+              <p class="diff">
+                {r.diff.words.map((p) =>
+                  p.kind === 'same' ? (
+                    p.text
+                  ) : p.kind === 'add' ? (
+                    <ins>
+                      <span class="sr-only">added: </span>
+                      {p.text}
+                    </ins>
+                  ) : (
+                    <del>
+                      <span class="sr-only">removed: </span>
+                      {p.text}
+                    </del>
+                  ),
+                )}
+              </p>
+            )}
+            {r.diff && !('words' in r.diff) && (
+              <dl class="sides">
+                {r.diff.before !== null && (
+                  <div>
+                    <dt>Before</dt>
+                    <dd>{r.diff.before}</dd>
+                  </div>
+                )}
+                {r.diff.after !== null && (
+                  <div>
+                    <dt>After</dt>
+                    <dd>{r.diff.after}</dd>
+                  </div>
+                )}
+              </dl>
+            )}
+            {r.conflict && (
+              <p class="why" id={why}>
+                {CONFLICT_LINE[r.conflict]}
+              </p>
+            )}
+            <div role="group" aria-label={`Decide: ${r.name}`}>
+              <ActionBar gap="sm">
+                <TileButton variant="chip" pressed={r.decision === 'accept'} disabled={r.conflict === 'removed'} aria-describedby={why} data-ai-review-decide="accept">
+                  <Icon name="check" />
+                  {r.conflict === 'mine' ? "Use AI's" : 'Accept'}
+                </TileButton>
+                <TileButton variant="chip" pressed={r.decision === 'reject'} aria-describedby={why} data-ai-review-decide="reject">
+                  <Icon name="close" />
+                  {r.conflict === 'mine' ? 'Use mine' : 'Reject'}
+                </TileButton>
+              </ActionBar>
+            </div>
+          </li>
+        );
+      })
+    }
+  </ol>
+  <ActionBar gap="sm">
+    <Button size="sm" variant="primary" disabled={!view.accepted} data-ai-review-apply="">{applyLabel(view.accepted)}</Button>
+    <Button size="sm" variant="quiet" data-ai-review-discard="">Discard</Button>
+  </ActionBar>
+</section>
+
+<style>
+  .ai-review {
+    display: grid;
+    gap: var(--space-4);
+    color: var(--color-text);
+    font: var(--type-control);
+  }
+
+  .head {
+    margin: 0;
+    font: var(--type-label);
+  }
+
+  .head:focus-visible {
+    outline: var(--border-focus) solid var(--color-focus);
+    outline-offset: var(--space-1);
+  }
+
+  .row-head {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+  }
+
+  /* the rows end with a rule above the foot */
+  .rows {
+    display: grid;
+    gap: var(--space-3);
+    margin: 0;
+    padding: 0 0 var(--space-4);
+    border-block-end: var(--border-hairline) solid var(--color-rule);
+    list-style: none;
+  }
+
+  /* a decided change says so by its bar as well as its pressed choice */
+  .row {
+    display: grid;
+    gap: var(--space-2);
+    padding-block: var(--space-2);
+    padding-inline: var(--space-3) 0;
+    border-inline-start: var(--border-quote) solid var(--color-rule);
+  }
+
+  .row[data-decision='accept'] {
+    border-inline-start-color: var(--color-accent);
+  }
+
+  .row[data-decision='reject'] .diff,
+  .row[data-decision='reject'] .sides {
+    color: var(--color-text-muted);
+  }
+
+  .unchanged,
+  .why,
+  dt {
+    color: var(--color-text-muted);
+    font: var(--type-hint);
+  }
+
+  .diff,
+  .why,
+  .sides,
+  dd {
+    margin: 0;
+  }
+
+  .diff,
+  dd {
+    overflow-wrap: anywhere;
+  }
+
+  .sides {
+    display: grid;
+    gap: var(--space-1);
+  }
+
+  ins {
+    background: var(--color-positive-soft);
+    color: var(--color-text);
+    text-decoration-thickness: var(--underline-thickness);
+    text-underline-offset: var(--underline-offset);
+  }
+
+  del {
+    color: var(--color-text-muted);
+  }
+
+  @media (forced-colors: active) {
+    .row[data-decision='accept'] {
+      border-inline-start-color: Highlight;
+    }
+  }
+</style>

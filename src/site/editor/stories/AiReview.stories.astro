@@ -1,0 +1,13 @@
+---
+import Example from '../../library/Example.astro';
+import AiReview from '../components/AiReview.astro';
+import { AI_REVIEW, AI_REVIEW_REMOVED } from './samples';
+---
+
+<Example title="A section's proposal" description="One change accepted and one rejected; the rest undecided. A paragraph you've changed since asks Use mine or Use AI's, the caption shows before and after, and the unchanged blocks fold into a line." layout="block">
+  <AiReview id="sample" view={AI_REVIEW} />
+</Example>
+
+<Example title="A block removed since" description="You deleted the first paragraph after asking: its change can only be rejected, and Apply waits for something accepted." layout="block">
+  <AiReview id="sample-removed" view={AI_REVIEW_REMOVED} />
+</Example>

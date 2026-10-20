@@ -39,7 +39,7 @@ const { open = false, state = 'ready', service = '', message = '', tries = '', c
 
 <section class="ai-prompt" aria-label="Ask AI" data-editor-ai-prompt data-state={state} data-static={open ? '' : undefined} hidden={!open}>
   <div class="ai-head">
-    <span class="ai-title">Ask AI</span>
+    <span class="ai-title" data-ai-title>Ask AI</span>
     <IconButton label="Close" icon="close" size="sm" shape="square" tooltip="top" data-ai-close="" />
   </div>
   <form class="ai-ask" data-ai-form>

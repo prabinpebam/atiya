@@ -12,6 +12,7 @@ import type { Recommendation } from '../model/recommendations';
 import type { ArticleRow, ListedPage } from '../server/screens';
 import type { AiService } from '../server/aiSettings';
 import type { Runner } from '../model/aiServices';
+import { reviewView } from '../model/aiReview';
 
 const pond = sample('pond');
 const bridge = sample('bridge');
@@ -229,3 +230,25 @@ export const AI_SERVICES: AiService[] = [
   { id: 'my-router', kind: 'openai-compatible', provider: 'openrouter', name: 'My router', base: 'https://openrouter.ai/api/v1', model: 'some/model', local: false, privatePages: true, acceptedAt: '2026-10-19T09:00:00Z', lastTest: { at: '2026-10-20T09:00:00Z', ok: false, state: 'no-credit' } },
 ];
 export const AI_RUNNERS: Runner[] = [{ id: 'lmstudio', name: 'LM Studio', base: 'http://localhost:1234/v1', models: ['gemma-3-12b', 'qwen3-14b'] }];
+
+/** A section's proposal as the Review tab draws it: a paragraph changed, one removed, one added, a picture's caption changed, and a paragraph you've changed since (made up). */
+const REVIEW_BASE = [
+  { key: 'h1', type: 'heading', level: 2, text: 'Starting small' },
+  { key: 'p1', type: 'text', markdown: 'The ducks keep their nest on the far bank, where the reeds are tallest.' },
+  { key: 'p2', type: 'text', markdown: 'Every morning, once round the pond before a word was written.' },
+  { key: 'p3', type: 'text', markdown: 'It rained most of that week.' },
+  { key: 'f1', type: 'figure', media: 'samples/bridge', caption: 'The bridge.', width: 'content' },
+  { key: 'p4', type: 'text', markdown: 'Small pieces, each finished before the next.' },
+] as unknown as Block[];
+const REVIEW_PROPOSED = [
+  REVIEW_BASE[0],
+  { ...REVIEW_BASE[1], markdown: 'The ducks nest on the far bank, in the tallest reeds.' },
+  REVIEW_BASE[2],
+  { ...REVIEW_BASE[4], caption: 'The bridge between the workshop and the town hall.' },
+  { ...REVIEW_BASE[5], markdown: 'Small pieces, each one finished before the next began.' },
+  { key: 'n1', type: 'text', markdown: 'By spring, the habit had stuck.' },
+] as unknown as Block[];
+const REVIEW_NOW = REVIEW_BASE.map((b) => (b.key === 'p4' ? ({ ...b, markdown: 'Small pieces, each finished before starting the next.' } as Block) : b));
+export const AI_REVIEW = reviewView({ by: 'Ollama', summary: 'Tightened the section and added a closing line.', base: REVIEW_BASE, proposed: REVIEW_PROPOSED, decisions: { p1: 'accept', p3: 'reject' } }, REVIEW_NOW);
+/** The same proposal once the removed paragraph is gone from the article too. */
+export const AI_REVIEW_REMOVED = reviewView({ by: 'Ollama', summary: 'Tightened the section and added a closing line.', base: REVIEW_BASE, proposed: REVIEW_PROPOSED, decisions: {} }, REVIEW_NOW.filter((b) => b.key !== 'p1'));

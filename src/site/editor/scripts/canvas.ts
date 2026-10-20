@@ -39,7 +39,9 @@ type Out =
 
 const SOURCE = 'editor-canvas';
 const TEXTY = new Set(['text', 'heading', 'subheading', 'marker', 'quote']);
-const AI_BLOCKS = new Set(['text', 'subheading', 'marker', 'quote']);
+const AI_BLOCKS = new Set(['text', 'heading', 'subheading', 'marker', 'quote']);
+/** A review's mark, as its text twin says it (ai-editing.md §8.4, §11.2). */
+const AI_MARK_WORD: Record<string, string> = { changed: 'Changed', retyped: 'Retyped', removed: 'Removed', moved: 'Moved' };
 /** What a new, still empty block will be once it has words. */
 type Pending = 'text' | 'heading' | 'subheading' | 'marker';
 /** Blocks of plain words that keep their lines: Enter splits them, Shift + Enter breaks the line. */
@@ -252,7 +254,14 @@ export function initCanvas(chrome: HTMLElement, signal: AbortSignal) {
     toolbar.style.setProperty('--y', `${r.top + scrollY}px`);
     toolLabel.textContent = selected !== null ? (kinds[selected]?.kind ?? '') : '';
     if (turnButton) turnButton.hidden = selected === null || !(TEXTY.has(typeOf(selected)) || typeOf(selected) === 'collection');
-    if (aiButton) aiButton.hidden = selected === null || !aiable(selected);
+    if (aiButton) {
+      aiButton.hidden = selected === null || !aiable(selected);
+      // on a heading it asks about the heading's section (ai-editing.md §4.1)
+      const label = selected !== null && typeOf(selected) === 'heading' ? 'Ask about section (Ctrl+Shift+Space)' : 'Ask AI (Ctrl+Shift+Space)';
+      const button = aiButton.querySelector<HTMLElement>('[data-chrome-op="ai"]');
+      button?.setAttribute('data-label', label);
+      button?.setAttribute('aria-label', label);
+    }
   };
   const select = (i: number | null, field: Field | null = null, tell = true, scroll = false) => {
     hideInsert();
@@ -1319,6 +1328,19 @@ export function initCanvas(chrome: HTMLElement, signal: AbortSignal) {
         updateTableControls();
       }
       else if (m.type === 'link') applyLink(String(m.href ?? ''));
+      else if (m.type === 'ai-marks') {
+        // an open review's changed blocks (ai-editing.md §8.4), each with its kind as a text twin
+        document.querySelectorAll<HTMLElement>('[data-ai-mark]').forEach((el) => {
+          delete el.dataset.aiMark;
+          el.removeAttribute('aria-description');
+        });
+        for (const k of m.marks as { index: number; kind: string }[]) {
+          const el = blocks[k.index];
+          if (!el) continue;
+          el.dataset.aiMark = k.kind;
+          el.setAttribute('aria-description', `${AI_MARK_WORD[k.kind] ?? 'Changed'} in the proposal under review`);
+        }
+      }
       else if (m.type === 'remap') remap(m.origins as ({ from: number; copy: boolean } | null)[], m.kinds as Kind[], m.arriving as (string | null)[]);
       else if (m.type === 'flush') send(true);
       else if (m.type === 'mode') {

@@ -36,6 +36,9 @@ import { getPlacement } from '../../content/repository';
 import { sectionOf } from '../model/structure';
 import { placeOfPage } from '../model/planet';
 import { excerptOf, kindOf } from '../model/ops';
+import AiReview from '../components/AiReview.astro';
+import { readProposal } from '../server/aiProposals';
+import { reviewView } from '../model/aiReview';
 import { SITE_FEATURES, withBase } from '../../design/meta';
 import { privateSetupHref } from '../model/desktop';
 import type { Thumb } from '../model/inspectorFields';
@@ -69,6 +72,9 @@ const ICON: Record<Block['type'], IconName> = { text: 'paragraph', heading: 'hea
 // a swap names its regions, and only they are drawn (performance-report.md R4); a whole screen draws them all
 const asked = regionsAsked(Astro.request.headers.get(REGIONS_HEADER));
 const draw = (...names: string[]) => wants(asked, ...names);
+// a proposal wider than a block, kept until you apply or discard it, opens the Review tab (ai-editing.md §8)
+const kept = draw('inspector') ? readProposal(id) : null;
+const review = kept ? reviewView({ by: kept.by, summary: kept.proposal.summary, base: kept.base.body, proposed: kept.proposal.body, decisions: kept.decisions }, article.body) : null;
 // only the counts, or the picker's next page, asked for: none of the studio is drawn
 const fragment = !!asked && [...asked].every((n) => (ALWAYS as readonly string[]).includes(n) || n === 'media-grid');
 const owner = `articles/${id}`;
@@ -140,7 +146,7 @@ const json = JSON.stringify(state).replace(/</g, '\\u003c');
         {draw('outline') && <Outline slot="outline" blocks={blocks} icons={ICON} />}
         <CanvasFrame slot="canvas" src={state.canvas} />
         {draw('inspector') && (
-          <Inspector slot="inspector">
+          <Inspector slot="inspector" review={!!review}>
             <Fragment slot="block">
               {article.body.map((b, i) => (
                 <BlockForm block={b} index={i} count={article.body.length} prev={article.body[i - 1]?.type} next={article.body[i + 1]?.type} media={thumbs}>
@@ -150,6 +156,7 @@ const json = JSON.stringify(state).replace(/</g, '\\u003c');
               ))}
             </Fragment>
             <PageForm slot="page" article={article} media={thumbs} sections={sectionOptions(loaded.index)} section={section} access={protectable ? access : undefined} privateSetup={privateSetup} place={place} published={published} path={route?.path ?? null} />
+            {review && <AiReview slot="review" id={id} view={review} />}
           </Inspector>
         )}
         <script is:inline type="application/json" data-region="state" data-editor-state set:html={json} />

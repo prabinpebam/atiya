@@ -30,6 +30,8 @@ export interface AiView {
   setup?: string;
   /** Whether the note offers Show tries (a later try failed; the earlier ones are kept). */
   back?: boolean;
+  /** On a heading: the request is about its section (§4.1), and the prompt says so. */
+  section?: boolean;
 }
 
 /** What the prompt posts to the editor. */
@@ -87,6 +89,7 @@ export function initAiPrompt(root: HTMLElement, signal: AbortSignal) {
   const next = $<HTMLButtonElement>('[data-ai-next]');
   const more = $<HTMLFormElement>('[data-ai-more]');
   const moreField = $<HTMLTextAreaElement>('[data-ai-more-field] textarea');
+  const title = $('[data-ai-title]');
 
   // the block as it was, put back on discard and close
   let saved: { el: HTMLElement; html: string; editable: string | null } | null = null;
@@ -126,6 +129,8 @@ export function initAiPrompt(root: HTMLElement, signal: AbortSignal) {
     at = v.index;
     root.dataset.state = v.phase;
     root.hidden = false;
+    title.textContent = v.section ? 'Ask about section' : 'Ask AI';
+    root.setAttribute('aria-label', title.textContent);
     if (v.service !== undefined) service.textContent = v.service;
     status.textContent = v.phase === 'working' ? (v.status ?? '') : '';
     summary.textContent = v.phase === 'proposed' ? (v.summary ?? '') : '';

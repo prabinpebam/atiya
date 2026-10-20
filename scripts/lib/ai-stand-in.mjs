@@ -20,6 +20,21 @@ const MODELS = ['stand-in', ...Object.keys(FAILURES)];
 const shorter = (s) => (/^[\s\S]*?[.!?](?=\s|$)/.exec(s)?.[0] ?? s).trim();
 /** The sentence a "longer" answer adds. */
 export const MORE = 'It says a little more.';
+/** The paragraph a section's answer adds at its end. */
+export const ADDED = 'A closing line the stand-in added.';
+
+/** A section's answer: every paragraph after the heading changed as a block would be, and one paragraph added at its end. */
+function sectionAnswer(body, key, change) {
+  const at = body.findIndex((b) => b.key === key);
+  let end = at + 1;
+  while (end < body.length && !(body[end].type === 'heading' && body[end].level <= body[at].level)) end++;
+  const changes = body
+    .slice(at + 1, end)
+    .filter((b) => b.type === 'text' && change(b.markdown) !== b.markdown)
+    .map(({ key: k, ...rest }) => ({ op: 'replace', key: k, after: null, block: { ...rest, markdown: change(rest.markdown) } }));
+  changes.push({ op: 'insert', key: null, after: body[end - 1].key, block: { type: 'text', markdown: ADDED } });
+  return { changes, header: null, summary: 'Tightened the section', needs: { kind: 'none', reason: null } };
+}
 
 /** The answer to one request, from its messages. */
 export function answerFor(messages) {
@@ -32,6 +47,7 @@ export function answerFor(messages) {
   if (!block) return { changes: [], header: null, summary: 'Changed nothing', needs: { kind: 'unclear', reason: 'Which block?' } };
   const longer = /longer/i.test(/^Request: (.*)$/m.exec(user)?.[1] ?? '');
   const change = (s) => (longer ? `${s.trim()} ${MORE}` : shorter(s));
+  if (/scope is one section/.test(system)) return sectionAnswer(JSON.parse(material).body, key, change);
   const { key: _key, ...rest } = block;
   const next = block.type === 'text' ? { ...rest, markdown: change(block.markdown) } : 'text' in block ? { ...rest, text: change(block.text) } : rest;
   return { changes: [{ op: 'replace', key, after: null, block: next }], header: null, summary: longer ? 'Lengthened the paragraph' : 'Shortened the paragraph', needs: { kind: 'none', reason: null } };

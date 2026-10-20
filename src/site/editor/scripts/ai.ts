@@ -24,6 +24,8 @@ export interface AiHost {
   toCanvas: (m: Record<string, unknown>) => void;
   /** Makes the change, as an edit, with the block at this index selected. */
   keep: (next: Block[], select: number) => void;
+  /** A section's proposal is kept on the server: shows it in the inspector's Review tab (§8). */
+  review: () => void;
 }
 
 const keyOf = (b: Block | undefined) => (b as { key?: string } | undefined)?.key;
@@ -68,7 +70,7 @@ export function initAi(host: AiHost, signal: AbortSignal) {
   let ticker = 0;
 
   const draw = (v: Partial<AiView>) => {
-    view = { ...view, ...v, index, service: serviceLine(writer, host.isPrivate) };
+    view = { ...view, ...v, index, service: serviceLine(writer, host.isPrivate), section: index >= 0 && host.doc().body[index]?.type === 'heading' };
     host.toCanvas({ type: 'ai', view });
   };
   const showTry = () => {
@@ -101,6 +103,8 @@ export function initAi(host: AiHost, signal: AbortSignal) {
     const doc = host.doc();
     key = keyOf(doc.body[index]);
     if (!key) return noteOf({ ...failureNote('refused'), choices: [] });
+    // on a heading, its section (§4.1): the answer goes to the Review tab, not the result bar
+    const scope = doc.body[index].type === 'heading' ? 'section' : 'block';
     // asking for more starts from the try shown
     const body = asked.base ? doc.body.map((b) => (keyOf(b) === key ? asked.base! : b)) : doc.body;
     from = asked.base ?? doc.body[index];
@@ -115,7 +119,7 @@ export function initAi(host: AiHost, signal: AbortSignal) {
       const res = await fetch(editorUrl('api/ai/propose'), {
         method: 'POST',
         headers: { 'X-Editor': '1', 'X-Editor-Tab': TAB, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id: host.id, article: { ...doc, body }, target: { scope: 'block', key }, instruction: asked.instruction, ...(asked.action ? { action: asked.action } : {}), ...(asked.anyway ? { anyway: true } : {}) }),
+        body: JSON.stringify({ id: host.id, article: { ...doc, body }, target: { scope, key }, instruction: asked.instruction, ...(asked.action ? { action: asked.action } : {}), ...(asked.anyway ? { anyway: true } : {}) }),
         credentials: 'same-origin',
         signal: ac.signal,
       });
@@ -129,8 +133,16 @@ export function initAi(host: AiHost, signal: AbortSignal) {
           draw({ words: plainText(streamed) });
         } else if (e.type === 'proposal') {
           const proposal = e.data.proposal as Proposal;
-          const block = proposal.body.find((b) => keyOf(b) === key);
           stopTicker();
+          if (scope === 'section') {
+            // the server kept it: the request is done, and the review takes over
+            request = null;
+            close();
+            host.review();
+            announce(readyLine(proposal.summary));
+            return;
+          }
+          const block = proposal.body.find((b) => keyOf(b) === key);
           if (!block) return noteOf(failureNote('refused'));
           tries.push({ summary: proposal.summary, block, ...(proposal.anyway ? { anyway: true } : {}) });
           shown = tries.length - 1;

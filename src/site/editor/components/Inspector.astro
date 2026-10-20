@@ -13,10 +13,23 @@
 import Tabs from '../../components/compounds/Tabs.astro';
 import Text from '../../components/fundamentals/Text.astro';
 import Form from '../kit/Form.astro';
+import type { IconName } from '../../design/icons';
+
+interface Props {
+  /** An open proposal wider than a block (ai-editing.md §8.1): adds the Review tab, for the review slot, chosen when the page is drawn. */
+  review?: boolean;
+}
+
+const { review = false } = Astro.props;
+const tabs: { id: string; label: string; icon: IconName }[] = [
+  { id: 'block', label: 'Block', icon: 'edit' },
+  { id: 'page', label: 'Page', icon: 'page' },
+];
+if (review) tabs.push({ id: 'review', label: 'Review', icon: 'sparkles' });
 ---
 
 <div class="inspector" data-region="inspector" data-editor-inspector data-scrollbar data-busy-line="sticky">
-  <Tabs label="Settings" id="inspector-tabs" fill tabs={[{ id: 'block', label: 'Block', icon: 'edit' }, { id: 'page', label: 'Page', icon: 'page' }]}>
+  <Tabs label="Settings" id="inspector-tabs" fill tabs={tabs} selected={review ? 'review' : undefined}>
     <div slot="block" class="panel">
       <div data-editor-noblock>
         <Text variant="ui" tone="muted">Select a block on the page, or in the outline, to see its settings.</Text>
@@ -29,6 +42,7 @@ import Form from '../kit/Form.astro';
       <slot name="block" />
     </div>
     <slot name="page" slot="page" />
+    <slot name="review" slot="review" />
   </Tabs>
 </div>
 

@@ -43,6 +43,8 @@ const identity = (cwd) => {
 /** The fixture's AI settings: the stand-in, on this computer, is the one service and the writer. */
 function writeAiSettings() {
   mkdirSync(join(FIXTURE, '.atiya'), { recursive: true });
+  // proposals kept for review (ai-editing.md §12) never outlive a test
+  rmSync(join(FIXTURE, '.atiya', 'proposals'), { recursive: true, force: true });
   const standIn = { id: 'ollama', kind: 'openai-compatible', provider: 'ollama', name: 'Ollama', base: `${AI_STAND_IN}/v1`, model: 'stand-in', local: true, privatePages: true };
   writeFileSync(join(FIXTURE, '.atiya', 'ai.json'), `${JSON.stringify({ version: 1, services: [standIn], writer: 'ollama', decider: { kind: 'rules' }, agents: { propose: false } }, null, 2)}\n`);
 }

@@ -24,6 +24,7 @@ import { initRichFields } from './richtext';
 import { richMarkdown } from '../model/richText';
 import { openCrop } from './crop';
 import { initAi } from './ai';
+import { initReview, reviewMarks } from './aiReview';
 import type { AiDo } from './aiPrompt';
 import { PICTURE_SPECS } from '../../design/pictures';
 import { plainText } from '../../content/markdown';
@@ -237,6 +238,8 @@ export function initEditor(root: HTMLElement, signal: AbortSignal) {
     const ins = root.querySelector<HTMLElement>('[data-editor-inspector]');
     if (ins) ins.scrollTop = scroll;
     showBlock(selected);
+    // an open review marks its blocks in the canvas (ai-editing.md §8.4); none once it's applied or discarded
+    if (names.includes('inspector')) toCanvas({ type: 'ai-marks', marks: reviewMarks(root, doc.body) });
     if (focusKey) {
       const el = focusKey.startsWith('select:') ? root.querySelector<HTMLElement>(`[data-editor-select="${focusKey.slice(7)}"]`) : document.getElementById(focusKey);
       el?.focus({ preventScroll: true });
@@ -508,6 +511,23 @@ export function initEditor(root: HTMLElement, signal: AbortSignal) {
       },
       toCanvas,
       keep: (next, at) => change(body(next), ALL, { select: at }),
+      // a section's proposal: the Review tab opens on it, chosen, with its head focused (§8.1)
+      review: async () => {
+        await swap(['inspector', 'state']);
+        root.querySelector('#inspector-tabs')?.dispatchEvent(new CustomEvent('tabs:select', { detail: { tab: 'review' } }));
+        root.querySelector<HTMLElement>('[data-ai-review-head]')?.focus();
+      },
+    },
+    signal,
+  );
+  initReview(
+    root,
+    {
+      body: () => doc.body,
+      apply: (next, at) => change(body(next), ALL, { select: at }),
+      // the Review tab stays: the canvas scrolls to the block (§8.2)
+      select: (i) => setSelected(i, { canvas: true, scroll: true }),
+      closed: () => swap(['inspector', 'state']),
     },
     signal,
   );
@@ -697,6 +717,7 @@ export function initEditor(root: HTMLElement, signal: AbortSignal) {
         } else performance.mark('editor:canvas-first');
         toCanvas({ type: 'mode', preview: document.querySelector('[data-editor-preview]')?.getAttribute('aria-pressed') === 'true' });
         if (selected !== null) toCanvas({ type: 'select', index: selected });
+        toCanvas({ type: 'ai-marks', marks: reviewMarks(root, doc.body) });
         ai.again();
         afterReady.splice(0).forEach((fn) => fn());
         break;

@@ -389,6 +389,24 @@ const json = JSON.stringify(blocks).replace(/</g, '\\u003c');
     color: var(--color-text-muted);
   }
 
+  /* an open review's changed blocks (ai-editing.md §8.4): a bar in the margin; a removed block faded and
+     struck. Forced colours keep the bar as an outline and the strike, never colour alone */
+  :global([data-ai-mark]) {
+    box-shadow: calc(-2 * var(--border-quote)) 0 0 calc(-1 * var(--border-quote)) var(--color-accent);
+  }
+
+  :global([data-ai-mark='removed']) {
+    color: var(--color-text-muted);
+    text-decoration: line-through;
+  }
+
+  @media (forced-colors: active) {
+    :global([data-ai-mark]) {
+      outline: var(--border-quote) solid Highlight;
+      outline-offset: var(--space-1);
+    }
+  }
+
   /* a new block shown at once (editor spec §3.6), named and shimmering until the canvas is drawn again
      with it; still, with its words, under reduced motion */
   :global([data-editor-arriving]) {

@@ -91,6 +91,26 @@ async function tests(parts: string[], url: URL, request: Request): Promise<Respo
 async function ai(parts: string[], method: string, request: Request): Promise<Response> {
   const { propose, writerLine } = await import('../server/aiConnector');
   if (method === 'GET' && parts[1] === 'status') return json({ ok: true, writer: writerLine() });
+  // a section's or the article's proposal, kept until it's applied or discarded (ai-editing.md §8, §13)
+  if (parts[1] === 'proposals') {
+    const store = await import('../server/aiProposals');
+    if (!parts[2]) return method === 'GET' ? json({ ok: true, proposals: store.listProposals() }) : json({ ok: false, issues: [{ file: '', message: 'unknown AI request' }] }, 404);
+    const id = parts[2];
+    if (!ID.test(id)) return json({ ok: false, issues: [{ file: '', message: 'not an article' }] }, 400);
+    if (method === 'DELETE') {
+      store.dropProposal(id);
+      return json({ ok: true });
+    }
+    if (method === 'POST') {
+      const { decisions } = await body<{ decisions: Record<string, 'accept' | 'reject' | null> }>(request);
+      const valid = decisions && typeof decisions === 'object' && Object.values(decisions).every((d) => d === 'accept' || d === 'reject' || d === null);
+      if (!valid) return json({ ok: false, issues: [{ file: '', message: 'not a decision' }] }, 400);
+      const kept = store.decide(id, decisions);
+      return kept ? json({ ok: true, proposal: kept }) : json({ ok: false, issues: [{ file: id, message: 'no proposal to review' }] }, 404);
+    }
+    const kept = store.readProposal(id);
+    return kept ? json({ ok: true, proposal: kept }) : json({ ok: false, issues: [{ file: id, message: 'no proposal to review' }] }, 404);
+  }
   // the AI screen: services, the writer, Test (ai-services.md §7, §8)
   const routed = await (await import('../server/aiServices')).aiServicesRoute(parts, method, request);
   if (routed) return routed;
@@ -102,9 +122,13 @@ async function ai(parts: string[], method: string, request: Request): Promise<Re
   const enc = new TextEncoder();
   const stop = new AbortController();
   request.signal.addEventListener('abort', () => stop.abort());
+  // a proposal wider than a block is kept, so the Review tab can be left and come back to
+  const keep = req.target.scope === 'block' ? null : await import('../server/aiProposals');
   const stream = new ReadableStream<Uint8Array>({
     start(ctrl) {
-      const send = (e: { type: string }) => {
+      const send = (e: import('../server/aiConnector').AiEvent) => {
+        if (keep && e.type === 'proposal' && !stop.signal.aborted)
+          keep.keepProposal({ id: req.id, by: e.proposal.service, target: req.target, instruction: req.instruction, madeFrom: null, base: { body: req.article.body, header: { title: req.article.title, summary: req.article.summary } }, proposal: e.proposal });
         try {
           ctrl.enqueue(enc.encode(`event: ${e.type}\ndata: ${JSON.stringify(e)}\n\n`));
         } catch {
