@@ -1,6 +1,6 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 560">
-<title>Drafts and publishing: your work is private, only Publish reaches the public side</title>
-<desc>Edit mode writes every page's working copy into the private repository's main branch, and keeps every version there as a commit. Publish copies the pages and site changes you choose into the publication, a published branch in the same private repository. The public repository records only that a publish happened: one commit moving its pointer to the private publication. The build, run by that commit, reads the publication with its read-only key and deploys the site: published pages in the clear, private pages sealed. Drafts, versions and unpublished changes never leave the private repository.</desc>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 520">
+<title>Drafts and publishing: drafts stay private, published versions go public</title>
+<desc>Edit mode writes every page's working copy into the private repository's main branch and keeps every version there as a commit, pushed in the background as a backup. Publish copies the pages and site changes you choose into the public repository's content folder and commits it: one commit per Publish, holding only published versions. The build reads the public repository for public pages and the private repository for private pages, and deploys the site. Drafts and the versions between publishes never reach the public repository.</desc>
 <g id="editor">
 <rect class="src" x="40" y="40" width="200" height="140" rx="18" />
 <text class="name" x="60" y="72">Edit mode</text>
@@ -9,46 +9,40 @@
 <text class="line" x="60" y="160">Keeps versions</text>
 </g>
 <g id="private">
-<rect class="docs" x="300" y="40" width="340" height="390" rx="18" />
+<rect class="docs" x="300" y="40" width="300" height="170" rx="18" />
 <text class="name" x="320" y="72">Private repository</text>
 <text class="note" x="320" y="94">your work: never public</text>
-<rect class="chip" x="320" y="120" width="300" height="120" rx="12" />
-<text class="chip-name" x="340" y="152">main: your work</text>
-<text class="line" x="340" y="184">Drafts, changes, private pages</text>
-<text class="line" x="340" y="212">Every version: the timeline</text>
-<rect class="chip" x="320" y="290" width="300" height="120" rx="12" />
-<text class="chip-name" x="340" y="322">published: the publication</text>
-<text class="line" x="340" y="354">Only what you published</text>
-<text class="line" x="340" y="382">Public and private pages</text>
+<text class="line" x="320" y="132">Drafts and changes</text>
+<text class="line" x="320" y="160">Every version: the timeline</text>
+<text class="line" x="320" y="188">Private pages, comments</text>
 </g>
 <g id="public">
-<rect class="box" x="700" y="40" width="260" height="140" rx="18" />
-<text class="name" x="720" y="72">Public repository</text>
-<text class="note" x="720" y="94">code, or just settings</text>
-<text class="line" x="720" y="132">One commit per Publish:</text>
-<text class="line" x="720" y="160">the pointer moves</text>
+<rect class="box" x="660" y="40" width="300" height="170" rx="18" />
+<text class="name" x="680" y="72">Public repository</text>
+<text class="note" x="680" y="94">what you published</text>
+<text class="line" x="680" y="132">One commit per Publish</text>
+<text class="line" x="680" y="160">Published versions only</text>
+<text class="line" x="680" y="188">No drafts, no process</text>
 </g>
 <g id="build">
-<rect class="box" x="700" y="250" width="260" height="80" rx="16" />
-<text class="name" x="720" y="282">The build</text>
-<text class="note" x="720" y="304">with its read-only key</text>
+<rect class="box" x="660" y="290" width="300" height="80" rx="16" />
+<text class="name" x="680" y="322">The build</text>
+<text class="note" x="680" y="344">published pages from both</text>
 </g>
 <g id="site">
-<rect class="out" x="700" y="380" width="260" height="80" rx="16" />
-<text class="out-name" x="720" y="412">Your site</text>
-<text class="out-note" x="720" y="434">published pages; private ones sealed</text>
+<rect class="out" x="300" y="290" width="300" height="80" rx="16" />
+<text class="out-name" x="320" y="322">Your site</text>
+<text class="out-note" x="320" y="344">published pages; private ones sealed</text>
 </g>
-<text class="label" x="248" y="140">writes</text>
-<text class="label" x="480" y="270">Publish</text>
-<text class="label" x="666" y="230">records</text>
-<text class="label" x="840" y="222">push</text>
-<text class="label" x="840" y="360">deploys</text>
-<text class="label" x="648" y="400">reads</text>
-<text class="label" x="40" y="520">Drafts, versions and unpublished changes never leave the private repository; the public one records only that a Publish happened.</text>
-<path class="arrow" d="M240 150 H317" />
-<path class="arrow" d="M470 240 V287" />
-<path class="dashed" d="M620 320 H660 V110 H697" />
-<path class="arrow" d="M830 180 V247" />
-<path class="arrow" d="M830 330 V377" />
-<path class="dashed" d="M620 380 H682 V300 H697" />
+<text class="label" x="248" y="100">writes</text>
+<text class="label" x="608" y="100">Publish</text>
+<text class="label" x="820" y="256">push</text>
+<text class="label" x="608" y="320">deploys</text>
+<text class="label" x="460" y="256">private pages, with its key</text>
+<text class="label" x="40" y="470">Your first drafts and how a page took shape stay private; the public history shows only the versions you published.</text>
+<path class="arrow" d="M240 110 H297" />
+<path class="arrow" d="M600 125 H657" />
+<path class="arrow" d="M810 210 V287" />
+<path class="arrow" d="M660 330 H603" />
+<path class="dashed" d="M450 210 V240 H700 V287" />
 </svg>

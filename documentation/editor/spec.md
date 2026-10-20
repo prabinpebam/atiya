@@ -512,7 +512,7 @@ A picture can have a dark mode version, shown on the site instead of it whenever
 
 ## 7. Publishing
 
-**Planned: drafts stay private** (20 October 2026). Today a public page's draft is committed to the public repository with every Save to remote. The [Drafts and publishing](drafts-and-publishing.md) plan moves your work (every page's working copy and its versions) into the private repository. It makes Publish, Publish changes and Unpublish the only way to the public side, and retires Save to remote in favour of a background backup and Publish site changes. What follows is the current behaviour until that lands.
+**Planned: drafts stay private** (20 October 2026). Today a public page's draft is committed to the public repository with every Save to remote. The [Drafts and publishing](drafts-and-publishing.md) plan moves your work (every page's working copy and its versions) into the private repository. Publish, Publish changes and Unpublish become the only way to the public side, which then holds only published versions and their history. Save to remote retires, in favour of a background backup and Publish site changes. What follows is the current behaviour until that lands.
 
 **Two words, two actions** (6 October 2026). **Save to remote** sends your changes to GitHub (a commit and a push), which redeploys the site. **Publish** puts a page on the site: its Status becomes Published. A page only reaches readers when both have happened, so the Save to remote screen offers to publish the drafts it would otherwise leave behind. (Until then the screen and its button were called Publish, and a private page saved with it stayed a draft, which read as a failed publish.)
 

@@ -207,7 +207,7 @@ Access belongs to a page, never to a section: every section is open, and any of 
 
 **The problem.** The repository is public, and edit mode publishes by committing `content/`. A protected page committed in plaintext even once would be readable in the git history forever, whatever the site then serves.
 
-**Planned (20 October 2026):** the same reasoning now covers drafts of public pages. The private repository will hold every page's working copy, its versions and, later, the publication itself; the public repository will receive only what's published, then nothing but a pointer. See [Drafts and publishing](../editor/drafts-and-publishing.md).
+**Planned (20 October 2026):** a lighter version of the same reasoning now covers drafts of public pages: not secrecy, just no first drafts on GitHub. The private repository will hold every page's working copy and its versions; the public repository will receive only published versions, one commit per Publish. See [Drafts and publishing](../editor/drafts-and-publishing.md).
 
 **The design: a governed repository inside the project.**
 
