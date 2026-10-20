@@ -66,6 +66,8 @@ function draw(s) {
   $('show-editor').tabIndex = checked === 'show-editor' ? 0 : -1;
   $('show-site').tabIndex = checked === 'show-site' ? 0 : -1;
   $('open-browser').disabled = !up;
+  // the app's name: edit mode's home, once edit mode is up
+  $('go-home').disabled = !up;
   // the themes panel: offered while the site shows, pressed while it's docked (theming.md §8)
   $('themes').hidden = !(up && s.view === 'site');
   $('themes').setAttribute('aria-pressed', String(!!s.themes));
@@ -89,6 +91,8 @@ function draw(s) {
 const choose = (v) => up && window.atiya.show(v);
 $('show-editor').addEventListener('click', () => choose('editor'));
 $('show-site').addEventListener('click', () => choose('site'));
+// the app's name: edit mode's home (its start screen), whatever shows now
+$('go-home').addEventListener('click', () => choose('editor'));
 // a radio group: the arrows move the choice
 $('views').addEventListener('keydown', (e) => {
   if (!['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'End'].includes(e.key)) return;

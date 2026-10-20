@@ -16,7 +16,8 @@
   <header class="bar" aria-label="Atiya Studio" data-drag-band>
     <div class="group start">
       <button type="button" class="logo" id="menu" aria-label="Atiya Studio menu" aria-haspopup="menu" title="Menu"><img src="site/logo.svg" alt=""></button>
-      <h1 class="title" id="app-title">Atiya Studio</h1>
+      <!-- the app's name goes to edit mode's home from any view (the role of edit mode's own brand link, whose header the app hides) -->
+      <h1 class="title" id="app-title"><button type="button" class="title-home" id="go-home" title="Open edit mode" disabled>Atiya Studio</button></h1>
       <div class="segmented" role="radiogroup" aria-label="What to show" id="views">
         <button type="button" role="radio" id="show-editor" aria-checked="true">Edit mode</button>
         <button type="button" role="radio" id="show-site" aria-checked="false" tabindex="-1">Site</button>

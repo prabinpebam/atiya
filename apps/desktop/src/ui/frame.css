@@ -173,6 +173,44 @@ body.frame {
   color: var(--color-text-muted);
 }
 
+/* the app's name is a way home: edit mode's start, from any view */
+.title-home {
+  display: inline-flex;
+  align-items: center;
+  max-width: 100%;
+  min-height: var(--size-touch);
+  padding: 0 var(--space-2);
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* a disabled control isn't focusable, so a focus ring can only be left over: never draw one */
+.title-home:disabled {
+  color: var(--color-text-muted);
+  outline: none;
+}
+
+.title-home:focus-visible {
+  outline: var(--border-focus) solid var(--color-focus);
+  outline-offset: calc(-1 * var(--border-focus));
+}
+
+@media (hover: hover) {
+  .title-home:hover:not(:disabled) {
+    background: var(--color-accent-soft);
+  }
+}
+
+.title-home:active:not(:disabled) {
+  background: var(--color-accent-soft);
+}
+
 /* Edit mode | Site, a segmented control (the whole of it is here):
  * - the track: a fill, no border;
  * - each option is a 44 px target filling the track, its pill drawn inside it (::before) with --space-1 all round,
@@ -869,6 +907,16 @@ body.frame {
   overflow: hidden;
   clip-path: inset(50%);
   white-space: nowrap;
+}
+
+/* stepped aside, the app's name still takes the keyboard: it shows while focused, as a skip link does */
+/* (as specific as the rule that hides it for a screen's title) */
+:root:has(#page-context) .title:focus-within {
+  position: static;
+  width: auto;
+  height: auto;
+  overflow: visible;
+  clip-path: none;
 }
 
 .context .page-text.strong {

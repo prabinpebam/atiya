@@ -62,6 +62,14 @@ test.describe('desktop: the window', () => {
       await frame.keyboard.press('ArrowRight');
       await expect(views.getByRole('radio', { name: 'Site' })).toHaveAttribute('aria-checked', 'true');
       await expect(views.getByRole('radio', { name: 'Site' })).toBeFocused();
+      // the app's name goes to edit mode's home from any view: here, from the site
+      const home = bar.getByRole('heading', { name: 'Atiya Studio', level: 1 }).getByRole('button', { name: 'Atiya Studio' });
+      await expect(home).toBeVisible();
+      await expect(home).toBeEnabled();
+      await expect(home).toHaveAttribute('title', 'Open edit mode');
+      await home.click();
+      await expect(views.getByRole('radio', { name: 'Edit mode' })).toHaveAttribute('aria-checked', 'true');
+      await expect.poll(async () => (await windowInfo(app)).views.find((v) => !v.url.includes('frame.html'))?.url).toMatch(/localhost:4401\/_edit\/$/);
     } finally {
       await quit(app);
     }
