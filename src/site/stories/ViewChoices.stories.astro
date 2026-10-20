@@ -1,0 +1,19 @@
+---
+import Example from '../library/Example.astro';
+import ViewChoices from '../components/compounds/ViewChoices.astro';
+import { withBase } from '../design/meta';
+
+const views = [
+  { id: 'classic', label: 'Classic', line: 'The sections, in order', href: withBase('/design/'), isDefault: true },
+  { id: 'bento', label: 'Bento', line: 'Every strength at a glance', href: withBase('/design/'), current: true },
+  { id: 'cover', label: 'Cover', line: 'One story, then the rest', href: withBase('/design/') },
+];
+---
+
+<Example title="Views and ways to explore" layout="block" description="Change view's choices, as a home page's dialog shows them: the view showing is marked, the site's default tagged, and the other ways to explore listed apart.">
+  <ViewChoices views={views} modes={[{ id: 'play', label: 'Little planet', line: 'A game, at /play/', href: withBase('/design/') }]} defaultHref={withBase('/design/')} />
+</Example>
+
+<Example title="Showing the default" layout="block" description="The site's default showing, on a site with no other way to explore: the list of ways is left out.">
+  <ViewChoices views={views.map((v) => ({ ...v, current: v.id === 'classic' }))} defaultHref={withBase('/design/')} />
+</Example>

@@ -1,0 +1,182 @@
+---
+/**
+ * Change view's choices (documentation/home-views/switcher.md §1): how the choice is kept, a card per view
+ * the site offers (the one showing marked, the default tagged), Use the default, and the other ways to
+ * explore apart. Each card is a link to its view, so it works without scripts; with them, a choice is kept
+ * on this device (scripts/homeViews.ts). A home page places it in a Dialog.
+ * @tier compound
+ * @a11y The views are a list of links, each named by its view and described by its line; the one showing has aria-current="page" and takes the focus when the dialog opens.
+ * @a11y Every card and link is at least 44 px tall to touch.
+ */
+import Heading from '../fundamentals/Heading.astro';
+import Link from '../fundamentals/Link.astro';
+import Tag from '../fundamentals/Tag.astro';
+import Text from '../fundamentals/Text.astro';
+import { stableId } from '../../design/stableId';
+
+/** A view the visitor can choose. */
+export interface ViewCard {
+  /** Its ID (`bento`). */
+  id: string;
+  /** Its name (Bento). */
+  label: string;
+  /** One line on what it is ("Every strength at a glance"). */
+  line: string;
+  /** Its address: the home page for the site's default, else `/views/<id>/`. */
+  href: string;
+  /** It's the view showing now. */
+  current?: boolean;
+  /** It's the site's default. */
+  isDefault?: boolean;
+}
+
+/** Another way to explore the site (a navigation mode). */
+export interface ModeCard {
+  /** The mode a link to it stores (`play`). */
+  id: string;
+  /** Its name (Little planet). */
+  label: string;
+  /** One line on what it is. */
+  line: string;
+  /** Its address. */
+  href: string;
+}
+
+interface Props {
+  /** The views the site offers, in its order. */
+  views: ViewCard[];
+  /** The other ways to explore, listed apart: choosing one never changes the home page's view. */
+  modes?: ModeCard[];
+  /** Where Use the default goes: the home page, with the visitor's choice cleared. */
+  defaultHref: string;
+}
+
+const { views, modes = [], defaultHref } = Astro.props;
+const uid = stableId(Astro, 'view-choices');
+---
+
+<div class="choices" data-view-choices>
+  <Text variant="small" tone="muted">Kept on this device; change it any time.</Text>
+  <ul class="views" role="list">
+    {
+      views.map((v) => (
+        <li class="view" data-card data-current={v.current ? '' : undefined}>
+          <Heading level={3} size="ui">
+            <a class="name" href={v.href} data-card-link data-view-choice={v.id} aria-current={v.current ? 'page' : undefined} aria-describedby={`${uid}-${v.id}`} autofocus={v.current}>
+              {v.label}
+            </a>
+          </Heading>
+          <Text variant="small" tone="muted" id={`${uid}-${v.id}`}>
+            {v.line}
+          </Text>
+          {(v.current || v.isDefault) && (
+            <span class="tags">
+              {v.current && <Tag tone="accent" size="sm">Showing</Tag>}
+              {v.isDefault && <Tag size="sm">Default</Tag>}
+            </span>
+          )}
+        </li>
+      ))
+    }
+  </ul>
+  <span class="reset">
+    <Link href={defaultHref} variant="standalone" data-view-default>Use the default</Link>
+  </span>
+  {
+    modes.length > 0 && (
+      <section class="modes" aria-labelledby={`${uid}-modes`}>
+        <Heading level={3} size="ui" tone="muted" id={`${uid}-modes`}>
+          Other ways to explore
+        </Heading>
+        <ul class="list" role="list">
+          {modes.map((m) => (
+            <li class="mode">
+              <Link href={m.href} variant="standalone" data-mode={m.id}>
+                {m.label}
+              </Link>
+              <Text variant="small" tone="muted" as="span">
+                {m.line}
+              </Text>
+            </li>
+          ))}
+        </ul>
+      </section>
+    )
+  }
+</div>
+
+<style>
+  .choices {
+    display: grid;
+    gap: var(--space-5);
+  }
+
+  .views,
+  .list {
+    display: grid;
+    gap: var(--space-3);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  /* a card is one link on its name (base.css: data-card, data-card-link); the one showing is filled in the spot colour */
+  .view {
+    display: grid;
+    gap: var(--space-1);
+    align-content: center;
+    min-block-size: var(--size-touch);
+    padding: var(--space-4) var(--space-5);
+    border: var(--border-hairline) solid var(--color-border);
+    border-radius: var(--radius-lg);
+    transition: background-color var(--duration-fast) var(--ease-standard);
+  }
+
+  .view[data-current] {
+    border-color: transparent;
+    background: var(--color-accent-soft);
+  }
+
+  @media (hover: hover) {
+    .view:not([data-current]):hover {
+      background: var(--color-bg-hover);
+    }
+  }
+
+  .view:not([data-current]):has(.name:active) {
+    background: var(--color-bg-hover);
+  }
+
+  .name:focus-visible::after {
+    border-radius: var(--radius-lg);
+  }
+
+  .tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+    padding-block-start: var(--space-1);
+  }
+
+  .reset {
+    display: flex;
+    align-items: center;
+    min-block-size: var(--size-touch);
+  }
+
+  .modes {
+    display: grid;
+    gap: var(--space-3);
+    padding-block-start: var(--space-5);
+    border-block-start: var(--border-hairline) solid var(--color-rule);
+  }
+
+  .mode {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: var(--space-1) var(--space-3);
+    min-block-size: var(--size-touch);
+    align-content: center;
+  }
+</style>

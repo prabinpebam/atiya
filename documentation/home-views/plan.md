@@ -4,7 +4,7 @@ How [home page views](README.md) are built: eight stages, each ending in somethi
 
 > **TL;DR.**
 > - **How:** each stage is built in loops against its Definition of Done: build, run the stage's checks, fix, record the evidence in §6, merge. A stage is done when every row has its evidence and its Try it works.
-> - **Stages:** 0 this plan; 1 the spine and the rules (no visible change); 2 Bento, Change view and the role lens (2a the view at its own address, 2b the visitor's choice); 4 Cover and Proof grid, then 3 the Home screen in edit mode; 5 Spotlight and Showreel; 6 Keywords; 7 Questions; 8 the finish (every suite, parity, the docs as built).
+> - **Stages:** 0 this plan; 1 the spine and the rules (no visible change); 2 Bento, Change view and the role lens (2a the view at its own address, 2b the visitor's choice, 2c the role lens); 4 Cover and Proof grid, then 3 the Home screen in edit mode; 5 Spotlight and Showreel; 6 Keywords; 7 Questions; 8 the finish (every suite, parity, the docs as built).
 > - **Project Definition of Done:** every capability seen on every view's first screen, for any site's 3 to 6 strengths; reproducible picks with a reason for each; a home page a person makes in edit mode without editing a file; nothing changed on a site that hasn't made one (§2).
 > - **Alongside other work:** a worktree and branch of its own, off by default, small edits to shared files, rebased and checked before every merge (§4).
 > - **Later, with their own Definitions of Done:** AI curation, links for one job, the Showreel's MP4 cut, `atiya home` in Atiya Studio and the capability ink sketches (§5).
@@ -59,9 +59,9 @@ How [home page views](README.md) are built: eight stages, each ending in somethi
 ### Stage 2: Bento, Change view and the role lens
 
 - **Builds:** the home layout (the identity strip as the header's home arrangement, the sections index at the foot); the Bento compound (tiles, In their words, the evidence drawer, 3 to 6 tiles); Change view (a dialog of the offered views, Use the default, Other ways to explore); the lens chip; `/` as the default view (the hub without a `home` key), `/views/<id>/` with `/` as canonical, `/?view=` sent on, a view that isn't offered answering with a short page, `views` reserved; the stored pick before first paint; telemetry events; stories and screenshots. The owner's ways file gets `home`, offering Bento beside the classic hub.
-- **In two merges** (the throughput review of stage 1): **2a** is the view itself, offered at its own address (rows 2.1, 2.2, 2.3, 2.6, 2.7, 2.8 and 2.10); **2b** is the visitor's choice (Change view, the stored pick, the lens chip, telemetry: rows 2.4, 2.5 and 2.9, with the "content security policy" E2E group, since the stored pick adds a script to `/`).
+- **In three merges** (the throughput reviews of stages 1 and 2a): **2a** is the view itself, offered at its own address (rows 2.1, 2.2, 2.3, 2.6, 2.7, 2.8 and 2.10); **2b** is the visitor's choice (Change view, the stored pick, `/views/classic/`, telemetry: rows 2.4 and 2.9, with 2.6, 2.7, 2.8 and 2.10 again and the "content security policy" E2E group, since the stored pick adds a script to `/`); **2c** is the role lens (its pages and its chip: row 2.5). The short page for a view that isn't offered moves to stage 4.
 - **The default waits for the owner:** until he signs off the strengths' names and lines and picks the default (decisions H1, H2 and H9), the classic hub stays the default at `/` and Bento is offered at `/views/bento/`. Making Bento the default is then one line of `content/structures/ways.json`.
-- **Try it:** 2a: run the site and open `/views/bento/`; press a tile, its details open under its row; `/` is the hub as before. 2b: Change view lists Bento and the classic hub; `/?for=ai` puts AI first with a chip.
+- **Try it:** 2a: run the site and open `/views/bento/`; press a tile, its details open under its row; `/` is the hub as before. 2b: on `/views/bento/` or `/views/classic/`, Change view lists Bento and the classic hub; choose one, then open `/`: it shows your choice; Use the default puts the hub back. 2c: `/?for=ai` puts AI first with a chip.
 
 | # | Done when | Evidence |
 |---|---|---|
@@ -70,10 +70,10 @@ How [home page views](README.md) are built: eight stages, each ending in somethi
 | 2.3 | Bento lays out 3, 4, 5 and 6 strengths as [for every site §4](for-every-site.md) says | Stories at each count; screenshots |
 | 2.4 | Change view: a link shows its view and doesn't store; a card stores; `/` follows the stored pick before first paint; Use the default clears it; a pick no longer offered is removed | E2E "home views: change view" |
 | 2.5 | The lens reorders and changes the lead voice, never hides; its chip clears it; it's kept for the visit | Unit (lens); E2E |
-| 2.6 | Without a `home` key the home is the hub, as today; with the owner's (the hub as default) `/` is unchanged | Unit; the "landing & classic" E2E group |
+| 2.6 | Without a `home` key the home is the hub, as today; with the owner's (the hub as default) `/` is unchanged: from 2b, its markup differs only by the router and the `data-home-*` attributes, and it offers no Change view | Unit; the "landing & classic" E2E group; the built `/index.html` compared before and after |
 | 2.7 | Axe clean in light and dark; no sideways scroll at 320 px; 44 px targets | E2E "home views", "site on a phone" |
 | 2.8 | The design system's tests pass; stories for every new component; screenshots updated and looked at | `npm test`; `npm run visual` for the new stories and `/` |
-| 2.9 | Telemetry sends only allowlisted events with no text | E2E with `site.test.telemetry` |
+| 2.9 | Telemetry's home events carry only view and lens IDs and how the visitor came, never text or an address | Unit (`homeEvents`); E2E "home views: change view" with `site.test.telemetry` |
 | 2.10 | `verify:prod` passes; the view's script is under 15 KB gzip | `npm run verify:prod` |
 
 ### Stage 3: the Home screen
@@ -94,7 +94,7 @@ How [home page views](README.md) are built: eight stages, each ending in somethi
 ### Stage 4: Cover and Proof grid
 
 - **Built before stage 3** (the throughput review): three views at their own addresses let the owner choose the default (H2) sooner, and edit mode is busy with AI editing's work.
-- **Builds:** [Cover](cover.md) and [Proof grid](proof-grid.md), with their settings and minimums; the owner offers them.
+- **Builds:** [Cover](cover.md) and [Proof grid](proof-grid.md), with their settings and minimums; the owner offers them. A view that isn't offered answers at its address with a short page (moved from stage 2), and Change view's cards get their stills and the views their transitions ([switcher §10](switcher.md#10-as-built-stage-2b)).
 - **Try it:** `/views/cover/` and `/views/proof-grid/`; Change view moves between them.
 
 | # | Done when | Evidence |
@@ -173,7 +173,8 @@ Other features are being built at the same time, in their own worktrees and on `
 | 0 | Done | This page; the docs checks |
 | 1 | Done | 1.1 `homeContract.test.ts` (25 tests); 1.2 to 1.5 `homeCurate.test.ts` (34 tests: matching, the score, slots, kind balance, lens, hold, recency, ties, the health report, minimums, sites of 3, 40 and 500 pages, the 500 curating well under 150 ms); the 30 other suites that import the content contract pass (416 tests); 1.6 the owner's spine (`content/showcase.json`, `content/topics.json`, `resumePage`, `contribution` on 8 pages) passes the strict check, `npm run check` 0 errors, `npm run build` 134 pages, and no page renders the new code yet, so the home page is unchanged |
 | 2a | Done | 2.1 and 2.2: E2E "home views" (coverage at 1280 by 800 and 360 by 740 in light and dark, from the first HTML and in view; bento's three levels, Esc and focus return, `#cap-<id>`, one drawer at a time); 2.3 the Bento story at 3, 4, 5 and 6 tiles, and their screenshots; 2.6 "landing & classic" passes and `/` is the hub, canonical `/`; 2.7 axe clean in both modes with a drawer open, "home views on a phone" (no sideways scroll and 44 px targets at 320, 360 and 844 wide, open and closed); 2.8 `siteDesignSystem.test.ts` and the home suites (367 tests), `npm run check` 0 errors, the whole visual project (144 passed; the new stories' and `/views/bento/`'s 60 baselines written and looked at; no other screenshot changed); 2.10 `verify:prod` passes, Bento's script 0.8 KB gzip and Voices' 0.2 KB. As built: [Bento §13](bento.md#13-as-built-stage-2a) |
-| 2b | Not started | |
+| 2b | Done | 2.4: E2E "home views: change view" (5 tests: a link shows a view without keeping it and `?view=` is sent on; a card keeps the choice, `/` and the in-site home link follow it before the first paint and Back skips `/`, Use the default clears it; a kept choice no longer offered is dropped; the dialog by keyboard, Esc back to its opener, axe in both modes; telemetry), and the router's and the hub's ways in unit-tested (`homeRoute.test.ts`, `homeViews.test.ts`: 30 tests); 2.6: "landing & classic" passes, and the built `/index.html` compared before and after: the body is the same but for the hub's script (now a file, with the primary way in chosen by a small inline script before the first paint), the head adds the router and the `data-home-*` attributes, and two stylesheets (3.7 KB gzip) come with it, a deviation in [switcher §10](switcher.md#10-as-built-stage-2b); 2.7: "home views", "site design system" and "site on a phone" pass (49 tests, axe in both modes); 2.8: `siteDesignSystem.test.ts` and the home, content and token suites (427 tests), `npm run check` 0 errors, the ViewChoices story's 12 new screenshots and `/views/bento/`'s 6 changed ones looked at and accepted, `/` and every other screenshot run unchanged; 2.9: `homeEvents` unit-tested and the E2E reads the events sent (view and lens IDs and the source only); 2.10: `verify:prod` passes; the hub's script 0.4 KB gzip and the choices' 0.8 KB. As built: [switcher §10](switcher.md#10-as-built-stage-2b) |
+| 2c | Not started | |
 | 3 | Not started | |
 | 4 | Not started | |
 | 5 | Not started | |

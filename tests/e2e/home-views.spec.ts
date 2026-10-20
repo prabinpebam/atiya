@@ -130,9 +130,11 @@ test.describe('home views', () => {
   test('the home page is still the hub, and the view names it as the canonical address', async ({ page }) => {
     await page.goto('/');
     await expect(page.locator('[data-bento]')).toHaveCount(0);
-    await expect(page.locator('[data-home-view]')).toHaveCount(0);
+    await expect(page.locator('main[data-home-view]')).toHaveCount(0);
+    // while the hub is the default, `/` offers no Change view (plan.md 2.6)
+    await expect(page.locator('[data-dialog-open="change-view"]')).toHaveCount(0);
     await page.goto(BENTO);
-    await expect(page.locator('[data-home-view="bento"]')).toHaveCount(1);
+    await expect(page.locator('main[data-home-view="bento"]')).toHaveCount(1);
     expect(new URL((await page.locator('link[rel="canonical"]').getAttribute('href'))!).pathname).toBe('/');
     await expect(page.getByRole('heading', { level: 1 })).toHaveCount(1);
     await expect(page.getByRole('list', { name: 'Sections' })).toBeVisible();
@@ -190,5 +192,123 @@ test.describe('home views on a phone', () => {
     await expect(toggle).toBeFocused();
     await expect(toggle).toHaveAttribute('aria-expanded', 'false');
     await expect(toggle).toBeInViewport();
+  });
+});
+
+// Change view (switcher.md; plan.md 2b): a link shows a view, a choice keeps it on this device, `/` follows it
+// before the first paint, Use the default clears it, and telemetry hears view IDs only
+const TELEMETRY = 'https://telemetry.test';
+type Sent = { event: string; properties: Record<string, unknown> };
+const decode = (body: string): Sent[] => {
+  const parse = (s: string): Sent[] => {
+    const v = JSON.parse(s) as Sent | Sent[] | { batch: Sent[] };
+    return Array.isArray(v) ? v : 'batch' in v ? v.batch : [v];
+  };
+  try {
+    return parse(body);
+  } catch {
+    const data = new URLSearchParams(body).get('data');
+    return data ? parse(Buffer.from(data, 'base64').toString('utf8')) : [];
+  }
+};
+const kept = (page: Page) => page.evaluate(() => localStorage.getItem('site.homeView'));
+const shown = (page: Page) => page.evaluate(() => document.documentElement.dataset.homeView);
+const openChoices = async (page: Page) => {
+  await page.locator('[data-dialog-open="change-view"]').first().click();
+  const dialog = page.getByRole('dialog', { name: 'Change view' });
+  await expect(dialog).toBeVisible();
+  return dialog;
+};
+
+test.describe('home views: change view', () => {
+  test('a link shows its view without keeping it, and `?view=` at the root does the same', async ({ page }) => {
+    await page.goto(BENTO);
+    expect(await shown(page)).toBe('bento');
+    expect(await kept(page)).toBeNull();
+    await page.goto('/');
+    expect(new URL(page.url()).pathname).toBe('/');
+    expect(await shown(page)).toBe('classic');
+    await page.goto('/?view=bento#top');
+    await expect(page).toHaveURL(/\/views\/bento\/#top$/);
+    expect(await kept(page)).toBeNull();
+  });
+
+  test('a card keeps the choice, `/` and an in-site link to it follow it, and Use the default clears it', async ({ page }) => {
+    await page.goto('/views/classic/');
+    expect(await shown(page)).toBe('classic');
+    const dialog = await openChoices(page);
+    // the view showing is marked, and has the focus
+    const current = dialog.locator('a[data-view-choice="classic"]');
+    await expect(current).toHaveAttribute('aria-current', 'page');
+    await expect(current).toBeFocused();
+    await dialog.locator('a[data-view-choice="bento"]').click();
+    await expect(page).toHaveURL(/\/views\/bento\/$/);
+    expect(await kept(page)).toBe('bento');
+    await expect(page.locator('[data-home-status]')).toHaveText('Showing the Bento view');
+    // `/` is replaced before it's shown: going back skips it
+    const section = await page.getByRole('list', { name: 'Sections' }).getByRole('link').first().getAttribute('href');
+    await page.goto(section!);
+    await page.locator('header .brand a').click();
+    await expect(page).toHaveURL(/\/views\/bento\/$/);
+    await page.goBack();
+    expect(new URL(page.url()).pathname).toBe(section);
+    await page.goForward();
+    await expect(page).toHaveURL(/\/views\/bento\/$/);
+    // Use the default: back to `/`, nothing kept
+    await (await openChoices(page)).locator('a[data-view-default]').click();
+    await expect(page).toHaveURL(/\/$/);
+    expect(await shown(page)).toBe('classic');
+    expect(await kept(page)).toBeNull();
+  });
+
+  test('a kept choice the site no longer offers is dropped', async ({ page }) => {
+    await page.addInitScript(() => {
+      if (!sessionStorage.getItem('seeded')) {
+        sessionStorage.setItem('seeded', '1');
+        localStorage.setItem('site.homeView', 'no-such-view');
+      }
+    });
+    await page.goto('/');
+    expect(new URL(page.url()).pathname).toBe('/');
+    expect(await kept(page)).toBeNull();
+  });
+
+  test('the dialog: keyboard, Esc back to its opener, and axe in both modes', async ({ page }) => {
+    await page.goto(BENTO);
+    const opener = page.locator('[data-dialog-open="change-view"]').last();
+    await opener.focus();
+    await page.keyboard.press('Enter');
+    const dialog = page.getByRole('dialog', { name: 'Change view' });
+    await expect(dialog).toBeVisible();
+    await expect(dialog.locator('a[data-view-choice="bento"]')).toBeFocused();
+    // (axe reads colours: wait for the dialog's rise to end)
+    await dialog.evaluate((el) => Promise.all(el.getAnimations({ subtree: true }).map((a) => a.finished)));
+    for (const colorScheme of ['light', 'dark'] as const) {
+      await page.emulateMedia({ colorScheme });
+      await page.waitForFunction(() => document.getAnimations().every((a) => a.playState !== 'running'));
+      await noSeriousViolations(page);
+    }
+    await page.keyboard.press('Escape');
+    await expect(dialog).toBeHidden();
+    await expect(opener).toBeFocused();
+  });
+
+  test('telemetry hears the view, the lens and how the visitor came, and a switch', async ({ page }) => {
+    const sent: Sent[] = [];
+    await page.addInitScript(() => localStorage.setItem('site.test.telemetry', '1'));
+    await page.context().route(`${TELEMETRY}/**`, async (route) => {
+      const body = route.request().postData() ?? '';
+      if (body) sent.push(...decode(body));
+      await route.fulfill({ status: 200, contentType: 'application/json', body: '{"status":1}' });
+    });
+    await page.goto('/views/classic/');
+    await (await openChoices(page)).locator('a[data-view-choice="bento"]').click();
+    await expect(page).toHaveURL(/\/views\/bento\/$/);
+    const ours = (name: string) => sent.filter((e) => e.event === name).map((e) => ({ view: e.properties.view, lens: e.properties.lens, source: e.properties.source, from: e.properties.from, to: e.properties.to }));
+    await expect.poll(() => ours('view_switch'), { timeout: 15_000 }).toEqual([{ view: undefined, lens: undefined, source: undefined, from: 'classic', to: 'bento' }]);
+    await expect.poll(() => ours('home_view'), { timeout: 15_000 }).toEqual([
+      { view: 'classic', lens: 'none', source: 'link', from: undefined, to: undefined },
+      { view: 'bento', lens: 'none', source: 'stored', from: undefined, to: undefined },
+    ]);
   });
 });

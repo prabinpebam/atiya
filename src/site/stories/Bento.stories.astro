@@ -38,8 +38,8 @@ const voices = [
 ---
 
 <Example title="Six strengths, calm" layout="block" description="Every strength in view at once, with the lead and In their words beside them. A quote shows under the pointer or focus; a press opens the drawer under its row.">
-  <Bento tiles={tiles('six', 6, [4, 4, 4, 4, 4, 4])} density="calm">
-    <HomeLead slot="lead" name="Alex Morgan" role="Head of Design" facts={['15 years', 'Teams of 40', 'Three products']} primary={{ label: 'Read my résumé', href: withBase('/design/') }} secondary={{ label: 'Get in touch', href: withBase('/design/') }} />
+  <Bento tiles={tiles('six', 6, [4, 4, 4, 4, 4, 4])} density="calm" headingLevel={3}>
+    <HomeLead slot="lead" name="Alex Morgan" role="Head of Design" facts={['15 years', 'Teams of 40', 'Three products']} primary={{ label: 'Read my résumé', href: withBase('/design/') }} secondary={{ label: 'Get in touch', href: withBase('/design/') }} headingLevel={2} />
     <Voices slot="voices" voices={voices} />
   </Bento>
 </Example>

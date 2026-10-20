@@ -135,6 +135,8 @@ test.describe('landing & classic', () => {
     const og = await page.locator('meta[property="og:image"]').getAttribute('content');
     expect(og).toMatch(/\/og-image\.jpg$/);
     expect((await page.request.get('/og-image.jpg')).status()).toBe(200);
+    // (axe reads colours: wait for the hero's entrance to end)
+    await main.evaluate((el) => Promise.all(el.getAnimations({ subtree: true }).map((a) => a.finished)));
     await noSeriousViolations(page);
   });
 

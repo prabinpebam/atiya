@@ -203,3 +203,25 @@ The two don't interfere. The home page's ways in to modes ([navigation modes §4
 | S2 | Where a remembered pick is applied | A redirect from `/`; render every view at `/` and choose in the page | The redirect: each view stays a light static page, and the cost is one fast navigation for returning visitors only |
 | S3 | Show a first-visit hint that other views exist | A one-time note by Change view; none | None: the control is always in the same place, and a note would cost the first impression |
 | S4 | Offer the switcher when only one view is offered | Hide Change view; show it with modes only | Show it only if a mode is on; otherwise hide it |
+
+## 10. As built (stage 2b)
+
+Change view, the remembered pick and their telemetry are built. The classic hub is still the default at `/`, and Bento and the hub are offered at their own addresses, `/views/bento/` and `/views/classic/`.
+
+| Part | Where |
+|---|---|
+| The router | [`homeRoute.ts`](https://github.com/prabinpebam/atiya/blob/main/src/site/scripts/homeRoute.ts): the script PageShell runs in a home page's head, before the first paint, from the page's `data-home-*` attributes (§3's order; its decisions are unit-tested) |
+| The choices | [`ViewChoices.astro`](https://github.com/prabinpebam/atiya/blob/main/src/site/components/compounds/ViewChoices.astro), in the site's Dialog; [`homeViews.ts`](https://github.com/prabinpebam/atiya/blob/main/src/site/scripts/homeViews.ts) keeps a choice, writes the status line and tells telemetry |
+| The pages | [`index.astro`](https://github.com/prabinpebam/atiya/blob/main/src/pages/index.astro) shows the default view and [`views/[view].astro`](https://github.com/prabinpebam/atiya/blob/main/src/pages/views/%5Bview%5D.astro) every offered, built view, the hub too; both draw [`Hub.astro`](https://github.com/prabinpebam/atiya/blob/main/src/site/content/Hub.astro) or [`HomeView.astro`](https://github.com/prabinpebam/atiya/blob/main/src/site/content/HomeView.astro) |
+
+Where the build differs from the design above:
+- **Where Change view is.** In Bento it's a quiet button in the lead, beside Explore the planet, and again at the foot after the sections index; on the hub's own address it's among the opening's actions and again after the sections. It isn't in the phone's menu: the foot's button is there on a phone.
+- **`/` offers no Change view while the hub is the default.** This protects the live home page: its markup is unchanged but for the router and the `data-home-*` attributes on `<html>`, and the hub's script, which is now a file rather than inline. The one part that must run before the first paint, choosing which way in is the primary button (the way the visitor went last), stays inline: a small script right after the buttons ([`HUB_WAYS`](https://github.com/prabinpebam/atiya/blob/main/src/site/scripts/hub.ts)), so the buttons never change colour in view. Since one page renders whichever view is the default, `/` also loads the dialog's and the choices' styles: two small stylesheets, 3.7 KB gzip, while its HTML is about the same size (0.6 KB smaller; 0.2 KB more gzipped). Showing Change view on `/` is one prop once the owner wants it.
+- **The panel is the site's Dialog,** a modal dialog in the middle of the screen, rather than a panel under the button and a sheet on a phone. The current card takes the focus through `autofocus`, and the dialog gives it back to the button that opened it. The button has `aria-haspopup="dialog"` but no `aria-expanded`, since a modal dialog covers it while it's open.
+- **No stills yet.** Each card has its name and line. The stills wait until there are views worth telling apart at a glance (stage 4).
+- **No view transitions yet** (§4). They wait for a second view beside the hub to move between (stage 4).
+- **`/views/classic/`** is the hub at its own address, so choosing the hub works like choosing any view. There, `?mode=` doesn't move the visitor, and its canonical address is `/`.
+- **`/?view=<id>`** is sent on by the router, with `location.replace`, rather than by a server, since the site is static. The rest of the query and the fragment are kept. `?mode=` skips the router, so the hub's ways in work as before.
+- **Two more keys, for the visit only.** `sessionStorage['site.homeArrival']` and `['site.homeChanged']` carry how the visitor came and what they changed to the next page, for the status line and telemetry. Both are read once and removed.
+- **The role lens (`?for=`) comes in stage 2c,** and the short page for a view that isn't offered comes in stage 4. Until then, such an address isn't found.
+- **Telemetry** sends §8's events with view and lens IDs and the source only. They aren't on the protected pages' allowlist, because a home page is never protected.

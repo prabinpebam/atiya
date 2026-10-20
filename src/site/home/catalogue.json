@@ -65,7 +65,7 @@
     },
     "bento": {
       "label": "Bento",
-      "line": "The default",
+      "line": "Every strength at a glance",
       "built": true,
       "minimum": { "strengths": 3 },
       "settings": {

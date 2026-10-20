@@ -8,13 +8,58 @@ import { footerLinks, siteNav } from './navigation';
 import { picture } from './pictures';
 import { withBase } from '../design/meta';
 import { bentoSettings, bentoTiles } from '../home/bento';
+import { CATALOGUE } from '../home/catalogue';
 import { leadOf, voicesOf, type PresentEnv } from '../home/present';
 import type { ViewId } from '../home/ids';
+import type { HomeRouting } from '../scripts/homeRoute';
 
-/** The views that have a page of their own: every offered view that's built, but the classic hub (it's `/`). */
+/** The views that have a page of their own (`/views/<id>/`): every offered view that's built, the classic hub too. */
 export function viewPaths(): ViewId[] {
   const home = getHome();
-  return (home?.offered ?? []).filter((v) => v !== 'classic');
+  return (home?.offered ?? []).filter((v) => CATALOGUE.views[v].built);
+}
+
+/**
+ * What the head's router needs on a home page (switcher.md §3): which view this page shows and where it is,
+ * the site's default and offered views. None without a `home` key (the classic hub is all the site has).
+ * The lenses and the views the site doesn't offer get their pages in later stages (plan.md §6: 2c, 4), so a
+ * link names only what has a page.
+ */
+export function homeRouting(view: ViewId, at: HomeRouting['at']): HomeRouting | undefined {
+  const home = getHome();
+  if (!home) return undefined;
+  const pages = viewPaths();
+  return { at, view, default: home.default, offered: pages, known: pages, lenses: [], base: withBase('/').replace(/\/$/, '') };
+}
+
+/** A view as Change view lists it. */
+export interface ViewChoice {
+  id: ViewId;
+  label: string;
+  line: string;
+  href: string;
+  current: boolean;
+  isDefault: boolean;
+}
+
+/**
+ * Change view's choices (switcher.md §1): a card per offered view (the default's links to `/`), Use the
+ * default, and the other ways to explore. Null when there's nothing to change to.
+ */
+export function viewSwitch(current: ViewId) {
+  const home = getHome();
+  const offered = viewPaths();
+  if (!home || offered.length < 2) return null;
+  const views: ViewChoice[] = offered.map((id) => ({
+    id,
+    label: CATALOGUE.views[id].label,
+    line: CATALOGUE.views[id].line,
+    href: withBase(id === home.default ? '/' : `/views/${id}/`),
+    current: id === current,
+    isDefault: id === home.default,
+  }));
+  const modes = getPlanet() ? [{ id: 'play', label: 'Little planet', line: 'A game, at /play/', href: withBase('/play/') }] : [];
+  return { views, modes, defaultHref: withBase('/') };
 }
 
 /** Addresses and people as the home model asks for them. */

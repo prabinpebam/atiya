@@ -1,0 +1,106 @@
+---
+/**
+ * The classic hub (documentation/sections/spec.md §3.5): the home hub's words, the ways in (the planet, the
+ * site), and the sections, each with its line and whether it's empty. It's the home page while it's the
+ * site's default view, and `/views/classic/` shows it at its own address (documentation/home-views/switcher.md
+ * §2), where it also offers Change view. At `/`, while it's the default, it stays exactly as it was.
+ */
+import LandingLayout from '../layouts/LandingLayout.astro';
+import Button from '../components/fundamentals/Button.astro';
+import Link from '../components/fundamentals/Link.astro';
+import ContentsList from '../components/compounds/ContentsList.astro';
+import Dialog from '../components/compounds/Dialog.astro';
+import ViewChoices from '../components/compounds/ViewChoices.astro';
+import { SITE_FEATURES, withBase } from '../design/meta';
+import { getPerson, getPlanet, getRoute, getRoutes, getSite, getStructure, getWays } from './repository';
+import { footerLinks, siteNav } from './navigation';
+import { homeRouting, viewSwitch } from './homeView';
+import { HUB_WAYS } from '../scripts/hub';
+
+interface Props {
+  /** Where it's shown: the site's root, or its own address. */
+  at: 'root' | 'view';
+}
+
+const { at } = Astro.props;
+const site = getSite();
+const owner = getPerson(site.owner);
+const home = getRoute('/')!;
+const routes = getRoutes();
+const sections = routes.filter((r) => r.parent === home.node);
+const pages = (r: (typeof routes)[number]) => routes.filter((p) => p.parent === r.node && p.access === 'open').length;
+// just the site (no planet, or turned off): no way into the planet, and the opening has no painting of it
+const planet = !!getPlanet();
+// the way in offered first (the ways file's primary, plan stage 8A): the planet, or the site itself
+const planetFirst = planet && getWays().primary === 'little-planet';
+// Change view on the hub's own address (home-views plan.md 2.6: `/` is unchanged while the hub is the default)
+const choices = at === 'view' ? viewSwitch('classic') : null;
+---
+
+<LandingLayout
+  title={owner?.role ? `${site.name} — ${owner.role}` : site.name}
+  description={site.description}
+  nav={siteNav(getStructure(), routes, home)}
+  footer={footerLinks(getSite(), routes)}
+  afterId="sections"
+  canonical={at === 'view' ? '/' : undefined}
+  home={homeRouting('classic', at)}
+  hero={{
+    title: home.title,
+    standfirst: home.node.kind === 'hub' ? home.node.summary : undefined,
+    picture: planet
+      ? {
+          src: withBase('/poster/landing-1200.webp'),
+          srcset: `${withBase('/poster/landing-800.webp')} 800w, ${withBase('/poster/landing-1200.webp')} 1200w`,
+          alt: 'A painted tiny planet with a brick plaza, little buildings and a character.',
+          width: 1200,
+          height: 800,
+        }
+      : undefined,
+  }}
+>
+  {planetFirst && <Button variant="primary" size="lg" href={withBase('/play/')} icon="planet" data-mode="play">Explore the planet</Button>}
+  <Button variant={planetFirst ? 'secondary' : 'primary'} size="lg" href="#sections" data-mode="classic">Read the site</Button>
+  {planet && !planetFirst && <Button variant="secondary" size="lg" href={withBase('/play/')} icon="planet" data-mode="play">Explore the planet</Button>}
+  {choices && <Button variant="quiet" size="lg" icon="views" data-dialog-open="change-view" aria-haspopup="dialog">Change view</Button>}
+  {
+    planet && (
+      <Fragment slot="note">
+        The planet is a small 3D world you can walk around.{SITE_FEATURES.docs && <> <Link href={withBase('/docs/')}>How this site was built</Link></>}
+      </Fragment>
+    )
+  }
+  <Fragment slot="after">
+    <script is:inline set:html={HUB_WAYS} />
+    <ContentsList
+      label="Sections"
+      entries={sections.map((r) => ({
+        href: withBase(r.path),
+        title: r.title,
+        kicker: pages(r) === 0 ? 'Being written' : undefined,
+        summary: r.node.kind === 'hub' ? r.node.summary : undefined,
+      }))}
+    />
+    {
+      choices && (
+        <div>
+          <Button variant="secondary" icon="views" data-dialog-open="change-view" aria-haspopup="dialog">Change view</Button>
+          <Dialog id="change-view" title="Change view">
+            <ViewChoices views={choices.views} modes={choices.modes} defaultHref={choices.defaultHref} />
+          </Dialog>
+          <p class="sr-only" aria-live="polite" data-home-status data-label="Classic" />
+        </div>
+      )
+    }
+  </Fragment>
+</LandingLayout>
+
+<script>
+  import { each } from '../scripts/page';
+  import { setupHub } from '../scripts/hub';
+  import { homeStatus, setupViewChoices } from '../scripts/homeViews';
+
+  each<HTMLElement>('main#main', setupHub);
+  each<HTMLElement>('[data-view-choices]', setupViewChoices);
+  each<HTMLElement>('html[data-home-view]', () => homeStatus(document.querySelector<HTMLElement>('[data-home-status]')));
+</script>

@@ -1,0 +1,73 @@
+---
+/**
+ * A home view other than the classic hub (documentation/home-views/foundation.md §7): its page frame, the
+ * view itself (Bento so far), and Change view in the lead and again at the foot (switcher.md §1). Shown at
+ * the view's own address, and at `/` when it's the site's default.
+ */
+import HomeLayout from '../layouts/HomeLayout.astro';
+import Bento from '../components/compounds/Bento.astro';
+import HomeLead from '../components/compounds/HomeLead.astro';
+import Voices from '../components/compounds/Voices.astro';
+import Dialog from '../components/compounds/Dialog.astro';
+import ViewChoices from '../components/compounds/ViewChoices.astro';
+import Button from '../components/fundamentals/Button.astro';
+import Link from '../components/fundamentals/Link.astro';
+import { CATALOGUE } from '../home/catalogue';
+import type { ViewId } from '../home/ids';
+import { bentoView, homeFrame, homeRouting, viewSwitch } from './homeView';
+
+interface Props {
+  /** The view (`bento`). */
+  view: ViewId;
+  /** Where it's shown: the site's root (it's the default), or its own address. */
+  at: 'root' | 'view';
+}
+
+const { view, at } = Astro.props;
+const frame = homeFrame();
+const bento = view === 'bento' ? await bentoView() : null;
+const choices = viewSwitch(view);
+---
+
+<HomeLayout title={frame.title} description={frame.description} canonical={at === 'view' ? '/' : undefined} nav={frame.nav} footer={frame.footer} sections={frame.sections} view={view} home={homeRouting(view, at)}>
+  {
+    bento && (
+      <Bento tiles={bento.tiles} density={bento.density}>
+        <HomeLead slot="lead" {...bento.lead}>
+          {frame.planet && (
+            <Link href={frame.planet} variant="quiet" data-mode="play">
+              Explore the planet
+            </Link>
+          )}
+          {choices && (
+            <Button variant="quiet" size="sm" icon="views" data-dialog-open="change-view" aria-haspopup="dialog">
+              Change view
+            </Button>
+          )}
+        </HomeLead>
+        {bento.voices.length > 0 && <Voices slot="voices" voices={bento.voices} />}
+      </Bento>
+    )
+  }
+  {
+    choices && (
+      <Fragment slot="end">
+        <Button variant="secondary" icon="views" data-dialog-open="change-view" aria-haspopup="dialog">
+          Change view
+        </Button>
+        <Dialog id="change-view" title="Change view">
+          <ViewChoices views={choices.views} modes={choices.modes} defaultHref={choices.defaultHref} />
+        </Dialog>
+        <p class="sr-only" aria-live="polite" data-home-status data-label={CATALOGUE.views[view].label} />
+      </Fragment>
+    )
+  }
+</HomeLayout>
+
+<script>
+  import { each } from '../scripts/page';
+  import { homeStatus, setupViewChoices } from '../scripts/homeViews';
+
+  each<HTMLElement>('[data-view-choices]', setupViewChoices);
+  each<HTMLElement>('html[data-home-view]', () => homeStatus(document.querySelector<HTMLElement>('[data-home-status]')));
+</script>

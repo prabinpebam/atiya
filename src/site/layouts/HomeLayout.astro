@@ -2,7 +2,8 @@
 /**
  * A home view's page (documentation/home-views/foundation.md §7): the masthead with the site's sections,
  * the view itself (Bento, and the views to come), then the site's sections as an index at the foot, so
- * every view still reaches every part of the site. Defined once; every home view uses it.
+ * every view still reaches every part of the site, and last what ends the page (the `end` slot: Change view
+ * again). Defined once; every home view uses it.
  * @tier layout
  * @a11y One h1 (the view's lead names the person); a main landmark with id="main" for the skip link; the index is a labelled list.
  */
@@ -11,6 +12,7 @@ import SiteHeader from '../components/compounds/SiteHeader.astro';
 import ContentsList, { type ContentsEntry } from '../components/compounds/ContentsList.astro';
 import SiteFooter from '../components/compounds/SiteFooter.astro';
 import type { NavItem } from '../components/compounds/SiteHeader.astro';
+import type { HomeRouting } from '../scripts/homeRoute';
 
 interface Props {
   /** The document title. */
@@ -27,12 +29,14 @@ interface Props {
   sections?: ContentsEntry[];
   /** Which view this is, for its tests and its telemetry (`bento`). */
   view: string;
+  /** A home page's router, run in the head (documentation/home-views/switcher.md §3). */
+  home?: HomeRouting;
 }
 
-const { title, description, canonical, nav, footer, sections = [], view } = Astro.props;
+const { title, description, canonical, nav, footer, sections = [], view, home } = Astro.props;
 ---
 
-<PageShell title={title} description={description} canonical={canonical} preload={['display', 'ui']}>
+<PageShell title={title} description={description} canonical={canonical} home={home} preload={['display', 'ui']}>
   <SiteHeader nav={nav} access />
   <main id="main" class="home" tabindex="-1" data-home-view={view}>
     <div class="view">
@@ -42,6 +46,13 @@ const { title, description, canonical, nav, footer, sections = [], view } = Astr
       sections.length > 0 && (
         <div class="sections" id="sections">
           <ContentsList label="Sections" entries={sections} />
+        </div>
+      )
+    }
+    {
+      Astro.slots.has('end') && (
+        <div class="end">
+          <slot name="end" />
         </div>
       )
     }
@@ -59,7 +70,8 @@ const { title, description, canonical, nav, footer, sections = [], view } = Astr
   }
 
   .view,
-  .sections {
+  .sections,
+  .end {
     inline-size: 100%;
     max-width: var(--size-wide);
     margin-inline: auto;

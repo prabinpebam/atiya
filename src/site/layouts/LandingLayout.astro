@@ -10,6 +10,7 @@ import SiteHeader from '../components/compounds/SiteHeader.astro';
 import Hero, { type HeroPicture } from '../components/compounds/Hero.astro';
 import SiteFooter from '../components/compounds/SiteFooter.astro';
 import type { NavItem } from '../components/compounds/SiteHeader.astro';
+import type { HomeRouting } from '../scripts/homeRoute';
 
 interface Props {
   /** The document title. */
@@ -24,12 +25,16 @@ interface Props {
   footer?: { label: string; href: string }[];
   /** The id of what follows the opening, so a link can jump to it (it lands below the header). */
   afterId?: string;
+  /** The address search engines should index, when it isn't this one (the hub at `/views/classic/` names `/`). */
+  canonical?: string;
+  /** A home page: the router PageShell runs in the head (documentation/home-views/switcher.md §3). */
+  home?: HomeRouting;
 }
 
-const { title, description, hero, nav, footer, afterId } = Astro.props;
+const { title, description, hero, nav, footer, afterId, canonical, home } = Astro.props;
 ---
 
-<PageShell title={title} description={description} preload={hero.standfirst ? ['display', 'display-italic', 'ui'] : ['display', 'ui']}>
+<PageShell title={title} description={description} canonical={canonical} home={home} preload={hero.standfirst ? ['display', 'display-italic', 'ui'] : ['display', 'ui']}>
   <SiteHeader nav={nav} access />
   <main id="main" class="landing" tabindex="-1">
     <Hero {...hero}>

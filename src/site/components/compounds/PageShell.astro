@@ -23,6 +23,7 @@ import { fontUrl, siteTheme } from '../../design/siteTheme';
 import Text from '../fundamentals/Text.astro';
 import Button from '../fundamentals/Button.astro';
 import { needsConsent, TOOL_NAMES, toolsOf } from '../../scripts/countsRules';
+import { HOME_ROUTER, homeAttrs, type HomeRouting } from '../../scripts/homeRoute';
 
 /** The faces a page can ask to have first: the ones its opening sets in. */
 export type PreloadFace = 'display' | 'display-italic' | 'text' | 'ui';
@@ -61,6 +62,8 @@ interface Props {
   shows?: string[];
   /** Draw the page in the site's theme (documentation/site-ui/theming.md §7); off for edit mode and the design library, which show the design system as it is. */
   themed?: boolean;
+  /** A home page (documentation/home-views/switcher.md §2, §3): runs the router in the head, before the first paint, which follows a link, then the visitor's pick, then the site's default, and the visit's lens. */
+  home?: HomeRouting;
 }
 
 const {
@@ -78,6 +81,7 @@ const {
   sealed,
   shows,
   themed = true,
+  home,
 } = Astro.props;
 // the site's theme (theming.md §7): its CSS over the tokens (none for the site's own), its page colour, its faces
 const theme = themed ? siteTheme() : null;
@@ -114,7 +118,7 @@ const csp = import.meta.env.PROD ? import.meta.env.PUBLIC_CSP : undefined;
 ---
 
 <!doctype html>
-<html lang="en" data-frame={frame === 'planet' ? 'planet' : undefined} data-access={sealed}>
+<html lang="en" data-frame={frame === 'planet' ? 'planet' : undefined} data-access={sealed} {...(home ? homeAttrs(home) : {})}>
   <head>
     <meta charset="utf-8" />
     {
@@ -125,6 +129,7 @@ const csp = import.meta.env.PROD ? import.meta.env.PUBLIC_CSP : undefined;
         </Fragment>
       )
     }
+    {home && <script is:inline set:html={HOME_ROUTER} />}
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>{neutral ?? title}</title>
     {!neutral && <meta name="description" content={description} />}

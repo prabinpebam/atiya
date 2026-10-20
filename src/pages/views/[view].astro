@@ -1,38 +1,16 @@
 ---
-import HomeLayout from '../../site/layouts/HomeLayout.astro';
-import Bento from '../../site/components/compounds/Bento.astro';
-import HomeLead from '../../site/components/compounds/HomeLead.astro';
-import Voices from '../../site/components/compounds/Voices.astro';
-import Link from '../../site/components/fundamentals/Link.astro';
-import { bentoView, homeFrame, viewPaths } from '../../site/content/homeView';
+import Hub from '../../site/content/Hub.astro';
+import HomeView from '../../site/content/HomeView.astro';
+import { viewPaths } from '../../site/content/homeView';
+import type { ViewId } from '../../site/home/ids';
 
-// a home view at its own address (documentation/home-views/foundation.md §6): every view the site offers
-// but the classic hub, which is `/`; `/` stays the canonical address, since each is the home page shown another way
+// a home view at its own address (documentation/home-views/switcher.md §2): every view the site offers that's
+// built, the classic hub too; `/` stays the canonical address, since each is the home page shown another way
 export function getStaticPaths() {
-  const built = new Set(['bento']);
-  return viewPaths()
-    .filter((view) => built.has(view))
-    .map((view) => ({ params: { view } }));
+  return viewPaths().map((view) => ({ params: { view } }));
 }
 
-const { view } = Astro.params;
-const frame = homeFrame();
-const bento = view === 'bento' ? await bentoView() : null;
+const view = Astro.params.view as ViewId;
 ---
 
-<HomeLayout title={frame.title} description={frame.description} canonical="/" nav={frame.nav} footer={frame.footer} sections={frame.sections} view={view}>
-  {
-    bento && (
-      <Bento tiles={bento.tiles} density={bento.density}>
-        <HomeLead slot="lead" {...bento.lead}>
-          {frame.planet && (
-            <Link href={frame.planet} variant="quiet" data-mode="play">
-              Explore the planet
-            </Link>
-          )}
-        </HomeLead>
-        {bento.voices.length > 0 && <Voices slot="voices" voices={bento.voices} />}
-      </Bento>
-    )
-  }
-</HomeLayout>
+{view === 'classic' ? <Hub at="view" /> : <HomeView view={view} at="view" />}
