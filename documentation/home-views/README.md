@@ -197,6 +197,7 @@ How each view does against the failure case and the other goals. "Miss risk" is 
 | [Curating with AI](ai-curation.md) | Where AI runs, the curation request, the grounding check, ten jobs and their rule-based twins, tailoring to a job, agents, privacy |
 | [Making your home page](owner-flows.md) | The Home screen in edit mode, the first run, eleven scenarios and their flows, curation where the person already is, links for a role or a job |
 | [Controls](controls.md) | Three layers of controls, advanced settings, one vocabulary for every view's settings, Auto, Pinned and Hidden, guardrails |
+| [Plan and Definitions of Done](plan.md) | How the phases are built: eight stages, the project's Definition of Done and each stage's, working alongside other features, status and evidence |
 
 ## 8. Phases
 
@@ -208,7 +209,7 @@ How each view does against the failure case and the other goals. "Miss risk" is 
 | **4** | **Keywords** | Needs the keyword field and its synonyms curated |
 | **5** | **Questions** | Needs an answer per question, with evidence, that the owner signs off |
 
-Alongside phase 1, the content work in [foundation §4](foundation.md) (short proof pages for AI transformation and product strategy) does more for every view than any layout. The Links tab (lenses and job links) can follow any phase; AI curation follows AI editing's first phase, in its own phases ([AI curation §11](ai-curation.md)).
+Alongside phase 1, the content work in [foundation §4](foundation.md) (short proof pages for AI transformation and product strategy) does more for every view than any layout. The Links tab (lenses and job links) can follow any phase; AI curation follows AI editing's first phase, in its own phases ([AI curation §11](ai-curation.md)). How the phases are built, stage by stage, and what "done" means for each: [plan](plan.md).
 
 ## 9. Open decisions
 

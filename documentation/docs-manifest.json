@@ -630,6 +630,15 @@
       "group": "Ways to explore/Home page views/For site owners"
     },
     {
+      "path": "home-views/plan.md",
+      "title": "Plan and Definitions of Done",
+      "order": 50.67,
+      "icon": "checklist",
+      "status": "draft",
+      "updated": "2026-10-20",
+      "group": "Ways to explore/Home page views"
+    },
+    {
       "path": "poc-3d-navigation/spec.md",
       "title": "Planet spec",
       "order": 51,
