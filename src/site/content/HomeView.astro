@@ -1,23 +1,24 @@
 ---
 /**
  * A home view other than the classic hub (documentation/home-views/foundation.md §7): its page frame, the
- * view itself (Bento so far), and Change view in the lead and again at the foot (switcher.md §1). Shown at
- * the view's own address, and at `/` when it's the site's default.
+ * view itself (Bento, Cover or Proof grid), and Change view in the lead and again at the foot (switcher.md §1).
+ * Shown at the view's own address, and at `/` when it's the site's default.
  */
 import HomeLayout from '../layouts/HomeLayout.astro';
 import Bento from '../components/compounds/Bento.astro';
-import HomeLead from '../components/compounds/HomeLead.astro';
+import Cover from '../components/compounds/Cover.astro';
+import ProofGrid from '../components/compounds/ProofGrid.astro';
 import Voices from '../components/compounds/Voices.astro';
 import Dialog from '../components/compounds/Dialog.astro';
 import ViewChoices from '../components/compounds/ViewChoices.astro';
 import Button from '../components/fundamentals/Button.astro';
-import Link from '../components/fundamentals/Link.astro';
+import ViewLead from './ViewLead.astro';
 import { CATALOGUE } from '../home/catalogue';
 import type { ViewId } from '../home/ids';
-import { bentoView, homeFrame, homeRouting, viewSwitch } from './homeView';
+import { bentoView, coverView, homeFrame, homeRouting, proofGridView, viewSwitch } from './homeView';
 
 interface Props {
-  /** The view (`bento`). */
+  /** The view (`bento`, `cover`, `proof-grid`). */
   view: ViewId;
   /** Where it's shown: the site's root (it's the default), or its own address. */
   at: 'root' | 'view';
@@ -26,6 +27,8 @@ interface Props {
 const { view, at } = Astro.props;
 const frame = homeFrame();
 const bento = view === 'bento' ? await bentoView() : null;
+const cover = view === 'cover' ? await coverView() : null;
+const grid = view === 'proof-grid' ? proofGridView() : null;
 const choices = viewSwitch(view);
 ---
 
@@ -33,20 +36,25 @@ const choices = viewSwitch(view);
   {
     bento && (
       <Bento tiles={bento.tiles} density={bento.density}>
-        <HomeLead slot="lead" {...bento.lead}>
-          {frame.planet && (
-            <Link href={frame.planet} variant="quiet" data-mode="play">
-              Explore the planet
-            </Link>
-          )}
-          {choices && (
-            <Button variant="quiet" size="sm" icon="views" data-dialog-open="change-view" aria-haspopup="dialog">
-              Change view
-            </Button>
-          )}
-        </HomeLead>
+        <ViewLead slot="lead" lead={bento.lead} planet={frame.planet} change={!!choices} />
         {bento.voices.length > 0 && <Voices slot="voices" voices={bento.voices} />}
       </Bento>
+    )
+  }
+  {
+    cover && (
+      <Cover lines={cover.lines} story={cover.story} picture={cover.picture} quote={cover.quote} also={cover.also} density={cover.density}>
+        <ViewLead slot="lead" lead={cover.lead} planet={frame.planet} change={!!choices} tone="plain" />
+        {cover.voices.length > 0 && <Voices slot="voices" voices={cover.voices} />}
+      </Cover>
+    )
+  }
+  {
+    grid && (
+      <ProofGrid columns={grid.columns} rows={grid.rows} density={grid.density} empty={grid.empty}>
+        <ViewLead slot="lead" lead={grid.lead} planet={frame.planet} change={!!choices} layout="strip" />
+        {grid.voices.length > 0 && <Voices slot="voices" voices={grid.voices} />}
+      </ProofGrid>
     )
   }
   {

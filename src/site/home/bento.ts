@@ -3,7 +3,7 @@
  * name, line, label, quote and picture (L1, L2) and its evidence (L3), laid out for 3 to 6 strengths. Pure.
  */
 import type { HomePicks, StrengthPicks } from './curate';
-import { KIND_LABEL, evidenceOf, strongestKind, type EvidenceItem, type PresentEnv, type Voice } from './present';
+import { KIND_LABEL, evidenceOf, strengthsInOrder, strongestKind, type EvidenceItem, type PresentEnv, type Voice } from './present';
 
 export interface BentoSettings {
   /** What the first and largest place shows. */
@@ -64,8 +64,7 @@ export const evidenceLabel = (s: Pick<StrengthPicks, 'all' | 'total'>, goal: Hom
 
 /** The tiles, in order: the lens's, else the person's, else strongest first; only strengths with proof (CU7). */
 export function bentoTiles(picks: HomePicks, settings: BentoSettings, env: PresentEnv): BentoTile[] {
-  const shown = picks.strengths.filter((s) => s.shown);
-  const ordered = settings.order === 'strongest' && !picks.lens ? shown.map((s, i) => ({ s, i })).sort((a, b) => b.s.weight - a.s.weight || a.i - b.i).map((x) => x.s) : shown;
+  const ordered = strengthsInOrder(picks, settings.order);
   const spans = SPANS[Math.min(6, Math.max(1, ordered.length))] ?? [];
   return ordered.map((s, i) => {
     const who = s.voice ? env.person(s.voice.recommendation) : undefined;

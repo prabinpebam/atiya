@@ -1,0 +1,498 @@
+---
+/**
+ * Proof grid, a home view (documentation/home-views/proof-grid.md): the person's strengths as rows of a table,
+ * the kinds of proof behind them as columns, and in each cell how much of that kind proves it (L1, L2). A cell is
+ * filled when some of it is on the site, outlined (with the résumé's mark) when it's résumé lines only, a faint dot
+ * when there's none. A cell opens its evidence under its row, a strength's name all of it (L3). Too narrow for the
+ * table, it becomes an accordion: each row its name and how much proves it, the first open on its kinds.
+ * Nothing moves on its own.
+ * @tier compound
+ * @a11y A real table: a caption, column and row headers (scope); each cell with proof is a button whose name says everything ("Design leadership, led: 5 items, 2 on the site"), so the fill is never the only cue.
+ * @a11y One tab stop for the table and arrow keys within it (a roving tabindex); the evidence is a region named by its cell, right after its row in the reading order.
+ * @a11y A strength's name and each cell are disclosures (aria-expanded, aria-controls the row's evidence).
+ * @key Tab: into the table at the last cell used, and out of it
+ * @key Arrows: between the strengths' names and the cells; Home / End: a row's first and last; Ctrl+Home / Ctrl+End: the table's
+ * @key Enter / Space on a cell or a name: opens its evidence (again: closes it)
+ * @key Esc in a row or its evidence: closes it, focus back on what opened it
+ */
+import Text from '../fundamentals/Text.astro';
+import Icon from '../fundamentals/Icon.astro';
+import Tag from '../fundamentals/Tag.astro';
+import Link from '../fundamentals/Link.astro';
+import Heading from '../fundamentals/Heading.astro';
+import Button from '../fundamentals/Button.astro';
+import { stableId } from '../../design/stableId';
+import { splitLast } from '../../design/typography';
+
+type Item = { key: string; source: 'page' | 'resume' | 'recommendation'; title: string; href?: string; ask?: string };
+
+interface Props {
+  /** The kinds of proof, as columns, in order: their key ("led") and name ("Led"). */
+  columns: { kind: string; label: string }[];
+  /** The strengths, in order: words, a cell per column, and the evidence by kind. */
+  rows: {
+    /** Its ID: the row's address is #cap-<id>, a cell's #cap-<id>-<kind>. */
+    id: string;
+    /** Its name ("AI transformation"). */
+    name: string;
+    /** One line that says it. */
+    line: string;
+    /** How much proves it, of every kind: "9 proofs" on a closed row of the accordion. */
+    total: number;
+    /** A cell per column, in the columns' order. */
+    cells: { kind: string; count: number; state: 'filled' | 'outlined' | 'empty'; label: string }[];
+    /** Its evidence, a group per column it has some of, then the rest ("other"). */
+    groups: { kind: string; heading: string; items: Item[] }[];
+  }[];
+  /** Full: each cell's count; calm: its mark only. */
+  density?: 'calm' | 'full';
+  /** An empty cell: a faint dot, or nothing. */
+  empty?: 'show' | 'hide';
+  /** Names the table. */
+  caption?: string;
+  /** The evidence groups' heading level. */
+  headingLevel?: 2 | 3;
+}
+
+const { columns, rows, density = 'full', empty = 'show', caption = 'Evidence for each capability', headingLevel = 2 } = Astro.props;
+const lead = Astro.slots.has('lead');
+const voices = Astro.slots.has('voices');
+const uid = `proof-grid-${stableId(Astro, 'ProofGrid')}`;
+const SOURCE: Record<Item['source'], string> = { page: 'On the site', resume: 'On the résumé', recommendation: 'In their words' };
+const kindName = (kind: string) => columns.find((c) => c.kind === kind)?.label ?? kind;
+const proofs = (n: number) => `${n} ${n === 1 ? 'proof' : 'proofs'}`;
+---
+
+<div class="proof-grid" data-proof-grid data-view="proof-grid" data-stack="--c-proof-grid-query-stack" data-density={density}>
+  {lead && <slot name="lead" />}
+  <table aria-labelledby={`${uid}-caption`}>
+    <caption>
+      <div class="head">
+        <Text variant="label" as="span" id={`${uid}-caption`}>{caption}</Text>
+        <ul class="legend" aria-label="What the cells mean">
+          <li><span class="swatch" data-state="filled" aria-hidden="true"></span><Text variant="small" as="span">On the site</Text></li>
+          <li><span class="swatch" data-state="outlined" aria-hidden="true"><Icon name="page" size="inherit" /></span><Text variant="small" as="span">On the résumé only</Text></li>
+          {empty === 'show' && <li data-empty><span class="swatch" data-state="empty" aria-hidden="true"></span><Text variant="small" as="span">None yet</Text></li>}
+        </ul>
+      </div>
+    </caption>
+    <thead>
+      <tr>
+        <th scope="col"><Text variant="label" as="span">Capability</Text></th>
+        {columns.map((c) => <th scope="col" data-kind={c.kind}><Text variant="label" as="span">{c.label}</Text></th>)}
+      </tr>
+    </thead>
+    <tbody>
+      {
+        rows.map((r, i) => (
+          <Fragment>
+            <tr id={`cap-${r.id}`} data-row={r.id} data-capability={r.id}>
+              <th scope="row">
+                <button class="name" type="button" aria-expanded="false" aria-controls={`cap-${r.id}-evidence`} aria-describedby={`cap-${r.id}-line`} tabindex={i === 0 ? 0 : -1} data-grid-open={r.id} data-kind="all" data-region={`All of ${r.name}'s evidence`}>
+                  <span class="title">{splitLast(r.name)[0]}<span class="tail">{splitLast(r.name)[1]} <span class="chevron"><Icon name="chevron-down" /></span></span></span><span class="total"><Text variant="small" tone="muted" as="span">{proofs(r.total)}</Text></span>
+                </button>
+                <div class="line" id={`cap-${r.id}-line`}><Text variant="small" tone="muted" as="span">{r.line}</Text></div>
+              </th>
+              {r.cells.map((c) => (
+                <td data-state={c.state}>
+                  {c.state === 'empty' ? (
+                    <Fragment>
+                      {empty === 'show' && <span class="dot" aria-hidden="true" />}
+                      <span class="sr-only">None</span>
+                    </Fragment>
+                  ) : (
+                    <button class="cell" type="button" aria-label={c.label} aria-expanded="false" aria-controls={`cap-${r.id}-evidence`} tabindex="-1" data-grid-open={r.id} data-kind={c.kind} data-state={c.state} data-region={`${r.name}, ${kindName(c.kind).toLowerCase()}`}>
+                      <span class="kind">{kindName(c.kind)}</span>
+                      {density === 'full' && <span class="count">{c.count}</span>}
+                      {c.state === 'outlined' && <Icon name="page" size="inherit" />}
+                    </button>
+                  )}
+                </td>
+              ))}
+            </tr>
+            <tr class="more" data-more={r.id}>
+              <td colspan={columns.length + 1}>
+                <section class="evidence" id={`cap-${r.id}-evidence`} data-grid-evidence={r.id} hidden>
+                  {r.groups.map((g) => (
+                    <div class="group" data-group={g.kind}>
+                      <Heading level={headingLevel} size="ui">{g.heading}</Heading>
+                      <ul>
+                        {g.items.map((d) => (
+                          <li data-evidence={d.key}>
+                            {d.href ? <Link href={d.href} variant="standalone">{d.title}</Link> : <Text as="p">{d.title}</Text>}
+                            <span class="meta">
+                              <Tag size="sm">{SOURCE[d.source]}</Tag>
+                              {d.ask && <Link href={d.ask} variant="quiet">Ask me about it</Link>}
+                            </span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  ))}
+                  <div class="close">
+                    <Button variant="quiet" size="sm" icon="close" data-grid-close>Close</Button>
+                  </div>
+                </section>
+              </td>
+            </tr>
+          </Fragment>
+        ))
+      }
+    </tbody>
+  </table>
+  {voices && <slot name="voices" />}
+</div>
+
+<style>
+  /* the grid lays itself out by its own width (c.proof-grid.query-stack, which its script reads too), never the screen's */
+  .proof-grid {
+    container: proof-grid / inline-size;
+    display: grid;
+    gap: var(--space-6);
+  }
+
+  /* ---------- the legend: the two marks and the dot, in words, on the table's name's line (under it when there's no room) ---------- */
+  .head,
+  .legend {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-2) var(--space-6);
+  }
+
+  .head {
+    justify-content: space-between;
+  }
+
+  .legend {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .legend li {
+    display: flex;
+    gap: var(--space-2);
+    align-items: center;
+  }
+
+  .swatch {
+    display: inline-grid;
+    place-items: center;
+    inline-size: var(--size-icon);
+    block-size: var(--size-icon);
+    border-radius: var(--radius-sm);
+    font-size: var(--text-sm);
+  }
+
+  /* ---------- the marks: filled is the page's only indigo, the evidence you can read; outlined carries the résumé's mark ---------- */
+  [data-state='filled']:is(.swatch, .cell) {
+    background: var(--color-highlight);
+    color: var(--color-on-highlight);
+  }
+
+  [data-state='outlined']:is(.swatch, .cell) {
+    border: var(--border-strong) solid var(--color-highlight);
+    color: var(--color-highlight-ink);
+  }
+
+  .swatch[data-state='empty'],
+  .dot {
+    background: var(--color-rule);
+  }
+
+  .dot {
+    display: inline-block;
+    inline-size: var(--space-1-5);
+    block-size: var(--space-1-5);
+    border-radius: var(--radius-round);
+  }
+
+  /* ---------- the table: hairline rules, no boxes round the cells ---------- */
+  table {
+    inline-size: 100%;
+    border-collapse: collapse;
+  }
+
+  caption {
+    padding-block-end: var(--space-3);
+    color: var(--color-text-muted);
+    text-align: start;
+  }
+
+  thead th {
+    padding: var(--space-2);
+    border-block-end: var(--border-strong) solid var(--color-rule-strong);
+    color: var(--color-text-muted);
+    text-align: center;
+  }
+
+  thead th:first-child,
+  tr[data-row] > th {
+    padding-inline-start: 0;
+    text-align: start;
+  }
+
+  thead th:first-child {
+    inline-size: calc(100% / 3);
+    min-inline-size: var(--c-proof-grid-capability);
+  }
+
+  tr[data-row] > * {
+    padding: var(--space-2);
+    border-block-start: var(--border-hairline) solid var(--color-rule);
+    text-align: center;
+    vertical-align: middle;
+  }
+
+  tr[data-row] {
+    scroll-margin-block-start: calc(var(--size-chrome-block) + var(--space-8));
+  }
+
+  tr[data-open] {
+    background: var(--color-bg-sunk);
+  }
+
+  /* ---------- a strength's name: a button in the display face, its line under it ---------- */
+  button {
+    padding: 0;
+    border: 0;
+    background: none;
+    cursor: pointer;
+  }
+
+  /* a line of text (a button centres it in its 44 px): the chevron, in a nowrap tail with the last word, follows it wherever it wraps */
+  .name {
+    display: block;
+    min-block-size: var(--size-touch);
+    text-align: start;
+  }
+
+  .tail {
+    white-space: nowrap;
+  }
+
+  .title {
+    font-family: var(--font-display);
+    font-variation-settings: var(--axes-display);
+    font-size: var(--text-h4);
+    font-weight: var(--weight-display);
+    line-height: var(--leading-heading);
+  }
+
+  /* the strength's total and a cell's kind are words the accordion shows (the table's headers say them) */
+  .total,
+  .kind {
+    display: none;
+  }
+
+  .chevron {
+    display: inline-flex;
+    vertical-align: middle;
+    color: var(--color-text-muted);
+    transition: rotate var(--duration-fast) var(--ease-standard);
+  }
+
+  .name[aria-expanded='true'] .chevron {
+    rotate: 180deg;
+  }
+
+  /* ---------- a cell: 44 px at least, its count in tabular figures ---------- */
+  .cell {
+    display: inline-flex;
+    gap: var(--space-1);
+    align-items: center;
+    justify-content: center;
+    min-inline-size: var(--size-touch);
+    min-block-size: var(--size-touch);
+    padding-inline: var(--space-2);
+    border-radius: var(--radius-md);
+    font-family: var(--font-ui);
+    font-size: var(--text-md);
+    font-weight: var(--weight-semibold);
+    font-variant-numeric: lining-nums tabular-nums;
+    transition:
+      scale var(--duration-fast) var(--ease-standard),
+      box-shadow var(--duration-fast) var(--ease-standard);
+  }
+
+  .cell[aria-expanded='true'] {
+    box-shadow: 0 0 0 var(--border-strong) var(--color-bg), 0 0 0 calc(var(--border-strong) * 2) var(--color-text);
+  }
+
+  @media (hover: hover) {
+    .cell:hover {
+      box-shadow: 0 0 0 var(--border-strong) var(--color-bg), 0 0 0 calc(var(--border-strong) * 2) var(--color-border-strong);
+    }
+  }
+
+  .cell:active {
+    box-shadow: 0 0 0 var(--border-strong) var(--color-bg), 0 0 0 calc(var(--border-strong) * 2) var(--color-border-strong);
+  }
+
+  /* the lift: only for those who don't ask for less motion (they see the ring) */
+  @media (prefers-reduced-motion: no-preference) {
+    @media (hover: hover) {
+      .cell:hover {
+        scale: var(--scale-lift);
+      }
+    }
+
+    .cell:active {
+      scale: var(--scale-press);
+    }
+
+    .evidence {
+      animation: proof-grid-in var(--duration-base) var(--ease-enter);
+    }
+  }
+
+  /* ---------- the evidence: under its row, the table's whole width ---------- */
+  .more > td {
+    padding: 0;
+  }
+
+  .more:has(> td > [hidden]),
+  .group[hidden] {
+    display: none;
+  }
+
+  .evidence {
+    display: grid;
+    gap: var(--space-5);
+    padding: var(--space-5) var(--space-6);
+    background: var(--color-bg-sunk);
+    text-align: start;
+  }
+
+  @keyframes proof-grid-in {
+    from {
+      opacity: 0;
+    }
+  }
+
+  .group {
+    display: grid;
+    gap: var(--space-2);
+  }
+
+  .group ul {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, var(--c-proof-grid-evidence)), 1fr));
+    gap: var(--space-2) var(--space-6);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .group li {
+    display: grid;
+    gap: var(--space-1);
+    align-content: start;
+    justify-items: start;
+    padding-block: var(--space-2);
+    border-block-start: var(--border-hairline) solid var(--color-rule);
+  }
+
+  .meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-1) var(--space-3);
+    align-items: center;
+  }
+
+  .close {
+    justify-self: end;
+  }
+
+  /* ---------- too narrow for the table: an accordion, each row its name and how much proves it ---------- */
+  @container proof-grid (width < 37.5rem) {
+    :is(table, caption, tbody, tr, th, td) {
+      display: block;
+    }
+
+    /* the accordion never shows an empty cell, so the legend drops its key */
+    thead,
+    .legend [data-empty] {
+      display: none;
+    }
+
+    /* closed, a row is one 44 px line: all six stay on a phone's first screen */
+    tr[data-row] {
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--space-2);
+      border-block-start: var(--border-hairline) solid var(--color-rule);
+    }
+
+    tr[data-open] {
+      padding-block-end: var(--space-3);
+    }
+
+    tr[data-row] > * {
+      padding: 0;
+      border: 0;
+    }
+
+    tr[data-row] > th {
+      flex: 1 0 100%;
+    }
+
+    .name {
+      display: flex;
+      gap: var(--space-2);
+      align-items: center;
+      inline-size: 100%;
+    }
+
+    .title {
+      flex: 1;
+    }
+
+    .total,
+    .kind {
+      display: inline;
+    }
+
+    .line,
+    td[data-state] {
+      display: none;
+    }
+
+    /* the open row: its kinds, each a button with its name and count (an empty one says nothing) */
+    tr[data-open] > td[data-state]:not([data-state='empty']) {
+      display: block;
+    }
+
+    .cell {
+      gap: var(--space-2);
+      padding-inline: var(--space-3);
+    }
+
+    .evidence {
+      padding: var(--space-4);
+    }
+  }
+
+  /* ---------- print: the whole table, every row's evidence after it ---------- */
+  @media print {
+    .more,
+    .more:has(> td > [hidden]),
+    .evidence[hidden],
+    .group[hidden] {
+      display: block;
+    }
+
+    .close,
+    .chevron {
+      display: none;
+    }
+  }
+</style>
+
+<script>
+  import { each } from '../../scripts/page';
+  import { setupProofGrid } from '../../scripts/proofGrid';
+
+  each<HTMLElement>('[data-proof-grid]', setupProofGrid);
+</script>

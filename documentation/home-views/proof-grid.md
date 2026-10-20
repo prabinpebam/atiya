@@ -291,3 +291,27 @@ Nothing moves on its own.
 | G2 | Counts or marks only | Counts; marks | Counts: they're the depth at a glance |
 | G3 | The columns | The five kinds; add Outcomes | The five now; add Outcomes when there are measured outcomes that can be shown |
 | G4 | The open row on a phone | The first; the lens's; none | The lens's, else the first |
+
+## 13. As built (stage 4)
+
+Proof grid is built and offered at `/views/proof-grid/`. The rows are the strengths the site shows, 3 to 6; the columns are the person's (Columns), else the five kinds of proof those strengths use most, in the kinds' own order. Every count is computed from the picks.
+
+| Part | Where |
+|---|---|
+| The view | [`ProofGrid.astro`](https://github.com/prabinpebam/atiya/blob/main/src/site/components/compounds/ProofGrid.astro), with the lead and [`Voices.astro`](https://github.com/prabinpebam/atiya/blob/main/src/site/components/compounds/Voices.astro) in its slots; its story is in the design library |
+| From the spine to the table | [`proofGrid.ts`](https://github.com/prabinpebam/atiya/blob/main/src/site/home/proofGrid.ts) (pure, unit-tested in `homeProofGrid.test.ts`): the columns, each cell's count and state, its button's name, and the evidence grouped by kind |
+| Its behaviour | [`scripts/proofGrid.ts`](https://github.com/prabinpebam/atiya/blob/main/src/site/scripts/proofGrid.ts): the roving tabindex, opening and closing, Esc, the phone's accordion and telemetry; the `#cap-<id>` and `#cap-<id>-<kind>` addresses are read by [`homeAddress.ts`](https://github.com/prabinpebam/atiya/blob/main/src/site/scripts/homeAddress.ts), which Bento shares |
+| Its sizes | The `c.proof-grid` tokens: the capability column, an evidence item's width (20 rem) and the container query at which it becomes the accordion (37.5 rem) |
+
+Where the build differs from the design above:
+
+- **The lead is a strip.** The person's name, role and actions sit in one compact row above the table (the lead's `strip` layout), so all six rows are in the first 800 px at 1280 wide and on a 360 by 740 phone.
+- **The legend is in the caption,** on the table's name's line (under it when there's no room), so it's read with the table.
+- **Compact rows:** a row's name and its proof line, then its cells, each 44 px. A strength's name keeps its last word and its chevron together when it wraps.
+- **The phone (§4.3):** closed, a row is one 44 px line: its name and how much proves it ("4 proofs"). The first row is open on its kinds at rest, each a button with its count; a kind opens its evidence, and another row's name moves the open row there. The legend leaves out "None yet", since the accordion never shows an empty cell. The lens's row comes with stage 2c.
+- **Its own evidence row,** under the row that opened it and the table's whole width, rather than Bento's drawer. A group per kind, each item with where it's from (on the site, on the résumé, in their words) and Ask me about it on a résumé line; Close and Esc give the focus back to what opened it.
+- **Telemetry:** `capability_l3_open` with the strength's ID, `view: 'proof-grid'` and the kind (`all` for a row's name).
+- **Print:** the whole table, with every row's evidence after it, and no chevrons or Close buttons.
+- **Not built yet:** the role lens (stage 2c); Contact me filling in the topic for Ask me about it (the owner's decision).
+
+Evidence: the E2E group "home views" (coverage at 1280 by 800 and 360 by 740 in both modes; one tab stop, the arrows between the cells, a cell opening its kind and a name all of it, Esc and Close, `#cap-` addresses; axe in both modes), "home views on a phone" (no sideways scroll and 44 px targets from 320 px with the evidence open; the accordion), the telemetry test in "home views: change view", the design system's unit tests, and the screenshots of the story and `/views/proof-grid/` in the `visual` project.

@@ -1,0 +1,72 @@
+---
+import Example from '../library/Example.astro';
+import ProofGrid from '../components/compounds/ProofGrid.astro';
+import HomeLead from '../components/compounds/HomeLead.astro';
+import Voices from '../components/compounds/Voices.astro';
+import { withBase } from '../design/meta';
+
+const KINDS = [
+  { kind: 'shipped', label: 'Shipped' },
+  { kind: 'led', label: 'Led' },
+  { kind: 'built', label: 'Built' },
+  { kind: 'wrote', label: 'Wrote' },
+  { kind: 'said', label: 'Said' },
+];
+const strengths = [
+  { id: 'teams', name: 'Leading design teams', line: 'Grew a studio of twelve.', counts: [2, 5, 0, 1, 2], site: [1, 2, 0, 1, 2] },
+  { id: 'research', name: 'Research that changes plans', line: 'Studies that moved a roadmap.', counts: [3, 1, 0, 2, 0], site: [2, 0, 0, 2, 0] },
+  { id: 'systems', name: 'Design systems', line: 'One kit for forty products.', counts: [4, 1, 3, 0, 1], site: [3, 0, 3, 0, 1] },
+  { id: 'prototyping', name: 'Prototyping in code', line: 'Ideas you can hold early.', counts: [0, 0, 3, 1, 0], site: [0, 0, 3, 1, 0] },
+  { id: 'writing', name: 'Writing and speaking', line: 'Talks, essays and workshops.', counts: [0, 1, 0, 4, 1], site: [0, 0, 0, 4, 1] },
+  { id: 'accessibility', name: 'Accessible products', line: 'Built in, never bolted on.', counts: [2, 2, 0, 0, 0], site: [0, 1, 0, 0, 0] },
+];
+const page = withBase('/design/');
+const item = (key: string, source: 'page' | 'resume' | 'recommendation', title: string) => ({
+  key,
+  source,
+  title,
+  ...(source === 'recommendation' ? {} : { href: page }),
+  ...(source === 'resume' ? { ask: page } : {}),
+});
+const rows = (prefix: string, count: number, kinds = KINDS) =>
+  strengths.slice(0, count).map((s) => {
+    const id = `${prefix}-${s.id}`;
+    const cells = kinds.map((k) => {
+      const i = KINDS.indexOf(k);
+      const n = s.counts[i];
+      const on = s.site[i];
+      const state = n === 0 ? 'empty' : on > 0 ? 'filled' : 'outlined';
+      const label = n === 0 ? `${s.name}, ${k.label.toLowerCase()}: none` : `${s.name}, ${k.label.toLowerCase()}: ${n} ${n === 1 ? 'item' : 'items'}, ${on === 0 ? 'on the résumé' : `${on} on the site`}`;
+      return { kind: k.kind, count: n, state: state as 'filled' | 'outlined' | 'empty', label };
+    });
+    const groups = kinds
+      .map((k) => {
+        const i = KINDS.indexOf(k);
+        const items = Array.from({ length: s.counts[i] }, (_, j) =>
+          k.kind === 'said' ? item(`${id}-${k.kind}-${j}`, 'recommendation', 'Sam Rivera, in their words') : j < s.site[i] ? item(`${id}-${k.kind}-${j}`, 'page', 'A case study that shows it') : item(`${id}-${k.kind}-${j}`, 'resume', 'A line from the résumé'),
+        );
+        return { kind: k.kind, heading: k.label, items };
+      })
+      .filter((g) => g.items.length > 0);
+    return { id, name: s.name, line: s.line, total: s.counts.reduce((a, b) => a + b, 0), cells, groups };
+  });
+const voices = [
+  { text: 'She made the hard calls look easy, and brought the whole team along.', name: 'Sam Rivera', title: 'Director of Product' },
+  { text: 'The clearest thinker in any room about what to build next.', name: 'Ana Lima', title: 'Principal Engineer' },
+];
+---
+
+<Example title="Six strengths, full" layout="block" description="Every claim and its proof in one table: a filled cell has something on the site, an outlined one résumé lines only, a dot none. A cell opens its evidence under its row; a strength's name opens all of it. Narrower than 600 px, it's an accordion.">
+  <ProofGrid columns={KINDS} rows={rows('six', 6)}>
+    <HomeLead slot="lead" name="Alex Morgan" role="Head of Design" facts={['15 years', 'Teams of 40', 'Three products']} primary={{ label: 'Read my résumé', href: page }} headingLevel={2} />
+    <Voices slot="voices" voices={voices} />
+  </ProofGrid>
+</Example>
+
+<Example title="Calm, empty cells hidden" layout="block" description="Density calm shows each cell's mark without its count (its name still says it); Empty cells hide leaves a kind that doesn't apply blank.">
+  <ProofGrid columns={KINDS} rows={rows('calm', 4)} density="calm" empty="hide" headingLevel={3} />
+</Example>
+
+<Example title="Three strengths, three kinds" layout="block" description="A new site: the fewest a grid is offered with.">
+  <ProofGrid columns={KINDS.slice(0, 3)} rows={rows('three', 3, KINDS.slice(0, 3))} caption="What proves each strength" />
+</Example>

@@ -1,16 +1,20 @@
 ---
 import Hub from '../../site/content/Hub.astro';
 import HomeView from '../../site/content/HomeView.astro';
-import { viewPaths } from '../../site/content/homeView';
+import NotOffered from '../../site/content/NotOffered.astro';
+import { viewPaths, viewsNotOffered } from '../../site/content/homeView';
+import { CATALOGUE } from '../../site/home/catalogue';
 import type { ViewId } from '../../site/home/ids';
 
 // a home view at its own address (documentation/home-views/switcher.md §2): every view the site offers that's
-// built, the classic hub too; `/` stays the canonical address, since each is the home page shown another way
+// built, the classic hub too; `/` stays the canonical address, since each is the home page shown another way.
+// A view the site doesn't offer answers with a short page that links home (§2), never a redirect
 export function getStaticPaths() {
-  return viewPaths().map((view) => ({ params: { view } }));
+  return [...viewPaths().map((view) => ({ params: { view }, props: { offered: true } })), ...viewsNotOffered().map((view) => ({ params: { view }, props: { offered: false } }))];
 }
 
 const view = Astro.params.view as ViewId;
+const { offered } = Astro.props;
 ---
 
-{view === 'classic' ? <Hub at="view" /> : <HomeView view={view} at="view" />}
+{!offered ? <NotOffered name={`the ${CATALOGUE.views[view].label} view`} heading="This view isn't offered" /> : view === 'classic' ? <Hub at="view" /> : <HomeView view={view} at="view" />}

@@ -14,12 +14,14 @@ import { withBase } from '../design/meta';
 interface Props {
   /** The way of exploring, in words ("the little planet"). */
   name: string;
+  /** The page's heading, when it's not a way of exploring ("This view isn't offered"). */
+  heading?: string;
 }
 
-const { name } = Astro.props;
+const { name, heading = "This way of exploring isn't offered" } = Astro.props;
 const site = getSite();
 ---
 
-<IndexLayout title={`Not offered — ${site.name}`} heading="This way of exploring isn't offered" standfirst={`${site.name} doesn't offer ${name} now. Everything is on the site itself.`} nav={siteNav(getStructure(), getRoutes())} footer={footerLinks(site, getRoutes())} noindex>
+<IndexLayout title={`Not offered — ${site.name}`} heading={heading} standfirst={`${site.name} doesn't offer ${name} now. Everything is on the site itself.`} nav={siteNav(getStructure(), getRoutes())} footer={footerLinks(site, getRoutes())} noindex>
   <Text variant="lead"><Link href={withBase('/')} variant="standalone">Go to the home page</Link></Text>
 </IndexLayout>

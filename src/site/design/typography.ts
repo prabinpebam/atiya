@@ -16,3 +16,12 @@ export function smart(s: string): string {
       .replace(/"/g, '\u201D')
   );
 }
+
+/**
+ * Words cut before the last one ("Systems and operating ", "models"), so a mark (a chevron, an icon) set in a
+ * `nowrap` span with that word wraps with it: browsers break before an inline icon even after a word joiner.
+ */
+export function splitLast(s: string): [string, string] {
+  const at = s.trimEnd().lastIndexOf(' ') + 1;
+  return [s.slice(0, at), s.slice(at).trimEnd()];
+}

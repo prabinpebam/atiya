@@ -1,0 +1,38 @@
+---
+/**
+ * A home view's lead (documentation/home-views/foundation.md §7): the person, what they do and their actions,
+ * with the way to the planet and Change view after them (switcher.md §1). Each view places it in its lead slot.
+ */
+import HomeLead from '../components/compounds/HomeLead.astro';
+import Button from '../components/fundamentals/Button.astro';
+import Link from '../components/fundamentals/Link.astro';
+import type { Lead } from '../home/present';
+
+interface Props {
+  /** The person and their actions, from the home model. */
+  lead: Lead;
+  /** Little planet's address, when the site offers it. */
+  planet?: string;
+  /** Whether there's another view to change to. */
+  change: boolean;
+  /** Plain for a view whose lead is a masthead (Cover); tinted otherwise. */
+  tone?: 'tinted' | 'plain';
+  /** strip: one compact row, for a view whose content must start high (Proof grid). */
+  layout?: 'block' | 'strip';
+}
+
+const { lead, planet, change, tone, layout } = Astro.props;
+---
+
+<HomeLead {...lead} tone={tone} layout={layout}>
+  {planet && (
+    <Link href={planet} variant="quiet" data-mode="play">
+      Explore the planet
+    </Link>
+  )}
+  {change && (
+    <Button variant="quiet" size="sm" icon="views" data-dialog-open="change-view" aria-haspopup="dialog">
+      Change view
+    </Button>
+  )}
+</HomeLead>

@@ -363,6 +363,15 @@
   --c-bento-evidence: 15rem;
   --c-bento-query-two: 50rem;
   --c-bento-query-one: 36rem;
+  --c-cover-picture: 44rem;
+  --c-cover-picture-height: 22rem;
+  --c-cover-feature-picture: 34rem;
+  --c-cover-feature-picture-height: 18rem;
+  --c-cover-query-stack: 52rem;
+  --c-cover-query-phone: 36rem;
+  --c-proof-grid-capability: 16rem;
+  --c-proof-grid-evidence: 20rem;
+  --c-proof-grid-query-stack: 37.5rem;
   --c-story-card-row-picture: 11rem;
   --c-story-card-row-picture-compact: 6rem;
   --c-story-card-query-feature: 49.5rem;

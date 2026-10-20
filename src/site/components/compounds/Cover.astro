@@ -1,0 +1,426 @@
+---
+/**
+ * Cover, a home view (documentation/home-views/cover.md): the person's site as a magazine's cover. The lead, a
+ * cover picture and the cover story on one side; In this issue on the other, a numbered line per strength with
+ * the line that says it (L1, L2). Below, the issue: a feature per strength with its picture, how much proves it
+ * and its evidence (L3), a colleague's words halfway through. Narrower, In this issue comes before the cover; on a
+ * phone it's numbers and short names, two to a row, so every strength is seen before a scroll.
+ * Nothing moves on its own: features rise a little as they scroll in, unless less motion is asked for.
+ * @tier compound
+ * @a11y In this issue is a nav of an ordered list; each line is one link (data-card) that jumps to its feature, a section named by its heading.
+ * @a11y The cover story is one link on its title; "Read the story" is its visual twin, hidden from assistive technology.
+ * @a11y The numbers are decoration (aria-hidden): the list's order and the headings carry them.
+ * @key Tab: through In this issue, the cover story, then each feature's evidence
+ */
+import Heading from '../fundamentals/Heading.astro';
+import Text from '../fundamentals/Text.astro';
+import Image from '../fundamentals/Image.astro';
+import Icon from '../fundamentals/Icon.astro';
+import Tag from '../fundamentals/Tag.astro';
+import Link from '../fundamentals/Link.astro';
+import Quote from '../fundamentals/Quote.astro';
+import { type CardPicture } from '../../design/pictures';
+import { sizes } from '../../design/responsive';
+import { stableId } from '../../design/stableId';
+
+interface Props {
+  /** The strengths, in the issue's order, each with its words, its picture and its evidence. */
+  lines: {
+    /** Its ID: its feature's address is #cap-<id>. */
+    id: string;
+    /** Its place in the issue, two figures ("01"). */
+    number: string;
+    /** Its name ("AI transformation"). */
+    name: string;
+    /** Its short name, for a phone's In this issue ("AI"). */
+    short: string;
+    /** One line that says it (about five words). */
+    line: string;
+    /** Its strongest kind of proof and how much: "Led · 4 pieces of evidence". */
+    label: string;
+    /** Its picture, beside its feature (density full). */
+    picture?: CardPicture;
+    /** Its evidence: a page, a résumé line or a voice, with where it leads. */
+    details: { key: string; title: string; kindLabel?: string; href?: string; ask?: string }[];
+  }[];
+  /** The cover story: a page that proves one of the strengths. */
+  story?: { href: string; title: string; summary?: string; capability: string };
+  /** The cover picture. */
+  picture?: CardPicture;
+  /** Full: a feature per strength with its picture; calm: the features without pictures, two to a row. */
+  density?: 'calm' | 'full';
+  /** A colleague's words, set large halfway through the issue. */
+  quote?: { text: string; name: string; title?: string };
+  /** Also in this issue: the résumé, the contact page (In their words is added when the voices slot is filled). */
+  also?: { label: string; href: string }[];
+}
+
+const { lines, story, picture, density = 'full', quote, also = [] } = Astro.props;
+const uid = `cover-${stableId(Astro, 'Cover')}`;
+const lead = Astro.slots.has('lead');
+const voices = Astro.slots.has('voices');
+const extras = [...also, ...(voices ? [{ label: 'In their words', href: `#${uid}-voices` }] : [])];
+const half = Math.ceil(lines.length / 2);
+const coverSizes = sizes(['md', '92vw'], 'cover-picture');
+const featureSizes = sizes(['md', '92vw'], 'cover-feature-picture');
+const imageOf = (p: CardPicture, size: string) => ({
+  src: p.src,
+  srcset: p.srcset,
+  sizes: size,
+  alt: p.alt,
+  width: p.width,
+  height: p.height,
+  rounded: p.rounded !== false,
+  bg: p.background && p.bg ? { light: p.bg, dark: p.dark?.bg } : undefined,
+  dark: p.dark,
+});
+---
+
+<div class="cover" data-cover data-density={density}>
+  <div class="front">
+    {lead && <div class="lead"><slot name="lead" /></div>}
+    <nav class="issue" aria-labelledby={`${uid}-issue`}>
+      <Text variant="label" tone="muted" as="p" id={`${uid}-issue`}>In this issue</Text>
+      <ol>
+        {lines.map((l) => (
+          <li data-capability={l.id} data-card>
+            <span class="number" aria-hidden="true">{l.number}</span>
+            <a class="entry" href={`#cap-${l.id}`} data-card-link>
+              <span class="full">{l.name}</span>
+              <span class="short">{l.short}</span>
+            </a>
+            <span class="said"><Text variant="small" tone="muted" as="span">{l.line}</Text></span>
+          </li>
+        ))}
+      </ol>
+      {extras.length > 0 && (
+        <p class="also">
+          <Text variant="label" tone="muted" as="span">Also</Text>
+          {extras.map((e) => <Link href={e.href} variant="quiet">{e.label}</Link>)}
+        </p>
+      )}
+    </nav>
+    {(picture || story) && (
+      <div class="story">
+        {picture && <div class="picture"><Image {...imageOf(picture, coverSizes)} display="fit" fill priority /></div>}
+        {story && (
+          <article class="band" data-card>
+            <Text variant="label" tone="accent" as="p">Cover story · {story.capability}</Text>
+            <Heading level={2} size="h3"><a href={story.href} data-card-link>{story.title}</a></Heading>
+            {story.summary && <Text tone="muted">{story.summary}</Text>}
+            <span class="read" aria-hidden="true"><Text variant="ui" as="span">Read the story</Text><Icon name="arrow-right" /></span>
+          </article>
+        )}
+      </div>
+    )}
+  </div>
+  <div class="features">
+    {lines.map((l, i) => (
+      <Fragment>
+        <section class="feature" id={`cap-${l.id}`} data-capability={l.id} aria-labelledby={`cap-${l.id}-title`}>
+          <span class="number" aria-hidden="true">{l.number}</span>
+          <div class="words">
+            <Heading level={2} size="h2" id={`cap-${l.id}-title`}>{l.name}</Heading>
+            <Text variant="lead">{l.line}</Text>
+            <Text variant="label" as="p">{l.label}</Text>
+          </div>
+          {density === 'full' && l.picture && <div class="feature-picture"><Image {...imageOf(l.picture, featureSizes)} display="fit" fill /></div>}
+          <ul class="evidence" aria-label={`${l.name}: the evidence`}>
+            {l.details.map((d) => (
+              <li data-evidence={d.key}>
+                {d.href ? <Link href={d.href} variant="standalone">{d.title}</Link> : <Text as="p">{d.title}</Text>}
+                {(d.kindLabel || d.ask) && (
+                  <span class="meta">
+                    {d.kindLabel && <Tag size="sm">{d.kindLabel}</Tag>}
+                    {d.ask && <Link href={d.ask} variant="quiet">Ask me about it</Link>}
+                  </span>
+                )}
+              </li>
+            ))}
+          </ul>
+        </section>
+        {quote && i + 1 === half && (
+          <div class="pull">
+            <Quote variant="pull" cite={quote.name} source={quote.title}>{quote.text}</Quote>
+          </div>
+        )}
+      </Fragment>
+    ))}
+  </div>
+  {voices && <div class="voices" id={`${uid}-voices`}><slot name="voices" /></div>}
+</div>
+
+<style>
+  /* the cover lays itself out by its own width (c.cover.query-*), never the screen's */
+  .cover {
+    container: cover / inline-size;
+    display: grid;
+    gap: var(--space-section);
+  }
+
+  /* ---------- the front: the lead and the cover on the left, In this issue on the right ---------- */
+  .front {
+    display: grid;
+    grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+    grid-template-areas: 'lead issue' 'story issue';
+    grid-template-rows: auto 1fr;
+    gap: var(--space-6) var(--space-10);
+  }
+
+  .lead {
+    grid-area: lead;
+    display: grid;
+  }
+
+  .issue {
+    grid-area: issue;
+    display: grid;
+    gap: var(--space-3);
+    align-content: start;
+  }
+
+  .story {
+    grid-area: story;
+    display: grid;
+    gap: var(--space-4);
+    align-content: start;
+  }
+
+  ol {
+    display: grid;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  /* a line of the issue: its number, its name (one link over the whole line) and what says it */
+  ol li {
+    display: grid;
+    grid-template-columns: var(--size-touch) minmax(0, 1fr);
+    gap: 0 var(--space-3);
+    align-items: baseline;
+    padding-block: var(--space-3);
+    border-block-start: var(--border-hairline) solid var(--color-rule);
+  }
+
+  .number {
+    font-family: var(--font-display);
+    font-variation-settings: var(--axes-display);
+    font-weight: var(--weight-light);
+    font-variant-numeric: lining-nums tabular-nums;
+    line-height: var(--leading-tight);
+    color: var(--color-highlight-ink);
+  }
+
+  ol .number {
+    grid-row: span 2;
+    font-size: var(--text-h3);
+  }
+
+  .entry {
+    font-family: var(--font-display);
+    font-size: var(--text-h4);
+    line-height: var(--leading-heading);
+  }
+
+  .entry::after {
+    border-radius: var(--radius-md);
+  }
+
+  .short {
+    display: none;
+  }
+
+  @media (hover: hover) {
+    ol li:hover .number {
+      color: var(--color-accent);
+    }
+  }
+
+  ol li:has(.entry:active) {
+    background: var(--color-bg-hover);
+  }
+
+  .also {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-1) var(--space-4);
+    align-items: baseline;
+    margin: 0;
+    padding-block-start: var(--space-3);
+    border-block-start: var(--border-hairline) solid var(--color-rule);
+  }
+
+  /* the cover picture, shown whole in a frame that keeps the issue on the first screen */
+  .picture {
+    display: grid;
+    block-size: var(--c-cover-picture-height);
+  }
+
+  .band {
+    display: grid;
+    gap: var(--space-2);
+    padding: var(--space-5) var(--space-6);
+    border-inline-start: var(--border-strong) solid var(--color-highlight);
+    border-radius: var(--radius-md);
+    background: var(--color-bg-sunk);
+  }
+
+  .band [data-card-link]::after {
+    border-radius: var(--radius-md);
+  }
+
+  .read {
+    display: inline-flex;
+    gap: var(--space-2);
+    align-items: center;
+    color: var(--color-accent);
+  }
+
+  /* ---------- the issue: a feature per strength, its number in the margin, its picture beside its words ---------- */
+  .features {
+    display: grid;
+    gap: var(--space-12);
+  }
+
+  .feature {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) minmax(0, 1fr);
+    grid-template-areas: 'number words picture' 'number evidence picture';
+    grid-template-rows: auto 1fr;
+    gap: var(--space-4) var(--space-8);
+    padding-block-start: var(--space-8);
+    border-block-start: var(--border-hairline) solid var(--color-rule-strong);
+    scroll-margin-block-start: calc(var(--size-chrome-block) + var(--space-8));
+  }
+
+  .feature:not(:has(.feature-picture)) {
+    grid-template-columns: auto minmax(0, 1fr);
+    grid-template-areas: 'number words' 'number evidence';
+  }
+
+  .feature .number {
+    grid-area: number;
+    font-size: var(--text-display);
+  }
+
+  .words {
+    grid-area: words;
+    display: grid;
+    gap: var(--space-2);
+    align-content: start;
+  }
+
+  .feature-picture {
+    grid-area: picture;
+    display: grid;
+    block-size: var(--c-cover-feature-picture-height);
+  }
+
+  .evidence {
+    grid-area: evidence;
+    display: grid;
+    gap: var(--space-1);
+    align-content: start;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .evidence li {
+    display: grid;
+    gap: var(--space-1);
+    justify-items: start;
+    padding-block: var(--space-2);
+  }
+
+  .meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-1) var(--space-3);
+    align-items: center;
+  }
+
+  /* calm: the features without pictures, two to a row */
+  [data-density='calm'] .features {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--space-10) var(--space-8);
+  }
+
+  [data-density='calm'] .pull {
+    grid-column: 1 / -1;
+  }
+
+  .voices {
+    display: grid;
+  }
+
+  /* the features rise a little as they scroll in: only for those who don't ask for less motion */
+  @media (prefers-reduced-motion: no-preference) {
+    @supports (animation-timeline: view()) {
+      .feature {
+        animation: cover-rise var(--ease-enter) both;
+        animation-timeline: view();
+        animation-range: entry 0% entry 40%;
+      }
+    }
+  }
+
+  @keyframes cover-rise {
+    from {
+      translate: 0 var(--space-6);
+    }
+  }
+
+  /* ---------- narrower: the lead, In this issue two to a row, then the cover; a feature's picture over its words ---------- */
+  @container cover (width < 52rem) {
+    .front {
+      grid-template-columns: minmax(0, 1fr);
+      grid-template-areas: 'lead' 'issue' 'story';
+      grid-template-rows: auto;
+    }
+
+    ol {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      column-gap: var(--space-6);
+    }
+
+    .feature,
+    .feature:not(:has(.feature-picture)) {
+      grid-template-columns: auto minmax(0, 1fr);
+      grid-template-areas: 'picture picture' 'number words' 'number evidence';
+    }
+
+    .feature .number {
+      font-size: var(--text-h1);
+    }
+
+    [data-density='calm'] .features {
+      grid-template-columns: minmax(0, 1fr);
+    }
+  }
+
+  /* ---------- a phone: In this issue is numbers and short names, two to a row, every one a 44 px target ---------- */
+  @container cover (width < 36rem) {
+    ol li {
+      grid-template-columns: auto minmax(0, 1fr);
+      align-items: center;
+      min-block-size: var(--size-touch);
+      padding-block: var(--space-1);
+    }
+
+    ol .number {
+      grid-row: auto;
+      font-size: var(--text-h4);
+    }
+
+    .full,
+    .said {
+      display: none;
+    }
+
+    .short {
+      display: inline;
+    }
+  }
+</style>

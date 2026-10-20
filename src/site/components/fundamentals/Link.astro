@@ -86,6 +86,7 @@ const end = policy.newTab ? svgOf('external') : variant === 'standalone' ? svgOf
   }
 
   .link[data-variant='standalone'] .icon {
+    flex-shrink: 0;
     width: var(--text-sm);
     height: var(--text-sm);
     margin-inline-start: var(--space-2);

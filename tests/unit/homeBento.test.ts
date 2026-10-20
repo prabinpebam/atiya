@@ -3,36 +3,10 @@
  * for-every-site.md §4): labels, evidence links, voices, the lead, the layouts for 3 to 6 strengths and the settings.
  */
 import { describe, expect, it } from 'vitest';
-import type { HomePicks, Pick, StrengthPicks } from '../../src/site/home/curate';
 import { BENTO_DEFAULTS, SPANS, bentoSettings, bentoTiles, evidenceLabel } from '../../src/site/home/bento';
-import { askHref, evidenceOf, leadOf, strongestKind, voicesOf, type PresentEnv } from '../../src/site/home/present';
-import { capabilityFromHash } from '../../src/site/scripts/bento';
-
-const PEOPLE: Record<string, { name: string; title?: string }> = { ana: { name: 'Ana Ruiz', title: 'VP, Example Co' }, bo: { name: 'Bo Chen' } };
-const env: PresentEnv = {
-  pageHref: (id) => (id === 'draft' ? undefined : `/base/work/${id}/`),
-  resumeHref: '/base/resume/',
-  contactHref: '/base/contact/',
-  person: (id) => PEOPLE[id],
-};
-
-const page = (id: string, kind?: Pick['kind'], over: Partial<Pick> = {}): Pick => ({ source: 'page', ref: `ref:article/${id}`, id, title: `Title ${id}`, ...(kind ? { kind } : {}), pinned: false, reason: 'Auto', ...over });
-const strength = (id: string, over: Partial<StrengthPicks> = {}): StrengthPicks => {
-  const details = over.details ?? [page(`${id}-a`, 'built'), page(`${id}-b`, 'wrote')];
-  return {
-    capability: { id, name: `Name ${id}`, short: id.slice(0, 10), line: `Line of ${id}` },
-    id,
-    shown: true,
-    headline: details[0],
-    details,
-    all: over.all ?? details,
-    total: over.total ?? details.length,
-    keywords: [],
-    weight: 1,
-    ...over,
-  };
-};
-const picks = (strengths: StrengthPicks[], over: Partial<HomePicks> = {}): HomePicks => ({ goal: 'hired', strengths, highlights: [], reel: [], held: false, ...over });
+import { askHref, evidenceOf, leadOf, strongestKind, voicesOf } from '../../src/site/home/present';
+import { capabilityFromHash } from '../../src/site/scripts/homeAddress';
+import { env, page, picks, strength } from './homeFixtures';
 
 describe("what every view shows the same way", () => {
   it("a proof item's kind and where it leads: a page, a résumé line with Ask me about it, a recommendation", () => {

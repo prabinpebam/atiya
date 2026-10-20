@@ -345,7 +345,7 @@ describe('the views’ minimums (for-every-site §5)', () => {
   });
 
   it('a view the site is ready for, built but not offered, is an opportunity', () => {
-    CATALOGUE.views.bento.built = true;
+    for (const [v, s] of Object.entries(CATALOGUE.views)) s.built = v === 'classic' || v === 'bento';
     const rows = ['a', 'b', 'c'].map((t) => ev(t, { topics: [t] }));
     const showcase: Showcase = { capabilities: ['a', 'b', 'c'].map((t) => cap(t, { match: { topics: [t] } })) };
     const p = run(showcase, rows);

@@ -29,6 +29,8 @@ const stories = readdirSync(join(ROOT, 'src/site/stories'))
 const PAGES = [
   { name: 'home', path: '/' },
   { name: 'home-bento', path: '/views/bento/' },
+  { name: 'home-cover', path: '/views/cover/' },
+  { name: 'home-proof-grid', path: '/views/proof-grid/' },
   { name: 'section-features', path: '/writing/' },
   { name: 'section-list', path: '/contact/' },
   { name: 'article', path: '/writing/the-best-learning-loop-will-win/' },

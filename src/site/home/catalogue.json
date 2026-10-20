@@ -79,7 +79,7 @@
     "cover": {
       "label": "Cover",
       "line": "A magazine cover",
-      "built": false,
+      "built": true,
       "minimum": { "strengths": 3, "pictures": 1 },
       "settings": {
         "density": { "label": "Density", "type": "choice", "values": ["calm", "full"], "labels": ["Calm", "Full"], "default": "full" },
@@ -126,7 +126,7 @@
     "proof-grid": {
       "label": "Proof grid",
       "line": "Claims and proof",
-      "built": false,
+      "built": true,
       "minimum": { "kinds": 3, "proof": 8 },
       "settings": {
         "density": { "label": "Density", "type": "choice", "values": ["calm", "full"], "labels": ["Calm", "Full"], "default": "full" },

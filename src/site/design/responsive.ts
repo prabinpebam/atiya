@@ -30,6 +30,8 @@ export const PICTURE_WIDTHS = {
   'image-portrait-sm': 8,
   'bento-picture-side': 6,
   'bento-picture': 12,
+  'cover-picture': 44,
+  'cover-feature-picture': 34,
   'story-card-row-picture': 11,
   'story-card-row-picture-compact': 6,
 } as const;

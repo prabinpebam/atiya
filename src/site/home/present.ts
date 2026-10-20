@@ -66,6 +66,16 @@ export function evidenceItem(p: Placed, strength: StrengthPicks, env: PresentEnv
 /** A strength's details (L3), ready to show: the ones that lead somewhere or can be asked about. */
 export const evidenceOf = (s: StrengthPicks, env: PresentEnv): EvidenceItem[] => s.details.flatMap((p) => evidenceItem(p, s, env) ?? []);
 
+/** The strengths a view shows, in its order: the lens's, else the person's, else strongest first; only those with proof (CU7). */
+export function strengthsInOrder(picks: Pick<HomePicks, 'strengths' | 'lens'>, order: 'yours' | 'strongest'): StrengthPicks[] {
+  const shown = picks.strengths.filter((s) => s.shown);
+  if (order !== 'strongest' || picks.lens) return shown;
+  return shown
+    .map((s, i) => ({ s, i }))
+    .sort((a, b) => b.s.weight - a.s.weight || a.i - b.i)
+    .map((x) => x.s);
+}
+
 /** A strength's strongest kind of proof: the goal's kinds first (Get hired: shipped, led, said), then the rest in order. */
 export function strongestKind(s: Pick<StrengthPicks, 'all'>, goal: HomePicks['goal']): ProofKind | undefined {
   const have = new Set(s.all.map((p) => p.kind).filter(Boolean));

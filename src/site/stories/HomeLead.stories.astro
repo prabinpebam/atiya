@@ -22,3 +22,17 @@ import { withBase } from '../design/meta';
 <Example title="Plain, before a line is written" layout="block" description="No positioning yet: the line is left out, never made up.">
   <HomeLead name="Alex Morgan" role="Head of Design" tone="plain" primary={{ label: 'Read my résumé', href: withBase('/design/') }} headingLevel={2} />
 </Example>
+
+<Example title="Strip" layout="block" description="One compact row for a view whose content must start high (the Proof grid): who, what about them and the actions; two rows, then a stack, as the screen narrows.">
+  <HomeLead
+    name="Alex Morgan"
+    role="Head of Design"
+    facts={['15 years']}
+    primary={{ label: 'Read my résumé', href: withBase('/design/') }}
+    secondary={{ label: 'Get in touch', href: withBase('/design/') }}
+    headingLevel={2}
+    layout="strip"
+  >
+    <Link href={withBase('/design/')} variant="quiet">Explore the planet</Link>
+  </HomeLead>
+</Example>

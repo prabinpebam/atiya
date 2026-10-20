@@ -4,7 +4,7 @@ How [home page views](README.md) are built: eight stages, each ending in somethi
 
 > **TL;DR.**
 > - **How:** each stage is built in loops against its Definition of Done: build, run the stage's checks, fix, record the evidence in §6, merge. A stage is done when every row has its evidence and its Try it works.
-> - **Stages:** 0 this plan; 1 the spine and the rules (no visible change); 2 Bento, Change view and the role lens (2a the view at its own address, 2b the visitor's choice, 2c the role lens); 4 Cover and Proof grid, then 3 the Home screen in edit mode; 5 Spotlight and Showreel; 6 Keywords; 7 Questions; 8 the finish (every suite, parity, the docs as built).
+> - **Stages:** 0 this plan; 1 the spine and the rules (no visible change); 2 Bento, Change view and the role lens (2a the view at its own address, 2b the visitor's choice, 2c the role lens, built after stage 4 over all three views); 4 Cover and Proof grid, then 3 the Home screen in edit mode; 5 Spotlight and Showreel; 6 Keywords; 7 Questions; 8 the finish (every suite, parity, Change view's stills and the views' transitions, the docs as built).
 > - **Project Definition of Done:** every capability seen on every view's first screen, for any site's 3 to 6 strengths; reproducible picks with a reason for each; a home page a person makes in edit mode without editing a file; nothing changed on a site that hasn't made one (§2).
 > - **Alongside other work:** a worktree and branch of its own, off by default, small edits to shared files, rebased and checked before every merge (§4).
 > - **Later, with their own Definitions of Done:** AI curation, links for one job, the Showreel's MP4 cut, `atiya home` in Atiya Studio and the capability ink sketches (§5).
@@ -93,13 +93,13 @@ How [home page views](README.md) are built: eight stages, each ending in somethi
 
 ### Stage 4: Cover and Proof grid
 
-- **Built before stage 3** (the throughput review): three views at their own addresses let the owner choose the default (H2) sooner, and edit mode is busy with AI editing's work.
-- **Builds:** [Cover](cover.md) and [Proof grid](proof-grid.md), with their settings and minimums; the owner offers them. A view that isn't offered answers at its address with a short page (moved from stage 2), and Change view's cards get their stills and the views their transitions ([switcher §10](switcher.md#10-as-built-stage-2b)).
+- **Built before stage 3** (the throughput review): three views at their own addresses let the owner choose the default (H2) sooner, and edit mode is busy with AI editing's work. **And before 2c** (the throughput review after 2b): the lens then goes onto three views at once, with one E2E run.
+- **Builds:** [Cover](cover.md) and [Proof grid](proof-grid.md), with their settings and minimums; the owner offers them. A view that isn't offered answers at its address with a short page (moved from stage 2). Change view's stills and the views' transitions move to stage 8: they redo every view's screenshots each time a view changes.
 - **Try it:** `/views/cover/` and `/views/proof-grid/`; Change view moves between them.
 
 | # | Done when | Evidence |
 |---|---|---|
-| 4.1 | Coverage, levels and the lens hold for both | E2E "home views" over every offered view |
+| 4.1 | Coverage and levels hold for both (the lens with 2c, right after) | E2E "home views" over every offered view |
 | 4.2 | Each lays out 3 to 6 strengths, and Proof grid's columns are the site's five most used kinds | Stories; unit |
 | 4.3 | Axe, phone, design system, screenshots, budgets | As stage 2 |
 
@@ -145,6 +145,7 @@ How [home page views](README.md) are built: eight stages, each ending in somethi
 | 8.2 | The owner's site builds the same from source and from the engine pack; the starter builds | `build-parity.mjs`, `--starter` |
 | 8.3 | `verify:prod` and the size report hold | The run |
 | 8.4 | The spec's pages say what was built; AGENTS.md has a short section on home views | Review |
+| 8.5 | Change view's cards show each view's still, and moving between views is a view transition (reduced motion: none) | E2E; screenshots |
 
 ## 4. Working alongside other features
 
@@ -165,8 +166,17 @@ Other features are being built at the same time, in their own worktrees and on `
 | The Showreel's MP4 cut | It needs a recording pipeline, and the film is optional ([controls §3](controls.md)) | After stage 5 |
 | `atiya home` in Atiya Studio's CLI | It lives in the desktop app, built on its own branch | After stage 3 |
 | Capability ink sketches | New illustrations are proposed to the owner before they're drawn (the ink sketch skill) | The owner approves a set |
+| A wrapped link's arrow | The `Link` fundamental's standalone variant is `inline-flex`, so when its words wrap, the arrow sits at the far edge rather than after the last word (seen in Cover's evidence lists). The fix is the one Proof grid's names use (the last word and the arrow kept together), but it moves screenshots across the whole site | With the next site-wide visual change |
 
 ## 6. Status and evidence
+
+**When you're back** (the work so far, and what only you can decide):
+- **See it:** [`/views/bento/`](https://prabinpebam.github.io/atiya/views/bento/), [`/views/cover/`](https://prabinpebam.github.io/atiya/views/cover/), [`/views/proof-grid/`](https://prabinpebam.github.io/atiya/views/proof-grid/) and [`/views/classic/`](https://prabinpebam.github.io/atiya/views/classic/) are live; Change view moves between them and remembers your pick on the device. `/` is still the classic hub, unchanged. A view the site doesn't offer (`/views/spotlight/`, for now) says so and links home.
+- **H2, the default view:** Bento is recommended. Say which, after looking at the three; it's the `default` in `home` in `content/structures/ways.json` (edit mode's Home screen, stage 3, will set it too). Once a view other than the hub is the default, `/` shows it and gets Change view.
+- **H1, the strengths' names:** Design leadership, Product strategy, AI transformation, Hands-on making, Craft and storytelling, Systems and operating models. Keep them, or rename (a rename keeps each ID, so links and lenses still work).
+- **H9, the hub's "under construction" summary:** replacing it with a positioning line is recommended. Write the line (one sentence on what you do and for whom); it goes in `content/site.json` as `positioning` and leads every view.
+- **H4, motion that runs on its own:** amending the visual language for views a visitor chose, always with a pause, is recommended. The Showreel and the Keywords drift wait on it.
+- **Also yours:** each strength's line and keywords (`content/showcase.json`, drafted from your pages); the Questions answers (stage 7, drafted for you to sign off); whether Contact me on a strength fills in the contact form's topic; for Cover, its picture (C1: an ink sketch portrait is recommended; until then it's the cover story's picture) and its story (C2: Do what makes you proud leads today, the first highlight).
 
 | Stage | Status | Evidence |
 |---|---|---|
@@ -174,9 +184,9 @@ Other features are being built at the same time, in their own worktrees and on `
 | 1 | Done | 1.1 `homeContract.test.ts` (25 tests); 1.2 to 1.5 `homeCurate.test.ts` (34 tests: matching, the score, slots, kind balance, lens, hold, recency, ties, the health report, minimums, sites of 3, 40 and 500 pages, the 500 curating well under 150 ms); the 30 other suites that import the content contract pass (416 tests); 1.6 the owner's spine (`content/showcase.json`, `content/topics.json`, `resumePage`, `contribution` on 8 pages) passes the strict check, `npm run check` 0 errors, `npm run build` 134 pages, and no page renders the new code yet, so the home page is unchanged |
 | 2a | Done | 2.1 and 2.2: E2E "home views" (coverage at 1280 by 800 and 360 by 740 in light and dark, from the first HTML and in view; bento's three levels, Esc and focus return, `#cap-<id>`, one drawer at a time); 2.3 the Bento story at 3, 4, 5 and 6 tiles, and their screenshots; 2.6 "landing & classic" passes and `/` is the hub, canonical `/`; 2.7 axe clean in both modes with a drawer open, "home views on a phone" (no sideways scroll and 44 px targets at 320, 360 and 844 wide, open and closed); 2.8 `siteDesignSystem.test.ts` and the home suites (367 tests), `npm run check` 0 errors, the whole visual project (144 passed; the new stories' and `/views/bento/`'s 60 baselines written and looked at; no other screenshot changed); 2.10 `verify:prod` passes, Bento's script 0.8 KB gzip and Voices' 0.2 KB. As built: [Bento §13](bento.md#13-as-built-stage-2a) |
 | 2b | Done | 2.4: E2E "home views: change view" (5 tests: a link shows a view without keeping it and `?view=` is sent on; a card keeps the choice, `/` and the in-site home link follow it before the first paint and Back skips `/`, Use the default clears it; a kept choice no longer offered is dropped; the dialog by keyboard, Esc back to its opener, axe in both modes; telemetry), and the router's and the hub's ways in unit-tested (`homeRoute.test.ts`, `homeViews.test.ts`: 30 tests); 2.6: "landing & classic" passes, and the built `/index.html` compared before and after: the body is the same but for the hub's script (now a file, with the primary way in chosen by a small inline script before the first paint), the head adds the router and the `data-home-*` attributes, and two stylesheets (3.7 KB gzip) come with it, a deviation in [switcher §10](switcher.md#10-as-built-stage-2b); 2.7: "home views", "site design system" and "site on a phone" pass (49 tests, axe in both modes); 2.8: `siteDesignSystem.test.ts` and the home, content and token suites (427 tests), `npm run check` 0 errors, the ViewChoices story's 12 new screenshots and `/views/bento/`'s 6 changed ones looked at and accepted, `/` and every other screenshot run unchanged; 2.9: `homeEvents` unit-tested and the E2E reads the events sent (view and lens IDs and the source only); 2.10: `verify:prod` passes; the hub's script 0.4 KB gzip and the choices' 0.8 KB. As built: [switcher §10](switcher.md#10-as-built-stage-2b) |
-| 2c | Not started | |
+| 2c | Not started | Next, over Bento, Cover and Proof grid |
 | 3 | Not started | |
-| 4 | Not started | |
+| 4 | Done | 4.1: E2E "home views" (16 tests): coverage at 1280 by 800 and 360 by 740 in light and dark for Bento, Cover and Proof grid from the first HTML; Cover's entries jump to their features under the header and nothing runs on its own; Proof grid's one tab stop, arrows, a cell opening its kind and a name all of it, Esc and Close giving focus back, `#cap-<id>` and `#cap-<id>-<kind>`; a view that isn't offered says so, isn't indexed and links home. 4.2: `homeCover.test.ts` and `homeProofGrid.test.ts` (3 to 6 strengths, the cover story's and picture's choice, the five most used kinds in their own order, the cells' states and counts), and both stories from 3 to 6 strengths, in both densities. 4.3: axe clean in both modes on both views; "home views on a phone" (no sideways scroll and 44 px targets from 320 px with the evidence open, the accordion); "site design system" and "site on a phone" pass (31 tests); `siteDesignSystem.test.ts` and the home, content and token suites (450 tests); `npm run check` 0 errors; the two stories' and the two pages' 54 new screenshots looked at, and the whole visual project otherwise unchanged; `verify:prod` passes. As built: [Cover §13](cover.md#13-as-built-stage-4), [Proof grid §13](proof-grid.md#13-as-built-stage-4) |
 | 5 | Not started | |
 | 6 | Not started | |
 | 7 | Not started | |

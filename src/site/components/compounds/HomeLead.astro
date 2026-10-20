@@ -30,39 +30,46 @@ interface Props {
   headingLevel?: 1 | 2;
   /** tinted: the indigo spot, softly; plain: the page's paper. */
   tone?: 'tinted' | 'plain';
+  /** block: the name large over its words and actions; strip: one compact row, for a view whose content must start high (Proof grid). */
+  layout?: 'block' | 'strip';
 }
 
-const { name, role, positioning, facts = [], primary, secondary, headingLevel = 1, tone = 'tinted' } = Astro.props;
+const { name, role, positioning, facts = [], primary, secondary, headingLevel = 1, tone = 'tinted', layout = 'block' } = Astro.props;
 const id = `home-lead-${stableId(Astro, 'HomeLead')}`;
+const size = layout === 'strip' ? 'sm' : 'md';
 ---
 
-<section class="lead" data-tone={tone} aria-labelledby={id}>
+<section class="lead" data-tone={tone} data-layout={layout} aria-labelledby={id}>
   <div class="who">
-    <Heading level={headingLevel} size="h1" id={id}>{name}</Heading>
+    <Heading level={headingLevel} size={layout === 'strip' ? 'h2' : 'h1'} id={id}>{name}</Heading>
     {role && <Text variant="lead">{role}</Text>}
   </div>
-  {positioning && <Text variant="standfirst">{positioning}</Text>}
   {
-    facts.length > 0 && (
-      <ul class="facts">
-        {facts.map((f) => (
-          <li>
-            <Tag>{f}</Tag>
-          </li>
-        ))}
-      </ul>
+    (positioning || facts.length > 0) && (
+      <div class="about">
+        {positioning && <Text variant="standfirst">{positioning}</Text>}
+        {facts.length > 0 && (
+          <ul class="facts">
+            {facts.map((f) => (
+              <li>
+                <Tag>{f}</Tag>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
     )
   }
   {
     (primary || secondary || Astro.slots.has('default')) && (
       <div class="actions">
         {primary && (
-          <Button variant="primary" href={primary.href} icon="article">
+          <Button variant="primary" size={size} href={primary.href} icon="article">
             {primary.label}
           </Button>
         )}
         {secondary && (
-          <Button variant="secondary" href={secondary.href} icon="mail">
+          <Button variant="secondary" size={size} href={secondary.href} icon="mail">
             {secondary.label}
           </Button>
         )}
@@ -93,9 +100,14 @@ const id = `home-lead-${stableId(Astro, 'HomeLead')}`;
     border: var(--border-hairline) solid var(--color-border);
   }
 
-  .who {
+  .who,
+  .about {
     display: grid;
     gap: var(--space-2);
+  }
+
+  .about {
+    gap: var(--space-4);
   }
 
   .facts {
@@ -119,10 +131,58 @@ const id = `home-lead-${stableId(Astro, 'HomeLead')}`;
     display: contents;
   }
 
+  /* the strip: who, what about them and the actions on one row; two rows, then a stack, as the screen narrows */
+  .lead[data-layout='strip'] {
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    grid-template-areas: 'who about actions';
+    align-items: center;
+    gap: var(--space-3) var(--space-8);
+    padding-block: var(--space-4);
+  }
+
+  [data-layout='strip'] .who {
+    grid-area: who;
+    gap: 0;
+  }
+
+  [data-layout='strip'] .about {
+    grid-area: about;
+    gap: var(--space-2);
+  }
+
+  [data-layout='strip'] .actions {
+    grid-area: actions;
+    justify-content: end;
+    gap: var(--space-2) var(--space-3);
+  }
+
+  @media (max-width: 72rem) {
+    .lead[data-layout='strip'] {
+      grid-template-columns: minmax(0, 1fr) auto;
+      grid-template-areas: 'who actions' 'about about';
+    }
+  }
+
+  @media (max-width: 56rem) {
+    .lead[data-layout='strip'] {
+      grid-template-columns: minmax(0, 1fr);
+      grid-template-areas: 'who' 'about' 'actions';
+    }
+
+    [data-layout='strip'] .actions {
+      justify-content: start;
+    }
+  }
+
   /* a phone: less room round the words */
   @media (max-width: 40rem) {
     .lead {
       padding: var(--space-5);
+    }
+
+    .lead[data-layout='strip'] {
+      gap: var(--space-2);
+      padding: var(--space-4);
     }
   }
 </style>

@@ -207,3 +207,25 @@ Both answer the visitor's own scroll or press, so neither needs an exception to 
 | C1 | The cover picture | A portrait; the Family app; an ink sketch | An ink sketch portrait: it's the site's own language and works in light and dark |
 | C2 | The cover story | Defining Microsoft Family; the lens's capability's highlight; rotated per visit | Defining Microsoft Family, swapped by the lens; never rotated per visit |
 | C3 | The contents spread | Full features; a compact list | Full features: Cover is the view for visitors who read |
+
+## 13. As built (stage 4)
+
+Cover is built and offered at `/views/cover/`. It's drawn from the spine by [curation](curation.md)'s rules, so it shows whatever strengths a site has, 3 to 6, numbered in the issue's order.
+
+| Part | Where |
+|---|---|
+| The view | [`Cover.astro`](https://github.com/prabinpebam/atiya/blob/main/src/site/components/compounds/Cover.astro), with the lead and [`Voices.astro`](https://github.com/prabinpebam/atiya/blob/main/src/site/components/compounds/Voices.astro) in its slots; its story is in the design library |
+| From the spine to the issue | [`cover.ts`](https://github.com/prabinpebam/atiya/blob/main/src/site/home/cover.ts) (pure, unit-tested in `homeCover.test.ts`): the cover lines, the cover story and the cover picture, joined to the site's pages and pictures by [`homeView.ts`](https://github.com/prabinpebam/atiya/blob/main/src/site/content/homeView.ts) |
+| Its sizes | The `c.cover` tokens: the cover picture, a feature's picture and number, and the container queries it lays itself out by |
+
+Where the build differs from the design above:
+
+- **The lead is the masthead.** The person's name is the page's H1, with their role, their facts and the actions (Read résumé, Contact me, Explore the planet, Change view) in a plain box, the same lead every view has ([foundation §7](foundation.md)), rather than a masthead over the picture. The cover picture and the cover story sit under it.
+- **In this issue comes first on narrower screens.** From 768 px down it follows the lead, before the picture, in two columns; on a phone each line is its number and short name, two to a row, so all six are on a 360 by 740 screen with the lead above them. The proof lines are left out on a phone.
+- **No script.** A line is a plain link to its feature's `#cap-<id>`; the browser's own jump and the header's scroll margin do the rest. "Also" lists the résumé, the contact page and In their words.
+- **The cover story** is the person's choice (Cover story), else the lens's first strength's first highlight, else the first highlight; only an open page of a strength shown. The cover picture is the person's (Cover picture), else the story's, else the first strength's.
+- **The pull quote** is the first voice, set large between the features' two halves. The full Voices strip follows the last feature.
+- **Motion:** features rise a little as they scroll into view (a scroll-driven animation), only under `prefers-reduced-motion: no-preference`. The cover picture doesn't ease back yet.
+- **Not built yet:** the ink sketch portrait (C1, the owner's to approve), the departments as their own block (the site's sections index follows as on every view), the role lens (stage 2c).
+
+Evidence: the E2E group "home views" (coverage at 1280 by 800 and 360 by 740 in both modes; an entry jumps to its feature under the header, Also leads to the voices, nothing runs on its own; axe in both modes), "home views on a phone" (no sideways scroll and 44 px targets from 320 px), the design system's unit tests, and the screenshots of the story and `/views/cover/` in the `visual` project.

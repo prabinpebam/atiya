@@ -3,15 +3,19 @@
  * components' props, every address and picture resolved. The views' pages call it; the components never
  * read the home model (they're tiers below it), and the model never reads the site's addresses.
  */
-import { canonicalPath, content, getAccess, getHome, getPerson, getPlanet, getRecommendations, getRoute, getRoutes, getSite, getStructure } from './repository';
+import { canonicalPath, content, getAccess, getArticle, getHome, getPerson, getPlanet, getRecommendations, getRoute, getRoutes, getSite, getStructure } from './repository';
 import { footerLinks, siteNav } from './navigation';
 import { picture } from './pictures';
 import { withBase } from '../design/meta';
 import { bentoSettings, bentoTiles } from '../home/bento';
+import { coverIssue, coverSettings } from '../home/cover';
+import { proofGrid, proofGridSettings } from '../home/proofGrid';
 import { CATALOGUE } from '../home/catalogue';
-import { leadOf, voicesOf, type PresentEnv } from '../home/present';
-import type { ViewId } from '../home/ids';
+import { KIND_LABEL, leadOf, voicesOf, type PresentEnv, type Voice } from '../home/present';
+import { VIEW_IDS, type ViewId } from '../home/ids';
 import type { HomeRouting } from '../scripts/homeRoute';
+
+type Home = NonNullable<ReturnType<typeof getHome>>;
 
 /** The views that have a page of their own (`/views/<id>/`): every offered view that's built, the classic hub too. */
 export function viewPaths(): ViewId[] {
@@ -22,14 +26,20 @@ export function viewPaths(): ViewId[] {
 /**
  * What the head's router needs on a home page (switcher.md §3): which view this page shows and where it is,
  * the site's default and offered views. None without a `home` key (the classic hub is all the site has).
- * The lenses and the views the site doesn't offer get their pages in later stages (plan.md §6: 2c, 4), so a
- * link names only what has a page.
+ * Every view has an address (one that isn't offered answers with a short page), so a link may name any.
+ * The lenses get their pages in stage 2c (plan.md §6).
  */
 export function homeRouting(view: ViewId, at: HomeRouting['at']): HomeRouting | undefined {
   const home = getHome();
   if (!home) return undefined;
+  return { at, view, default: home.default, offered: viewPaths(), known: [...VIEW_IDS], lenses: [], base: withBase('/').replace(/\/$/, '') };
+}
+
+/** The views a site with a home page doesn't offer now (or that aren't built yet): each answers at its address with a short page. */
+export function viewsNotOffered(): ViewId[] {
+  if (!getHome()) return [];
   const pages = viewPaths();
-  return { at, view, default: home.default, offered: pages, known: pages, lenses: [], base: withBase('/').replace(/\/$/, '') };
+  return VIEW_IDS.filter((v) => !pages.includes(v));
 }
 
 /** A view as Change view lists it. */
@@ -88,8 +98,8 @@ export function presentEnv(): PresentEnv {
 }
 
 /** A media item as the cards take it: its sizes, its alt text and its dark mode version. */
-async function cardPicture(id: string) {
-  const p = await picture(id, 'card');
+async function cardPicture(id: string, slot: 'card' | 'content' = 'card') {
+  const p = await picture(id, slot);
   const dark = p.dark ? { src: p.dark.src, srcset: p.dark.srcset, width: p.dark.width, height: p.dark.height, bg: p.dark.bg } : undefined;
   return { src: p.src, srcset: p.srcset, alt: p.alt, width: p.width, height: p.height, bg: p.bg, display: 'fit' as const, ...(dark ? { dark } : {}) };
 }
@@ -122,8 +132,6 @@ export function homeFrame() {
 export async function bentoView() {
   const home = getHome();
   if (!home) return null;
-  const site = getSite();
-  const owner = getPerson(site.owner);
   const env = presentEnv();
   const settings = bentoSettings(home.settings.bento);
   const tiles = await Promise.all(
@@ -133,16 +141,90 @@ export async function bentoView() {
       ...(media ? { picture: await cardPicture(media) } : {}),
     })),
   );
-  const voices = settings.words === 'on' ? voicesOf(home.picks, env).map((v) => ({ text: v.quote, name: v.name, ...(v.title ? { title: v.title } : {}) })) : [];
-  const showcase = content().showcase ?? {};
-  const lead = leadOf({
+  const voices = settings.words === 'on' ? voicesOf(home.picks, env).map(voiceProps) : [];
+  return { lead: homeLead(home, env), tiles, voices, density: settings.density };
+}
+
+/** A colleague's words as Voices and Cover take them. */
+const voiceProps = (v: Voice) => ({ text: v.quote, name: v.name, ...(v.title ? { title: v.title } : {}) });
+
+/** The lead every view opens with: the person, what they do, their two actions. */
+function homeLead(home: Home, env: PresentEnv) {
+  const site = getSite();
+  const owner = getPerson(site.owner);
+  return leadOf({
     name: owner?.name ?? site.name,
     role: owner?.role,
     positioning: site.positioning,
-    showcase,
+    showcase: content().showcase ?? {},
     goal: home.picks.goal,
     resumeHref: env.resumeHref,
     contactHref: env.contactHref,
   });
-  return { lead, tiles, voices, density: settings.density };
+}
+
+/** Cover's props (documentation/home-views/cover.md): the lead, In this issue, the cover story and picture, a feature per strength, a colleague's words. Null when there's no home. */
+export async function coverView() {
+  const home = getHome();
+  if (!home) return null;
+  const env = presentEnv();
+  const settings = coverSettings(home.settings.cover);
+  const issue = coverIssue(home.picks, settings, env);
+  const lines = await Promise.all(
+    issue.lines.map(async ({ picture: media, details, ...l }) => ({
+      ...l,
+      details: details.map(({ key, title, kindLabel, href, ask }) => ({ key, title, ...(kindLabel ? { kindLabel } : {}), ...(href ? { href } : {}), ...(ask ? { ask } : {}) })),
+      ...(media && settings.density === 'full' ? { picture: await cardPicture(media) } : {}),
+    })),
+  );
+  const voices = voicesOf(home.picks, env).map(voiceProps);
+  const story = issue.story && {
+    href: issue.story.href,
+    title: issue.story.title,
+    capability: issue.lines.find((l) => l.id === issue.story!.capability)?.name ?? '',
+    ...(getArticle(issue.story.id)?.summary ? { summary: getArticle(issue.story.id)!.summary } : {}),
+  };
+  const also = [
+    ...(env.resumeHref ? [{ label: 'Résumé', href: env.resumeHref }] : []),
+    ...(env.contactHref ? [{ label: 'Contact', href: env.contactHref }] : []),
+  ];
+  return {
+    lead: homeLead(home, env),
+    lines,
+    ...(story ? { story } : {}),
+    ...(issue.picture ? { picture: await cardPicture(issue.picture, 'content') } : {}),
+    // the voice set large halfway is the first; the rest are In their words, at the foot
+    ...(voices[0] ? { quote: voices[0] } : {}),
+    voices: voices.slice(1),
+    density: settings.density,
+    also,
+  };
+}
+
+/** Proof grid's props (documentation/home-views/proof-grid.md): the lead, the columns with their names, a row per strength, the colleagues' words. Null when there's no home. */
+export function proofGridView() {
+  const home = getHome();
+  if (!home) return null;
+  const env = presentEnv();
+  const settings = proofGridSettings(home.settings['proof-grid']);
+  const grid = proofGrid(home.picks, settings, env);
+  return {
+    lead: homeLead(home, env),
+    columns: grid.columns.map((kind) => ({ kind, label: KIND_LABEL[kind] })),
+    rows: grid.rows.map(({ id, name, line, total, cells, groups }) => ({
+      id,
+      name,
+      line,
+      total,
+      cells: cells.map(({ kind, count, state, label }) => ({ kind, count, state, label })),
+      groups: groups.map(({ kind, heading, items }) => ({
+        kind,
+        heading,
+        items: items.map(({ key, source, title, href, ask }) => ({ key, source, title, ...(href ? { href } : {}), ...(ask ? { ask } : {}) })),
+      })),
+    })),
+    voices: voicesOf(home.picks, env).map(voiceProps),
+    density: settings.density,
+    empty: settings.empty,
+  };
 }

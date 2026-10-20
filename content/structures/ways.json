@@ -11,7 +11,9 @@
     "default": "classic",
     "offered": [
       "classic",
-      "bento"
+      "bento",
+      "cover",
+      "proof-grid"
     ]
   }
 }

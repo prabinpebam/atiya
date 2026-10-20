@@ -2,19 +2,11 @@
  * The bento's DOM wiring (tier 0; docs: documentation/home-views/bento.md §5): a tile's toggle opens its
  * drawer (one at a time), Close and Esc shut it and put the keyboard back on the tile, the phone's index
  * jumps to a tile, and an address with `#cap-<id>` opens that strength. Bento.astro's script runs it on each
- * bento through `each`; the address rule is pure (`capabilityFromHash`) and unit-tested.
+ * bento through `each`; the address rule is pure (`capabilityFromHash`, scripts/homeAddress.ts) and unit-tested.
+ * Opening a drawer tells telemetry (`capability_l3_open`, kind `all`).
  */
-
-/** The strength an address names (`#cap-<id>`), or null. */
-export function capabilityFromHash(hash: string): string | null {
-  let text = hash;
-  try {
-    text = decodeURIComponent(hash);
-  } catch {
-    // a malformed escape: read it as written
-  }
-  return /^#cap-(.+)$/.exec(text)?.[1] ?? null;
-}
+import { capabilityFromHash } from './homeAddress';
+import { track } from './telemetry';
 
 export function setupBento(root: HTMLElement, signal: AbortSignal): void {
   const toggles = [...root.querySelectorAll<HTMLButtonElement>('[data-bento-toggle]')];
@@ -42,6 +34,7 @@ export function setupBento(root: HTMLElement, signal: AbortSignal): void {
     drawer.hidden = false;
     toggle.setAttribute('aria-expanded', 'true');
     address(`#cap-${id}`);
+    track('capability_l3_open', { id, view: 'bento', kind: 'all' });
     if (scroll === 'tile') tileOf(id)?.scrollIntoView({ block: 'start', behavior: behavior() });
     // only if it would be out of view: a drawer that fits stays where it opened
     else if (drawer.getBoundingClientRect().bottom > innerHeight) drawer.scrollIntoView({ block: 'nearest', behavior: behavior() });
