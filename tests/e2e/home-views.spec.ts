@@ -4,7 +4,8 @@
  * colleague's words on hover and focus, the evidence drawer by press, Esc and `#cap-<id>`), the Cover's jumps, the
  * Proof grid's cells (keys, the address, Esc and Close, a phone's accordion), Spotlight's stage (Next, the keys, the
  * rail, Jump to, the details that follow, `#h-<id>`, motion only when asked for), Keywords (keywords.md: one Tab
- * stop, a pick and what it brings forward, `?pick=`, Remove, Clear all, Or type a skill, a phone's rows), axe in
+ * stop, a pick and what it brings forward, `?pick=`, Remove, Clear all, Or type a skill, a phone's rows), Questions
+ * (questions.md: the tab list, `#q<n>`, Next, a phone's accordion, Ask something else, no script), axe in
  * both modes, a phone's reflow and targets, the role lens (`?for=`), and the page for a view the site doesn't offer.
  * `/` is the default view, whichever it is (H2), so these hold on any default.
  */
@@ -13,7 +14,9 @@ import AxeBuilder from '@axe-core/playwright';
 import { readFileSync } from 'node:fs';
 
 // the default view (content/structures/ways.json): what `/` shows; and a view to choose that isn't it
-const HOME = (JSON.parse(readFileSync(new URL('../../content/structures/ways.json', import.meta.url), 'utf8')) as { home?: { default?: string } }).home?.default ?? 'classic';
+const WAYS = (JSON.parse(readFileSync(new URL('../../content/structures/ways.json', import.meta.url), 'utf8')) as { home?: { default?: string; offered?: string[] } }).home;
+const HOME = WAYS?.default ?? 'classic';
+const OFFERED = WAYS?.offered ?? [];
 const PICK = HOME === 'bento' ? 'cover' : 'bento';
 
 const BENTO = '/views/bento/';
@@ -21,7 +24,10 @@ const COVER = '/views/cover/';
 const GRID = '/views/proof-grid/';
 const SPOT = '/views/spotlight/';
 const KEYS = '/views/keywords/';
-const VIEWS = [BENTO, COVER, GRID, SPOT, KEYS];
+const QUEST = '/views/questions/';
+const QSTORY = '/design/compounds/questions/';
+// Questions speaks for the person, so a site offers it once they've signed its answers off: its view is checked then
+const VIEWS = [BENTO, COVER, GRID, SPOT, KEYS, ...(OFFERED.includes('questions') ? [QUEST] : [])];
 
 // axe reads colours: the animations that end (a fade, a rise) are over first; a scroll-driven one never ends, and only moves
 const settled = (page: Page) =>
@@ -359,6 +365,10 @@ test.describe('home views', () => {
   });
 
   test('a view the site doesn’t offer says so, isn’t indexed and leads home', async ({ page }) => {
+    if (!OFFERED.includes('questions')) {
+      await page.goto(QUEST);
+      await expect(page.getByRole('heading', { level: 1 })).toHaveText(/This view isn.t offered/);
+    }
     const response = await page.goto('/views/showreel/');
     expect(response?.status()).toBe(200);
     await expect(page.getByRole('heading', { level: 1 })).toHaveText(/This view isn.t offered/);
@@ -393,9 +403,9 @@ const { defaultBrowserType: _browser, ...PIXEL } = devices['Pixel 7'];
 test.describe('home views on a phone', () => {
   test.use(PIXEL);
 
-  // controls smaller than 44 px, leaving out links inside a sentence and stretched links (their card is the target)
-  const smallTargets = (page: Page) =>
-    page.evaluate(() => {
+  // controls smaller than 44 px inside `root` (the page's main), leaving out links inside a sentence and stretched links (their card is the target)
+  const smallTargets = (page: Page, root = 'main') =>
+    page.evaluate((root) => {
       const inText = (e: Element) => {
         const p = e.parentElement;
         return e.tagName === 'A' && !!p && ['P', 'LI', 'FIGCAPTION', 'SPAN', 'EM', 'STRONG', 'DIV'].includes(p.tagName) && p.textContent!.trim().length > e.textContent!.trim().length + 5;
@@ -409,7 +419,7 @@ test.describe('home views on a phone', () => {
         const px = (v: string) => parseFloat(v) || 0;
         return { width: b.width - px(s.left) - px(s.right), height: b.height - px(s.top) - px(s.bottom) };
       };
-      return [...document.querySelectorAll('main a[href], main button')]
+      return [...(document.querySelector(root)?.querySelectorAll('a[href], button') ?? [])]
         .filter((e) => {
           const b = e.getBoundingClientRect();
           return b.width > 0 && b.height > 0 && getComputedStyle(e).visibility !== 'hidden' && !inText(e) && !stretched(e);
@@ -417,7 +427,7 @@ test.describe('home views on a phone', () => {
         .map((e) => ({ e, b: hit(e) }))
         .filter(({ b }) => b.height < 44 || b.width < 44)
         .map(({ e, b }) => `${e.tagName} "${(e.getAttribute('aria-label') || e.textContent || '').trim().slice(0, 24)}" ${Math.round(b.width)}x${Math.round(b.height)}`);
-    });
+    }, root);
 
   test('no sideways scroll and 44 px targets from 320 px, with a drawer open', async ({ page }) => {
     for (const size of [
@@ -527,6 +537,31 @@ test.describe('home views on a phone', () => {
       await page.locator('[data-kw-cards] [data-kw-item]:not([hidden]) [data-kw-open]').first().click();
       expect(await page.evaluate(() => document.documentElement.scrollWidth - innerWidth), `${size.width}, picked`).toBe(0);
       expect(await smallTargets(page), `${size.width}, picked`).toEqual([]);
+    }
+  });
+
+  test('questions on a phone: no sideways scroll and 44 px targets from 320 px, at rest and with the last question open', async ({ page }) => {
+    for (const path of [QSTORY, ...(OFFERED.includes('questions') ? [QUEST] : [])]) {
+      for (const size of [
+        { width: 320, height: 640 },
+        { width: 360, height: 740 },
+        { width: 844, height: 390 },
+      ]) {
+        await page.setViewportSize(size);
+        await page.goto(path);
+        const q = page.locator('[data-questions]').first();
+        await expect(q).toHaveAttribute('data-ready', '');
+        const at = `${path} at ${size.width}`;
+        expect(await page.evaluate(() => document.documentElement.scrollWidth - innerWidth), at).toBe(0);
+        expect(await smallTargets(page, '[data-questions]'), at).toEqual([]);
+        if ((await q.getAttribute('data-mode')) === 'accordion') {
+          await q.locator('[data-q-more] button').click();
+          await q.locator('[data-q-row]').last().click();
+        } else await q.locator('[data-q-tab]').last().click();
+        await expect(q.locator('[data-q-panel]').last()).toBeVisible();
+        expect(await page.evaluate(() => document.documentElement.scrollWidth - innerWidth), `${at}, the last open`).toBe(0);
+        expect(await smallTargets(page, '[data-questions]'), `${at}, the last open`).toEqual([]);
+      }
     }
   });
 
@@ -921,5 +956,238 @@ test.describe('home views: keywords', () => {
       .toEqual([expect.objectContaining({ id: words[0].id, on: true }), expect.objectContaining({ id: words[0].id, on: false }), expect.objectContaining({ id: words[1].id, on: true })]);
     await expect.poll(() => sent.filter((e) => e.event === 'skill_typed').map((e) => e.properties.matched), { timeout: 15_000 }).toEqual([true, false]);
     expect(JSON.stringify(sent)).not.toContain('basket');
+  });
+});
+
+// Questions (questions.md; plan.md stage 7), on the design library's story (made-up answers, two examples: these
+// read the first): wide, a tab list beside the open answer (manual activation), `#q<n>` and Next; a phone's accordion
+// and Show more questions; Ask something else finds the closest answer in the page and says when there's none; every
+// answer without script. The site's own view is checked too while the site offers it
+type QIndexed = { n: number; id: string; question: string };
+const questionsIn = (page: Page) => page.locator('[data-questions]').first();
+const answerIndex = (page: Page) => questionsIn(page).locator('[data-q-index]').evaluate((e) => JSON.parse(e.textContent!) as QIndexed[]);
+const hashOf = (page: Page) => new URL(page.url()).hash;
+const ready = async (page: Page, path = QSTORY) => {
+  await page.goto(path);
+  await expect(questionsIn(page)).toHaveAttribute('data-ready', '');
+  return questionsIn(page);
+};
+
+test.describe('home views: questions', () => {
+  test.beforeEach(async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 800 });
+  });
+
+  test('wide: a tab list beside the open answer, the arrows move and Enter opens, Next takes the keyboard to the answer, `#q<n>` opens one without it', async ({ page }) => {
+    const q = await ready(page);
+    await expect(q).toHaveAttribute('data-mode', 'tabs');
+    await expect(q.locator('[data-q-tabs]')).toHaveAttribute('role', 'tablist');
+    const tabs = q.locator('[data-q-tab]');
+    const panels = q.locator('[data-q-panel]');
+    await expect(tabs).toHaveCount(6);
+    // question 1 open at rest, one Tab stop, no rows
+    await expect(tabs.first()).toHaveAttribute('aria-selected', 'true');
+    expect(await tabs.evaluateAll((els) => els.filter((e) => (e as HTMLElement).tabIndex === 0).length)).toBe(1);
+    await expect(panels.first()).toBeVisible();
+    await expect(panels.nth(1)).toBeHidden();
+    await expect(q.locator('[data-q-row]').first()).toBeHidden();
+    // the arrows move; Enter opens, and the address names it
+    await tabs.first().focus();
+    await page.keyboard.press('ArrowDown');
+    await expect(tabs.nth(1)).toBeFocused();
+    await expect(panels.first()).toBeVisible();
+    await page.keyboard.press('Enter');
+    await expect(tabs.nth(1)).toHaveAttribute('aria-selected', 'true');
+    await expect(tabs.first()).toHaveAttribute('aria-selected', 'false');
+    await expect(panels.nth(1)).toBeVisible();
+    await expect(panels.first()).toBeHidden();
+    expect(hashOf(page)).toBe('#q2');
+    await page.keyboard.press('End');
+    await expect(tabs.last()).toBeFocused();
+    await page.keyboard.press('Home');
+    await expect(tabs.first()).toBeFocused();
+    await page.keyboard.press('ArrowUp');
+    await expect(tabs.last()).toBeFocused();
+    // Next: the next answer, the keyboard on it; the last has none
+    await panels.nth(1).locator('[data-q-next]').click();
+    await expect(panels.nth(2)).toBeVisible();
+    await expect(panels.nth(2)).toBeFocused();
+    await expect(tabs.nth(2)).toHaveAttribute('aria-selected', 'true');
+    expect(hashOf(page)).toBe('#q3');
+    await expect(panels.last().locator('[data-q-next]')).toHaveCount(0);
+    // an address opens its answer and leaves the keyboard where it was; a new one in the address follows
+    await page.goto('about:blank');
+    await ready(page, `${QSTORY}#q4`);
+    await expect(panels.nth(3)).toBeVisible();
+    await expect(panels.first()).toBeHidden();
+    expect(await page.evaluate(() => document.activeElement === document.body)).toBe(true);
+    await page.evaluate(() => (location.hash = '#q5'));
+    await expect(panels.nth(4)).toBeVisible();
+    await expect(tabs.nth(4)).toHaveAttribute('aria-selected', 'true');
+  });
+
+  test('a phone: an accordion, the first three questions then Show more, each row says whether its answer is open', async ({ page }) => {
+    await page.setViewportSize({ width: 360, height: 740 });
+    const q = await ready(page);
+    await expect(q).toHaveAttribute('data-mode', 'accordion');
+    await expect(q.locator('[data-q-tabs]')).toBeHidden();
+    await expect(q.locator('[data-q-tabs]')).not.toHaveAttribute('role', 'tablist');
+    const rows = q.locator('[data-q-row]');
+    const panels = q.locator('[data-q-panel]');
+    await expect(q.locator('[data-q-row]:visible')).toHaveCount(3);
+    await expect(rows.first()).toHaveAttribute('aria-expanded', 'true');
+    await expect(panels.first()).toBeVisible();
+    const more = q.locator('[data-q-more] button');
+    await expect(more).toHaveText('Show 3 more questions');
+    // a row opens its answer and closes the other; pressed again, it closes
+    await rows.nth(1).click();
+    await expect(rows.nth(1)).toHaveAttribute('aria-expanded', 'true');
+    await expect(rows.first()).toHaveAttribute('aria-expanded', 'false');
+    await expect(panels.nth(1)).toBeVisible();
+    await expect(panels.first()).toBeHidden();
+    expect(hashOf(page)).toBe('#q2');
+    await rows.nth(1).click();
+    await expect(rows.nth(1)).toHaveAttribute('aria-expanded', 'false');
+    await expect(q.locator('[data-q-panel]:visible')).toHaveCount(0);
+    expect(hashOf(page)).toBe('');
+    // Show more: the rest, the keyboard on the first of them
+    await more.click();
+    await expect(q.locator('[data-q-row]:visible')).toHaveCount(6);
+    await expect(more).toBeHidden();
+    await expect(rows.nth(3)).toBeFocused();
+    // an answer further down by its address: its row shows, open, and Show more counts the others
+    await page.goto('about:blank');
+    await ready(page, `${QSTORY}#q5`);
+    await expect(rows.nth(4)).toBeVisible();
+    await expect(rows.nth(4)).toHaveAttribute('aria-expanded', 'true');
+    await expect(more).toHaveText('Show 2 more questions');
+    // asked on a phone: the answer found reads from its start, the note in view below the top bar
+    await q.locator('[data-q-ask] input').fill('managed managers');
+    await page.keyboard.press('Enter');
+    const found = q.locator('[data-q-panel]').nth(2);
+    await expect(found).toBeFocused();
+    const at = await found.locator('[data-q-closest]').evaluate((el) => {
+      const r = el.getBoundingClientRect();
+      return { top: r.top, bottom: r.bottom, bar: parseFloat(getComputedStyle(document.documentElement).scrollPaddingTop) || 0, height: innerHeight };
+    });
+    expect(at.top).toBeGreaterThanOrEqual(at.bar);
+    expect(at.bottom).toBeLessThanOrEqual(at.height);
+  });
+
+  test('Ask something else: the closest questions as you type, the arrows and Enter open one and say it’s the closest, Esc closes, and one with no answer here says so', async ({ page }) => {
+    const q = await ready(page);
+    const input = q.locator('[data-q-ask] input');
+    const list = q.locator('[data-q-suggestions]');
+    const status = q.locator('[data-q-status]');
+    await expect(input).toHaveAttribute('role', 'combobox');
+    await input.fill('managed managers');
+    await expect(input).toHaveAttribute('aria-expanded', 'true');
+    await expect(q.locator('[data-q-option]:visible').first()).toHaveText('Have you managed managers?');
+    await page.keyboard.press('ArrowDown');
+    const option = q.locator('[data-q-option="3"]');
+    await expect(option).toHaveAttribute('aria-selected', 'true');
+    await expect(input).toHaveAttribute('aria-activedescendant', (await option.getAttribute('id'))!);
+    await page.keyboard.press('Enter');
+    const panel = q.locator('[data-q-panel]').nth(2);
+    await expect(panel).toBeVisible();
+    await expect(panel).toBeFocused();
+    await expect(input).toHaveValue('');
+    await expect(list).toBeHidden();
+    // the answer says it's the closest, and Not quite? asks about the words typed
+    const note = panel.locator('[data-q-closest]');
+    await expect(note).toBeVisible();
+    await expect(note).toContainText('Closest answer to “managed managers”');
+    expect(new URL((await note.locator('[data-q-closest-ask]').getAttribute('href'))!, page.url()).searchParams.get('topic')).toBe('managed managers');
+    await expect(status).toHaveText('Closest answer: question 3, Have you managed managers?');
+    expect(hashOf(page)).toBe('#q3');
+    // another question: the note goes
+    await q.locator('[data-q-tab="1"]').click();
+    await expect(q.locator('[data-q-closest]')).toBeHidden();
+    // a word still being typed finds what it begins; Esc closes the list, then clears the words
+    await input.fill('prototyp');
+    await expect(list).toBeVisible();
+    await expect(q.locator('[data-q-option]:visible').first()).toHaveText('What have you shipped?');
+    await page.keyboard.press('Escape');
+    await expect(list).toBeHidden();
+    await expect(input).toHaveValue('prototyp');
+    await page.keyboard.press('Escape');
+    await expect(input).toHaveValue('');
+    // nothing like it here: said plainly, and Ask me about it carries the question
+    const asked = 'Underwater basket weaving';
+    await input.fill(asked);
+    await expect(list).toBeHidden();
+    await page.keyboard.press('Enter');
+    const none = q.locator('[data-q-none]');
+    await expect(none).toBeVisible();
+    await expect(none).toContainText('There’s no answer to that here yet.');
+    await expect(status).toHaveText('There’s no answer to that here yet.');
+    expect(new URL((await none.locator('[data-q-none-ask]').getAttribute('href'))!, page.url()).searchParams.get('topic')).toBe(asked);
+  });
+
+  test('axe finds nothing serious in light or dark: wide with the list of closest open and an answer found, and on a phone with every question shown', async ({ page }) => {
+    for (const colorScheme of ['light', 'dark'] as const) {
+      await page.emulateMedia({ colorScheme });
+      await page.setViewportSize({ width: 1280, height: 800 });
+      const q = await ready(page);
+      await q.locator('[data-q-ask] input').fill('managed managers');
+      await expect(q.locator('[data-q-suggestions]')).toBeVisible();
+      await noSeriousViolations(page);
+      await page.keyboard.press('Enter');
+      await expect(q.locator('[data-q-closest]')).toBeVisible();
+      await noSeriousViolations(page);
+      await page.setViewportSize({ width: 360, height: 740 });
+      await expect(q).toHaveAttribute('data-mode', 'accordion');
+      await q.locator('[data-q-more] button').click();
+      await noSeriousViolations(page);
+    }
+  });
+
+  test('telemetry hears an answer opened and what a typed question found, never the words typed', async ({ page }) => {
+    const sent: Sent[] = [];
+    await page.addInitScript(() => localStorage.setItem('site.test.telemetry', '1'));
+    await page.context().route(`${TELEMETRY}/**`, async (route) => {
+      const body = route.request().postData() ?? '';
+      if (body) sent.push(...decode(body));
+      await route.fulfill({ status: 200, contentType: 'application/json', body: '{"status":1}' });
+    });
+    const q = await ready(page);
+    const index = await answerIndex(page);
+    await q.locator('[data-q-tab="2"]').click();
+    const input = q.locator('[data-q-ask] input');
+    await input.fill('managed managers');
+    await page.keyboard.press('Enter');
+    await input.fill('Underwater basket weaving');
+    await page.keyboard.press('Enter');
+    await expect.poll(() => sent.filter((e) => e.event === 'question_open').map((e) => e.properties.id), { timeout: 15_000 }).toEqual([index[1].id]);
+    await expect.poll(() => sent.filter((e) => e.event === 'question_asked').map((e) => e.properties.matched), { timeout: 15_000 }).toEqual([index[2].id, 'none']);
+    expect(JSON.stringify(sent)).not.toContain('basket');
+  });
+
+  test('the site’s own questions: each, typed, finds its own answer', async ({ page }) => {
+    test.skip(!OFFERED.includes('questions'), 'the site doesn’t offer Questions yet');
+    const q = await ready(page, QUEST);
+    const input = q.locator('[data-q-ask] input');
+    test.skip(!(await input.count()), 'the site has Ask something else off');
+    for (const a of await answerIndex(page)) {
+      await input.fill(a.question);
+      await page.keyboard.press('Enter');
+      await expect(q.locator('[data-q-panel]').nth(a.n - 1), a.question).toBeVisible();
+    }
+  });
+
+  test.describe('without script', () => {
+    test.use({ javaScriptEnabled: false });
+
+    test('every answer is in the page, the questions its contents', async ({ page }) => {
+      await page.goto(QSTORY);
+      const q = questionsIn(page);
+      await expect(q.locator('[data-q-panel]:visible')).toHaveCount(6);
+      await expect(q.locator('[data-q-tab]:visible')).toHaveCount(6);
+      await expect(q.locator('[data-q-row]:visible')).toHaveCount(0);
+      await expect(q.locator('[data-q-ask]')).toBeHidden();
+      await expect(q.locator('[data-q-more]')).toBeHidden();
+      await q.locator('[data-q-tab="4"]').click();
+      expect(hashOf(page)).toBe('#q4');
+    });
   });
 });

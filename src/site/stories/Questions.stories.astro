@@ -1,0 +1,70 @@
+---
+import Example from '../library/Example.astro';
+import Questions from '../components/compounds/Questions.astro';
+import HomeLead from '../components/compounds/HomeLead.astro';
+import Voices from '../components/compounds/Voices.astro';
+import { withBase } from '../design/meta';
+
+const page = withBase('/design/');
+const tag = (id: string, name: string, short: string) => ({ id, name, short });
+const teams = tag('teams', 'Leading design teams', 'Teams');
+const research = tag('research', 'Research that changes plans', 'Research');
+const systems = tag('systems', 'Design systems', 'Systems');
+const prototyping = tag('prototyping', 'Prototyping in code', 'Prototyping');
+const item = (key: string, title: string, kindLabel: string, line: string, ask = false) => ({ key, title, kindLabel, href: page, line, ...(ask ? { ask: page } : {}) });
+const studio = item('studio', 'How twelve designers became one studio', 'Led', 'Two years of hiring, rituals and a shared kit, and what it shipped.', true);
+const roadmap = item('roadmap', 'The study that moved a roadmap', 'Shipped', 'Forty interviews, one finding, and the quarter it changed.');
+const kit = item('kit', 'One kit for forty products', 'Shipped', 'Tokens, components and the team that keeps them.', true);
+const hold = item('hold', 'Prototypes you can hold', 'Shipped', 'Ideas in code in a week, tested before they were planned.');
+const second = item('mentoring', 'Mentoring a second studio', 'Led', 'What carried over from the first, and what didn’t.');
+const said = { key: 'review', title: 'Sam Rivera, in their words', kindLabel: 'Said', line: 'She made the hard calls look easy, and brought the whole team along.' };
+type Tag = ReturnType<typeof tag>;
+type Item = { key: string; title: string; kindLabel: string; line: string; href?: string; ask?: string };
+const map = [
+  { ...teams, line: 'Hiring, growing and running studios that ship.', total: 6, headline: studio },
+  { ...research, line: 'Studies that moved a roadmap, not a slide.', total: 3, headline: roadmap },
+  { ...systems, line: 'One kit for many products, and the team that keeps it.', total: 5, headline: kit },
+  { ...prototyping, line: 'Ideas you can hold within a week.', total: 2, headline: hold },
+];
+const asked: { question: string; full?: string; answer: string; tags: Tag[]; evidence: Item[] }[] = [
+  { question: 'What do you do?', full: 'What do you do, in a sentence?', answer: 'I lead design teams that turn research into products people keep using, and I build the systems that let them ship together.', tags: [], evidence: [] },
+  { question: 'What have you shipped?', answer: 'One kit across forty products, a roadmap changed by a single study, and prototypes in code that settled arguments in a week.', tags: [systems, research, prototyping], evidence: [kit, roadmap, hold] },
+  { question: 'Have you managed managers?', full: 'Have you managed managers, and grown a team?', answer: 'Yes: I grew a studio from three to twelve, with two design managers reporting to me, then mentored a second studio through the same.', tags: [teams], evidence: [studio, second, said] },
+  { question: 'Where is your proof deepest?', answer: 'Leading teams and design systems: each has years of shipped work behind it. Research and prototyping are newer, and smaller.', tags: [teams, systems], evidence: [] },
+  { question: 'What should I ask you about?', answer: 'The studio’s first year, and the week we put dark mode into every product at once.', tags: [teams, systems], evidence: [] },
+  { question: 'How do I reach you?', answer: 'Read the résumé for the dates, or write to me: I answer within a day.', tags: [], evidence: [] },
+];
+const fills = [
+  { kind: 'map' as const, strengths: map },
+  undefined,
+  undefined,
+  { kind: 'depth' as const, strengths: [map[0], map[2], map[1], map[3]], grid: page },
+  { kind: 'ask' as const, groups: [{ ...teams, items: [studio] }, { ...systems, items: [kit] }] },
+  { kind: 'contact' as const, resume: page, contact: page },
+];
+const answers = asked.map((a, i) => ({
+  id: `q-${i + 1}`,
+  n: i + 1,
+  ...a,
+  ...(fills[i] ? { fill: fills[i] } : {}),
+  ...(asked[i + 1] ? { next: { n: i + 2, question: asked[i + 1].question } } : {}),
+  words: { question: [a.full ?? a.question], strengths: a.tags.map((t) => [t.name, t.short]), evidence: a.evidence.map((x) => x.title) },
+}));
+const voices = [
+  { text: 'She made the hard calls look easy, and brought the whole team along.', name: 'Sam Rivera', title: 'Director of Product' },
+  { text: 'The clearest thinker in any room about what to build next.', name: 'Ana Lima', title: 'Principal Engineer' },
+];
+// a smaller site: five answers, no Ask something else, no contact page
+const five = answers.slice(0, 5).map((a, i) => ({ ...a, ...(i === 4 ? { next: undefined } : {}) }));
+---
+
+<Example title="Six answers, ask on" layout="block" description="What a site starts with: the lead, then the questions beside the open answer. Question 1 is open at rest and maps every strength with its proof; the others show the strengths they draw on, their evidence and Next. Narrower, the questions wrap as a row of chips; on a phone they're an accordion, the first three then Show more questions. Ask something else finds the closest answer (try managed managers, or prototypes); something it can't answer offers to ask.">
+  <Questions answers={answers} contact={page}>
+    <HomeLead slot="lead" name="Alex Morgan" role="Head of Design" facts={['15 years', 'Teams of 40', 'Three products']} primary={{ label: 'Read my résumé', href: page }} secondary={{ label: 'Get in touch', href: page }} headingLevel={2} layout="strip" />
+    <Voices slot="voices" voices={voices} />
+  </Questions>
+</Example>
+
+<Example title="Five answers, no asking" layout="block" description="The fewest a site can offer it with. Ask something else is off, and with no contact page there's no Ask me about it for a question it can't answer.">
+  <Questions answers={five} ask={false} />
+</Example>

@@ -1,7 +1,8 @@
 /* ---------- The site's base: element defaults only (design-system.md §3) ----------
  * Tier 0 with the tokens: this file styles elements, two utilities, the overlay scrollbar's handle
  * (which scripts/scrollbars.ts adds) and the recipes several components share (a control's disabled
- * state, the focus ring round a wrapper, a card that's one link, a field's parts, a check's layout), each
+ * state, the focus ring round a wrapper, a card that's one link, a field's parts, a check's layout, a
+ * combobox's suggestions), each
  * keyed by a data attribute the components put on their own markup; never one component's look. Every value
  * comes from a token (tokens.css, generated); tests/unit/siteDesignSystem.test.ts enforces it. */
 
@@ -374,6 +375,50 @@ button[data-card-link] {
   display: grid;
   gap: var(--space-1);
   min-width: 0;
+}
+
+/* a combobox's suggestions (Keywords' Or type a skill, Questions' Ask something else), named by
+   data-suggestions on its listbox: a raised list in the page's flow, each option a row you can touch,
+   the one the arrow keys mark in the spot colour; what's hidden stays hidden */
+[data-suggestions] {
+  display: grid;
+  margin: 0;
+  padding: var(--space-1);
+  border: var(--border-hairline) solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-bg-raised);
+  list-style: none;
+}
+
+[data-suggestions] > [role='option'] {
+  display: flex;
+  gap: var(--space-2);
+  align-items: center;
+  min-block-size: var(--size-touch);
+  padding-inline: var(--space-3);
+  border-radius: var(--radius-sm);
+  font: var(--type-control);
+  cursor: pointer;
+}
+
+[data-suggestions] > [aria-selected='true'] {
+  background: var(--color-accent-soft);
+  color: var(--color-on-accent-soft);
+}
+
+:is([data-suggestions], [data-suggestions] > [role='option'])[hidden] {
+  display: none;
+}
+
+/* a disclosure's chevron (data-chevron, on the icon's own wrapper; Keywords' and Questions' rows on a phone):
+   it turns over while the control holding it is expanded, as assistive technology hears it */
+[data-chevron] {
+  display: inline-flex;
+  transition: rotate var(--duration-fast) var(--ease-standard);
+}
+
+[aria-expanded='true'] [data-chevron] {
+  rotate: 180deg;
 }
 
 ::selection {

@@ -138,7 +138,7 @@
     "questions": {
       "label": "Questions",
       "line": "Ask, get answers",
-      "built": false,
+      "built": true,
       "minimum": { "answers": 5 },
       "settings": {
         "order": { "label": "Order", "type": "choice", "values": ["yours", "strongest"], "labels": ["Yours", "Strongest first"], "default": "yours" },

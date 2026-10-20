@@ -12,6 +12,7 @@ import { coverIssue, coverSettings } from '../home/cover';
 import { proofGrid, proofGridSettings } from '../home/proofGrid';
 import { spotlightSettings, spotlightShow } from '../home/spotlight';
 import { keywordsField, keywordsSettings } from '../home/keywords';
+import { questionsOf, questionsSettings } from '../home/questions';
 import { CATALOGUE } from '../home/catalogue';
 import { KIND_LABEL, leadOf, strengthsInOrder, voicesOf, type PresentEnv, type Voice } from '../home/present';
 import { VIEW_IDS, type ViewId } from '../home/ids';
@@ -305,6 +306,24 @@ export function keywordsView(lens?: string) {
     voices: voicesOf(home.picks, env).map(voiceProps),
     motion: settings.motion,
     typing: settings.typing === 'on',
+    contact: env.contactHref,
+  };
+}
+
+/** Questions' props (documentation/home-views/questions.md): the lead, the person's answers in order (question 1 mapping every strength), whether Ask something else is shown, the contact page, the voices; ordered for a lens when one is given. Null when there's no home. */
+export function questionsView(lens?: string) {
+  const home = getHome(lens);
+  const evidence = getHomeEvidence();
+  if (!home || !evidence) return null;
+  const env = presentEnv();
+  const settings = questionsSettings(home.settings.questions);
+  const gridHref = viewPaths().includes('proof-grid') ? withBase('/views/proof-grid/') : undefined;
+  const model = questionsOf({ questions: content().showcase?.questions, picks: home.picks, evidence, topics: content().topics?.topics ?? [], settings, env, ...(gridHref ? { gridHref } : {}) });
+  return {
+    lead: homeLead(home, env),
+    answers: model.answers,
+    ask: model.ask,
+    voices: voicesOf(home.picks, env).map(voiceProps),
     contact: env.contactHref,
   };
 }

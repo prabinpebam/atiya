@@ -237,7 +237,8 @@ describe('the ways file’s home key', () => {
   });
 
   it('only a view built in this engine is offered', () => {
-    expect(withHome({ default: 'classic', offered: ['classic', 'questions'] })).toMatch(/Questions isn't built in this engine yet/);
+    expect(withHome({ default: 'classic', offered: ['classic', 'showreel'] })).toMatch(/Showreel isn't built in this engine yet/);
+    expect(withHome({ default: 'classic', offered: ['classic', 'questions'] })).toBe('');
     expect(withHome({ default: 'classic', offered: ['classic', 'classic'] })).toMatch(/Classic is offered twice/);
     expect(withHome({ default: 'unknown' })).not.toBe('');
   });

@@ -381,6 +381,9 @@
   --c-keywords-card: 18rem;
   --c-keywords-query-stack: 52rem;
   --c-keywords-query-phone: 36rem;
+  --c-questions-strength: 12rem;
+  --c-questions-query-stack: 48rem;
+  --c-questions-query-phone: 36rem;
   --c-story-card-row-picture: 11rem;
   --c-story-card-row-picture-compact: 6rem;
   --c-story-card-query-feature: 49.5rem;

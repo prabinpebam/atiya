@@ -109,7 +109,7 @@ const index = JSON.stringify(keywords.map(({ id, label, synonyms, matches }) => 
                 <RowButton data-kw-row={`${uid}-${g.id}-k`}>
                   {g.short}
                   <span slot="detail" data-kw-count />
-                  <Fragment slot="icon"><Icon name="chevron-down" /></Fragment>
+                  <Fragment slot="icon"><span data-chevron><Icon name="chevron-down" /></span></Fragment>
                 </RowButton>
               </span>
               <div class="chips" id={`${uid}-${g.id}-k`}>
@@ -128,7 +128,7 @@ const index = JSON.stringify(keywords.map(({ id, label, synonyms, matches }) => 
         typing && (
           <div class="type" data-kw-type>
             <TextField label="Or type a skill" icon="search" autocomplete="off" />
-            <ul class="suggestions" role="listbox" id={`${uid}-suggest`} aria-label="Keywords like it" data-kw-suggestions hidden>
+            <ul class="suggestions" role="listbox" id={`${uid}-suggest`} aria-label="Keywords like it" data-kw-suggestions data-suggestions hidden>
               {groups.flatMap((g) =>
                 g.keywords.map((k) => (
                   <li role="option" id={`${uid}-o-${k.id}`} aria-selected="false" data-kw-option={k.id} hidden>
@@ -346,34 +346,13 @@ const index = JSON.stringify(keywords.map(({ id, label, synonyms, matches }) => 
     text-underline-offset: var(--underline-offset);
   }
 
-  /* Or type a skill: its suggestions under it, in the page's flow */
+  /* Or type a skill: its suggestions under it, in the page's flow (base.css's data-suggestions), each one's count at its end */
   .type {
     max-inline-size: var(--size-measure-narrow);
   }
 
-  .suggestions {
-    display: grid;
-    padding: var(--space-1);
-    border: var(--border-hairline) solid var(--color-border);
-    border-radius: var(--radius-md);
-    background: var(--color-bg-raised);
-  }
-
   .suggestions li {
-    display: flex;
-    gap: var(--space-2);
     justify-content: space-between;
-    align-items: center;
-    min-block-size: var(--size-touch);
-    padding-inline: var(--space-3);
-    border-radius: var(--radius-sm);
-    font: var(--type-control);
-    cursor: pointer;
-  }
-
-  .suggestions li[aria-selected='true'] {
-    background: var(--color-accent-soft);
-    color: var(--color-on-accent-soft);
   }
 
   .none {
@@ -419,7 +398,7 @@ const index = JSON.stringify(keywords.map(({ id, label, synonyms, matches }) => 
   }
 
   /* after every display rule: the scope class gives `.picked li` this rule's weight, so the later one wins */
-  :is(.tray, .picked li, .summaries, .cards, .card, .more, .suggestions, .suggestions li, .none)[hidden] {
+  :is(.tray, .picked li, .summaries, .cards, .card, .more, .none)[hidden] {
     display: none;
   }
 

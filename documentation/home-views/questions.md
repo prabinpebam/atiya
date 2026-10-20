@@ -194,6 +194,8 @@ At rest, question 1 is open, so the six capabilities are on the first screen.
 
 ### 5.1 Ask something else
 
+As built, it matches without synonyms and weighs where a word is found; see [§13](#13-as-built-stage-7).
+
 - **Matching in the browser:** the typed question is matched against the nine questions, the spine's capability names and keywords, their synonyms (shared with [Keywords](keywords.md)) and the pages' titles. The index is built into the page; nothing typed leaves the browser.
 - **What it shows:** the closest question's answer, or the matching capabilities' evidence, with "Closest answer:" above it so it never pretends to be a direct reply.
 - **Nothing matched:** "There's no answer to that here yet." and Ask me about it, which opens the contact form with the question filled in.
@@ -267,9 +269,9 @@ Nothing moves on its own.
 | A3 | Question 8 | Answer it; leave it out | Answer it |
 | A4 | The open question at rest | Question 1; the lens's | Question 1 always (it carries L1), with its six capabilities in the lens's order |
 
-## 13. As built (stage 7, in progress)
+## 13. As built (stage 7)
 
-Stage 7 is built in two parts. **7a, the answers and their model, is done;** 7b, the view itself (the list, the answer pane, Ask something else and its story), comes next. Until 7b, Questions isn't offered and its address shows the "not offered" page.
+Stage 7 was built in two parts: **7a**, the answers and their model, and **7b**, the view itself (the list, the answer pane, Ask something else and its story). Both are done. Questions isn't offered on the owner's site yet. It waits on the owner signing off the answers, and until then its address shows the "not offered" page. Offering it means adding it in edit mode's Ways to explore, on the Home card.
 
 | Part | Where |
 |---|---|
@@ -277,9 +279,37 @@ Stage 7 is built in two parts. **7a, the answers and their model, is done;** 7b,
 | The check | [`check.ts`](https://github.com/prabinpebam/atiya/blob/main/src/site/home/check.ts): every quotation in an answer must be word for word in a shown recommendation or an open page (the résumé included), or the content check fails. The contract, [`schema.ts`](https://github.com/prabinpebam/atiya/blob/main/src/site/home/schema.ts), holds a question to 60 characters and an answer to 400 |
 | From the spine to the answers | [`questions.ts`](https://github.com/prabinpebam/atiya/blob/main/src/site/home/questions.ts) (pure, unit-tested in `homeQuestions.test.ts`): the settings (Order, Ask something else), each answer's number, full wording, tags, evidence and fill, and the words Ask something else matches |
 | What each goal's questions fill in | `fill` on the goal's questions in [`catalogue.json`](https://github.com/prabinpebam/atiya/blob/main/src/site/home/catalogue.json): `depth` (the strengths by how much proof each has), `ask` (the résumé lines marked Ask me about it, by strength) and `contact` (the résumé and the contact page) |
+| The view | [`Questions.astro`](https://github.com/prabinpebam/atiya/blob/main/src/site/components/compounds/Questions.astro) (a compound, with its story), its script [`questions.ts`](https://github.com/prabinpebam/atiya/blob/main/src/site/scripts/questions.ts) and the pure rules [`questionsRules.ts`](https://github.com/prabinpebam/atiya/blob/main/src/site/scripts/questionsRules.ts) (unit-tested in `questionsRules.test.ts`), at `/views/questions/` |
+| Its tests | The E2E group "home views: questions" and "questions on a phone" in `tests/e2e/home-views.spec.ts`; the story's screenshots (`questions-*` baselines) |
 
 Where the build differs from the design above:
 
 - **Question 1 is always the map,** whatever its ID: its answer is followed by the strengths in the person's order (or the lens's), each with its line and evidence count, and its own pins only.
 - **An answer's evidence** is its own pins first, then, for a question with no fill, the tagged strengths' evidence taken in turn, never the same item twice, at most five. A question with a fill shows only its pins and the fill.
 - **The résumé has no PDF,** so question 9 offers Read résumé and Contact me, not Download PDF.
+- **The layout follows the view's own width** (its `c.questions` query tokens), not the screen's:
+  - **48 rem and up:** a vertical tab list beside the open answer (WAI-ARIA tabs with manual activation: the arrows, Home and End move; Enter or Space opens);
+  - **36 to 48 rem:** the same tabs, wrapped as a row of chips over the answer;
+  - **under 36 rem:** an accordion. It shows the first three questions, then "Show N more questions" (an open answer further down shows its row as well). A row's chevron turns over while it's open (the `data-chevron` recipe).
+- **Focus moves only when the visitor asked for it:** Next, an answer found by Ask something else, or Show more (which focuses the first row it adds). A found answer reads from its start: it's brought to the top, clear of the top bar, whenever its start would otherwise be out of view.
+- **Ask something else matches the nine questions and what their answers show, not the synonyms or every page's title** (§5.1). Nothing typed leaves the browser. The page carries an index (`data-q-index`, about 11 KB on the owner's site) of:
+  - each question's words;
+  - its strengths' names and lines, in the question's own order;
+  - the evidence titles it shows;
+  - the rest of those strengths' proof titles.
+
+  It never carries the answer's text.
+- **How a match is scored:** each typed word scores the most it earns in one answer, weighted by how rare it is across the answers:
+  - 3 in the question;
+  - 2 in a strength;
+  - 1 in the evidence shown;
+  - ½ in the strength's other proof.
+
+  A strength's weight falls with its place in the question's order, and is shared out when the answer shows more than three strengths. A tie goes to the question whose own words the typed ones cover most. So "Has he managed managers?" finds How does he build teams? through Leadership's proof, and each question, typed as it's written, finds its own answer (tested on the owner's site).
+- **What shows:** up to three closest questions as you type, the last word matched by its beginning. Enter or a pick opens the answer, with the note "Closest answer to “…”" and Not quite? Ask me about it. That opens the contact form with the words typed as its topic (`?topic=`). If nothing is close, the view says "There's no answer to that here yet." and offers the same link.
+- **Telemetry:**
+  - `question_open` (`id`) when the visitor opens an answer, not when one is opened by its address or found;
+  - `question_asked` (`matched`: the question's ID or `none`).
+
+  Never the words typed.
+- **A combobox's suggestions are a shared recipe** (`data-suggestions` in `base.css`), the same list Keywords' Or type a skill uses.

@@ -141,6 +141,12 @@ describe('Questions answers', () => {
     expect(answer('kind', model({ questions: [Q('kind', ['hidden', 'craft'])] })).tags).toEqual([{ id: 'craft', name: 'Name craft', short: 'craft' }]);
   });
 
+  it('matches a typed question by its strengths in the question’s own order, whatever the view’s', () => {
+    const words = answer('outcomes', model({ order: 'strongest' })).words;
+    expect(words.strengths.map((s) => s[0])).toEqual(['Name lead', 'Name ai']);
+    expect(words.proof.map((p) => p[0])).toEqual(['Title lead-a', 'Title ai-a']);
+  });
+
   it('shows an answer’s pins first, then its strengths’ details in turn, once each, at most five', () => {
     const keys = answer('outcomes').evidence.map((e) => e.key);
     // pinned, ai-a (pinned, so not again), then lead-a, ai-b (ai-a taken), lead-b, …
@@ -197,11 +203,18 @@ describe('Questions answers', () => {
     expect(none.answers[1].fill).toEqual({ kind: 'contact' });
   });
 
-  it('gives a typed question its words: the question’s, its strengths’ (names, keywords, topics and synonyms) and its evidence’s titles', () => {
+  it('gives a typed question its words: the question’s, each strength’s (names, keywords, topics and synonyms) in its order, its evidence’s titles, and each strength’s proof’s titles', () => {
     expect(answer('outcomes').words).toEqual({
       question: ['Question outcomes?', 'What outcomes have they influenced?'],
-      strengths: ['Name lead', 'lead', 'Name ai', 'ai', 'Agents', 'Generative AI', 'GenAI'],
+      strengths: [
+        ['Name lead', 'lead'],
+        ['Name ai', 'ai', 'Agents', 'Generative AI', 'GenAI'],
+      ],
       evidence: ['Title pinned', 'Title ai-a', 'Title lead-a', 'Title lead-b', 'Title ai-b'],
+      proof: [
+        ['Title lead-a', 'Title lead-b', 'Title lead-c', 'Built the org from scratch', 'Ana Ruiz, in their words'],
+        ['Title ai-a', 'Title ai-b', 'Title ai-c', 'Led the AI program', 'Built the org from scratch'],
+      ],
     });
   });
 

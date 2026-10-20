@@ -181,6 +181,9 @@
     "c.proof-grid.evidence": {"v":"20rem"},
     "c.proof-grid.query-stack": {"v":"37.5rem"},
     "c.prose.code-size": {"v":"0.85em"},
+    "c.questions.query-phone": {"v":"36rem"},
+    "c.questions.query-stack": {"v":"48rem"},
+    "c.questions.strength": {"v":"12rem"},
     "c.quote.mark": {"v":"var(--color-highlight)"},
     "c.quote.rule": {"v":"var(--color-highlight)"},
     "c.recommendation.card-min": {"v":"18rem"},
@@ -436,6 +439,29 @@
     "weight.semibold": {"v":"600"}
   },
   "entries": [
+    {
+      "date": "2026-10-21",
+      "changes": {
+        "c.questions.query-phone": [
+          null,
+          {
+            "v": "36rem"
+          }
+        ],
+        "c.questions.query-stack": [
+          null,
+          {
+            "v": "48rem"
+          }
+        ],
+        "c.questions.strength": [
+          null,
+          {
+            "v": "12rem"
+          }
+        ]
+      }
+    },
     {
       "date": "2026-10-20",
       "changes": {

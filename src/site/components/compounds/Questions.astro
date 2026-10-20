@@ -1,0 +1,489 @@
+---
+/**
+ * Questions, a home view (documentation/home-views/questions.md): the questions a person's visitors ask, answered by
+ * the person, one at a time beside the list like a magazine interview. Question 1 is open at rest and names every
+ * strength (L1); each answer shows the strengths it draws on as tags (L2), then its evidence, each with its line and
+ * Ask me about it (L3), and Next. Ask something else finds the closest answer to a typed question in the page (the
+ * words never leave it), or says there's none and offers to ask. `#q<n>` opens an answer. Without script it's a
+ * plain Q&A: every answer in the page, the list its contents.
+ * @tier compound
+ * @a11y Wide: a vertical tab list (manual activation), each answer its tab panel; narrower, the tabs wrap as a row.
+ * @a11y A phone: an accordion of buttons that say whether their answer is open (aria-expanded), the first three questions then Show more questions.
+ * @a11y Next and a found answer move the focus to the answer; opening one by its address never moves it.
+ * @a11y Ask something else is a combobox with a listbox of the closest questions; "no answer here yet" is said in words.
+ * @key Arrow keys, Home, End: move between the questions
+ * @key Enter, Space: open the question
+ * @key Down, Up, Enter, Escape: in Ask something else, choose a question, open it, close the list
+ */
+import Heading from '../fundamentals/Heading.astro';
+import Text from '../fundamentals/Text.astro';
+import Tag from '../fundamentals/Tag.astro';
+import Link from '../fundamentals/Link.astro';
+import Button from '../fundamentals/Button.astro';
+import RowButton from '../fundamentals/RowButton.astro';
+import Icon from '../fundamentals/Icon.astro';
+import TextField from '../fundamentals/TextField.astro';
+import { stableId } from '../../design/stableId';
+import { FIRST_ROWS, moreLabel, termsOf } from '../../scripts/questionsRules';
+
+interface Item {
+  /** Its key, unique on the page. */
+  key: string;
+  title: string;
+  /** Its kind of proof (Shipped, Led, Said). */
+  kindLabel?: string;
+  /** Its page, or the résumé. */
+  href?: string;
+  /** The contact page about it. */
+  ask?: string;
+  /** Its line: its page's summary, or a colleague's words. */
+  line?: string;
+}
+
+interface Strength {
+  id: string;
+  name: string;
+  /** Its short name: a tag. */
+  short: string;
+}
+
+interface Answer {
+  id: string;
+  /** Its number, from 1. */
+  n: number;
+  /** Its question, short: the list and a phone's row. */
+  question: string;
+  /** Its question in full: the answer's heading. */
+  full?: string;
+  answer: string;
+  /** The strengths it draws on. */
+  tags: Strength[];
+  /** Its proof, three to five items. */
+  evidence: Item[];
+  /** What follows the answer: every strength with its proof (map, question 1), the strengths deepest first with the Proof grid's address (depth), what to ask about by strength (ask), or the two ways to get in touch (contact). */
+  fill?:
+    | { kind: 'map'; strengths: (Strength & { line: string; total: number; headline?: Item })[] }
+    | { kind: 'depth'; strengths: (Strength & { line: string; total: number })[]; grid?: string }
+    | { kind: 'ask'; groups: (Strength & { items: Item[] })[] }
+    | { kind: 'contact'; resume?: string; contact?: string };
+  /** The next question: its Next link. */
+  next?: { n: number; question: string };
+  /**
+   * What a typed question is matched against: its own words, its strengths' (one list each, in its order), its shown
+   * evidence's titles, and each strength's other proof's titles.
+   */
+  words: { question: string[]; strengths: string[][]; evidence: string[]; proof?: string[][] };
+}
+
+interface Props {
+  /** The answers, in order. */
+  answers: Answer[];
+  /** Shows Ask something else. */
+  ask?: boolean;
+  /** The contact page: Ask me about it for a question with no answer here. */
+  contact?: string;
+}
+
+const { answers, ask = true, contact } = Astro.props;
+const uid = `questions-${stableId(Astro, 'Questions')}`;
+const count = answers.length;
+const shownTags = (a: Answer) => (a.fill?.kind === 'map' ? a.fill.strengths : a.tags);
+const proof = (n: number) => (n === 1 ? '1 piece of proof' : `${n} pieces of proof`);
+const terms = (a: Answer) => ({
+  question: termsOf(...a.words.question),
+  strengths: a.words.strengths.map((s) => termsOf(...s)),
+  evidence: termsOf(...a.words.evidence),
+  ...(a.words.proof?.length ? { proof: a.words.proof.map((p) => termsOf(...p)) } : {}),
+});
+const index = JSON.stringify(answers.map((a) => ({ n: a.n, id: a.id, question: a.question, tags: shownTags(a).length, terms: terms(a) }))).replace(/</g, '\\u003c');
+---
+
+<div class="questions" data-questions data-contact={contact} data-phone="--c-questions-query-phone" data-stack="--c-questions-query-stack">
+  <slot name="lead" />
+  <div class="body">
+    <div class="head"><Heading level={2} size="h3" id={`${uid}-head`}>What do you want to know?</Heading></div>
+    <nav class="list" aria-labelledby={`${uid}-head`}>
+      <ol class="tabs" data-q-tabs>
+        {answers.map((a) => (
+          <li><a href={`#q${a.n}`} id={`${uid}-t${a.n}`} data-q-tab={String(a.n)}><span class="n">{a.n}</span>{a.question}</a></li>
+        ))}
+      </ol>
+    </nav>
+    <div class="answers">
+      {
+        answers.map((a) => {
+          const fill = a.fill;
+          const lists = [
+            ...(fill?.kind === 'ask' ? fill.groups.map((g) => ({ id: g.id, label: g.name, items: g.items })) : []),
+            ...(a.evidence.length ? [{ id: 'evidence', label: 'The evidence', items: a.evidence }] : []),
+          ];
+          const most = fill?.kind === 'depth' ? Math.max(1, ...fill.strengths.map((s) => s.total)) : 1;
+          return (
+            <section class="answer" id={`q${a.n}`} data-q-answer={String(a.n)} data-rest={a.n > FIRST_ROWS ? '' : undefined}>
+              <span class="row">
+                <RowButton data-q-row={`${uid}-p${a.n}`}>
+                  {a.question}
+                  <Fragment slot="icon"><span data-chevron><Icon name="chevron-down" /></span></Fragment>
+                </RowButton>
+              </span>
+              <div class="panel" id={`${uid}-p${a.n}`} data-q-panel>
+                <span class="label" data-q-label><Text variant="label" tone="accent" as="span">Question {a.n} of {count}</Text></span>
+                <Heading level={3} size="h2">{a.full ?? a.question}</Heading>
+                {shownTags(a).length > 0 && (
+                  <ul class="tags" aria-label="Strengths it shows">
+                    {shownTags(a).map((t) => (
+                      <li data-capability={fill?.kind === 'map' ? t.id : undefined}>
+                        <Tag size="sm">{t.short}</Tag>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+                <Text variant="lead">{a.answer}</Text>
+                {fill?.kind === 'map' && (
+                  <ol class="map" aria-label="Every strength, with its proof">
+                    {fill.strengths.map((s) => (
+                      <li data-capability={s.id}>
+                        <Text variant="label">{s.name}</Text>
+                        <Text variant="small" tone="muted">{s.line}</Text>
+                        <span class="meta">
+                          <Text variant="small" as="span">{proof(s.total)}</Text>
+                          {s.headline?.href && <Link href={s.headline.href} variant="quiet">{s.headline.title}</Link>}
+                        </span>
+                      </li>
+                    ))}
+                  </ol>
+                )}
+                {fill?.kind === 'depth' && (
+                  <ol class="depth" aria-label="The strengths, deepest first">
+                    {fill.strengths.map((s) => (
+                      <li style={`--depth: ${s.total / most}`}>
+                        <span class="meta">
+                          <Text variant="label" as="span">{s.name}</Text>
+                          <Text variant="small" tone="muted" as="span">{proof(s.total)}</Text>
+                        </span>
+                        <span class="bar" aria-hidden="true" />
+                      </li>
+                    ))}
+                  </ol>
+                )}
+                {fill?.kind === 'depth' && fill.grid && <Link href={fill.grid} variant="standalone">Compare them in the Proof grid</Link>}
+                {fill?.kind === 'contact' && (
+                  <span class="meta">
+                    {fill.resume && <Button href={fill.resume} icon="article">Read résumé</Button>}
+                    {fill.contact && <Button href={fill.contact} variant="secondary" icon="mail">Contact me</Button>}
+                  </span>
+                )}
+                {lists.map((l) => (
+                  <div class="proof">
+                    <Text variant="label" as="p" id={`${uid}-${a.n}-${l.id}`}>{l.label}</Text>
+                    <ul aria-labelledby={`${uid}-${a.n}-${l.id}`}>
+                      {l.items.map((x) => (
+                        <li class="item">
+                          <span class="meta">
+                            {x.href ? <Link href={x.href} variant="quiet">{x.title}</Link> : <Text variant="label" as="span">{x.title}</Text>}
+                            {x.kindLabel && <Tag size="sm">{x.kindLabel}</Tag>}
+                          </span>
+                          {x.line && <Text variant="small" tone="muted">{x.line}</Text>}
+                          {x.ask && <Link href={x.ask} variant="quiet">Ask me about it</Link>}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                ))}
+                {a.next && <span class="next"><Link href={`#q${a.next.n}`} variant="standalone" data-q-next={String(a.next.n)}>Next: {a.next.question}</Link></span>}
+              </div>
+            </section>
+          );
+        })
+      }
+      <p class="closest" data-q-closest hidden>
+        <span data-q-closest-text />
+        {contact && <Link href={contact} variant="quiet" data-q-closest-ask="">Not quite? Ask me about it</Link>}
+      </p>
+    </div>
+    <span class="more" data-q-more hidden={count <= FIRST_ROWS || undefined}>
+      <Button variant="quiet" size="sm" iconEnd="chevron-down" data-q-more-button=""><span data-q-more-label>{moreLabel(count - FIRST_ROWS)}</span></Button>
+    </span>
+    {
+      ask && (
+        <div class="ask" data-q-ask>
+          <TextField label="Ask something else" icon="search" autocomplete="off" />
+          <ul class="suggestions" role="listbox" id={`${uid}-suggest`} aria-label="The closest questions" data-q-suggestions data-suggestions hidden>
+            {answers.map((a) => (
+              <li role="option" id={`${uid}-o${a.n}`} aria-selected="false" data-q-option={String(a.n)} hidden>{a.question}</li>
+            ))}
+          </ul>
+          <p class="none" data-q-none hidden>
+            There’s no answer to that here yet.
+            {contact && <Link href={contact} variant="quiet" data-q-none-ask="">Ask me about it</Link>}
+          </p>
+        </div>
+      )
+    }
+  </div>
+  <slot name="voices" />
+  <p class="sr-only" aria-live="polite" aria-atomic="true" data-q-status></p>
+  <script is:inline type="application/json" data-q-index set:html={index} />
+</div>
+
+<style>
+  /* Questions lays itself out by its own width (c.questions.query-*), never the screen's */
+  .questions {
+    container: questions / inline-size;
+    display: grid;
+    gap: var(--space-6);
+  }
+
+  :is(ul, ol) {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  /* wide: the list beside the open answer, like a magazine's contents page beside its interview (the rest fill the first column in order) */
+  .body {
+    display: grid;
+    grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
+    grid-template-rows: auto auto 1fr;
+    gap: var(--space-4) var(--space-8);
+    align-items: start;
+  }
+
+  .answers {
+    grid-column: 2;
+    grid-row: 1 / span 3;
+    display: grid;
+    min-inline-size: 0;
+  }
+
+  .ask {
+    display: grid;
+    gap: var(--space-2);
+    max-inline-size: var(--size-measure-narrow);
+  }
+
+  .tabs {
+    display: grid;
+    gap: var(--space-2);
+  }
+
+  .tabs a {
+    display: flex;
+    gap: var(--space-3);
+    align-items: baseline;
+    min-block-size: var(--size-touch);
+    padding: var(--space-2) var(--space-3);
+    border-radius: var(--radius-md);
+    color: var(--color-text);
+    font: var(--type-control);
+    text-decoration: none;
+  }
+
+  .n {
+    min-inline-size: var(--space-5);
+    font-family: var(--font-display);
+    font-variation-settings: var(--axes-display);
+    font-weight: var(--weight-display);
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* the open question: the spot colour */
+  .tabs a[aria-selected='true'] {
+    background: var(--color-accent-soft);
+    color: var(--color-on-accent-soft);
+  }
+
+  .tabs a:not([aria-selected='true']) .n {
+    color: var(--color-text-muted);
+  }
+
+  @media (hover: hover) {
+    .tabs a:not([aria-selected='true']):hover {
+      background: var(--color-bg-hover);
+    }
+  }
+
+  .tabs a:not([aria-selected='true']):active {
+    background: var(--color-bg-hover);
+  }
+
+  .panel {
+    display: grid;
+    gap: var(--space-4);
+    align-content: start;
+    justify-items: start;
+    padding: var(--space-6);
+    border: var(--border-hairline) solid var(--color-rule);
+    border-radius: var(--radius-lg);
+    background: var(--color-bg-raised);
+  }
+
+  /* rows that wrap: tags, a strength's facts, an item's title and kind */
+  .tags,
+  .meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-1) var(--space-2);
+    align-items: center;
+  }
+
+  .map,
+  .depth,
+  .proof,
+  .proof ul {
+    display: grid;
+    gap: var(--space-3);
+    justify-self: stretch;
+  }
+
+  .map {
+    grid-template-columns: repeat(auto-fill, minmax(min(var(--c-questions-strength), 100%), 1fr));
+  }
+
+  .map li,
+  .depth li,
+  .item {
+    display: grid;
+    gap: var(--space-1);
+    justify-items: start;
+  }
+
+  .map li {
+    align-content: start;
+    padding: var(--space-3) var(--space-4);
+    border: var(--border-hairline) solid var(--color-rule);
+    border-radius: var(--radius-md);
+    background: var(--color-bg);
+  }
+
+  /* how much proof a strength has, against the deepest */
+  .bar {
+    justify-self: stretch;
+    block-size: var(--space-2);
+    overflow: hidden;
+    border-radius: var(--radius-pill);
+    background: var(--color-rule);
+  }
+
+  .bar::before {
+    content: '';
+    display: block;
+    block-size: 100%;
+    inline-size: calc(var(--depth) * 100%);
+    border-radius: inherit;
+    background: var(--color-accent);
+  }
+
+  .item {
+    padding-inline-start: var(--space-3);
+    border-inline-start: var(--border-hairline) solid var(--color-rule);
+  }
+
+  .next {
+    justify-self: stretch;
+    padding-block-start: var(--space-3);
+    border-block-start: var(--border-hairline) solid var(--color-rule);
+  }
+
+  /* the closest answer's note and the two ways to get in touch: a row that wraps */
+  .closest,
+  .none {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+    align-items: center;
+    margin: 0;
+    font: var(--type-note);
+  }
+
+  .closest {
+    padding: var(--space-2) var(--space-3);
+    border-radius: var(--radius-md);
+    background: var(--color-accent-soft);
+    color: var(--color-on-accent-soft);
+  }
+
+  /* a phone's rows and Show more questions are the script's; without it, every answer is in view */
+  .row,
+  .more,
+  .questions:not([data-ready]) .ask {
+    display: none;
+  }
+
+  @media screen {
+    .questions[data-mode='accordion'] .row,
+    .questions[data-mode='accordion']:not([data-more]) .more:not([hidden]) {
+      display: block;
+    }
+
+    .questions[data-mode='accordion'] .list,
+    .questions[data-mode='accordion']:not([data-more]) [data-rest]:not([data-open]) {
+      display: none;
+    }
+  }
+
+  /* after every display rule */
+  /* a found answer comes into view a little below the top bar (the page's scroll padding clears the bar) */
+  :is(.answer, .panel) {
+    scroll-margin-block-start: var(--space-4);
+  }
+
+  :is(.panel, .more, .closest, .none)[hidden] {
+    display: none;
+  }
+
+  /* narrower: the questions wrap as a row of chips over the answer */
+  @container questions (width < 48rem) {
+    .body {
+      grid-template-columns: minmax(0, 1fr);
+      grid-template-rows: none;
+    }
+
+    .answers {
+      grid-column: auto;
+      grid-row: auto;
+    }
+
+    .tabs {
+      display: flex;
+      flex-wrap: wrap;
+    }
+
+    .tabs a {
+      border: var(--border-hairline) solid var(--color-border);
+      border-radius: var(--radius-pill);
+    }
+  }
+
+  /* a phone: an accordion, its open answer in the page's flow */
+  @container questions (width < 36rem) {
+    .answer {
+      border-block-end: var(--border-hairline) solid var(--color-rule);
+    }
+
+    .questions[data-mode='accordion'] .panel {
+      padding: var(--space-2) 0 var(--space-5);
+      border: 0;
+      border-radius: 0;
+      background: none;
+    }
+  }
+
+  /* print: every answer, nothing to press */
+  @media print {
+    :is(.list, .ask, .more, .row) {
+      display: none;
+    }
+
+    .answers .panel[hidden] {
+      display: grid;
+    }
+  }
+</style>
+
+<script>
+  import { each } from '../../scripts/page';
+  import { setupQuestions } from '../../scripts/questions';
+
+  each<HTMLElement>('[data-questions]', setupQuestions);
+</script>

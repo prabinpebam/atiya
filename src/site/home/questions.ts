@@ -66,8 +66,11 @@ export interface Answer {
   evidence: QuestionItem[];
   fill?: AnswerFill;
   next?: { n: number; question: string };
-  /** What a typed question is matched against, strongest first: its own words, its strengths', its evidence's titles. */
-  words: { question: string[]; strengths: string[]; evidence: string[] };
+  /**
+   * What a typed question is matched against, strongest first: its own words, its strengths' (one list each, in its
+   * order), its shown evidence's titles, and each strength's other proof's titles.
+   */
+  words: { question: string[]; strengths: string[][]; evidence: string[]; proof: string[][] };
 }
 
 export interface QuestionsModel {
@@ -175,6 +178,8 @@ export function questionsOf(o: {
     }
 
     const full = q.full ?? fulls.get(q.id);
+    // matching follows the question's own order: the strength it names first is what it's mainly about
+    const emphasis = q.capabilities.flatMap((id) => tagged.find((s) => s.id === id) ?? []);
     return {
       id: q.id,
       n: i + 1,
@@ -184,7 +189,13 @@ export function questionsOf(o: {
       tags: tagged.map(tagOf),
       evidence: shown,
       ...(filled ? { fill: filled } : {}),
-      words: { question: [q.question, ...(full ? [full] : [])], strengths: [...new Set(tagged.flatMap(wordsOf))], evidence: shown.map((x) => x.title) },
+      words: {
+        question: [q.question, ...(full ? [full] : [])],
+        strengths: emphasis.map((s) => [...new Set(wordsOf(s))]),
+        evidence: shown.map((x) => x.title),
+        // a typed question also finds an answer through its strengths' other proof, the items there's no room to show
+        proof: emphasis.map((s) => s.all.flatMap((p) => item(p, s)?.title ?? [])),
+      },
     };
   });
   answers.forEach((a, i) => {

@@ -9,7 +9,7 @@ import type { Recommendation } from '../../src/site/content/recommendations';
 import { CATALOGUE, viewSettings } from '../../src/site/home/catalogue';
 import { curate, MAX_HIGHLIGHTS, proofItems, snapshot, type HomePicks } from '../../src/site/home/curate';
 import { buildEvidence, normalise, type Evidence, type EvidenceIndex } from '../../src/site/home/evidence';
-import { countsOf, effectiveViews, health, shortOf, spineRefs } from '../../src/site/home/health';
+import { canOffer, countsOf, effectiveViews, health, shortOf, spineRefs } from '../../src/site/home/health';
 import { toRef, type Capability, type Showcase } from '../../src/site/home/schema';
 
 type Row = Partial<Omit<Evidence, 'text'>> & { body?: string; date?: string };
@@ -322,6 +322,11 @@ describe('the views’ minimums (for-every-site §5)', () => {
     expect(shortOf('showreel', counts({ highlights: 4, everyPicture: false }))).toEqual(['Showreel needs 5 highlights with pictures; you have 4', 'Showreel needs a picture for every strength']);
     expect(shortOf('questions', counts())).toEqual(['Questions needs 5 answered questions; you have 0']);
     expect(shortOf('keywords', counts({ keywords: 11, proof: 8 }))).toEqual(['Keywords needs 12 keywords; you have 11']);
+  });
+
+  it('Questions is offered from five answered questions (questions.md §10)', () => {
+    expect(canOffer('questions', counts({ answers: 4 }))).toBe(false);
+    expect(canOffer('questions', counts({ answers: 5 }))).toBe(true);
   });
 
   it('only built views are offered; nothing chosen is Classic', () => {

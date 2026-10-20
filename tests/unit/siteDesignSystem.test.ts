@@ -642,7 +642,7 @@ describe('recipes written once: a shared decision is a token, a base.css recipe 
     expect(own(/outline: var\(--border-focus\) solid var\(--color-focus\); outline-offset: var\(--border-focus-offset\)/)).toEqual([]);
     expect(own(/\{ content: ''; position: absolute; inset: 0; \}/)).toEqual([]);
     // and each is there, keyed by its attribute
-    for (const key of ['[data-press]', "[data-focus-ring='inside']", '[data-card]', "[data-field-part='hint']", "[data-check-part='root']"]) expect(BASE_CSS, key).toContain(key);
+    for (const key of ['[data-press]', "[data-focus-ring='inside']", '[data-card]', "[data-field-part='hint']", "[data-check-part='root']", '[data-suggestions]', '[data-chevron]']) expect(BASE_CSS, key).toContain(key);
   });
 
   it("the picture's drop shadow and the room it takes are c.image tokens, and the field label's type is a typography token", () => {

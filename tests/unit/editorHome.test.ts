@@ -189,7 +189,7 @@ describe('the Home screen: views', () => {
     const home = ok(setDefaultView({ default: 'classic' }, 'bento', counts()));
     expect(home).toEqual({ default: 'bento', offered: ['classic', 'bento'] });
     expect(refused(setDefaultView({}, 'spotlight', counts())).message).toBe('Spotlight needs 4 highlights with pictures; you have 1.');
-    expect(refused(setDefaultView({}, 'questions', counts({ answers: 9 }))).message).toMatch(/isn't built/);
+    expect(refused(setDefaultView({}, 'showreel', counts({ highlights: 9, everyPicture: true }))).message).toMatch(/isn't built/);
     expect(ok(setDefaultView({ default: 'bento', offered: ['bento'] }, 'classic', counts({ strengths: 1 }))).default).toBe('classic');
   });
 
