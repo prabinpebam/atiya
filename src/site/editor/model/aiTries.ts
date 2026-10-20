@@ -3,6 +3,8 @@
  * is a try to step between until one is kept or they're all discarded. Pure: scripts/ai.ts holds the list.
  */
 import { wordsField } from './aiText';
+import { excerptOf, kindOf } from './ops';
+import { plainText } from '../../content/markdown';
 import type { Block } from '../../content/schema';
 
 /** One try: the block as AI would make it, and what it says it did. */
@@ -36,3 +38,21 @@ export function stoppedTry(block: Block | undefined, words: string): AiTry | nul
 
 /** The try shown after a step, kept inside the list. */
 export const stepTo = (shown: number, by: number, count: number): number => Math.min(Math.max(shown + by, 0), Math.max(count - 1, 0));
+
+/** A try of another type, as the prompt shows it under the block (§4.3): what it becomes, and its content. */
+export interface RetypedView {
+  /** "Retyped from Paragraph to Table". */
+  line: string;
+  /** A table's headings and cells, as words. */
+  table?: { columns: string[]; rows: string[][] };
+  /** Anything else, as words. */
+  text?: string;
+}
+
+/** How a try that changes the block's type is shown: before is the block itself, after this (a table can't be diffed word by word against a paragraph). Null for the same type. */
+export function retypedView(before: Block, after: Block): RetypedView | null {
+  if (before.type === after.type) return null;
+  const line = `Retyped from ${kindOf(before)} to ${kindOf(after)}`;
+  if (after.type === 'table') return { line, table: { columns: after.columns.map(plainText), rows: after.rows.map((r) => r.map(plainText)) } };
+  return { line, text: excerptOf(after, undefined, 600) };
+}

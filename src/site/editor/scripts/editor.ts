@@ -628,6 +628,8 @@ export function initEditor(root: HTMLElement, signal: AbortSignal) {
     set('collection', blocks.length > 1 || texts === 1, collection.ok);
     set('split', !!one && !!ops.splitLines(one));
     set('uncollect', one?.type === 'collection');
+    // what moving words can't make: AI adapts them (ai-editing.md §4.3)
+    set('ai-table', one?.type === 'text');
     d.querySelectorAll<HTMLElement>('[data-turn-group]').forEach((g) => (g.hidden = !g.querySelector('[data-editor-turn-to]:not([hidden])')));
     const why = d.querySelector<HTMLElement>('[data-editor-turn-why]')!;
     why.textContent = blocks.length > 1 && !collection.ok ? `Collection: ${collection.why}` : blocks.length > 1 && texts < blocks.length ? 'Only text (headings, paragraphs, quotes and lists) becomes a different kind; the rest stays as it is.' : '';
@@ -641,6 +643,7 @@ export function initEditor(root: HTMLElement, signal: AbortSignal) {
     if (!at.length) return;
     const blocks = at.map((k) => doc.body[k]);
     const instead = (out: Block[]) => ops.insert(ops.removeMany(doc.body, at), at[0], ...out);
+    if (to === 'ai-table') return void ai.adapt(at[0], 'table');
     if (isKind(to)) {
       const changing = at.filter((k) => ops.textKindOf(doc.body[k]) !== null && ops.textKindOf(doc.body[k]) !== to);
       if (!changing.length) return announce(at.length > 1 ? `They're already ${KIND_NAME[to]}s` : `It's already a ${KIND_NAME[to]}`);

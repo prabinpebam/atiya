@@ -4,7 +4,7 @@
  * choice is posted to the editor, which holds the request (scripts/ai.ts).
  */
 import { wordDiff } from '../model/aiText';
-import { triesLine } from '../model/aiTries';
+import { triesLine, type RetypedView } from '../model/aiTries';
 import { CHOICES, type AiChoice } from '../model/aiCopy';
 
 /** What the editor sends to draw. */
@@ -19,6 +19,8 @@ export interface AiView {
   words?: string;
   /** The block's words in the proposal. */
   after?: string;
+  /** A proposal of another type (Adapt with AI): shown under the summary, the block left as it is. */
+  retyped?: RetypedView;
   summary?: string;
   /** The try shown (from 0) and how many there are. */
   shown?: number;
@@ -71,6 +73,27 @@ function drawChange(el: HTMLElement, before: string, after: string) {
   );
 }
 
+/** A try of another type, as words: a table's headings and cells, or its text (§4.3). */
+function drawRetyped(line: HTMLElement, body: HTMLElement, r: RetypedView) {
+  line.textContent = r.line;
+  if (!r.table) {
+    body.replaceChildren(Object.assign(document.createElement('p'), { textContent: r.text ?? '' }));
+    return;
+  }
+  const row = (cells: string[], tag: 'th' | 'td') => {
+    const tr = document.createElement('tr');
+    tr.append(...cells.map((c) => Object.assign(document.createElement(tag), { textContent: c, ...(tag === 'th' ? { scope: 'col' } : {}) })));
+    return tr;
+  };
+  const head = document.createElement('thead');
+  head.append(row(r.table.columns, 'th'));
+  const rows = document.createElement('tbody');
+  rows.append(...r.table.rows.map((cells) => row(cells, 'td')));
+  const table = document.createElement('table');
+  table.append(head, rows);
+  body.replaceChildren(table);
+}
+
 export function initAiPrompt(root: HTMLElement, signal: AbortSignal) {
   if (window.parent === window) return;
   const post = (m: AiDo) => window.parent.postMessage({ source: 'editor-canvas', type: 'ai-do', ...m }, location.origin);
@@ -90,6 +113,9 @@ export function initAiPrompt(root: HTMLElement, signal: AbortSignal) {
   const more = $<HTMLFormElement>('[data-ai-more]');
   const moreField = $<HTMLTextAreaElement>('[data-ai-more-field] textarea');
   const title = $('[data-ai-title]');
+  const after = $('[data-ai-after]');
+  const afterLine = $('[data-ai-after-line]');
+  const afterBody = $('[data-ai-after-body]');
 
   // the block as it was, put back on discard and close
   let saved: { el: HTMLElement; html: string; editable: string | null } | null = null;
@@ -148,10 +174,13 @@ export function initAiPrompt(root: HTMLElement, signal: AbortSignal) {
     if (left === prev && prev.disabled && !next.disabled) next.focus();
     else if (left === next && next.disabled && !prev.disabled) prev.focus();
     if (v.phase === 'working' && v.words) hold(block).textContent = v.words;
+    else if (v.phase === 'proposed' && v.retyped) restore();
     else if (v.phase === 'proposed' && v.after !== undefined) {
       const el = hold(block);
       drawChange(el, saved ? (Object.assign(document.createElement('div'), { innerHTML: saved.html }).textContent ?? '') : '', v.after);
     } else if (v.phase !== 'working') restore();
+    after.hidden = !(v.phase === 'proposed' && v.retyped);
+    if (!after.hidden) drawRetyped(afterLine, afterBody, v.retyped!);
     place(block);
     if (opening && v.phase === 'ready') field.focus();
     // from Ask AI to the prompt in place (perf/budgets.json: editor/interaction/ai-prompt-open)

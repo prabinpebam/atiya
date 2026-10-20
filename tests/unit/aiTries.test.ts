@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { STOPPED_TRY, stepTo, stoppedTry, triesLine, tryLine } from '../../src/site/editor/model/aiTries';
+import { STOPPED_TRY, retypedView, stepTo, stoppedTry, triesLine, tryLine } from '../../src/site/editor/model/aiTries';
 import type { Block } from '../../src/site/content/schema';
 
 const text = { type: 'text', key: 'k1', markdown: 'The old words, all of them.' } as Block;
@@ -30,5 +30,12 @@ describe('Ask AI tries', () => {
     expect(stoppedTry(text, '  ')).toBeNull();
     expect(stoppedTry(figure, 'words')).toBeNull();
     expect(stoppedTry(undefined, 'words')).toBeNull();
+  });
+
+  it('shows a try of another type as what the block becomes, and nothing for the same type (P2.5)', () => {
+    const table = { type: 'table', key: 'k1', columns: ['Point', '**What** it says'], rows: [['1', 'The *old* words.']] } as Block;
+    expect(retypedView(text, { ...text, markdown: 'New.' } as Block)).toBeNull();
+    expect(retypedView(text, table)).toEqual({ line: 'Retyped from Paragraph to Table', table: { columns: ['Point', 'What it says'], rows: [['1', 'The old words.']] } });
+    expect(retypedView(text, quote)).toMatchObject({ line: 'Retyped from Paragraph to Quote', text: expect.stringContaining('An old quote.') });
   });
 });

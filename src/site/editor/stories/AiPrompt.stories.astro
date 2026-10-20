@@ -2,10 +2,15 @@
 import Example from '../../library/Example.astro';
 import AiPrompt from '../components/AiPrompt.astro';
 import { failureNote, needsNote, serviceLine, statusLine } from '../model/aiCopy';
+import { retypedView } from '../model/aiTries';
 
 const service = serviceLine({ name: 'Ollama', model: 'qwen3' }, false);
 const note = failureNote('not-running', 'Ollama');
 const research = needsNote('research');
+const retyped = retypedView(
+  { type: 'text', key: 'sample', markdown: 'We met every week. Each review took an hour. Most changes shipped the same day.' },
+  { type: 'table', key: 'sample', columns: ['Point', 'What it says'], rows: [['1', 'We met every week.'], ['2', 'Each review took an hour.'], ['3', 'Most changes shipped the same day.']] },
+)!;
 ---
 
 <Example title="Ready to ask" description="Under the selected block: the field, the quick actions and where the article goes.">
@@ -27,3 +32,8 @@ const research = needsNote('research');
 <Example title="It needs research" description="A request for facts from outside the article goes to your own agent: Copy for your agent copies a prompt for it, Ask anyway writes without research.">
   <AiPrompt open state="note" service={service} message={`${research.title} ${research.detail}`} choices={research.choices} />
 </Example>
+
+<Example title="Adapted into another type" description="Turn into's Adapt with AI: under the summary, what the block becomes. Keep puts it in the article with the same key, Discard leaves the paragraph as it was.">
+  <AiPrompt open state="proposed" service={service} message="Turned the paragraph into a table" retyped={retyped} />
+</Example>
+

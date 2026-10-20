@@ -17,6 +17,7 @@ import TextField from '../../components/fundamentals/TextField.astro';
 import StatusNote from '../kit/StatusNote.astro';
 import { QUICK_ACTIONS } from '../model/aiDecide';
 import { CHOICES, PLACEHOLDER, type AiChoice } from '../model/aiCopy';
+import type { RetypedView } from '../model/aiTries';
 import '../../styles/editor-tokens.css';
 
 interface Props {
@@ -32,9 +33,11 @@ interface Props {
   tries?: string;
   /** What the note offers, for the story. */
   choices?: AiChoice[];
+  /** What the result bar shows under the summary for a try of another type (Adapt with AI), for the story. */
+  retyped?: RetypedView;
 }
 
-const { open = false, state = 'ready', service = '', message = '', tries = '', choices = ['retry'] } = Astro.props;
+const { open = false, state = 'ready', service = '', message = '', tries = '', choices = ['retry'], retyped } = Astro.props;
 ---
 
 <section class="ai-prompt" aria-label="Ask AI" data-editor-ai-prompt data-state={state} data-static={open ? '' : undefined} hidden={!open}>
@@ -55,6 +58,27 @@ const { open = false, state = 'ready', service = '', message = '', tries = '', c
   </div>
   <div class="ai-result" role="group" aria-label="Proposal" data-ai-result>
     <StatusNote live="off" data-ai-summary="">{state === 'proposed' ? message : ''}</StatusNote>
+    <div class="ai-after" data-ai-after hidden={!retyped}>
+      <p class="ai-after-line" data-ai-after-line>{retyped?.line}</p>
+      <div class="ai-after-body" data-ai-after-body data-scrollbar>
+        {
+          retyped?.table ? (
+            <table>
+              <thead>
+                <tr>{retyped.table.columns.map((c) => <th scope="col">{c}</th>)}</tr>
+              </thead>
+              <tbody>
+                {retyped.table.rows.map((r) => (
+                  <tr>{r.map((c) => <td>{c}</td>)}</tr>
+                ))}
+              </tbody>
+            </table>
+          ) : (
+            retyped?.text && <p>{retyped.text}</p>
+          )
+        }
+      </div>
+    </div>
     <div class="ai-bar">
       <span class="ai-tries" data-ai-tries hidden={!tries}>
         <IconButton label="Previous try" icon="chevron-left" size="sm" tooltip="top" data-ai-prev="" />
@@ -176,6 +200,52 @@ const { open = false, state = 'ready', service = '', message = '', tries = '', c
 
   .ai-note > :first-child {
     flex-basis: 100%;
+  }
+
+  /* a try of another type: what the block becomes (the script builds its table) */
+  .ai-after {
+    display: grid;
+    gap: var(--space-2);
+    padding: var(--space-3);
+    border: var(--border-hairline) solid var(--color-rule);
+    border-radius: var(--radius-md);
+    background: var(--color-bg-sunk);
+  }
+
+  .ai-after[hidden] {
+    display: none;
+  }
+
+  .ai-after-line {
+    margin: 0;
+    color: var(--color-text-muted);
+    font: var(--type-label);
+  }
+
+  .ai-after-body {
+    overflow-x: auto;
+  }
+
+  .ai-after-body :global(table) {
+    inline-size: 100%;
+    border-collapse: collapse;
+    font: var(--type-note);
+  }
+
+  .ai-after-body :global(:is(th, td)) {
+    padding: var(--space-1) var(--space-2);
+    border-block-end: var(--border-hairline) solid var(--color-rule);
+    text-align: start;
+    vertical-align: top;
+  }
+
+  .ai-after-body :global(th) {
+    font: var(--type-label);
+  }
+
+  .ai-after-body :global(p) {
+    margin: 0;
+    font: var(--type-note);
   }
 
   /* one state at a time */

@@ -288,4 +288,43 @@ test.describe('editor: AI', () => {
     await expect(frame(page).locator('[data-ai-change]')).toHaveCount(0);
     expect(readFileSync(file, 'utf8')).toBe(before);
   });
+
+  test('Turn into, Adapt with AI: a paragraph is proposed as a table under it, Keep retypes it keeping its key, and one undo brings it back (P2.5)', async ({ page }) => {
+    const p = paragraph();
+    const original = blocks()[p];
+    const sentences = original.markdown!.replace(/\s+/g, ' ').trim().match(/[^.!?]+[.!?]*/g)!.map((s) => s.trim());
+    await page.goto(`/_edit/articles/${ARTICLE}/`);
+    await expect(frame(page).locator('[data-editor-editable]').first()).toBeVisible({ timeout: 30_000 });
+    await page.locator(`[data-editor-select="${p}"]`).click();
+
+    // Turn into offers it for a paragraph, under its own heading
+    await page.locator(`[data-block-form="${p}"] [data-editor-turn-open]`).click();
+    const adapt = page.locator('#editor-turn [data-editor-turn-to="ai-table"]');
+    await expect(adapt).toBeVisible();
+    await adapt.click();
+
+    // the prompt asks by itself: the block stays as it is, and the table is shown under the summary
+    const prompt = frame(page).locator('[data-editor-ai-prompt]');
+    await expect(prompt).toHaveAttribute('data-state', 'proposed', { timeout: 30_000 });
+    await expect(prompt.locator('[data-ai-summary]')).toHaveText('Turned the paragraph into a table');
+    const after = prompt.locator('[data-ai-after]');
+    await expect(after.locator('[data-ai-after-line]')).toHaveText('Retyped from Paragraph to Table');
+    await expect(after.locator('th')).toHaveText(['Point', 'What it says']);
+    await expect(after.locator('tbody tr')).toHaveCount(sentences.length);
+    await expect(frame(page).locator('[data-ai-change]')).toHaveCount(0);
+    await expect(prompt.locator('[data-ai-keep]')).toBeFocused();
+    expect(blocks()[p]).toEqual(original);
+    const axe = await new AxeBuilder({ page }).include(['[data-editor-frame]', '[data-editor-ai-prompt]']).analyze();
+    expect(axe.violations.map((v) => `${v.id}: ${v.nodes.map((n) => n.target.join(' ')).join(', ')}`)).toEqual([]);
+
+    // Keep: a table in its place, with its key
+    await prompt.locator('[data-ai-keep]').click();
+    await expect.poll(() => blocks()[p].type, { timeout: 15_000 }).toBe('table');
+    expect(blocks()[p]).toMatchObject({ key: original.key, columns: ['Point', 'What it says'], rows: sentences.map((s, i) => [String(i + 1), s]) });
+    await expect(prompt).toBeHidden();
+
+    // one undo step brings the paragraph back
+    await page.locator('[data-editor-undo]').click();
+    await expect.poll(() => blocks()[p], { timeout: 15_000 }).toEqual(original);
+  });
 });

@@ -6,7 +6,7 @@
  */
 import { TAB, announce, editorUrl } from './client';
 import { agentPrompt, COPIED, failureNote, keptLine, needsNote, readyLine, serviceLine, statusLine, UNRESEARCHED, type AiFailureCode, type AiNeeds, type AiNote, type AiOutside, type AiStep } from '../model/aiCopy';
-import { STOPPED_KEPT, stepTo, stoppedTry, tryLine, type AiTry } from '../model/aiTries';
+import { STOPPED_KEPT, retypedView, stepTo, stoppedTry, tryLine, type AiTry } from '../model/aiTries';
 import { plainText } from '../../content/markdown';
 import type { AiDo, AiView } from './aiPrompt';
 import type { Article, Block } from '../../content/schema';
@@ -75,7 +75,10 @@ export function initAi(host: AiHost, signal: AbortSignal) {
   };
   const showTry = () => {
     const t = tries[shown];
-    draw({ phase: 'proposed', after: wordsOf(t.block), summary: t.anyway ? `${t.summary}. ${UNRESEARCHED}.` : t.summary, shown, count: tries.length });
+    const own = host.doc().body[index];
+    // another type is shown under the block, which stays as it is (§4.3); the same type, as a tracked change in it
+    const retyped = own ? retypedView(own, t.block) : null;
+    draw({ phase: 'proposed', after: retyped ? undefined : wordsOf(t.block), retyped: retyped ?? undefined, summary: t.anyway ? `${t.summary}. ${UNRESEARCHED}.` : t.summary, shown, count: tries.length });
   };
   const noteOf = (n: AiNote, text = [n.title, n.detail].filter(Boolean).join(' ')) =>
     draw({ phase: 'note', note: text, choices: n.choices, setup: n.setup, back: tries.length > 0 });
@@ -92,7 +95,7 @@ export function initAi(host: AiHost, signal: AbortSignal) {
     cancel();
     tries = [];
     shown = 0;
-    draw({ phase: 'closed' });
+    draw({ phase: 'closed', retyped: undefined });
     index = -1;
   };
   signal.addEventListener('abort', cancel);
@@ -210,22 +213,31 @@ export function initAi(host: AiHost, signal: AbortSignal) {
     announce(keptLine(t.summary));
   };
 
+  /** Opens the prompt on the block at this index; on the block it's already about, it shows where it was. */
+  const open = async (at: number) => {
+    if (index !== at) close();
+    index = at;
+    if (view.phase === 'working') draw({});
+    else if (tries.length) showTry();
+    else draw({ phase: 'ready', words: undefined, after: undefined });
+    const r = await fetch(editorUrl('api/ai/status'), { headers: { 'X-Editor': '1', 'X-Editor-Tab': TAB }, credentials: 'same-origin', signal }).catch(() => null);
+    const s = r?.ok ? ((await r.json()) as { writer: Writer }) : null;
+    writer = s?.writer ?? null;
+    if (index !== at || view.phase === 'closed') return;
+    // nothing would be sent: say so before anything is typed (§4.5, §10)
+    if (view.phase === 'ready' && !writer) noteOf(failureNote('no-service'));
+    else if (view.phase === 'ready' && host.isPrivate && !writer!.privatePages) noteOf(failureNote('private', writer!.name));
+    else draw({});
+  };
+
   return {
-    /** Opens the prompt on the block at this index; on the block it's already about, it shows where it was. */
-    async open(at: number) {
-      if (index !== at) close();
-      index = at;
-      if (view.phase === 'working') draw({});
-      else if (tries.length) showTry();
-      else draw({ phase: 'ready', words: undefined, after: undefined });
-      const r = await fetch(editorUrl('api/ai/status'), { headers: { 'X-Editor': '1', 'X-Editor-Tab': TAB }, credentials: 'same-origin', signal }).catch(() => null);
-      const s = r?.ok ? ((await r.json()) as { writer: Writer }) : null;
-      writer = s?.writer ?? null;
-      if (index !== at || view.phase === 'closed') return;
-      // nothing would be sent: say so before anything is typed (§4.5, §10)
-      if (view.phase === 'ready' && !writer) noteOf(failureNote('no-service'));
-      else if (view.phase === 'ready' && host.isPrivate && !writer!.privatePages) noteOf(failureNote('private', writer!.name));
-      else draw({});
+    open,
+    /** Turn into's Adapt with AI (§4.3): the prompt on the block, sending the type as the instruction without asking anything. */
+    async adapt(at: number, action: 'table') {
+      if (index === at && view.phase === 'working') return;
+      if (index === at) close();
+      await open(at);
+      if (index === at && view.phase === 'ready') void ask({ instruction: '', action });
     },
     /** What the prompt asked for. */
     message(m: AiDo) {

@@ -2,7 +2,7 @@
  * A stand-in AI service for edit mode's tests (documentation/editor/ai-plan.md, S3, S4): it answers like Ollama
  * (`/api/tags`, and the OpenAI-compatible `/v1/chat/completions`, streamed), so tests never reach a real model.
  * Its answer is canned: the block the request names, cut to its first sentence (or, asked for "longer", with a
- * sentence added); the AI screen's connection test gets `{"ok": true}`. A request that says "slowly" streams
+ * sentence added); asked for a table, the block's sentences as rows; the AI screen's connection test gets `{"ok": true}`. A request that says "slowly" streams
  * slowly enough to stop. A model named after a failure fails that way (`FAILURES`), so a test can choose it on a card.
  */
 import { createServer } from 'node:http';
@@ -22,6 +22,10 @@ const shorter = (s) => (/^[\s\S]*?[.!?](?=\s|$)/.exec(s)?.[0] ?? s).trim();
 export const MORE = 'It says a little more.';
 /** The paragraph a section's answer adds at its end. */
 export const ADDED = 'A closing line the stand-in added.';
+/** The headings of the table a paragraph is adapted into: a row per sentence. */
+export const TABLE_COLUMNS = ['Point', 'What it says'];
+/** The summary of that answer. */
+export const TABLE_SUMMARY = 'Turned the paragraph into a table';
 
 /** A section's answer: every paragraph after the heading changed as a block would be, and one paragraph added at its end. */
 function sectionAnswer(body, key, change) {
@@ -49,6 +53,13 @@ export function answerFor(messages) {
   const change = (s) => (longer ? `${s.trim()} ${MORE}` : shorter(s));
   if (/scope is one section/.test(system)) return sectionAnswer(JSON.parse(material).body, key, change);
   const { key: _key, ...rest } = block;
+  // Adapt with AI to a table (ai-editing.md §4.3): the block's sentences as rows
+  if (/^Block types allowed: table\./m.test(system) && block.type !== 'table') {
+    const words = (block.type === 'text' ? block.markdown : (block.text ?? '')).replace(/\s+/g, ' ').trim();
+    const sentences = words.match(/[^.!?]+[.!?]*/g)?.map((s) => s.trim()).filter(Boolean) ?? [words];
+    const table = { type: 'table', columns: TABLE_COLUMNS, rows: sentences.slice(0, 60).map((s, i) => [String(i + 1), s]) };
+    return { changes: [{ op: 'retype', key, after: null, block: table }], header: null, summary: TABLE_SUMMARY, needs: { kind: 'none', reason: null } };
+  }
   const next = block.type === 'text' ? { ...rest, markdown: change(block.markdown) } : 'text' in block ? { ...rest, text: change(block.text) } : rest;
   return { changes: [{ op: 'replace', key, after: null, block: next }], header: null, summary: longer ? 'Lengthened the paragraph' : 'Shortened the paragraph', needs: { kind: 'none', reason: null } };
 }

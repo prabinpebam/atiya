@@ -3,7 +3,7 @@ import type { AddressInfo } from 'node:net';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterAll, describe, expect, it } from 'vitest';
-import { startStandIn } from '../../scripts/lib/ai-stand-in.mjs';
+import { answerFor, startStandIn, TABLE_COLUMNS, TABLE_SUMMARY } from '../../scripts/lib/ai-stand-in.mjs';
 import type { Article, Block } from '../../src/site/content/schema';
 import { decideRules, instructionOf, QUICK_ACTIONS } from '../../src/site/editor/model/aiDecide';
 import { material, messages, retryMessages } from '../../src/site/editor/model/aiPrompt';
@@ -243,6 +243,17 @@ describe('the connector: decide, write, check (S3)', () => {
     expect(bad.events.at(-1)).toMatchObject({ type: 'error', code: 'refused', reason: expect.stringMatching(/isn't complete JSON/) });
     const issue = await run([answer({ type: 'text', markdown: 'a' }), answer({ type: 'text', markdown: 'b' })], { check: () => [{ message: 'a reference to a missing page' }] });
     expect(issue.events.at(-1)).toMatchObject({ type: 'error', code: 'refused', reason: 'a reference to a missing page' });
+  });
+
+  it('adapts a paragraph into a table (P2.5): a retype that keeps the key, with no words streamed', async () => {
+    const sent: unknown[] = [];
+    const write: ConnectorDeps['write'] = async (c) => (sent.push(c.messages), { text: JSON.stringify(answerFor(c.messages as { role: string; content: string }[])), cut: false, ms: 5, firstMs: 1 });
+    const { events } = await run([], { write }, { instruction: '', action: 'table' });
+    expect(JSON.stringify(sent[0])).toMatch(/Block types allowed: table\./);
+    expect(events.some((e) => e.type === 'words')).toBe(false);
+    const p = events.find((e) => e.type === 'proposal');
+    expect(p?.type === 'proposal' && p.proposal.body[0]).toEqual({ type: 'table', key: 'intro1', columns: TABLE_COLUMNS, rows: [['1', 'The intro.'], ['2', 'It says hello at length.']] });
+    expect(p).toMatchObject({ proposal: { summary: TABLE_SUMMARY, touched: ['intro1'] } });
   });
 
   it('stops before writing for research or a field AI can’t change, and passes on a writer’s own needs', async () => {

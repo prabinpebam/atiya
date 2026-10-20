@@ -2,7 +2,8 @@
 /**
  * The choices for turning blocks into another kind (documentation/editor/spec.md §3.3): any kind of text
  * (a paragraph, a heading, a quote, a list); from several blocks, one list or a collection; from one, several
- * (a list's items as paragraphs, a collection's items as headings and paragraphs). The article editor shows the choices
+ * (a list's items as paragraphs, a collection's items as headings and paragraphs); and, where moving words can't
+ * make it, Adapt with AI (ai-editing.md §4.3: a paragraph or a list as a table, proposed in the AI prompt). The article editor shows the choices
  * that fit what's selected, marks the kind a block already is, and says why a choice can't be used.
  * @tier editor
  * @a11y Every choice is a button named by what it makes, with a line on what it does; the block's own kind is marked current; a choice that can't be used is disabled, its reason in words (a status).
@@ -46,6 +47,11 @@ const GROUPS: { id: string; title: string; choices: TileChoice[] }[] = [
       { value: 'split', name: 'Separate paragraphs', what: 'One paragraph for each line or item', icon: 'paragraph' },
       { value: 'uncollect', name: 'Headings and paragraphs', what: 'A heading and a paragraph for each item, and its picture', icon: 'heading' },
     ],
+  },
+  {
+    id: 'ai',
+    title: 'Adapt with AI',
+    choices: [{ value: 'ai-table', name: 'Table', what: 'AI adapts the words into columns and rows, for you to keep or discard', icon: 'table' }],
   },
 ];
 ---
