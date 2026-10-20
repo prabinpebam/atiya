@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 470">
 <title>AI editing: one edit request for every feature</title>
-<desc>Every AI feature starts from a scope: a block, a section, the whole article, an empty page, or the open comments. Edit mode turns it into one edit request: the instruction, the context and the changes allowed. A provider answers with proposed changes as JSON, never with files. Edit mode checks them against the content contract and the store; a refused answer is retried once with the reasons. You review the proposal as one diff, accept or reject each change, and accepting applies it as one undo step, with a version kept just before.</desc>
+<desc>Every AI feature starts from a scope: a block, a section, the whole article, an empty page, or the open comments. Edit mode turns it into one edit request: the instruction, the context and the changes allowed. The AI connector first decides, by rules or with Jev, whether it can be done here (a request that needs research goes to your agent instead), then the chosen service, or your own agent, answers with proposed changes as JSON, never with files. Edit mode checks them against the content contract and the store; a refused answer is retried once with the reasons. You review the proposal as one diff, accept or reject each change, and accepting applies it as one undo step, with a version kept just before.</desc>
 <g id="scope">
 <rect class="src" x="40" y="40" width="200" height="140" rx="18" />
 <text class="name" x="60" y="72">Scope</text>
@@ -17,8 +17,8 @@
 </g>
 <g id="provider">
 <rect class="box" x="540" y="40" width="200" height="140" rx="18" />
-<text class="name" x="560" y="72">Provider</text>
-<text class="note" x="560" y="94">any connected service</text>
+<text class="name" x="560" y="72">Connector or agent</text>
+<text class="note" x="560" y="94">decides, then writes</text>
 <text class="line" x="560" y="132">Answers with changes</text>
 <text class="line" x="560" y="160">as JSON, never files</text>
 </g>

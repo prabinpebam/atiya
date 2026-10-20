@@ -352,19 +352,19 @@
     },
     {
       "path": "editor/ai-editing.md",
-      "title": "AI editing and comments",
+      "title": "AI editing and comments: spec",
       "order": 25.5,
       "icon": "auto_awesome",
-      "status": "review",
+      "status": "planned",
       "updated": "2026-10-20",
       "group": "Content and publishing/Edit mode"
     },
     {
       "path": "editor/ai-services.md",
-      "title": "AI services",
+      "title": "AI services: spec",
       "order": 25.6,
       "icon": "hub",
-      "status": "review",
+      "status": "planned",
       "updated": "2026-10-20",
       "group": "Content and publishing/Edit mode"
     },

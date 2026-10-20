@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 520">
 <title>AI services: a connector for APIs, an MCP server for agents</title>
-<desc>The article editor sends edit requests to an AI connector in the dev server, where the keys stay. The connector isn't an agent: it sends one request and gets one answer, with no tools, no files and no loop. It has one adapter per kind of API: cloud APIs (OpenAI, Claude, Gemini, Azure), models on this computer (Ollama, LM Studio), and later agent SDKs such as GitHub's Copilot SDK, whose own harness runs the agent. It checks every answer. The other way in runs the opposite direction: edit mode is an MCP server, and the owner's own agent (Claude Code, Codex, Copilot CLI, OpenClaw, Hermes Agent), signed in its own way and run in Atiya Studio's terminal, calls its tools; what it proposes comes back to the editor for review like any other answer.</desc>
+<desc>The article editor sends edit requests to an AI connector in the dev server, where the keys stay. The connector isn't an agent: it sends one request and gets one answer, with no tools, no files and no loop. It works in three steps. Decide: rules in code, or Jev when it's on, say whether the request can be done here at all (a request that needs research goes to your agent instead) and which block types fit. Write: one adapter per kind of API, for cloud APIs (OpenAI, Claude, Gemini, Azure), models on this computer (Ollama, LM Studio), and later agent SDKs such as GitHub's Copilot SDK, whose own harness runs the agent. Check: every answer is held to the content contract. The other way in runs the opposite direction: edit mode is an MCP server, and the owner's own agent (Claude Code, Codex, Copilot CLI, OpenClaw, Hermes Agent), signed in its own way and run in Atiya Studio's terminal, calls its tools; what it proposes comes back to the editor for review like any other answer.</desc>
 <g id="editor">
 <rect class="src" x="40" y="40" width="220" height="150" rx="18" />
 <text class="name" x="60" y="72">Article editor</text>
@@ -12,8 +12,9 @@
 <rect class="gate" x="340" y="40" width="240" height="150" rx="18" />
 <text class="name" x="360" y="72">AI connector</text>
 <text class="note" x="360" y="94">dev server, keys stay here</text>
-<text class="line" x="360" y="132">One adapter per API</text>
-<text class="line" x="360" y="162">Checks every answer</text>
+<text class="line" x="360" y="122">Decide: rules or Jev</text>
+<text class="line" x="360" y="146">Write: an adapter per API</text>
+<text class="line" x="360" y="170">Check every answer</text>
 </g>
 <g id="apis">
 <rect class="box" x="660" y="40" width="300" height="70" rx="16" />
