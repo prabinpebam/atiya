@@ -1,0 +1,74 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 700">
+<title>Cover: the home page as a magazine cover</title>
+<desc>The cover carries the masthead (the name and the positioning), a cover picture, and a cover story, Defining Microsoft Family. Beside it, In this issue lists six numbered cover lines, one per capability, each with its proof, so every capability is on the first screen. On a phone, the cover is about square, so the six cover lines still fit on the first screen under it.</desc>
+<text class="label" x="40" y="40">Wide screen, 1280 px</text>
+<text class="label" x="740" y="40">Phone, 360 px</text>
+<g id="wide">
+<rect class="src" x="40" y="56" width="660" height="580" rx="16" />
+</g>
+<g id="strip">
+<rect class="chip" x="56" y="72" width="628" height="44" rx="10" />
+<text class="chip-name" x="72" y="100">Prabin Pebam</text>
+<text class="note" x="452" y="100">Résumé · Contact · Change view</text>
+</g>
+<g id="cover">
+<rect class="box" x="56" y="128" width="400" height="492" rx="16" />
+<text class="name" x="76" y="160">Prabin Pebam</text>
+<text class="note" x="76" y="182">Design leader · Product strategy · AI transformation</text>
+<rect class="later" x="76" y="198" width="360" height="250" rx="12" />
+<text class="label" x="92" y="326">Cover picture: a portrait, or the Family app</text>
+</g>
+<g id="story">
+<rect class="docs" x="76" y="462" width="360" height="138" rx="12" />
+<text class="name" x="96" y="494">Defining Microsoft Family</text>
+<text class="note" x="96" y="518">Cover story: from a 2020 app to a</text>
+<text class="note" x="96" y="538">2026 Windows commitment to families</text>
+<text class="line" x="96" y="576">Read the story</text>
+</g>
+<g id="contents">
+<rect class="box" x="468" y="128" width="216" height="492" rx="16" />
+<text class="name" x="484" y="160">In this issue</text>
+<text class="chip-name" x="484" y="196">01 Leadership</text>
+<text class="note" x="484" y="216">Built Belong's design org</text>
+<text class="chip-name" x="484" y="260">02 Strategy</text>
+<text class="note" x="484" y="280">Family Safety to Family</text>
+<text class="chip-name" x="484" y="324">03 AI</text>
+<text class="note" x="484" y="344">Handoff is now code</text>
+<text class="chip-name" x="484" y="388">04 Making</text>
+<text class="note" x="484" y="408">Cloner Pro: 3,530 people</text>
+<text class="chip-name" x="484" y="452">05 Craft</text>
+<text class="note" x="484" y="472">Led Craft in Windows</text>
+<text class="chip-name" x="484" y="516">06 Systems</text>
+<text class="note" x="484" y="536">Belong Design System</text>
+<text class="label" x="484" y="592">Also: résumé, contact, voices</text>
+</g>
+<g id="phone">
+<rect class="src" x="740" y="56" width="220" height="580" rx="16" />
+</g>
+<g id="phone-strip">
+<rect class="chip" x="752" y="72" width="196" height="40" rx="10" />
+<text class="chip-name" x="768" y="98">Prabin Pebam</text>
+<text class="label" x="896" y="98">Menu</text>
+</g>
+<g id="phone-cover">
+<rect class="box" x="752" y="124" width="196" height="280" rx="14" />
+<text class="name" x="768" y="152">Prabin Pebam</text>
+<text class="note" x="768" y="172">Leader · Strategy · AI</text>
+<rect class="later" x="768" y="184" width="164" height="132" rx="10" />
+<text class="label" x="784" y="254">Cover picture</text>
+<rect class="docs" x="768" y="326" width="164" height="66" rx="10" />
+<text class="line" x="784" y="352">Microsoft Family</text>
+<text class="note" x="784" y="374">Cover story</text>
+</g>
+<g id="phone-contents">
+<rect class="box" x="752" y="416" width="196" height="204" rx="14" />
+<text class="name" x="768" y="444">In this issue</text>
+<text class="line" x="768" y="472">01 Leadership</text>
+<text class="line" x="768" y="496">02 Strategy</text>
+<text class="line" x="768" y="520">03 AI</text>
+<text class="line" x="768" y="544">04 Making</text>
+<text class="line" x="768" y="568">05 Craft</text>
+<text class="line" x="768" y="592">06 Systems</text>
+</g>
+<text class="label" x="40" y="668">All six cover lines are on the cover, before any scroll. Scrolling turns the cover into the contents spread.</text>
+</svg>

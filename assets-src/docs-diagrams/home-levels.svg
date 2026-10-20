@@ -1,0 +1,55 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 510">
+<title>Three levels of information, the same in every view</title>
+<desc>Level 1, the map, is seen in under ten seconds without any action: all six capabilities. Level 2, the signal, gives one capability a proof line, a picture and a voice, enough to decide whether to dig deeper. Level 3, the detail, opens in place on request: the evidence behind the capability, each item a page, a résumé line or a recommendation, or an offer to ask about work that has no public page.</desc>
+<g id="l1">
+<rect class="box" x="40" y="40" width="280" height="400" rx="18" />
+<text class="name" x="60" y="72">L1 The map</text>
+<text class="note" x="60" y="94">10 seconds, no action</text>
+<rect class="chip" x="56" y="116" width="248" height="40" rx="10" />
+<text class="line" x="72" y="141">Design leadership</text>
+<rect class="chip" x="56" y="166" width="248" height="40" rx="10" />
+<text class="line" x="72" y="191">Product strategy</text>
+<rect class="chip" x="56" y="216" width="248" height="40" rx="10" />
+<text class="line" x="72" y="241">AI transformation</text>
+<rect class="chip" x="56" y="266" width="248" height="40" rx="10" />
+<text class="line" x="72" y="291">Hands-on making</text>
+<rect class="chip" x="56" y="316" width="248" height="40" rx="10" />
+<text class="line" x="72" y="341">Craft and storytelling</text>
+<rect class="chip" x="56" y="366" width="248" height="40" rx="10" />
+<text class="line" x="72" y="391">Systems and operating models</text>
+</g>
+<g id="l2">
+<rect class="box" x="360" y="40" width="280" height="400" rx="18" />
+<text class="name" x="380" y="72">L2 The signal</text>
+<text class="note" x="380" y="94">10 to 60 seconds, a glance</text>
+<rect class="chip" x="376" y="116" width="248" height="300" rx="14" />
+<rect class="later" x="392" y="132" width="216" height="96" rx="10" />
+<text class="label" x="408" y="186">picture</text>
+<text class="chip-name" x="392" y="258">AI transformation</text>
+<text class="note" x="392" y="280">Handoff is now code</text>
+<text class="note" x="392" y="316">“He stays at the cutting</text>
+<text class="note" x="392" y="334">edge of AI.” Diego Baca</text>
+<text class="line" x="392" y="388">Show the details</text>
+</g>
+<g id="l3">
+<rect class="docs" x="680" y="40" width="280" height="400" rx="18" />
+<text class="name" x="700" y="72">L3 The detail</text>
+<text class="note" x="700" y="94">on request, in place</text>
+<rect class="chip" x="696" y="116" width="248" height="52" rx="10" />
+<text class="chip-name" x="712" y="138">The AI program</text>
+<text class="note" x="712" y="158">résumé · ask me about it</text>
+<rect class="chip" x="696" y="176" width="248" height="52" rx="10" />
+<text class="chip-name" x="712" y="198">Cloner Pro</text>
+<text class="note" x="712" y="218">article · 3,530 people</text>
+<rect class="chip" x="696" y="236" width="248" height="52" rx="10" />
+<text class="chip-name" x="712" y="258">The best learning loop</text>
+<text class="note" x="712" y="278">essay</text>
+<rect class="chip" x="696" y="296" width="248" height="52" rx="10" />
+<text class="chip-name" x="712" y="318">Diego Baca</text>
+<text class="note" x="712" y="338">recommendation</text>
+<text class="line" x="700" y="404">Read the page, or ask me</text>
+</g>
+<text class="label" x="40" y="480">Beyond level 3 is the full page: every capability links to the pages that prove it.</text>
+<path class="arrow" d="M320 240 H357" />
+<path class="arrow" d="M640 240 H677" />
+</svg>

@@ -1,0 +1,76 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 630">
+<title>Home page views: one capability spine, many ways to present it</title>
+<desc>The site's content feeds a capability spine: six capabilities, each with its proof, plus highlights, voices and facts. An optional role lens reorders the spine without hiding anything. Every home view reads the same spine and presents it its own way: Bento, the default, then Cover, Spotlight, Showreel, Keywords, Proof grid and Questions. Little planet stays a separate way to explore, at /play/. Every view shows three levels of detail, and the résumé, contact and Change view are always one action away.</desc>
+<g id="content">
+<rect class="src" x="40" y="40" width="270" height="130" rx="18" />
+<text class="name" x="60" y="72">content/</text>
+<text class="note" x="60" y="94">pages, résumé, voices</text>
+<text class="line" x="60" y="132">Published open pages only</text>
+<text class="line" x="60" y="156">Never a private page</text>
+</g>
+<g id="spine">
+<rect class="gate" x="365" y="40" width="270" height="130" rx="18" />
+<text class="name" x="385" y="72">The capability spine</text>
+<text class="code" x="385" y="94">showcase.json</text>
+<text class="line" x="385" y="132">Six capabilities, each proved</text>
+<text class="line" x="385" y="156">Highlights, voices, facts</text>
+</g>
+<g id="lens">
+<rect class="docs" x="690" y="40" width="270" height="130" rx="18" />
+<text class="name" x="710" y="72">The role lens</text>
+<text class="code" x="710" y="94">?for=leader|ai|strategy</text>
+<text class="line" x="710" y="132">Reorders, never hides</text>
+<text class="line" x="710" y="156">Shown as a chip you can clear</text>
+</g>
+<g id="views">
+<rect class="box" x="40" y="220" width="920" height="290" rx="18" />
+<text class="name" x="60" y="252">Home views</text>
+<text class="note" x="172" y="252">at / and /views/&lt;id&gt;/: one way to present the home, chosen by the visitor</text>
+<rect class="out" x="60" y="280" width="205" height="96" rx="14" />
+<text class="out-name" x="76" y="312">Bento</text>
+<text class="out-note" x="76" y="334">the default</text>
+<text class="out-note" x="76" y="360">Every capability at once</text>
+<rect class="chip" x="285" y="280" width="205" height="96" rx="14" />
+<text class="name" x="301" y="312">Cover</text>
+<text class="note" x="301" y="334">a magazine cover</text>
+<text class="line" x="301" y="360">Six cover lines</text>
+<rect class="chip" x="510" y="280" width="205" height="96" rx="14" />
+<text class="name" x="526" y="312">Spotlight</text>
+<text class="note" x="526" y="334">one highlight at a time</text>
+<text class="line" x="526" y="360">Every item on the rail</text>
+<rect class="chip" x="735" y="280" width="205" height="96" rx="14" />
+<text class="name" x="751" y="312">Showreel</text>
+<text class="note" x="751" y="334">a 90-second film</text>
+<text class="line" x="751" y="360">Chapters you can jump</text>
+<rect class="chip" x="60" y="392" width="205" height="96" rx="14" />
+<text class="name" x="76" y="424">Keywords</text>
+<text class="note" x="76" y="446">pick what you hire for</text>
+<text class="line" x="76" y="472">Results by your picks</text>
+<rect class="chip" x="285" y="392" width="205" height="96" rx="14" />
+<text class="name" x="301" y="424">Proof grid</text>
+<text class="note" x="301" y="446">capability by evidence</text>
+<text class="line" x="301" y="472">Every claim, its proof</text>
+<rect class="chip" x="510" y="392" width="205" height="96" rx="14" />
+<text class="name" x="526" y="424">Questions</text>
+<text class="note" x="526" y="446">the nine questions</text>
+<text class="line" x="526" y="472">Answers with evidence</text>
+<rect class="derived" x="735" y="392" width="205" height="96" rx="14" />
+<text class="name" x="751" y="424">Little planet</text>
+<text class="note" x="751" y="446">a mode, at /play/</text>
+<text class="line" x="751" y="472">Explore as a game</text>
+</g>
+<g id="levels">
+<rect class="chip" x="40" y="540" width="450" height="64" rx="14" />
+<text class="chip-name" x="60" y="566">Every view, three levels</text>
+<text class="line" x="60" y="590">L1 the map · L2 the signal · L3 the detail</text>
+</g>
+<g id="always">
+<rect class="chip" x="510" y="540" width="450" height="64" rx="14" />
+<text class="chip-name" x="530" y="566">Always one action away</text>
+<text class="line" x="530" y="590">Résumé · Contact me · Change view</text>
+</g>
+<text class="label" x="512" y="202">feeds every view</text>
+<path class="arrow" d="M310 105 H362" />
+<path class="arrow" d="M690 105 H638" />
+<path class="arrow" d="M500 170 V217" />
+</svg>

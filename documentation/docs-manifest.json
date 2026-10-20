@@ -468,6 +468,114 @@
       "group": "Ways to explore"
     },
     {
+      "path": "home-views/README.md",
+      "title": "Home page views",
+      "order": 50.5,
+      "icon": "space_dashboard",
+      "status": "draft",
+      "updated": "2026-10-20",
+      "group": "Ways to explore/Home page views"
+    },
+    {
+      "path": "home-views/foundation.md",
+      "title": "The capability spine",
+      "order": 50.51,
+      "icon": "hub",
+      "status": "draft",
+      "updated": "2026-10-20",
+      "group": "Ways to explore/Home page views"
+    },
+    {
+      "path": "home-views/switcher.md",
+      "title": "Choosing a view",
+      "order": 50.52,
+      "icon": "swap_horiz",
+      "status": "draft",
+      "updated": "2026-10-20",
+      "group": "Ways to explore/Home page views"
+    },
+    {
+      "path": "home-views/bento.md",
+      "title": "Bento, the default",
+      "order": 50.53,
+      "icon": "dashboard",
+      "status": "draft",
+      "updated": "2026-10-20",
+      "group": "Ways to explore/Home page views"
+    },
+    {
+      "path": "home-views/spotlight.md",
+      "title": "Spotlight",
+      "order": 50.54,
+      "icon": "view_carousel",
+      "status": "draft",
+      "updated": "2026-10-20",
+      "group": "Ways to explore/Home page views"
+    },
+    {
+      "path": "home-views/showreel.md",
+      "title": "Showreel",
+      "order": 50.55,
+      "icon": "movie",
+      "status": "draft",
+      "updated": "2026-10-20",
+      "group": "Ways to explore/Home page views"
+    },
+    {
+      "path": "home-views/keywords.md",
+      "title": "Keywords",
+      "order": 50.56,
+      "icon": "bubble_chart",
+      "status": "draft",
+      "updated": "2026-10-20",
+      "group": "Ways to explore/Home page views"
+    },
+    {
+      "path": "home-views/cover.md",
+      "title": "Cover",
+      "order": 50.57,
+      "icon": "auto_stories",
+      "status": "draft",
+      "updated": "2026-10-20",
+      "group": "Ways to explore/Home page views"
+    },
+    {
+      "path": "home-views/proof-grid.md",
+      "title": "Proof grid",
+      "order": 50.58,
+      "icon": "grid_on",
+      "status": "draft",
+      "updated": "2026-10-20",
+      "group": "Ways to explore/Home page views"
+    },
+    {
+      "path": "home-views/questions.md",
+      "title": "Questions",
+      "order": 50.59,
+      "icon": "quiz",
+      "status": "draft",
+      "updated": "2026-10-20",
+      "group": "Ways to explore/Home page views"
+    },
+    {
+      "path": "home-views/more-ideas.md",
+      "title": "More ideas",
+      "order": 50.6,
+      "icon": "lightbulb",
+      "status": "draft",
+      "updated": "2026-10-20",
+      "group": "Ways to explore/Home page views"
+    },
+    {
+      "path": "home-views/evaluation.md",
+      "title": "How we'll know",
+      "order": 50.61,
+      "icon": "fact_check",
+      "status": "draft",
+      "updated": "2026-10-20",
+      "group": "Ways to explore/Home page views"
+    },
+    {
       "path": "poc-3d-navigation/spec.md",
       "title": "Planet spec",
       "order": 51,

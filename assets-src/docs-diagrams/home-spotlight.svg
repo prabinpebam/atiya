@@ -1,0 +1,93 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 700">
+<title>Spotlight: one highlight on stage, every highlight on the rail</title>
+<desc>A large stage shows one highlight, its picture and its text: here the Microsoft Family case, tagged Product strategy, with Show the details, Previous and Next. Below the stage, a rail lists all eight highlights so none is hidden, and a row of the six capabilities jumps to the first highlight for each. Nothing advances by itself. On a phone, the stage is stacked, the rail scrolls sideways and swipes move between highlights.</desc>
+<text class="label" x="40" y="40">Wide screen, 1280 px</text>
+<text class="label" x="740" y="40">Phone, 360 px</text>
+<g id="wide">
+<rect class="src" x="40" y="56" width="660" height="580" rx="16" />
+</g>
+<g id="strip">
+<rect class="chip" x="56" y="72" width="628" height="44" rx="10" />
+<text class="chip-name" x="72" y="100">Prabin Pebam</text>
+<text class="note" x="452" y="100">Résumé · Contact · Change view</text>
+</g>
+<g id="index">
+<rect class="chip" x="56" y="128" width="628" height="40" rx="12" />
+<text class="chip-name" x="72" y="153">Jump to</text>
+<text class="line" x="150" y="153">Leadership · Strategy · AI · Making · Craft · Systems</text>
+</g>
+<g id="stage">
+<rect class="later" x="56" y="180" width="360" height="268" rx="16" />
+<text class="label" x="72" y="320">Picture: the Family app</text>
+</g>
+<g id="panel">
+<rect class="box" x="428" y="180" width="256" height="268" rx="16" />
+<text class="label" x="444" y="204">2 of 8</text>
+<text class="name" x="444" y="232">Defining Microsoft</text>
+<text class="name" x="444" y="254">Family</text>
+<rect class="chip" x="444" y="266" width="150" height="30" rx="10" />
+<text class="label" x="460" y="286">Product strategy</text>
+<text class="note" x="444" y="322">The app launched in July 2020;</text>
+<text class="note" x="444" y="340">in 2026, Windows committed</text>
+<text class="note" x="444" y="358">to families.</text>
+<rect class="chip" x="444" y="370" width="170" height="32" rx="10" />
+<text class="line" x="460" y="391">Show the details</text>
+<rect class="chip" x="444" y="410" width="104" height="30" rx="10" />
+<text class="line" x="460" y="430">Previous</text>
+<rect class="chip" x="556" y="410" width="80" height="30" rx="10" />
+<text class="line" x="572" y="430">Next</text>
+</g>
+<g id="rail">
+<rect class="chip" x="56" y="460" width="148" height="44" rx="10" />
+<text class="label" x="72" y="487">The AI program</text>
+<rect class="out" x="216" y="460" width="148" height="44" rx="10" />
+<text class="out-note" x="232" y="487">Microsoft Family</text>
+<rect class="chip" x="376" y="460" width="148" height="44" rx="10" />
+<text class="label" x="392" y="487">A proud team</text>
+<rect class="chip" x="536" y="460" width="148" height="44" rx="10" />
+<text class="label" x="552" y="487">Cloner Pro</text>
+<rect class="chip" x="56" y="514" width="148" height="44" rx="10" />
+<text class="label" x="72" y="541">Atiya</text>
+<rect class="chip" x="216" y="514" width="148" height="44" rx="10" />
+<text class="label" x="232" y="541">The learning loop</text>
+<rect class="chip" x="376" y="514" width="148" height="44" rx="10" />
+<text class="label" x="392" y="541">DesignUp</text>
+<rect class="chip" x="536" y="514" width="148" height="44" rx="10" />
+<text class="label" x="552" y="541">Belong</text>
+</g>
+<g id="below">
+<rect class="later" x="56" y="570" width="628" height="50" rx="12" />
+<text class="label" x="72" y="600">Below: voices, then the site's sections</text>
+</g>
+<g id="phone">
+<rect class="src" x="740" y="56" width="220" height="580" rx="16" />
+</g>
+<g id="phone-strip">
+<rect class="chip" x="752" y="72" width="196" height="40" rx="10" />
+<text class="chip-name" x="768" y="98">Prabin Pebam</text>
+<text class="label" x="896" y="98">Menu</text>
+</g>
+<g id="phone-stage">
+<rect class="chip" x="752" y="124" width="196" height="52" rx="10" />
+<text class="label" x="768" y="145">Leadership · Strategy · AI</text>
+<text class="label" x="768" y="165">Making · Craft · Systems</text>
+<rect class="later" x="752" y="188" width="196" height="104" rx="14" />
+<text class="label" x="768" y="244">Picture</text>
+<rect class="box" x="752" y="304" width="196" height="190" rx="14" />
+<text class="label" x="768" y="328">2 of 8 · Product strategy</text>
+<text class="line" x="768" y="354">Defining Microsoft</text>
+<text class="line" x="768" y="374">Family</text>
+<text class="note" x="768" y="400">Launched July 2020;</text>
+<text class="note" x="768" y="418">Windows committed 2026</text>
+<rect class="chip" x="768" y="440" width="164" height="36" rx="10" />
+<text class="label" x="784" y="463">Show the details</text>
+</g>
+<g id="phone-rail">
+<rect class="chip" x="752" y="506" width="196" height="44" rx="12" />
+<text class="label" x="768" y="533">Swipe, or Previous · Next</text>
+<rect class="later" x="752" y="562" width="196" height="58" rx="12" />
+<text class="label" x="768" y="588">The rail: all 8 titles,</text>
+<text class="label" x="768" y="606">in a sideways row</text>
+</g>
+<text class="label" x="40" y="668">Nothing advances on its own. The capability row jumps to a capability; the rail shows every highlight at once.</text>
+</svg>

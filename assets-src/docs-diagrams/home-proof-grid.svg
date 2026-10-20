@@ -1,0 +1,133 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 700">
+<title>Proof grid: every capability against the kinds of evidence for it</title>
+<desc>A grid lists the six capabilities as rows, each with its proof line, against five kinds of evidence: shipped, led, built, wrote and said by colleagues. A filled cell has at least one page or recommendation on the site; an outlined cell rests on résumé lines only; an empty cell has none. Each number is a count, and a cell opens its evidence. On a phone, the grid becomes an accordion with one capability open.</desc>
+<text class="label" x="40" y="40">Wide screen, 1280 px</text>
+<text class="label" x="740" y="40">Phone, 360 px</text>
+<g id="wide">
+<rect class="src" x="40" y="56" width="660" height="580" rx="16" />
+</g>
+<g id="strip">
+<rect class="chip" x="56" y="72" width="628" height="44" rx="10" />
+<text class="chip-name" x="72" y="100">Prabin Pebam</text>
+<text class="note" x="452" y="100">Résumé · Contact · Change view</text>
+</g>
+<g id="grid">
+<rect class="box" x="56" y="128" width="628" height="492" rx="16" />
+<text class="line" x="72" y="158">Capability</text>
+<text class="line" x="264" y="158">Shipped</text>
+<text class="line" x="344" y="158">Led</text>
+<text class="line" x="424" y="158">Built</text>
+<text class="line" x="504" y="158">Wrote</text>
+<text class="line" x="584" y="158">Said</text>
+</g>
+<g id="row-1">
+<rect class="chip" x="72" y="172" width="596" height="64" rx="12" />
+<text class="chip-name" x="88" y="200">Leadership</text>
+<text class="label" x="88" y="220">Built Belong's design org</text>
+<rect class="out" x="264" y="188" width="48" height="32" rx="8" />
+<text class="out-note" x="280" y="209">2</text>
+<rect class="out" x="344" y="188" width="48" height="32" rx="8" />
+<text class="out-note" x="360" y="209">5</text>
+<rect class="out" x="504" y="188" width="48" height="32" rx="8" />
+<text class="out-note" x="520" y="209">1</text>
+<rect class="out" x="584" y="188" width="48" height="32" rx="8" />
+<text class="out-note" x="600" y="209">2</text>
+</g>
+<g id="row-2">
+<rect class="chip" x="72" y="244" width="596" height="64" rx="12" />
+<text class="chip-name" x="88" y="272">Strategy</text>
+<text class="label" x="88" y="292">Family Safety to Family</text>
+<rect class="out" x="264" y="260" width="48" height="32" rx="8" />
+<text class="out-note" x="280" y="281">6</text>
+<rect class="out" x="504" y="260" width="48" height="32" rx="8" />
+<text class="out-note" x="520" y="281">1</text>
+<rect class="out" x="584" y="260" width="48" height="32" rx="8" />
+<text class="out-note" x="600" y="281">2</text>
+</g>
+<g id="row-3">
+<rect class="chip" x="72" y="316" width="596" height="64" rx="12" />
+<text class="chip-name" x="88" y="344">AI</text>
+<text class="label" x="88" y="364">Handoff is now code</text>
+<rect class="chip" x="264" y="332" width="48" height="32" rx="8" />
+<text class="line" x="280" y="353">2</text>
+<rect class="chip" x="344" y="332" width="48" height="32" rx="8" />
+<text class="line" x="360" y="353">1</text>
+<rect class="out" x="424" y="332" width="48" height="32" rx="8" />
+<text class="out-note" x="440" y="353">3</text>
+<rect class="out" x="504" y="332" width="48" height="32" rx="8" />
+<text class="out-note" x="520" y="353">2</text>
+<rect class="out" x="584" y="332" width="48" height="32" rx="8" />
+<text class="out-note" x="600" y="353">1</text>
+</g>
+<g id="row-4">
+<rect class="chip" x="72" y="388" width="596" height="64" rx="12" />
+<text class="chip-name" x="88" y="416">Making</text>
+<text class="label" x="88" y="436">Cloner Pro: 3,530 people</text>
+<rect class="out" x="424" y="404" width="48" height="32" rx="8" />
+<text class="out-note" x="440" y="425">8</text>
+<rect class="out" x="504" y="404" width="48" height="32" rx="8" />
+<text class="out-note" x="520" y="425">1</text>
+<rect class="out" x="584" y="404" width="48" height="32" rx="8" />
+<text class="out-note" x="600" y="425">1</text>
+</g>
+<g id="row-5">
+<rect class="chip" x="72" y="460" width="596" height="64" rx="12" />
+<text class="chip-name" x="88" y="488">Craft</text>
+<text class="label" x="88" y="508">Led Craft in Windows</text>
+<rect class="chip" x="264" y="476" width="48" height="32" rx="8" />
+<text class="line" x="280" y="497">1</text>
+<rect class="out" x="344" y="476" width="48" height="32" rx="8" />
+<text class="out-note" x="360" y="497">3</text>
+<rect class="out" x="424" y="476" width="48" height="32" rx="8" />
+<text class="out-note" x="440" y="497">1</text>
+<rect class="out" x="504" y="476" width="48" height="32" rx="8" />
+<text class="out-note" x="520" y="497">1</text>
+<rect class="out" x="584" y="476" width="48" height="32" rx="8" />
+<text class="out-note" x="600" y="497">1</text>
+</g>
+<g id="row-6">
+<rect class="chip" x="72" y="532" width="596" height="64" rx="12" />
+<text class="chip-name" x="88" y="560">Systems</text>
+<text class="label" x="88" y="580">Belong Design System</text>
+<rect class="chip" x="264" y="548" width="48" height="32" rx="8" />
+<text class="line" x="280" y="569">1</text>
+<rect class="chip" x="344" y="548" width="48" height="32" rx="8" />
+<text class="line" x="360" y="569">1</text>
+<rect class="out" x="424" y="548" width="48" height="32" rx="8" />
+<text class="out-note" x="440" y="569">3</text>
+</g>
+<g id="phone">
+<rect class="src" x="740" y="56" width="220" height="580" rx="16" />
+</g>
+<g id="phone-strip">
+<rect class="chip" x="752" y="72" width="196" height="40" rx="10" />
+<text class="chip-name" x="768" y="98">Prabin Pebam</text>
+<text class="label" x="896" y="98">Menu</text>
+</g>
+<g id="phone-grid">
+<rect class="box" x="752" y="124" width="196" height="496" rx="14" />
+<text class="name" x="768" y="152">Capabilities</text>
+<rect class="docs" x="768" y="166" width="164" height="150" rx="10" />
+<text class="chip-name" x="784" y="192">Leadership</text>
+<text class="line" x="784" y="218">Shipped 2</text>
+<text class="line" x="784" y="240">Led 5</text>
+<text class="line" x="784" y="262">Wrote 1</text>
+<text class="line" x="784" y="284">Said 2</text>
+<rect class="chip" x="768" y="326" width="164" height="48" rx="10" />
+<text class="chip-name" x="784" y="348">Strategy</text>
+<text class="label" x="784" y="366">9 proofs</text>
+<rect class="chip" x="768" y="382" width="164" height="48" rx="10" />
+<text class="chip-name" x="784" y="404">AI</text>
+<text class="label" x="784" y="422">9 proofs</text>
+<rect class="chip" x="768" y="438" width="164" height="48" rx="10" />
+<text class="chip-name" x="784" y="460">Making</text>
+<text class="label" x="784" y="478">10 proofs</text>
+<rect class="chip" x="768" y="494" width="164" height="48" rx="10" />
+<text class="chip-name" x="784" y="516">Craft</text>
+<text class="label" x="784" y="534">7 proofs</text>
+<rect class="chip" x="768" y="550" width="164" height="48" rx="10" />
+<text class="chip-name" x="784" y="572">Systems</text>
+<text class="label" x="784" y="590">5 proofs</text>
+</g>
+<text class="label" x="40" y="668">Filled: a page or a recommendation on the site. Outlined: résumé lines only. Empty: nothing yet. A cell opens its evidence.</text>
+</svg>

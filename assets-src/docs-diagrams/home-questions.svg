@@ -1,0 +1,101 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 700">
+<title>Questions: the visitor's nine questions, answered with evidence</title>
+<desc>The nine questions hiring visitors ask are listed on the left, with a field to ask something else. The chosen question, How does he use AI and code, is answered on the right in two or three lines, tagged with the capabilities it shows, with the evidence below it and two actions: Ask me about it and Read résumé. On a phone, the questions are a list and the chosen one opens its answer in place.</desc>
+<text class="label" x="40" y="40">Wide screen, 1280 px</text>
+<text class="label" x="740" y="40">Phone, 360 px</text>
+<g id="wide">
+<rect class="src" x="40" y="56" width="660" height="580" rx="16" />
+</g>
+<g id="strip">
+<rect class="chip" x="56" y="72" width="628" height="44" rx="10" />
+<text class="chip-name" x="72" y="100">Prabin Pebam</text>
+<text class="note" x="452" y="100">Résumé · Contact · Change view</text>
+</g>
+<g id="list">
+<rect class="box" x="56" y="128" width="300" height="492" rx="16" />
+<text class="name" x="72" y="160">What do you want to know?</text>
+<rect class="chip" x="72" y="176" width="268" height="36" rx="10" />
+<text class="line" x="88" y="199">What kind of design leader?</text>
+<rect class="chip" x="72" y="218" width="268" height="36" rx="10" />
+<text class="line" x="88" y="241">What outcomes did he influence?</text>
+<rect class="chip" x="72" y="260" width="268" height="36" rx="10" />
+<text class="line" x="88" y="283">What did he lead or make?</text>
+<rect class="chip" x="72" y="302" width="268" height="36" rx="10" />
+<text class="line" x="88" y="325">How broad, and where deepest?</text>
+<rect class="chip" x="72" y="344" width="268" height="36" rx="10" />
+<text class="line" x="88" y="367">How does he work with others?</text>
+<rect class="chip" x="72" y="386" width="268" height="36" rx="10" />
+<text class="line" x="88" y="409">How does he build teams?</text>
+<rect class="out" x="72" y="428" width="268" height="36" rx="10" />
+<text class="out-note" x="88" y="451">How does he use AI and code?</text>
+<rect class="chip" x="72" y="470" width="268" height="36" rx="10" />
+<text class="line" x="88" y="493">What can be discussed publicly?</text>
+<rect class="chip" x="72" y="512" width="268" height="36" rx="10" />
+<text class="line" x="88" y="535">Contact, or a short résumé?</text>
+<rect class="later" x="72" y="560" width="268" height="44" rx="10" />
+<text class="label" x="88" y="587">Ask something else</text>
+</g>
+<g id="answer">
+<rect class="box" x="368" y="128" width="316" height="492" rx="16" />
+<text class="label" x="384" y="154">Question 7 of 9</text>
+<text class="name" x="384" y="182">How does he use AI and code?</text>
+<text class="line" x="384" y="212">He led the shift to coded prototypes:</text>
+<text class="line" x="384" y="232">working code, not Figma specs, is what</text>
+<text class="line" x="384" y="252">designers now hand to engineering.</text>
+<rect class="chip" x="384" y="268" width="150" height="32" rx="10" />
+<text class="label" x="400" y="289">AI transformation</text>
+<rect class="chip" x="544" y="268" width="128" height="32" rx="10" />
+<text class="label" x="560" y="289">Hands-on making</text>
+</g>
+<g id="evidence">
+<rect class="docs" x="384" y="312" width="284" height="236" rx="12" />
+<text class="name" x="400" y="340">The evidence</text>
+<text class="line" x="400" y="370">The AI program for Design</text>
+<text class="note" x="400" y="388">résumé · ask me about it</text>
+<text class="line" x="400" y="416">Copilot on Windows</text>
+<text class="note" x="400" y="434">résumé</text>
+<text class="line" x="400" y="462">Cloner Pro</text>
+<text class="note" x="400" y="480">article · 3,530 people</text>
+<text class="line" x="400" y="508">The best learning loop will win</text>
+<text class="note" x="400" y="526">essay</text>
+</g>
+<g id="actions">
+<rect class="chip" x="384" y="560" width="150" height="40" rx="10" />
+<text class="line" x="400" y="585">Ask me about it</text>
+<rect class="chip" x="546" y="560" width="122" height="40" rx="10" />
+<text class="line" x="562" y="585">Read résumé</text>
+</g>
+<g id="phone">
+<rect class="src" x="740" y="56" width="220" height="580" rx="16" />
+</g>
+<g id="phone-strip">
+<rect class="chip" x="752" y="72" width="196" height="40" rx="10" />
+<text class="chip-name" x="768" y="98">Prabin Pebam</text>
+<text class="label" x="896" y="98">Menu</text>
+</g>
+<g id="phone-list">
+<rect class="box" x="752" y="124" width="196" height="496" rx="14" />
+<text class="name" x="768" y="152">Questions</text>
+<rect class="chip" x="768" y="166" width="164" height="32" rx="10" />
+<text class="label" x="784" y="187">What kind of leader?</text>
+<rect class="chip" x="768" y="204" width="164" height="32" rx="10" />
+<text class="label" x="784" y="225">What outcomes?</text>
+<rect class="chip" x="768" y="242" width="164" height="32" rx="10" />
+<text class="label" x="784" y="263">What did he make?</text>
+<rect class="out" x="768" y="280" width="164" height="32" rx="10" />
+<text class="out-note" x="784" y="301">How does he use AI?</text>
+<rect class="docs" x="768" y="318" width="164" height="170" rx="10" />
+<text class="label" x="784" y="342">He led the shift to</text>
+<text class="label" x="784" y="360">coded prototypes:</text>
+<text class="label" x="784" y="378">code, not Figma specs</text>
+<text class="line" x="784" y="410">The AI program</text>
+<text class="line" x="784" y="432">Cloner Pro</text>
+<text class="line" x="784" y="454">The learning loop</text>
+<text class="label" x="784" y="476">Ask me about it</text>
+<rect class="later" x="768" y="500" width="164" height="36" rx="10" />
+<text class="label" x="784" y="523">Five more questions</text>
+<rect class="later" x="768" y="548" width="164" height="44" rx="10" />
+<text class="label" x="784" y="575">Ask something else</text>
+</g>
+<text class="label" x="40" y="668">At rest, question 1 is open and its answer is the six capabilities, so the map (L1) comes before any choice. Here, 7 is chosen.</text>
+</svg>

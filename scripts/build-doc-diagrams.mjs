@@ -33,6 +33,17 @@ const DIAGRAMS = [
   { name: 'desktop', page: 'documentation/desktop/spec.md', prefix: 'dk-arch' },
   { name: 'desktop-engine', page: 'documentation/desktop/spec.md', prefix: 'dk-engine' },
   { name: 'modes', page: 'documentation/desktop/modes.md', prefix: 'md-arch' },
+  { name: 'home-overview', page: 'documentation/home-views/README.md', prefix: 'hv-overview' },
+  { name: 'home-levels', page: 'documentation/home-views/foundation.md', prefix: 'hv-levels' },
+  { name: 'home-switcher', page: 'documentation/home-views/switcher.md', prefix: 'hv-switcher' },
+  { name: 'home-bento', page: 'documentation/home-views/bento.md', prefix: 'hv-bento' },
+  { name: 'home-cover', page: 'documentation/home-views/cover.md', prefix: 'hv-cover' },
+  { name: 'home-spotlight', page: 'documentation/home-views/spotlight.md', prefix: 'hv-spotlight' },
+  { name: 'home-showreel', page: 'documentation/home-views/showreel.md', prefix: 'hv-showreel' },
+  { name: 'home-keywords', page: 'documentation/home-views/keywords.md', prefix: 'hv-keywords' },
+  { name: 'home-proof-grid', page: 'documentation/home-views/proof-grid.md', prefix: 'hv-proof' },
+  { name: 'home-questions', page: 'documentation/home-views/questions.md', prefix: 'hv-questions' },
+  { name: 'home-ideas', page: 'documentation/home-views/more-ideas.md', prefix: 'hv-ideas' },
 ];
 
 const V = (n) => `var(--color-${n})`;

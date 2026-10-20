@@ -1,0 +1,108 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 700">
+<title>Showreel: a 90-second film made of live page content</title>
+<desc>The stage plays chapter 3 of 8, Design leadership: its proof, a visual in motion and a quote, with Open this, which pauses the reel and opens the evidence. Below the stage, eight progress segments are labelled with the chapter names, so all six capabilities are named before anything plays. Pause, Previous, Next and the reading speed are always visible, and a transcript gives the whole reel as text. On a phone the stage is 4:5, with its controls below, then a still line naming the six capabilities, then the transcript.</desc>
+<text class="label" x="40" y="40">Wide screen, 1280 px</text>
+<text class="label" x="740" y="40">Phone, 360 px</text>
+<g id="wide">
+<rect class="src" x="40" y="56" width="660" height="580" rx="16" />
+</g>
+<g id="strip">
+<rect class="chip" x="56" y="72" width="628" height="44" rx="10" />
+<text class="chip-name" x="72" y="100">Prabin Pebam</text>
+<text class="note" x="452" y="100">Résumé · Contact · Change view</text>
+</g>
+<g id="stage">
+<rect class="out" x="56" y="128" width="628" height="300" rx="16" />
+<text class="out-note" x="76" y="156">Chapter 3 of 8 · 0:24</text>
+<text class="out-name" x="76" y="190">Design leadership</text>
+<text class="out-note" x="76" y="214">Built Belong's design org from scratch;</text>
+<text class="out-note" x="76" y="234">leads teams of 5 to 9 designers at Microsoft</text>
+<rect class="later" x="76" y="254" width="300" height="150" rx="12" />
+<text class="label" x="92" y="322">Visual: the team's own</text>
+<text class="label" x="92" y="340">rebrand art, in motion</text>
+<text class="out-note" x="400" y="286">“one of the most complete</text>
+<text class="out-note" x="400" y="306">design leaders I know”</text>
+<text class="out-note" x="400" y="330">March Roger, Partner Design</text>
+<text class="out-note" x="400" y="348">Director, Windows</text>
+<rect class="chip" x="400" y="364" width="150" height="40" rx="10" />
+<text class="line" x="416" y="389">Open this</text>
+</g>
+<g id="chapters">
+<rect class="out" x="56" y="440" width="73" height="12" rx="6" />
+<text class="label" x="56" y="474">Intro</text>
+<rect class="out" x="135" y="440" width="73" height="12" rx="6" />
+<text class="label" x="135" y="474">Range</text>
+<rect class="docs" x="214" y="440" width="73" height="12" rx="6" />
+<text class="label" x="214" y="474">Leadership</text>
+<rect class="chip" x="293" y="440" width="73" height="12" rx="6" />
+<text class="label" x="293" y="474">Strategy</text>
+<rect class="chip" x="372" y="440" width="73" height="12" rx="6" />
+<text class="label" x="372" y="474">AI</text>
+<rect class="chip" x="451" y="440" width="73" height="12" rx="6" />
+<text class="label" x="451" y="474">Making</text>
+<rect class="chip" x="530" y="440" width="73" height="12" rx="6" />
+<text class="label" x="530" y="474">Craft</text>
+<rect class="chip" x="609" y="440" width="73" height="12" rx="6" />
+<text class="label" x="609" y="474">Systems</text>
+</g>
+<g id="controls">
+<rect class="chip" x="56" y="488" width="90" height="40" rx="10" />
+<text class="line" x="72" y="513">Pause</text>
+<rect class="chip" x="154" y="488" width="110" height="40" rx="10" />
+<text class="line" x="170" y="513">Previous</text>
+<rect class="chip" x="272" y="488" width="80" height="40" rx="10" />
+<text class="line" x="288" y="513">Next</text>
+<rect class="chip" x="360" y="488" width="130" height="40" rx="10" />
+<text class="line" x="376" y="513">Speed 1×</text>
+<text class="label" x="520" y="513">Loop 1 of 3</text>
+</g>
+<g id="transcript">
+<rect class="box" x="56" y="540" width="628" height="80" rx="14" />
+<text class="name" x="72" y="568">Transcript</text>
+<text class="note" x="72" y="592">3 · Design leadership: built Belong's design org from scratch; teams of 5 to 9.</text>
+</g>
+<g id="phone">
+<rect class="src" x="740" y="56" width="220" height="580" rx="16" />
+</g>
+<g id="phone-strip">
+<rect class="chip" x="752" y="72" width="196" height="40" rx="10" />
+<text class="chip-name" x="768" y="98">Prabin Pebam</text>
+<text class="label" x="896" y="98">Menu</text>
+</g>
+<g id="phone-stage">
+<rect class="out" x="752" y="124" width="196" height="246" rx="14" />
+<text class="out-note" x="768" y="150">3 of 8 · 0:24</text>
+<text class="out-name" x="768" y="182">Design</text>
+<text class="out-name" x="768" y="204">leadership</text>
+<text class="out-note" x="768" y="228">Built Belong's design</text>
+<text class="out-note" x="768" y="246">org from scratch</text>
+<rect class="later" x="768" y="262" width="164" height="92" rx="10" />
+<text class="label" x="784" y="312">Visual</text>
+</g>
+<g id="phone-controls">
+<rect class="out" x="752" y="382" width="21" height="10" rx="5" />
+<rect class="out" x="777" y="382" width="21" height="10" rx="5" />
+<rect class="docs" x="802" y="382" width="21" height="10" rx="5" />
+<rect class="chip" x="827" y="382" width="21" height="10" rx="5" />
+<rect class="chip" x="852" y="382" width="21" height="10" rx="5" />
+<rect class="chip" x="877" y="382" width="21" height="10" rx="5" />
+<rect class="chip" x="902" y="382" width="21" height="10" rx="5" />
+<rect class="chip" x="927" y="382" width="21" height="10" rx="5" />
+<rect class="chip" x="752" y="404" width="64" height="44" rx="10" />
+<text class="label" x="768" y="431">Pause</text>
+<rect class="chip" x="824" y="404" width="58" height="44" rx="10" />
+<text class="label" x="840" y="431">Back</text>
+<rect class="chip" x="890" y="404" width="58" height="44" rx="10" />
+<text class="label" x="906" y="431">Next</text>
+</g>
+<g id="phone-text">
+<rect class="chip" x="752" y="460" width="196" height="84" rx="14" />
+<text class="line" x="768" y="486">In this reel</text>
+<text class="label" x="768" y="510">Leadership · Strategy · AI</text>
+<text class="label" x="768" y="530">Making · Craft · Systems</text>
+<rect class="box" x="752" y="556" width="196" height="64" rx="14" />
+<text class="name" x="768" y="582">Transcript</text>
+<text class="note" x="768" y="604">Read it instead</text>
+</g>
+<text class="label" x="40" y="668">Plays only once chosen, muted, at most three loops, then holds on the last frame. Reduced motion: stills and the transcript.</text>
+</svg>

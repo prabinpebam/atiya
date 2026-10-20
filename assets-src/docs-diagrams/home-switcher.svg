@@ -1,0 +1,82 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 700">
+<title>Change view: the same control in every view</title>
+<desc>Change view, in the identity strip of every view, opens a panel of view cards: Bento (the default and here the current one), Cover, Spotlight, Showreel, Keywords, Proof grid and Questions, with Use the default. Below them, under Other ways to explore, is Little planet, the game, at its own address. The choice is kept on this device. On a phone, the same list opens as a bottom sheet.</desc>
+<text class="label" x="40" y="40">Wide screen, 1280 px</text>
+<text class="label" x="740" y="40">Phone, 360 px</text>
+<g id="wide">
+<rect class="src" x="40" y="56" width="660" height="580" rx="16" />
+</g>
+<g id="strip">
+<rect class="chip" x="56" y="72" width="628" height="44" rx="10" />
+<text class="chip-name" x="72" y="100">Prabin Pebam</text>
+<text class="note" x="452" y="100">Résumé · Contact · Change view</text>
+</g>
+<g id="page">
+<rect class="later" x="56" y="128" width="232" height="492" rx="16" />
+<text class="label" x="72" y="374">The current view</text>
+</g>
+<g id="panel">
+<rect class="box" x="300" y="124" width="384" height="456" rx="16" />
+<text class="name" x="316" y="156">Change view</text>
+<text class="note" x="316" y="178">Kept on this device; change it any time</text>
+<rect class="out" x="316" y="194" width="168" height="60" rx="12" />
+<text class="out-name" x="332" y="222">Bento</text>
+<text class="out-note" x="332" y="242">The default</text>
+<rect class="chip" x="500" y="194" width="168" height="60" rx="12" />
+<text class="chip-name" x="516" y="222">Cover</text>
+<text class="note" x="516" y="242">A magazine cover</text>
+<rect class="chip" x="316" y="264" width="168" height="60" rx="12" />
+<text class="chip-name" x="332" y="292">Spotlight</text>
+<text class="note" x="332" y="312">One at a time</text>
+<rect class="chip" x="500" y="264" width="168" height="60" rx="12" />
+<text class="chip-name" x="516" y="292">Showreel</text>
+<text class="note" x="516" y="312">A 90-second film</text>
+<rect class="chip" x="316" y="334" width="168" height="60" rx="12" />
+<text class="chip-name" x="332" y="362">Keywords</text>
+<text class="note" x="332" y="382">By what you pick</text>
+<rect class="chip" x="500" y="334" width="168" height="60" rx="12" />
+<text class="chip-name" x="516" y="362">Proof grid</text>
+<text class="note" x="516" y="382">Claims and proof</text>
+<rect class="chip" x="316" y="404" width="168" height="60" rx="12" />
+<text class="chip-name" x="332" y="432">Questions</text>
+<text class="note" x="332" y="452">Ask, get answers</text>
+<rect class="later" x="500" y="404" width="168" height="60" rx="12" />
+<text class="line" x="516" y="440">Use the default</text>
+<text class="label" x="316" y="494">Other ways to explore</text>
+<rect class="derived" x="316" y="504" width="352" height="56" rx="12" />
+<text class="name" x="332" y="538">Little planet</text>
+<text class="note" x="472" y="538">A game, at /play/</text>
+</g>
+<g id="phone">
+<rect class="src" x="740" y="56" width="220" height="580" rx="16" />
+</g>
+<g id="phone-strip">
+<rect class="chip" x="752" y="72" width="196" height="40" rx="10" />
+<text class="chip-name" x="768" y="98">Prabin Pebam</text>
+<text class="label" x="896" y="98">Menu</text>
+</g>
+<g id="phone-page">
+<rect class="later" x="752" y="124" width="196" height="164" rx="14" />
+<text class="label" x="768" y="210">The current view</text>
+</g>
+<g id="phone-sheet">
+<rect class="box" x="752" y="300" width="196" height="320" rx="16" />
+<text class="name" x="768" y="328">Change view</text>
+<rect class="out" x="768" y="340" width="164" height="28" rx="8" />
+<text class="out-note" x="784" y="359">Bento · the default</text>
+<rect class="chip" x="768" y="374" width="164" height="28" rx="8" />
+<text class="label" x="784" y="393">Cover</text>
+<rect class="chip" x="768" y="408" width="164" height="28" rx="8" />
+<text class="label" x="784" y="427">Spotlight</text>
+<rect class="chip" x="768" y="442" width="164" height="28" rx="8" />
+<text class="label" x="784" y="461">Showreel</text>
+<rect class="chip" x="768" y="476" width="164" height="28" rx="8" />
+<text class="label" x="784" y="495">Keywords</text>
+<rect class="chip" x="768" y="510" width="164" height="28" rx="8" />
+<text class="label" x="784" y="529">Proof grid</text>
+<rect class="chip" x="768" y="544" width="164" height="28" rx="8" />
+<text class="label" x="784" y="563">Questions</text>
+<text class="label" x="768" y="600">Other ways: Little planet</text>
+</g>
+<text class="label" x="40" y="668">A shared link opens its own view without changing yours. Change view sits in the same place in every view.</text>
+</svg>

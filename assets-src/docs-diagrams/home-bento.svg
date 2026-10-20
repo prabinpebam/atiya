@@ -1,0 +1,118 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 700">
+<title>Bento, the default view: every capability on one screen</title>
+<desc>On a wide screen, the identity strip sits above a lead tile with the role, the positioning, the range and the two main actions, beside a tile of words from colleagues. Below are six capability tiles, each with a proof line and a count of its evidence. Pressing a tile opens its evidence drawer in place, here for AI transformation. On a phone, the lead tile comes first, then an index of the six capabilities, then the tiles one under another.</desc>
+<text class="label" x="40" y="40">Wide screen, 1280 px</text>
+<text class="label" x="740" y="40">Phone, 360 px</text>
+<g id="wide">
+<rect class="src" x="40" y="56" width="660" height="580" rx="16" />
+</g>
+<g id="strip">
+<rect class="chip" x="56" y="72" width="628" height="44" rx="10" />
+<text class="chip-name" x="72" y="100">Prabin Pebam</text>
+<text class="note" x="452" y="100">Résumé · Contact · Change view</text>
+</g>
+<g id="lead">
+<rect class="out" x="56" y="128" width="400" height="164" rx="16" />
+<text class="out-name" x="76" y="162">Principal Design Manager, Microsoft</text>
+<text class="out-note" x="76" y="186">Design leader · Product strategy · AI transformation</text>
+<text class="out-note" x="76" y="208">18 years, from TVS Motor to Windows</text>
+<rect class="chip" x="76" y="240" width="120" height="36" rx="10" />
+<text class="line" x="92" y="263">Read résumé</text>
+<rect class="chip" x="206" y="240" width="116" height="36" rx="10" />
+<text class="line" x="222" y="263">Contact me</text>
+</g>
+<g id="voices">
+<rect class="box" x="468" y="128" width="216" height="164" rx="16" />
+<text class="name" x="484" y="160">In their words</text>
+<text class="note" x="484" y="186">“a rare combination of</text>
+<text class="note" x="484" y="204">strong leadership, design</text>
+<text class="note" x="484" y="222">craft, and hands-on</text>
+<text class="note" x="484" y="240">technical ability”</text>
+<text class="label" x="484" y="272">Diego Baca, VP, Windows</text>
+</g>
+<g id="leadership">
+<rect class="box" x="56" y="304" width="204" height="110" rx="14" />
+<text class="name" x="72" y="336">Leadership</text>
+<text class="note" x="72" y="358">Built Belong's design org</text>
+<text class="label" x="72" y="394">Evidence 10 · voices 2</text>
+</g>
+<g id="strategy">
+<rect class="box" x="272" y="304" width="196" height="110" rx="14" />
+<text class="name" x="288" y="336">Strategy</text>
+<text class="note" x="288" y="358">Family Safety to Family</text>
+<text class="label" x="288" y="394">Evidence 9 · a case study</text>
+</g>
+<g id="ai">
+<rect class="docs" x="480" y="304" width="204" height="110" rx="14" />
+<text class="name" x="496" y="336">AI transformation</text>
+<text class="note" x="496" y="358">Handoff is now code</text>
+<text class="label" x="496" y="394">Open: the evidence below</text>
+</g>
+<g id="drawer">
+<rect class="docs" x="56" y="426" width="628" height="90" rx="14" />
+<text class="name" x="72" y="454">AI transformation, in detail</text>
+<rect class="chip" x="72" y="468" width="140" height="36" rx="10" />
+<text class="line" x="88" y="491">The AI program</text>
+<rect class="chip" x="222" y="468" width="120" height="36" rx="10" />
+<text class="line" x="238" y="491">Cloner Pro</text>
+<rect class="chip" x="352" y="468" width="160" height="36" rx="10" />
+<text class="line" x="368" y="491">The learning loop</text>
+<rect class="chip" x="522" y="468" width="146" height="36" rx="10" />
+<text class="line" x="538" y="491">Diego's words</text>
+</g>
+<g id="making">
+<rect class="box" x="56" y="528" width="196" height="92" rx="14" />
+<text class="name" x="72" y="558">Making</text>
+<text class="note" x="72" y="580">Cloner Pro: 3,530 people</text>
+<text class="label" x="72" y="604">8 things built</text>
+</g>
+<g id="craft">
+<rect class="box" x="264" y="528" width="228" height="92" rx="14" />
+<text class="name" x="280" y="558">Craft</text>
+<text class="note" x="280" y="580">Led Craft in Windows</text>
+<text class="label" x="280" y="604">Evidence 7</text>
+</g>
+<g id="systems">
+<rect class="box" x="504" y="528" width="180" height="92" rx="14" />
+<text class="name" x="520" y="558">Systems</text>
+<text class="note" x="520" y="580">Belong Design System</text>
+<text class="label" x="520" y="604">Evidence 5</text>
+</g>
+<g id="phone">
+<rect class="src" x="740" y="56" width="220" height="580" rx="16" />
+</g>
+<g id="phone-strip">
+<rect class="chip" x="752" y="72" width="196" height="40" rx="10" />
+<text class="chip-name" x="768" y="98">Prabin Pebam</text>
+<text class="label" x="896" y="98">Menu</text>
+</g>
+<g id="phone-lead">
+<rect class="out" x="752" y="124" width="196" height="150" rx="14" />
+<text class="out-name" x="768" y="154">Design leader</text>
+<text class="out-note" x="768" y="176">Product strategy · AI</text>
+<text class="out-note" x="768" y="196">Principal Design Manager</text>
+<text class="out-note" x="768" y="216">Microsoft · 18 years</text>
+<rect class="chip" x="768" y="232" width="78" height="32" rx="10" />
+<text class="label" x="784" y="253">Résumé</text>
+<rect class="chip" x="854" y="232" width="80" height="32" rx="10" />
+<text class="label" x="870" y="253">Contact</text>
+</g>
+<g id="phone-index">
+<rect class="docs" x="752" y="286" width="196" height="110" rx="14" />
+<text class="name" x="768" y="314">Six capabilities</text>
+<text class="line" x="768" y="340">Leadership · Strategy</text>
+<text class="line" x="768" y="362">AI · Making · Craft</text>
+<text class="line" x="768" y="384">Systems</text>
+</g>
+<g id="phone-tiles">
+<rect class="box" x="752" y="408" width="196" height="70" rx="14" />
+<text class="name" x="768" y="436">Leadership</text>
+<text class="note" x="768" y="458">Head of Design, Belong</text>
+<rect class="box" x="752" y="490" width="196" height="70" rx="14" />
+<text class="name" x="768" y="518">Strategy</text>
+<text class="note" x="768" y="540">Family Safety to Family</text>
+<rect class="later" x="752" y="572" width="196" height="48" rx="14" />
+<text class="label" x="768" y="600">AI, Making, Craft, Systems</text>
+</g>
+<text class="label" x="40" y="668">Every capability is visible without a click. A tile opens its evidence in place (L3); the full page is one step further.</text>
+</svg>
