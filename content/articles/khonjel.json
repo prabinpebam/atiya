@@ -14,7 +14,8 @@
   "body": [
     {
       "type": "text",
-      "markdown": "I was inspired by Whisper AI, but I wanted to use my own local models. In Khonjel, that means Whisper-family speech-to-text through `whisper.cpp`, with the rest of the voice workflow designed around the same principle: it should run on my machine first, and only leave it when I deliberately connect something else."
+      "markdown": "I was inspired by Whisper AI, but I wanted to use my own local models. In Khonjel, that means Whisper-family speech-to-text through `whisper.cpp`, with the rest of the voice workflow designed around the same principle: it should run on my machine first, and only leave it when I deliberately connect something else.",
+      "key": "ive6do"
     },
     {
       "type": "figure",
@@ -22,11 +23,13 @@
       "width": "wide",
       "lightbox": true,
       "rounded": false,
-      "display": "fit"
+      "display": "fit",
+      "key": "bvpjju"
     },
     {
       "type": "text",
-      "markdown": "Khonjel is Manipuri for _voice_. The app started from a simple daily irritation: I wanted to speak anywhere, have the computer capture the thought, clean it up, and put the finished text exactly where I was already working. Not in a separate note I had to copy from. Not behind an account. Not dependent on a cloud service just to turn speech into text."
+      "markdown": "Khonjel is Manipuri for _voice_. The app started from a simple daily irritation: I wanted to speak anywhere, have the computer capture the thought, clean it up, and put the finished text exactly where I was already working. Not in a separate note I had to copy from. Not behind an account. Not dependent on a cloud service just to turn speech into text.",
+      "key": "gf28f0"
     },
     {
       "type": "collection",
@@ -52,47 +55,56 @@
           "heading": "License",
           "subtext": "MIT"
         }
-      ]
+      ],
+      "key": "8vfmou"
     },
     {
       "type": "figure",
       "media": "articles/khonjel/pasted-picture-2026-10-12-3",
       "width": "wide",
       "lightbox": true,
-      "rounded": false
+      "rounded": false,
+      "key": "1qphz7"
     },
     {
       "type": "heading",
       "level": 2,
-      "text": "Dictation where the text belongs"
+      "text": "Dictation where the text belongs",
+      "key": "kr9zhw"
     },
     {
       "type": "text",
-      "markdown": "The core flow is intentionally direct: press the global hotkey, speak, watch the floating bar stream partial text, then let Khonjel transcribe, clean up and inject the result at the cursor. The floating bar is built as a non-focusable window, so the app I was typing in keeps focus while Khonjel does the voice work in the background."
+      "markdown": "The core flow is intentionally direct: press the global hotkey, speak, watch the floating bar stream partial text, then let Khonjel transcribe, clean up and inject the result at the cursor. The floating bar is built as a non-focusable window, so the app I was typing in keeps focus while Khonjel does the voice work in the background.",
+      "key": "dnyelj"
     },
     {
       "type": "text",
-      "markdown": "The README describes it as capture to `whisper.cpp`, cleanup through `llama.cpp`, then paste. That chain is the product idea in miniature. Speech-to-text is only half of dictation; the other half is making the text usable enough to land in an email, document, chat or note without a second cleanup pass."
+      "markdown": "The README describes it as capture to `whisper.cpp`, cleanup through `llama.cpp`, then paste. That chain is the product idea in miniature. Speech-to-text is only half of dictation; the other half is making the text usable enough to land in an email, document, chat or note without a second cleanup pass.",
+      "key": "sf0eai"
     },
     {
       "type": "heading",
       "level": 2,
-      "text": "Local first, not local only"
+      "text": "Local first, not local only",
+      "key": "z38dab"
     },
     {
       "type": "text",
-      "markdown": "The privacy model is the part I cared about most. Khonjel is offline by default, collects no telemetry, and stores transcripts, notes, history and dictionary entries locally. The privacy policy says microphone audio is processed in memory and temporary files are deleted after transcription; recordings are not retained."
+      "markdown": "The privacy model is the part I cared about most. Khonjel is offline by default, collects no telemetry, and stores transcripts, notes, history and dictionary entries locally. The privacy policy says microphone audio is processed in memory and temporary files are deleted after transcription; recordings are not retained.",
+      "key": "kvjrdz"
     },
     {
       "type": "figure",
       "media": "articles/khonjel/pasted-picture-2026-10-12-2",
       "width": "wide",
       "lightbox": true,
-      "rounded": false
+      "rounded": false,
+      "key": "q6cmxl"
     },
     {
       "type": "text",
-      "markdown": "At the same time, I did not want privacy to become a dead end for people who already have approved infrastructure. The app can use local models by default, self-hosted or OpenAI-compatible endpoints, and optional cloud or enterprise providers. API keys live in the operating system keychain, not in plaintext, and cloud routing is opt-in."
+      "markdown": "At the same time, I did not want privacy to become a dead end for people who already have approved infrastructure. The app can use local models by default, self-hosted or OpenAI-compatible endpoints, and optional cloud or enterprise providers. API keys live in the operating system keychain, not in plaintext, and cloud routing is opt-in.",
+      "key": "34gdk0"
     },
     {
       "type": "collection",
@@ -111,29 +123,35 @@
           "text": "The same model picker can point to self-hosted, OpenAI-compatible, cloud or enterprise endpoints when I choose to connect them."
         }
       ],
-      "width": "wide"
+      "width": "wide",
+      "key": "v03oqc"
     },
     {
       "type": "heading",
       "level": 2,
-      "text": "A product shell around the models"
+      "text": "A product shell around the models",
+      "key": "icebw8"
     },
     {
       "type": "text",
-      "markdown": "I did not want this to be only a model launcher. The app has daily surfaces around the voice workflow: Home for history and stats, Chat, Notes, Upload for existing audio files, Dictionary for custom terms, Transforms for hotkey-bound rewrites and Insights. The control panel loads the core daily views first and code-splits the less frequent ones after the shell is interactive."
+      "markdown": "I did not want this to be only a model launcher. The app has daily surfaces around the voice workflow: Home for history and stats, Chat, Notes, Upload for existing audio files, Dictionary for custom terms, Transforms for hotkey-bound rewrites and Insights. The control panel loads the core daily views first and code-splits the less frequent ones after the shell is interactive.",
+      "key": "fnid75"
     },
     {
       "type": "text",
-      "markdown": "The engineering shape mirrors that product goal. The React renderer talks to service ports, and one typed IPC seam connects it to the Electron backend. Requests cross a single allow-listed channel, are validated with zod, and the packaged renderer gets a strict Content Security Policy. The result is still a side project, but the architecture treats voice data, model setup and OS text injection as things that deserve production-level boundaries."
+      "markdown": "The engineering shape mirrors that product goal. The React renderer talks to service ports, and one typed IPC seam connects it to the Electron backend. Requests cross a single allow-listed channel, are validated with zod, and the packaged renderer gets a strict Content Security Policy. The result is still a side project, but the architecture treats voice data, model setup and OS text injection as things that deserve production-level boundaries.",
+      "key": "i9ve6u"
     },
     {
       "type": "heading",
       "level": 2,
-      "text": "Try it"
+      "text": "Try it",
+      "key": "jnqwtb"
     },
     {
       "type": "text",
-      "markdown": "Khonjel is open source on [GitHub](https://github.com/prabinpebam/khonjel) and released under the MIT License. The README links a Windows installer and portable build from the [latest release](https://github.com/prabinpebam/khonjel/releases/latest). There is no separate live site listed for the repository, so the repo and releases are the best places to start."
+      "markdown": "Khonjel is open source on [GitHub](https://github.com/prabinpebam/khonjel) and released under the MIT License. The README links a Windows installer and portable build from the [latest release](https://github.com/prabinpebam/khonjel/releases/latest). There is no separate live site listed for the repository, so the repo and releases are the best places to start.",
+      "key": "gfwccy"
     }
   ],
   "topics": [

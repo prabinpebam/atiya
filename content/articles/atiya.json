@@ -18,147 +18,178 @@
   "body": [
     {
       "type": "text",
-      "markdown": "I needed a personal site, and I wanted to do something different. I wanted a practical portfolio, a small world to explore, and an editing flow that felt local, fast and mine. Atiya now brings those together: a static Astro site on GitHub Pages, a walkable little planet, and a browser editor that saves content to files and publishes through Git. This is the site as it stands in October 2026—not a finished portfolio, but a working platform whose sections I am still writing."
+      "markdown": "I needed a personal site, and I wanted to do something different. I wanted a practical portfolio, a small world to explore, and an editing flow that felt local, fast and mine. Atiya now brings those together: a static Astro site on GitHub Pages, a walkable little planet, and a browser editor that saves content to files and publishes through Git. This is the site as it stands in October 2026—not a finished portfolio, but a working platform whose sections I am still writing.",
+      "key": "btsenz"
     },
     {
       "type": "figure",
       "media": "articles/atiya/home-page",
       "width": "popout",
-      "lightbox": true
+      "lightbox": true,
+      "key": "avhw2m"
     },
     {
       "type": "heading",
       "level": 2,
-      "text": "A site with two front doors"
+      "text": "A site with two front doors",
+      "key": "xprpww"
     },
     {
       "type": "text",
-      "markdown": "The home page offers two ways in: explore the planet, or read the site. The classic route has ordinary URLs, a shared navigation menu and sections for Work, About, Leadership, Writing, Gallery, Side projects and Contact. Gallery replaces the earlier Talks section: it is a visual way into my work, rather than a separate destination for talks."
+      "markdown": "The home page offers two ways in: explore the planet, or read the site. The classic route has ordinary URLs, a shared navigation menu and sections for Work, About, Leadership, Writing, Gallery, Side projects and Contact. Gallery replaces the earlier Talks section: it is a visual way into my work, rather than a separate destination for talks.",
+      "key": "ygvs27"
     },
     {
       "type": "text",
-      "markdown": "That balance matters to me. The planet gives the site personality, but the classic site stays reachable. The playful entrance should never trap someone inside a canvas, require a powerful device to read a case study, or make the words harder to find."
+      "markdown": "That balance matters to me. The planet gives the site personality, but the classic site stays reachable. The playful entrance should never trap someone inside a canvas, require a powerful device to read a case study, or make the words harder to find.",
+      "key": "cw8bku"
     },
     {
       "type": "figure",
       "media": "articles/atiya/article-page",
       "width": "popout",
-      "lightbox": true
+      "lightbox": true,
+      "key": "60wzhc"
     },
     {
       "type": "heading",
       "level": 2,
-      "text": "A magazine for the words and pictures"
+      "text": "A magazine for the words and pictures",
+      "key": "8c31nz"
     },
     {
       "type": "text",
-      "markdown": "The reading side has its own design system, separate from the game's interface. Natural-white paper, warm dark ink, indigo actions and marigold highlights give it the feel of a small printed magazine. Fraunces carries the headlines and standfirsts, Newsreader the reading, and Figtree the controls. The fonts are self-hosted, and the same system works in light mode, dark mode or the system's choice."
+      "markdown": "The reading side has its own design system, separate from the game's interface. Natural-white paper, warm dark ink, indigo actions and marigold highlights give it the feel of a small printed magazine. Fraunces carries the headlines and standfirsts, Newsreader the reading, and Figtree the controls. The fonts are self-hosted, and the same system works in light mode, dark mode or the system's choice.",
+      "key": "a0p2yu"
     },
     {
       "type": "text",
-      "markdown": "Pictures are treated as content, not decoration. A page can have a lead picture and a separate thumbnail, choose whether an image fills its frame or is shown whole, and use a dark-mode version where needed. Articles support galleries, carousels, collections, tables and video, with a lightbox for closer viewing and a minimap for moving through a long page."
+      "markdown": "Pictures are treated as content, not decoration. A page can have a lead picture and a separate thumbnail, choose whether an image fills its frame or is shown whole, and use a dark-mode version where needed. Articles support galleries, carousels, collections, tables and video, with a lightbox for closer viewing and a minimap for moving through a long page.",
+      "key": "ys2ixt"
     },
     {
       "type": "figure",
       "media": "articles/atiya/design-library",
       "width": "popout",
-      "lightbox": true
+      "lightbox": true,
+      "key": "3torwp"
     },
     {
       "type": "text",
-      "markdown": "The [design library](https://prabinpebam.github.io/atiya/design/) is a living specimen book, not a set of screenshots kept by hand. It draws its examples from the same components the site uses. Tokens, fundamentals, compounds and layouts form four tiers, and tests check the boundaries, colour contrast and responsive rules."
+      "markdown": "The [design library](https://prabinpebam.github.io/atiya/design/) is a living specimen book, not a set of screenshots kept by hand. It draws its examples from the same components the site uses. Tokens, fundamentals, compounds and layouts form four tiers, and tests check the boundaries, colour contrast and responsive rules.",
+      "key": "76gczr"
     },
     {
       "type": "heading",
       "level": 2,
-      "text": "The planet is navigation"
+      "text": "The planet is navigation",
+      "key": "rsqgrh"
     },
     {
       "type": "text",
-      "markdown": "The planet is built with three.js and React Three Fiber, but its first job is navigation. Each landmark opens a section of the same content system; the amphitheater now maps to Gallery. You can walk to a building or use Fast travel. Prompts, previews and controls are real HTML, not text painted into the canvas."
+      "markdown": "The planet is built with three.js and React Three Fiber, but its first job is navigation. Each landmark opens a section of the same content system; the amphitheater now maps to Gallery. You can walk to a building or use Fast travel. Prompts, previews and controls are real HTML, not text painted into the canvas.",
+      "key": "ibe3ig"
     },
     {
       "type": "figure",
       "media": "articles/atiya/whole-planet",
       "width": "popout",
-      "lightbox": true
+      "lightbox": true,
+      "key": "mop436"
     },
     {
       "type": "text",
-      "markdown": "There is more to explore than the buildings: painted terrain, water, grass, wildlife, a home and family, collecting and crafting, and places to sit or rest. Prabin welcomes the visitor, and Chopper is part of the world as a tribute. The full-planet view lets you step back and understand the layout, while the day–night cycle changes its light and atmosphere."
+      "markdown": "There is more to explore than the buildings: painted terrain, water, grass, wildlife, a home and family, collecting and crafting, and places to sit or rest. Prabin welcomes the visitor, and Chopper is part of the world as a tribute. The full-planet view lets you step back and understand the layout, while the day–night cycle changes its light and atmosphere.",
+      "key": "o5ywao"
     },
     {
       "type": "figure",
       "media": "articles/atiya/planet-plaza",
       "width": "popout",
-      "lightbox": true
+      "lightbox": true,
+      "key": "kcf2am"
     },
     {
       "type": "text",
-      "markdown": "Under the hood, movement rotates the planet beneath a fixed player and camera. A capability gate checks the device before fetching the game, and progressive loading brings the world in around its first playable core. Mouse, keyboard and touch have their own input paths, with non-drag alternatives for the view controls."
+      "markdown": "Under the hood, movement rotates the planet beneath a fixed player and camera. A capability gate checks the device before fetching the game, and progressive loading brings the world in around its first playable core. Mouse, keyboard and touch have their own input paths, with non-drag alternatives for the view controls.",
+      "key": "8cuz9y"
     },
     {
       "type": "figure",
       "media": "articles/atiya/reading-overlay",
       "width": "popout",
-      "lightbox": true
+      "lightbox": true,
+      "key": "d045w9"
     },
     {
       "type": "text",
-      "markdown": "Opening a building keeps the planet behind a frosted reading surface rather than replacing it with a flat black or white veil. The section and its articles use the site's own page layouts. Light, dark and system themes work across the reading surface and the game interface, and the classic page is still one action away."
+      "markdown": "Opening a building keeps the planet behind a frosted reading surface rather than replacing it with a flat black or white veil. The section and its articles use the site's own page layouts. Light, dark and system themes work across the reading surface and the game interface, and the classic page is still one action away.",
+      "key": "7p5ojg"
     },
     {
       "type": "heading",
       "level": 2,
-      "text": "A local-first editor, not a hosted CMS"
+      "text": "A local-first editor, not a hosted CMS",
+      "key": "4mch73"
     },
     {
       "type": "text",
-      "markdown": "The publishing loop is the part I am proudest of. Editorial content lives as JSON documents and media files, not copy embedded in page templates. On the local dev server, edit mode lets me type into the page itself, arrange blocks in an outline, and change their settings in an inspector. Pages, sections, navigation, the planet's building settings and the media library are all edited in the browser."
+      "markdown": "The publishing loop is the part I am proudest of. Editorial content lives as JSON documents and media files, not copy embedded in page templates. On the local dev server, edit mode lets me type into the page itself, arrange blocks in an outline, and change their settings in an inspector. Pages, sections, navigation, the planet's building settings and the media library are all edited in the browser.",
+      "key": "leb33g"
     },
     {
       "type": "text",
-      "markdown": "Saving locally and publishing are different actions. Every save is checked against the content contract before a transaction writes any files; versions catch conflicts, and a refused write leaves the files unchanged. The status line tells me whether a change is saving, saved or failed. Other open pages hear the change without discarding unsaved input."
+      "markdown": "Saving locally and publishing are different actions. Every save is checked against the content contract before a transaction writes any files; versions catch conflicts, and a refused write leaves the files unchanged. The status line tells me whether a change is saving, saved or failed. Other open pages hear the change without discarding unsaved input.",
+      "key": "0cm6c5"
     },
     {
       "type": "figure",
       "media": "articles/atiya/edit-mode",
       "width": "popout",
-      "lightbox": true
+      "lightbox": true,
+      "key": "pmqq7p"
     },
     {
       "type": "text",
-      "markdown": "When I am ready, Save to remote commits the content and pushes it to GitHub. GitHub Actions builds the static site, seals private content, checks for leaks and deploys to Pages. The production build contains no editor. Publishing a page means changing its status to Published; saving to remote is what ships the committed changes."
+      "markdown": "When I am ready, Save to remote commits the content and pushes it to GitHub. GitHub Actions builds the static site, seals private content, checks for leaks and deploys to Pages. The production build contains no editor. Publishing a page means changing its status to Published; saving to remote is what ships the committed changes.",
+      "key": "cw217e"
     },
     {
       "type": "heading",
       "level": 2,
-      "text": "Private work, without a public plaintext copy"
+      "text": "Private work, without a public plaintext copy",
+      "key": "idslg1"
     },
     {
       "type": "text",
-      "markdown": "A portfolio also needs a way to share work that cannot be public. Public content stays in the public repository; private pages, their media and their access grants live in a separate private repository, linked as a submodule. They are managed in the same editor, but their readable sources are never copied into the public content folder."
+      "markdown": "A portfolio also needs a way to share work that cannot be public. Public content stays in the public repository; private pages, their media and their access grants live in a separate private repository, linked as a submodule. They are managed in the same editor, but their readable sources are never copied into the public content folder.",
+      "key": "k3u6t3"
     },
     {
       "type": "text",
-      "markdown": "The build encrypts private content with AES-256-GCM and publishes sealed payloads. Readers sign in with an access code or a magic link, agree before viewing, and decrypt only the pages their grant covers in the browser. Private pages use opaque addresses and do not appear on the planet or in public menus. The save-to-remote flow coordinates both repositories, with private changes pushed before the public site can point to them."
+      "markdown": "The build encrypts private content with AES-256-GCM and publishes sealed payloads. Readers sign in with an access code or a magic link, agree before viewing, and decrypt only the pages their grant covers in the browser. Private pages use opaque addresses and do not appear on the planet or in public menus. The save-to-remote flow coordinates both repositories, with private changes pushed before the public site can point to them.",
+      "key": "fwyw31"
     },
     {
       "type": "text",
-      "markdown": "The distinction is important: the content and publishing path does not need a hosted CMS, but the entire project is no longer service-free. A separate Azure Functions contact service delivers contact messages and records access agreements. Telemetry uses a restricted allowlist on sensitive pages, so protected titles, access codes and link secrets are not sent."
+      "markdown": "The distinction is important: the content and publishing path does not need a hosted CMS, but the entire project is no longer service-free. A separate Azure Functions contact service delivers contact messages and records access agreements. Telemetry uses a restricted allowlist on sensitive pages, so protected titles, access codes and link secrets are not sent.",
+      "key": "7x7n7f"
     },
     {
       "type": "heading",
       "level": 2,
-      "text": "Making the editor feel immediate"
+      "text": "Making the editor feel immediate",
+      "key": "lxsdpx"
     },
     {
       "type": "text",
-      "markdown": "Building an editor meant taking its waiting seriously. An audit found that most screen time was spent launching Git processes, and small edits fetched whole screens again. The fix was not just another loading spinner: one cached status per repository, counts checked after the screen appears, targeted region redraws, a picker loaded on demand, incremental content reads and picture facts remembered across restarts."
+      "markdown": "Building an editor meant taking its waiting seriously. An audit found that most screen time was spent launching Git processes, and small edits fetched whole screens again. The fix was not just another loading spinner: one cached status per repository, counts checked after the screen appears, targeted region redraws, a picker loaded on demand, incremental content reads and picture facts remembered across restarts.",
+      "key": "jkfe7h"
     },
     {
       "type": "text",
-      "markdown": "Moving, deleting, duplicating or adding a block now shows the result before its save finishes. The server confirms it quietly; a refused change is put back with the reason. Typing does not redraw the page. When the canvas needs a new rendering, it loads behind the existing frame and replaces it only when ready, so the page never goes blank. Longer waits show feedback where the work happens as well as in the status line."
+      "markdown": "Moving, deleting, duplicating or adding a block now shows the result before its save finishes. The server confirms it quietly; a refused change is put back with the reason. Typing does not redraw the page. When the canvas needs a new rendering, it loads behind the existing frame and replaces it only when ready, so the page never goes blank. Longer waits show feedback where the work happens as well as in the status line.",
+      "key": "y2rbve"
     },
     {
       "type": "collection",
@@ -176,11 +207,13 @@
           "heading": "A new block",
           "subtext": "About 31 ms to show its place; about 0.27 seconds to draw it on the canvas."
         }
-      ]
+      ],
+      "key": "yyvpcj"
     },
     {
       "type": "text",
-      "markdown": "Those are lab measurements from five runs on the same desktop, not a promise for every device. A CPU-slowed run still exposed client-side work to trim, and the article editor's HTML missed its size target. The [performance report](https://prabinpebam.github.io/atiya/docs/#engineering/performance-report.md) records both the gains and the remaining costs."
+      "markdown": "Those are lab measurements from five runs on the same desktop, not a promise for every device. A CPU-slowed run still exposed client-side work to trim, and the article editor's HTML missed its size target. The [performance report](https://prabinpebam.github.io/atiya/docs/#engineering/performance-report.md) records both the gains and the remaining costs.",
+      "key": "d4vxe9"
     },
     {
       "type": "collection",
@@ -210,25 +243,30 @@
           "heading": "Language",
           "subtext": "TypeScript"
         }
-      ]
+      ],
+      "key": "l4lngf"
     },
     {
       "type": "heading",
       "level": 2,
-      "text": "Why build it this way"
+      "text": "Why build it this way",
+      "key": "a7pin8"
     },
     {
       "type": "text",
-      "markdown": "A personal site is partly a calling card and partly a playground. This one keeps the calling card practical: accessible pages, normal URLs, static hosting and source-controlled content. The planet makes room for play; the editor makes it something I can keep maintaining. The design library and the [Slate documentation site](https://prabinpebam.github.io/atiya/docs/) make the decisions visible, with Slate now linked to its own upstream repository rather than maintained as a copied package."
+      "markdown": "A personal site is partly a calling card and partly a playground. This one keeps the calling card practical: accessible pages, normal URLs, static hosting and source-controlled content. The planet makes room for play; the editor makes it something I can keep maintaining. The design library and the [Slate documentation site](https://prabinpebam.github.io/atiya/docs/) make the decisions visible, with Slate now linked to its own upstream repository rather than maintained as a copied package.",
+      "key": "ydmdl6"
     },
     {
       "type": "heading",
       "level": 2,
-      "text": "Try it"
+      "text": "Try it",
+      "key": "t8n255"
     },
     {
       "type": "text",
-      "markdown": "The live site is at [prabinpebam.github.io/atiya](https://prabinpebam.github.io/atiya/), with the classic site and the planet side by side. The source is on [GitHub](https://github.com/prabinpebam/atiya), and the project docs are published at [prabinpebam.github.io/atiya/docs](https://prabinpebam.github.io/atiya/docs/)."
+      "markdown": "The live site is at [prabinpebam.github.io/atiya](https://prabinpebam.github.io/atiya/), with the classic site and the planet side by side. The source is on [GitHub](https://github.com/prabinpebam/atiya), and the project docs are published at [prabinpebam.github.io/atiya/docs](https://prabinpebam.github.io/atiya/docs/).",
+      "key": "pd7kym"
     }
   ],
   "topics": [

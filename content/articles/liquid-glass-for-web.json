@@ -14,31 +14,37 @@
   "body": [
     {
       "type": "text",
-      "markdown": "Liquid glass is cool, and I wanted it for web. When Apple introduced Liquid Glass in 2025, the part that stayed with me was not just the surface treatment; it was the sense that the interface material was alive, bending the world behind it instead of sitting as a flat translucent layer."
+      "markdown": "Liquid glass is cool, and I wanted it for web. When Apple introduced Liquid Glass in 2025, the part that stayed with me was not just the surface treatment; it was the sense that the interface material was alive, bending the world behind it instead of sitting as a flat translucent layer.",
+      "key": "k3w883"
     },
     {
       "type": "text",
-      "markdown": "I had already been exploring the same effect for designers with [Liquid Glass Pro](ref:article/liquid-glass-pro). This side project asks the companion question: what would it take to make the effect feel reusable on the web, inside normal DOM interfaces, across plain JavaScript, React and custom elements?"
+      "markdown": "I had already been exploring the same effect for designers with [Liquid Glass Pro](ref:article/liquid-glass-pro). This side project asks the companion question: what would it take to make the effect feel reusable on the web, inside normal DOM interfaces, across plain JavaScript, React and custom elements?",
+      "key": "7txv0w"
     },
     {
       "type": "figure",
       "media": "articles/liquid-glass-for-web/pasted-picture-2026-10-13",
       "width": "wide",
       "lightbox": true,
-      "rounded": false
+      "rounded": false,
+      "key": "994zwu"
     },
     {
       "type": "heading",
       "level": 2,
-      "text": "A material, not a screenshot"
+      "text": "A material, not a screenshot",
+      "key": "90ndtg"
     },
     {
       "type": "text",
-      "markdown": "The repo is a monorepo for a reusable liquid-glass library. The core package is framework-agnostic TypeScript. It has thin React bindings, a `<liquid-glass>` custom element, a token-driven UI package, a small vanilla example and a hosted design library that runs from GitHub Pages."
+      "markdown": "The repo is a monorepo for a reusable liquid-glass library. The core package is framework-agnostic TypeScript. It has thin React bindings, a `<liquid-glass>` custom element, a token-driven UI package, a small vanilla example and a hosted design library that runs from GitHub Pages.",
+      "key": "acj0d9"
     },
     {
       "type": "text",
-      "markdown": "The goal is not to paint a glossy card. The goal is to build one canonical mechanism that components can share: generate the material, attach it to a surface, then let buttons, inputs, toggles, search boxes and panels compose on top of it."
+      "markdown": "The goal is not to paint a glossy card. The goal is to build one canonical mechanism that components can share: generate the material, attach it to a surface, then let buttons, inputs, toggles, search boxes and panels compose on top of it.",
+      "key": "e8qwy8"
     },
     {
       "type": "collection",
@@ -65,22 +71,26 @@
           "subtext": "Early 0.1.0 work, with core refraction math implemented"
         }
       ],
-      "width": "content"
+      "width": "content",
+      "key": "0qhe20"
     },
     {
       "type": "figure",
       "media": "articles/liquid-glass-for-web/screenshot-2026-10-13-103953",
       "width": "wide",
-      "lightbox": true
+      "lightbox": true,
+      "key": "y83l2i"
     },
     {
       "type": "heading",
       "level": 2,
-      "text": "The engine underneath"
+      "text": "The engine underneath",
+      "key": "bim5lu"
     },
     {
       "type": "text",
-      "markdown": "The core pipeline starts with a surface profile, uses Snell's law to build a displacement field, rasterizes that into a displacement map and optional specular rim-light map, then applies the result through an SVG filter. The live docs version ports that runtime into buildless JavaScript so the design library can demonstrate the real effect, not static mockups."
+      "markdown": "The core pipeline starts with a surface profile, uses Snell's law to build a displacement field, rasterizes that into a displacement map and optional specular rim-light map, then applies the result through an SVG filter. The live docs version ports that runtime into buildless JavaScript so the design library can demonstrate the real effect, not static mockups.",
+      "key": "vs2d81"
     },
     {
       "type": "collection",
@@ -103,29 +113,35 @@
           "text": "The same core API is exposed through vanilla JavaScript, React and a custom element."
         }
       ],
-      "width": "content"
+      "width": "content",
+      "key": "umqjue"
     },
     {
       "type": "heading",
       "level": 2,
-      "text": "Designing around browser reality"
+      "text": "Designing around browser reality",
+      "key": "tc35l0"
     },
     {
       "type": "text",
-      "markdown": "The repo is honest about the browser constraint: SVG filters as `backdrop-filter` are currently a Chromium path. The library also supports `filter: url(#id)` for distorting an element's own content and a blur fallback when true backdrop refraction is not available."
+      "markdown": "The repo is honest about the browser constraint: SVG filters as `backdrop-filter` are currently a Chromium path. The library also supports `filter: url(#id)` for distorting an element's own content and a blur fallback when true backdrop refraction is not available.",
+      "key": "89kmj7"
     },
     {
       "type": "text",
-      "markdown": "That limitation shaped the design library. Every glassy part is a surface with content layered on top, and the material values come from tokens. If the refraction path changes, the component model can stay stable. If a designer wants softer frost, stronger chromatic aberration or a different tint, that should be a token change rather than a rewrite."
+      "markdown": "That limitation shaped the design library. Every glassy part is a surface with content layered on top, and the material values come from tokens. If the refraction path changes, the component model can stay stable. If a designer wants softer frost, stronger chromatic aberration or a different tint, that should be a token change rather than a rewrite.",
+      "key": "zlqkt6"
     },
     {
       "type": "heading",
       "level": 2,
-      "text": "Try it"
+      "text": "Try it",
+      "key": "dnlw6t"
     },
     {
       "type": "text",
-      "markdown": "The project is still early, but the live design library is already useful for feeling the material over real components: [open the demo](https://prabinpebam.github.io/liquid-glass-for-web/). The code is on GitHub at [prabinpebam/liquid-glass-for-web](https://github.com/prabinpebam/liquid-glass-for-web), including the docs, package scaffold, example and compatibility notes."
+      "markdown": "The project is still early, but the live design library is already useful for feeling the material over real components: [open the demo](https://prabinpebam.github.io/liquid-glass-for-web/). The code is on GitHub at [prabinpebam/liquid-glass-for-web](https://github.com/prabinpebam/liquid-glass-for-web), including the docs, package scaffold, example and compatibility notes.",
+      "key": "sfvoag"
     }
   ],
   "topics": [

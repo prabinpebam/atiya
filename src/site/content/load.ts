@@ -394,6 +394,13 @@ export function loadContent(docs: Record<string, unknown>, masters: Set<string>,
       if (ids.has(b.id)) add(file, `two headings have the anchor "${b.id}"; change one of them`, `body.${i}.id`);
       ids.add(b.id);
     });
+    // a block's key names one block (edit mode repairs a copy's on save)
+    const keys = new Set<string>();
+    a.body.forEach((b, i) => {
+      if (!b.key) return;
+      if (keys.has(b.key)) add(file, `two blocks have the key "${b.key}"; change one of them`, `body.${i}.key`);
+      keys.add(b.key);
+    });
   }
   for (const p of people.values()) if (p.avatar) needMedia(`content/people/${p.id}.json`, p.avatar);
   for (const r of recommendations) if (r.photo) needMedia('content/recommendations.json', r.photo);

@@ -5,13 +5,15 @@
  */
 import type { Article, Block } from '../../content/schema';
 import { paragraphsOf, parseMarkdown, plainText, serializeBlocks, type Inline } from '../../content/markdown';
+import { withoutKeys } from './keys';
 
 export type Body = Block[];
 
 export const insert = (body: Body, at: number, ...blocks: Block[]): Body => [...body.slice(0, at), ...blocks, ...body.slice(at)];
 export const remove = (body: Body, at: number): Body => body.filter((_, i) => i !== at);
 export const duplicate = (body: Body, at: number): Body => insert(body, at + 1, structuredClone(body[at]));
-export const replace = (body: Body, at: number, block: Block): Body => body.map((b, i) => (i === at ? block : b));
+/** A block put in another's place keeps that block's key (a kind change, a rebuilt block: it's still the same block). */
+export const replace = (body: Body, at: number, block: Block): Body => body.map((b, i) => (i !== at ? b : block.key || !b.key ? block : { ...block, key: b.key }));
 
 /** Moves a block from one position to another (the position it ends up at). */
 export function move(body: Body, from: number, to: number): Body {
@@ -163,7 +165,7 @@ export function excerptOf(b: Block, alt: (mediaId: string) => string | undefined
 
 /** Whether an edit to the article counts as a change of its words or blocks (§9: it moves "Updated" on). */
 export function isMeaningful(before: Article, after: Article): boolean {
-  const pick = (a: Article) => JSON.stringify([a.title, a.summary, a.hero, a.body]);
+  const pick = (a: Article) => JSON.stringify([a.title, a.summary, a.hero, withoutKeys(a.body)]);
   return pick(before) !== pick(after);
 }
 

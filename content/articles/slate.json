@@ -14,31 +14,37 @@
   "body": [
     {
       "type": "text",
-      "markdown": "Documenting has become a constant need, so I collected all the learnings into a documentation harness. Slate is my answer to the recurring moment when a project outgrows scattered notes: the specs, plans, research, decisions and evidence are all useful, but only if they are easy to navigate later."
+      "markdown": "Documenting has become a constant need, so I collected all the learnings into a documentation harness. Slate is my answer to the recurring moment when a project outgrows scattered notes: the specs, plans, research, decisions and evidence are all useful, but only if they are easy to navigate later.",
+      "key": "dnef2u"
     },
     {
       "type": "text",
-      "markdown": "I wanted something I could drop into a repository, hand to an AI agent with raw material, and get back a static documentation site with structure, search, navigation and enough visual language to make dense work approachable. That made Slate less a single docs site and more a repeatable way to make docs sites."
+      "markdown": "I wanted something I could drop into a repository, hand to an AI agent with raw material, and get back a static documentation site with structure, search, navigation and enough visual language to make dense work approachable. That made Slate less a single docs site and more a repeatable way to make docs sites.",
+      "key": "8yp4mg"
     },
     {
       "type": "figure",
       "media": "articles/slate/docs-overview",
       "width": "wide",
       "lightbox": true,
-      "shadow": true
+      "shadow": true,
+      "key": "gstezm"
     },
     {
       "type": "heading",
       "level": 2,
-      "text": "Why I made it"
+      "text": "Why I made it",
+      "key": "gmlgt5"
     },
     {
       "type": "text",
-      "markdown": "The portfolio site has a lot of moving parts: a classic site, a 3D planet, content contracts, an editor, design systems and engineering rules. Every one of those areas needs a source of truth. A README was too flat, and a hand-built docs app would have become another product to maintain."
+      "markdown": "The portfolio site has a lot of moving parts: a classic site, a 3D planet, content contracts, an editor, design systems and engineering rules. Every one of those areas needs a source of truth. A README was too flat, and a hand-built docs app would have become another product to maintain.",
+      "key": "4aquen"
     },
     {
       "type": "text",
-      "markdown": "Slate keeps the boring parts generic. The package owns the reader shell, component vocabulary, runtime synchronization, schemas and validation scripts. The host owns its content, theme, manifest and meaning. That boundary means I can reuse the harness without mixing one project's decisions into another."
+      "markdown": "Slate keeps the boring parts generic. The package owns the reader shell, component vocabulary, runtime synchronization, schemas and validation scripts. The host owns its content, theme, manifest and meaning. That boundary means I can reuse the harness without mixing one project's decisions into another.",
+      "key": "axlkdm"
     },
     {
       "type": "collection",
@@ -64,16 +70,19 @@
           "heading": "Used here",
           "subtext": "Powers the Atiya documentation published under /docs/"
         }
-      ]
+      ],
+      "key": "9ybc3q"
     },
     {
       "type": "heading",
       "level": 2,
-      "text": "What the harness does"
+      "text": "What the harness does",
+      "key": "prt1ah"
     },
     {
       "type": "text",
-      "markdown": "At its simplest, Slate is a `slate/` folder a host can copy or vendor. The initializer creates the host's docs root, and the runtime tools keep generated shell files in sync so agents do not hand-edit the reader."
+      "markdown": "At its simplest, Slate is a `slate/` folder a host can copy or vendor. The initializer creates the host's docs root, and the runtime tools keep generated shell files in sync so agents do not hand-edit the reader.",
+      "key": "3ld5ee"
     },
     {
       "type": "collection",
@@ -96,43 +105,51 @@
           "text": "For structured records, Slate Canvas adds a read-only React Flow surface with groups, repeated placements and named perspectives."
         }
       ],
-      "width": "wide"
+      "width": "wide",
+      "key": "r3ikae"
     },
     {
       "type": "figure",
       "media": "articles/slate/docs-page",
       "width": "wide",
       "lightbox": true,
-      "shadow": true
+      "shadow": true,
+      "key": "u6yuvz"
     },
     {
       "type": "heading",
       "level": 2,
-      "text": "What changed in practice"
+      "text": "What changed in practice",
+      "key": "ze2636"
     },
     {
       "type": "text",
-      "markdown": "The real test is this site's documentation. It lives in the repository, is published as a Slate host, and stays close to the work it describes. A spec can link to a plan, a plan can link to validation evidence, and the reader can search across all of it without a server-side app."
+      "markdown": "The real test is this site's documentation. It lives in the repository, is published as a Slate host, and stays close to the work it describes. A spec can link to a plan, a plan can link to validation evidence, and the reader can search across all of it without a server-side app.",
+      "key": "puxmub"
     },
     {
       "type": "text",
-      "markdown": "That matters for agent work too. The docs are not just presentation; they are instructions, constraints and context. Slate makes that material readable for people while still being structured enough for an AI agent to follow."
+      "markdown": "That matters for agent work too. The docs are not just presentation; they are instructions, constraints and context. Slate makes that material readable for people while still being structured enough for an AI agent to follow.",
+      "key": "ws9bno"
     },
     {
       "type": "figure",
       "media": "articles/slate/docs-search",
       "width": "wide",
       "lightbox": true,
-      "shadow": true
+      "shadow": true,
+      "key": "zhkhec"
     },
     {
       "type": "heading",
       "level": 2,
-      "text": "Try it"
+      "text": "Try it",
+      "key": "xy690r"
     },
     {
       "type": "text",
-      "markdown": "The code is on GitHub at [prabinpebam/slate](https://github.com/prabinpebam/slate). A live example is this site's [Atiya documentation](https://prabinpebam.github.io/atiya/docs/), which is built from the repository's `documentation/` folder with the vendored Slate package."
+      "markdown": "The code is on GitHub at [prabinpebam/slate](https://github.com/prabinpebam/slate). A live example is this site's [Atiya documentation](https://prabinpebam.github.io/atiya/docs/), which is built from the repository's `documentation/` folder with the vendored Slate package.",
+      "key": "wohbhp"
     }
   ],
   "topics": [

@@ -163,13 +163,13 @@ Each phase's Definition of Done is the spec's ([AI editing §15](ai-editing.md#1
 
 S1, S2 and S3 go in that order: the check needs keys, and the connector needs the check. S4 and S5 need S3. S6 needs S4. Phase 2 needs phase 1; phases 3, 6 and 8 need only phase 1.
 
-Each stage runs only what it changes, as [AGENTS.md](https://github.com/prabinpebam/atiya/blob/main/AGENTS.md) sets out: the unit tests it touches (`npx vitest related`), `npm run check` when types change, and the editor E2E tests for its screens through the test launcher. The end of phase 1 runs the broad checks once: every unit test, `npm run check`, `npm run verify:prod`, `build-parity`, and the whole editor project.
+Each stage runs only what it changes, as [AGENTS.md](https://github.com/prabinpebam/atiya/blob/main/AGENTS.md) sets out: the unit tests it touches, `npm run check` when types change, and the editor E2E tests for its screens through the test launcher. (`npx vitest related` stops on the private media glob in `masters.ts` before running anything, so the unit files that import the changed modules are named directly.) The end of phase 1 runs the broad checks once: every unit test, `npm run check`, `npm run verify:prod`, `build-parity`, and the whole editor project.
 
 ## 5. Status
 
 | Stage | State | Commit | Evidence |
 |---|---|---|---|
-| S1 Block keys | Planned | | |
+| S1 Block keys | Done | "Editor: block keys (AI plan S1)" | S1.1–S1.3: `blockKeys.test.ts` (every block type takes a key; fill, repair, find) and `content.test.ts` (a repeated key refused). S1.4: `editorServer.test.ts` "block keys on save", and the editor E2E "blocks: add from the palette, move, duplicate and delete" asserts every saved key is valid and unique after a duplicate. S1.5: the script keyed 17 articles (495 blocks), a second run reported 0 to change, and every article equals its committed version with its keys removed. S1.6: the production build before and after compared with `compareBuilds`: 1,390 files the same, sealed shapes the same. Also: the 29 unit files that import the changed modules (390 tests) and `npm run check` (0 errors). Private pages get keys on their next save ([AI editing §18](ai-editing.md#18-as-built)) |
 | S2 The contract and its check | Planned | | |
 | S3 The connector | Planned | | |
 | S4 The AI screen | Planned | | |

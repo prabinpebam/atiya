@@ -14,112 +14,135 @@
   "body": [
     {
       "type": "text",
-      "markdown": "These five browser tools are a set of small experiments in making pictures with code. I grouped them here because they all do a similar thing from different directions: start with a visual rule, expose a few controls, and let the canvas turn it into an image."
+      "markdown": "These five browser tools are a set of small experiments in making pictures with code. I grouped them here because they all do a similar thing from different directions: start with a visual rule, expose a few controls, and let the canvas turn it into an image.",
+      "key": "wdbq11"
     },
     {
       "type": "text",
-      "markdown": "They are deliberately lightweight. Each one runs as a self-contained web page, uses HTML canvas for drawing, and keeps the interface close to the output so the result can be tuned directly."
+      "markdown": "They are deliberately lightweight. Each one runs as a self-contained web page, uses HTML canvas for drawing, and keeps the interface close to the output so the result can be tuned directly.",
+      "key": "26fjvo"
     },
     {
       "type": "heading",
       "level": 2,
-      "text": "Mesh gradient generator"
+      "text": "Mesh gradient generator",
+      "key": "tkrm2o"
     },
     {
       "type": "text",
-      "markdown": "Mesh Gradient Generator makes soft, customizable mesh gradients for design work. It has controls for canvas size, cell count, blur, colour harmonies, colour themes, distortion effects, cell animation, hue animation and PNG export."
+      "markdown": "Mesh Gradient Generator makes soft, customizable mesh gradients for design work. It has controls for canvas size, cell count, blur, colour harmonies, colour themes, distortion effects, cell animation, hue animation and PNG export.",
+      "key": "wmbybq"
     },
     {
       "type": "figure",
       "media": "articles/generative-explorations/mesh-gradient",
       "width": "popout",
-      "lightbox": true
+      "lightbox": true,
+      "key": "a2txkm"
     },
     {
       "type": "text",
-      "markdown": "The tool builds the gradient from Voronoi cells using `d3-delaunay`, then blends and distorts them on an HTML canvas. Try the [live demo](https://prabinpebam.github.io/mesh-gradient-generator/) or see the [repo](https://github.com/prabinpebam/mesh-gradient-generator)."
+      "markdown": "The tool builds the gradient from Voronoi cells using `d3-delaunay`, then blends and distorts them on an HTML canvas. Try the [live demo](https://prabinpebam.github.io/mesh-gradient-generator/) or see the [repo](https://github.com/prabinpebam/mesh-gradient-generator).",
+      "key": "p22p7a"
     },
     {
       "type": "heading",
       "level": 2,
-      "text": "Noise animation"
+      "text": "Noise animation",
+      "key": "un6a1z"
     },
     {
       "type": "text",
-      "markdown": "Noise Animation makes an animated black-and-white noise field with real-time controls. The page includes sliders and toggles for animation speed, resolution, two Perlin noise layers, stippling, displacement and ripples."
+      "markdown": "Noise Animation makes an animated black-and-white noise field with real-time controls. The page includes sliders and toggles for animation speed, resolution, two Perlin noise layers, stippling, displacement and ripples.",
+      "key": "4zxwpy"
     },
     {
       "type": "figure",
       "media": "articles/generative-explorations/noise-animation",
       "width": "popout",
-      "lightbox": true
+      "lightbox": true,
+      "key": "g2tlq8"
     },
     {
       "type": "text",
-      "markdown": "It combines a Perlin noise library with canvas rendering, a stipple layer and mouse-driven ripple origins. Try the [live demo](https://prabinpebam.github.io/noise-animation/) or see the [repo](https://github.com/prabinpebam/noise-animation)."
+      "markdown": "It combines a Perlin noise library with canvas rendering, a stipple layer and mouse-driven ripple origins. Try the [live demo](https://prabinpebam.github.io/noise-animation/) or see the [repo](https://github.com/prabinpebam/noise-animation).",
+      "key": "rvd73h"
     },
     {
       "type": "heading",
       "level": 2,
-      "text": "Stipple art"
+      "text": "Stipple art",
+      "key": "i0t43m"
     },
     {
       "type": "text",
-      "markdown": "Stipple Art turns an uploaded image into dots. The controls let the image be regenerated with a seed, stipple count, iteration count, dot sizing, colourization, animation and SVG export."
+      "markdown": "Stipple Art turns an uploaded image into dots. The controls let the image be regenerated with a seed, stipple count, iteration count, dot sizing, colourization, animation and SVG export.",
+      "key": "0hy28w"
     },
     {
       "type": "figure",
       "media": "articles/generative-explorations/pasted-picture-2026-10-02",
       "width": "popout",
-      "lightbox": true
+      "lightbox": true,
+      "key": "6xxfup"
     },
     {
       "type": "text",
-      "markdown": "The README describes it as a weighted Voronoi stippling algorithm: points are seeded by image brightness, then refined with Monte Carlo sampling and Lloyd relaxation through D3's Voronoi tools. Try the [live demo](https://prabinpebam.github.io/stipple-art/) or see the [repo](https://github.com/prabinpebam/stipple-art)."
+      "markdown": "The README describes it as a weighted Voronoi stippling algorithm: points are seeded by image brightness, then refined with Monte Carlo sampling and Lloyd relaxation through D3's Voronoi tools. Try the [live demo](https://prabinpebam.github.io/stipple-art/) or see the [repo](https://github.com/prabinpebam/stipple-art).",
+      "key": "cwsg37"
     },
     {
       "type": "heading",
       "level": 2,
-      "text": "Guilloche"
+      "text": "Guilloche",
+      "key": "kpmoqb"
     },
     {
       "type": "text",
-      "markdown": "Guilloche generates intricate looping line patterns in the browser. The controls expose the fixed circle radius, rolling circle radius, pen distance, curve count, rotation, line thickness, colour gradient, displacement and animation."
+      "markdown": "Guilloche generates intricate looping line patterns in the browser. The controls expose the fixed circle radius, rolling circle radius, pen distance, curve count, rotation, line thickness, colour gradient, displacement and animation.",
+      "key": "0w9tl5"
     },
     {
       "type": "figure",
       "media": "articles/generative-explorations/pasted-picture-2026-10-02-2",
       "width": "popout",
-      "lightbox": true
+      "lightbox": true,
+      "key": "ttr5k0"
     },
     {
       "type": "text",
-      "markdown": "The drawing comes from spirograph-style equations: epicycloid, hypotrochoid or epitrochoid curves, with polar displacement and gradient colouring layered on top. Try the [live demo](https://prabinpebam.github.io/guilloche/) or see the [repo](https://github.com/prabinpebam/guilloche)."
+      "markdown": "The drawing comes from spirograph-style equations: epicycloid, hypotrochoid or epitrochoid curves, with polar displacement and gradient colouring layered on top. Try the [live demo](https://prabinpebam.github.io/guilloche/) or see the [repo](https://github.com/prabinpebam/guilloche).",
+      "key": "jeiubq"
     },
     {
       "type": "heading",
       "level": 2,
-      "text": "String art"
+      "text": "String art",
+      "key": "svzb0p"
     },
     {
       "type": "text",
-      "markdown": "String Art converts an uploaded image into chords drawn between pins on a circle. It can switch between light and dark modes, change the number of pins and chords, adjust line weight, download the chord steps and export SVG."
+      "markdown": "String Art converts an uploaded image into chords drawn between pins on a circle. It can switch between light and dark modes, change the number of pins and chords, adjust line weight, download the chord steps and export SVG.",
+      "key": "gbntvh"
     },
     {
       "type": "figure",
       "media": "articles/generative-explorations/pasted-picture-2026-10-02-3",
       "width": "wide",
-      "lightbox": true
+      "lightbox": true,
+      "key": "id3maq"
     },
     {
       "type": "figure",
       "media": "articles/generative-explorations/pasted-picture-2026-10-02-4",
       "width": "popout",
-      "lightbox": true
+      "lightbox": true,
+      "key": "jcb888"
     },
     {
       "type": "text",
-      "markdown": "The generator crops the image to a square, converts it to grayscale, then greedily chooses the chord that reduces the current image error the most. Try the [live demo](https://prabinpebam.github.io/string-art/) or see the [repo](https://github.com/prabinpebam/string-art)."
+      "markdown": "The generator crops the image to a square, converts it to grayscale, then greedily chooses the chord that reduces the current image error the most. Try the [live demo](https://prabinpebam.github.io/string-art/) or see the [repo](https://github.com/prabinpebam/string-art).",
+      "key": "bia1n8"
     }
   ],
   "topics": [

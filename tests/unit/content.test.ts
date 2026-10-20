@@ -333,6 +333,14 @@ describe('the loader checks what it is given', () => {
     expect(problems({ ...base, '/content/articles/a.json': { ...article, body: [heading('What shipped'), heading('What shipped')] } })).toEqual([]);
     expect(problems({ ...base, '/content/articles/a.json': { ...article, body: [heading('One', 'shipped'), heading('Two', 'shipped')] } }).join('\n')).toMatch(/two headings have the anchor "shipped"/);
   });
+  it('a block may carry a key (six letters and digits), and no two blocks of an article share one (ai-editing.md §3)', () => {
+    const article = base['/content/articles/a.json'];
+    const text = (key?: string) => ({ type: 'text', markdown: 'One.', ...(key ? { key } : {}) });
+    expect(problems({ ...base, '/content/articles/a.json': { ...article, body: [text('k1a2b3'), text('x9y8z7'), text()] } })).toEqual([]);
+    expect(problems({ ...base, '/content/articles/a.json': { ...article, body: [text('k1a2b3'), text('k1a2b3')] } }).join('\n')).toMatch(/two blocks have the key "k1a2b3"/);
+    expect(block.safeParse({ type: 'figure', media: 'articles/a/pic', key: 'abc123' }).success).toBe(true);
+    for (const bad of ['ABC123', 'abc12', 'abc1234', 'abc-12']) expect(block.safeParse({ type: 'divider', key: bad }).success).toBe(false);
+  });
   it('a paragraph can ask for a drop cap (off unless it does)', () => {
     expect(block.safeParse({ type: 'text', markdown: 'Once.', dropcap: true }).success).toBe(true);
     expect(block.safeParse({ type: 'text', markdown: 'Once.' }).success).toBe(true);

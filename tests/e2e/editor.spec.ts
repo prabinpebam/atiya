@@ -321,6 +321,10 @@ test.describe('editor', () => {
     await expect(outlineRows(page)).toHaveCount(count + 2);
     await saved(page);
     expect(bodyLength()).toBe(count + 2);
+    // every block keyed on save, the copy with a key of its own (ai-editing.md §3)
+    const keys = (readJson(articleFile()).body as { key?: string }[]).map((b) => b.key);
+    expect(keys.every((k) => /^[a-z0-9]{6}$/.test(k ?? ''))).toBe(true);
+    expect(new Set(keys).size).toBe(keys.length);
   });
 
   test('a collection: added from the palette with two items, shown on the page, then a third item and a picture added in the inspector', async ({ page }) => {

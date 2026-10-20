@@ -21,11 +21,13 @@
     {
       "type": "text",
       "markdown": "I'm inherently a maker. I like getting hands-on, understanding how things work, and building things myself. One of my strengths is the ability to move between levels of abstraction: diving into an intricate technical detail one moment, shaping the strategic narrative of how we're defining a category in the industry the next, and connecting every tactical effort to that larger strategic intent.",
-      "dropcap": true
+      "dropcap": true,
+      "key": "rss27d"
     },
     {
       "type": "text",
-      "markdown": "I'm also annoyingly curious. Almost every conversation with me becomes an enquiry, an attempt to build a deeper understanding of the subject at hand. I rarely find myself satisfied with knowing *what* something is. I want to understand *why* it is the way it is, what makes it work, and what else might be possible."
+      "markdown": "I'm also annoyingly curious. Almost every conversation with me becomes an enquiry, an attempt to build a deeper understanding of the subject at hand. I rarely find myself satisfied with knowing *what* something is. I want to understand *why* it is the way it is, what makes it work, and what else might be possible.",
+      "key": "blo4w9"
     },
     {
       "type": "figure",
@@ -35,19 +37,23 @@
       "display": "fit",
       "background": false,
       "rounded": false,
-      "showCaption": false
+      "showCaption": false,
+      "key": "k8yjnw"
     },
     {
       "type": "text",
-      "markdown": "I'm driven by the desire to excel, to push boundaries, and to create things that impress me as much as they impress others. I'm always learning and making something, whether at work or in my personal life."
+      "markdown": "I'm driven by the desire to excel, to push boundaries, and to create things that impress me as much as they impress others. I'm always learning and making something, whether at work or in my personal life.",
+      "key": "f5p4o8"
     },
     {
       "type": "text",
-      "markdown": "My fascination with AI was a natural extension of this instinct. What captivated me from day one was the ability to create things I couldn't have created before. AI opened up entirely new possibilities for someone who likes to build. I could experiment with ideas that previously would have required skills, resources, or teams I didn't have access to."
+      "markdown": "My fascination with AI was a natural extension of this instinct. What captivated me from day one was the ability to create things I couldn't have created before. AI opened up entirely new possibilities for someone who likes to build. I could experiment with ideas that previously would have required skills, resources, or teams I didn't have access to.",
+      "key": "fnvldk"
     },
     {
       "type": "text",
-      "markdown": "I was [building Figma plugins with AI](https://medium.com/design-bootcamp/i-used-ai-to-create-a-figma-plugin-520e952fbff7) back in early 2023, long before it became mainstream. I explored the rough edges of Automatic1111 Stable Diffusion WebUI and the complexity of ComfyUI, built my own [custom nodes](https://github.com/prabinpebam/anyPython), trained LoRAs, and created my own agentic clients for LLMs. I've always enjoyed pushing beyond what a tool offers out of the box to discover what else might be possible."
+      "markdown": "I was [building Figma plugins with AI](https://medium.com/design-bootcamp/i-used-ai-to-create-a-figma-plugin-520e952fbff7) back in early 2023, long before it became mainstream. I explored the rough edges of Automatic1111 Stable Diffusion WebUI and the complexity of ComfyUI, built my own [custom nodes](https://github.com/prabinpebam/anyPython), trained LoRAs, and created my own agentic clients for LLMs. I've always enjoyed pushing beyond what a tool offers out of the box to discover what else might be possible.",
+      "key": "7kjf1r"
     },
     {
       "type": "figure",
@@ -57,15 +63,18 @@
       "display": "fit",
       "background": false,
       "rounded": false,
-      "showCaption": false
+      "showCaption": false,
+      "key": "v57t22"
     },
     {
       "type": "text",
-      "markdown": "I'm comfortable getting into the weeds without losing sight of the bigger picture. I enjoy the technical challenge of making something work, but I'm equally interested in understanding why it should exist, what problem it solves, and how it fits into a larger vision."
+      "markdown": "I'm comfortable getting into the weeds without losing sight of the bigger picture. I enjoy the technical challenge of making something work, but I'm equally interested in understanding why it should exist, what problem it solves, and how it fits into a larger vision.",
+      "key": "glyb68"
     },
     {
       "type": "text",
-      "markdown": "For me, these aren't separate ways of thinking. Understanding the details helps me make better strategic decisions, and having a clear strategic intent helps me decide which details matter."
+      "markdown": "For me, these aren't separate ways of thinking. Understanding the details helps me make better strategic decisions, and having a clear strategic intent helps me decide which details matter.",
+      "key": "wwlnhs"
     },
     {
       "type": "figure",
@@ -75,11 +84,13 @@
       "display": "fit",
       "background": false,
       "rounded": false,
-      "showCaption": false
+      "showCaption": false,
+      "key": "dkcg1l"
     },
     {
       "type": "text",
-      "markdown": "Ultimately, I'm driven by curiosity and the desire to make things better than they were before. I want to understand more, create more, and continually expand what I'm capable of doing. The satisfaction comes not just from arriving at an answer, but from discovering possibilities I couldn't see before."
+      "markdown": "Ultimately, I'm driven by curiosity and the desire to make things better than they were before. I want to understand more, create more, and continually expand what I'm capable of doing. The satisfaction comes not just from arriving at an answer, but from discovering possibilities I couldn't see before.",
+      "key": "bzwl3v"
     }
   ],
   "hero": {

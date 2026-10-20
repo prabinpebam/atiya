@@ -31,7 +31,8 @@
           "heading": "Team",
           "subtext": "25 members"
         }
-      ]
+      ],
+      "key": "bzubyl"
     },
     {
       "type": "collection",
@@ -41,20 +42,24 @@
           "heading": "Hand crafted",
           "subtext": "The images use in this project were created by me personally using C4D, octane render and After Effects, way before gen AI."
         }
-      ]
+      ],
+      "key": "cql8od"
     },
     {
       "type": "heading",
       "level": 2,
-      "text": "A rebrand designed to move the team, not simply rename it."
+      "text": "A rebrand designed to move the team, not simply rename it.",
+      "key": "bz2dj0"
     },
     {
       "type": "text",
-      "markdown": "The Windows Design team in India needed more than a visual refresh. I wanted the identity to help people reconnect with why they design, raise the standard they set for themselves, and see individual ambition as a force that could strengthen the whole team."
+      "markdown": "The Windows Design team in India needed more than a visual refresh. I wanted the identity to help people reconnect with why they design, raise the standard they set for themselves, and see individual ambition as a force that could strengthen the whole team.",
+      "key": "rt30gg"
     },
     {
       "type": "text",
-      "markdown": "My goal was to re-energize the team and make them reflect on their purpose and goal in life. I wanted to instill in them a desire to do great things and be ambitious."
+      "markdown": "My goal was to re-energize the team and make them reflect on their purpose and goal in life. I wanted to instill in them a desire to do great things and be ambitious.",
+      "key": "3bvkqz"
     },
     {
       "type": "collection",
@@ -77,118 +82,142 @@
           "text": "**Do what makes you proud.** A standard chosen from within."
         }
       ],
-      "width": "popout"
+      "width": "popout",
+      "key": "hz19hb"
     },
     {
       "type": "figure",
       "media": "articles/do-what-makes-you-proud/slide-swan-sage",
       "width": "content",
       "lightbox": true,
-      "caption": "I used C4D and Octane render to create the visual language"
+      "caption": "I used C4D and Octane render to create the visual language",
+      "key": "4q4l00"
     },
     {
       "type": "heading",
       "level": 2,
-      "text": "Be ambitious"
+      "text": "Be ambitious",
+      "key": "gxfqpt"
     },
     {
       "type": "text",
-      "markdown": "Your ambitions and aspirations are where you start. We want different things: mastery, connection, recognition, growth, influence, or the chance to make something bigger than ourselves. That diversity is not a problem to solve. It is the source of energy that you need to convert to learning, growth and impact."
+      "markdown": "Your ambitions and aspirations are where you start. We want different things: mastery, connection, recognition, growth, influence, or the chance to make something bigger than ourselves. That diversity is not a problem to solve. It is the source of energy that you need to convert to learning, growth and impact.",
+      "key": "q9v1e9"
     },
     {
       "type": "quote",
       "text": "Be better than yesterday.",
       "variant": "pull",
-      "cite": "A wise person"
+      "cite": "A wise person",
+      "key": "ocyt39"
     },
     {
       "type": "heading",
       "level": 2,
-      "text": "Interest creates energy. Ownership turns it into progress."
+      "text": "Interest creates energy. Ownership turns it into progress.",
+      "key": "fjgz0j"
     },
     {
       "type": "text",
-      "markdown": "I called the mindset **excited accountability**. First, **be interested**: aligned with the work and be passionate about it. Then, **be accountable**: want to impress through the quality of the outcome. Neither works for long without the other."
+      "markdown": "I called the mindset **excited accountability**. First, **be interested**: aligned with the work and be passionate about it. Then, **be accountable**: want to impress through the quality of the outcome. Neither works for long without the other.",
+      "key": "s9bbuo"
     },
     {
       "type": "heading",
       "level": 2,
-      "text": "Accountability should energize, not create pressure."
+      "text": "Accountability should energize, not create pressure.",
+      "key": "a5r4al"
     },
     {
       "type": "text",
-      "markdown": "It isn’t compliance, surveillance, or pressure from above. It’s the pride of taking an idea far enough, and refining it deeply enough, that the result can stand on its own."
+      "markdown": "It isn’t compliance, surveillance, or pressure from above. It’s the pride of taking an idea far enough, and refining it deeply enough, that the result can stand on its own.",
+      "key": "frauzn"
     },
     {
-      "type": "divider"
+      "type": "divider",
+      "key": "3p0j1b"
     },
     {
       "type": "figure",
       "media": "articles/do-what-makes-you-proud/pasted-picture-2026-10-01",
       "width": "content",
       "lightbox": true,
-      "showCaption": false
+      "showCaption": false,
+      "key": "qasu8t"
     },
     {
       "type": "heading",
       "level": 2,
-      "text": "Learning should be a loop, not a onetime activity."
+      "text": "Learning should be a loop, not a onetime activity.",
+      "key": "7713rl"
     },
     {
       "type": "text",
-      "markdown": "Inspiration and expertise feeds interest. Interest makes accountability feel chosen rather than imposed. Accountability gives you learning with purpose. Better work earns recognition and self-respect. Expertise raises interest, recognition raises your aspiration, and the loop starts again at a higher level."
+      "markdown": "Inspiration and expertise feeds interest. Interest makes accountability feel chosen rather than imposed. Accountability gives you learning with purpose. Better work earns recognition and self-respect. Expertise raises interest, recognition raises your aspiration, and the loop starts again at a higher level.",
+      "key": "xftjlu"
     },
     {
       "type": "heading",
       "level": 2,
-      "text": "Don’t optimize for approval. Optimize for your best work."
+      "text": "Don’t optimize for approval. Optimize for your best work.",
+      "key": "k4hpa9"
     },
     {
       "type": "text",
-      "markdown": "We’re not here to make a manager say yes or to win leadership approval. We’re here to do our best work, become leaders in our areas, and hold ourselves to a world-class benchmark. Approval matters, but that should not be what drives you."
+      "markdown": "We’re not here to make a manager say yes or to win leadership approval. We’re here to do our best work, become leaders in our areas, and hold ourselves to a world-class benchmark. Approval matters, but that should not be what drives you.",
+      "key": "vqap7l"
     },
     {
       "type": "heading",
       "level": 2,
-      "text": "Own the outcome, not the task."
+      "text": "Own the outcome, not the task.",
+      "key": "wz1glv"
     },
     {
       "type": "text",
-      "markdown": "Ambition shouldn’t come from being told to be ambitious. It should come from the fact that making something excellent is meaningful in itself. So the standard had to come from within:"
+      "markdown": "Ambition shouldn’t come from being told to be ambitious. It should come from the fact that making something excellent is meaningful in itself. So the standard had to come from within:",
+      "key": "ndv09y"
     },
     {
       "type": "quote",
       "variant": "pull",
-      "text": "Would I be proud to put my name behind this?"
+      "text": "Would I be proud to put my name behind this?",
+      "key": "jpu3lc"
     },
     {
       "type": "heading",
       "level": 2,
-      "text": "Do what makes you proud."
+      "text": "Do what makes you proud.",
+      "key": "13wk5e"
     },
     {
       "type": "text",
-      "markdown": "That’s why the slogan carries weight. It isn’t motivational decoration. It sums up how we wanted to work: personal aspiration, disciplined craft, accountability for outcomes, and the courage to aim higher."
+      "markdown": "That’s why the slogan carries weight. It isn’t motivational decoration. It sums up how we wanted to work: personal aspiration, disciplined craft, accountability for outcomes, and the courage to aim higher.",
+      "key": "psrjbl"
     },
     {
       "type": "figure",
       "media": "articles/do-what-makes-you-proud/lettering",
       "width": "popout",
       "lightbox": true,
-      "caption": "Slogan logotype design was done by me"
+      "caption": "Slogan logotype design was done by me",
+      "key": "ia908b"
     },
     {
       "type": "heading",
       "level": 2,
-      "text": "The identity was a vehicle for a more demanding conversation."
+      "text": "The identity was a vehicle for a more demanding conversation.",
+      "key": "chh8np"
     },
     {
       "type": "text",
-      "markdown": "**Shared language.** *Pride*, *craft*, and *own the outcome* became part of reviews, team rituals, and everyday conversations."
+      "markdown": "**Shared language.** *Pride*, *craft*, and *own the outcome* became part of reviews, team rituals, and everyday conversations.",
+      "key": "fnv1h9"
     },
     {
       "type": "text",
-      "markdown": "**Team energy.** Keeping a team energized is hard. It becomes possible when each person drives their own ambition."
+      "markdown": "**Team energy.** Keeping a team energized is hard. It becomes possible when each person drives their own ambition.",
+      "key": "ziharl"
     },
     {
       "type": "video",
@@ -202,17 +231,20 @@
       "poster": "articles/do-what-makes-you-proud/team-video-poster",
       "duration": 140,
       "caption": "The team video, recording, editing and motion design done by me",
-      "width": "wide"
+      "width": "wide",
+      "key": "eidq5g"
     },
     {
       "type": "text",
-      "markdown": "**Visible adoption.** Team T-shirts and slide templates carried the idea into everyday work."
+      "markdown": "**Visible adoption.** Team T-shirts and slide templates carried the idea into everyday work.",
+      "key": "kz5ug6"
     },
     {
       "type": "figure",
       "media": "articles/do-what-makes-you-proud/tshirt",
       "width": "popout",
-      "lightbox": true
+      "lightbox": true,
+      "key": "5qims7"
     },
     {
       "type": "carousel",
@@ -239,50 +271,61 @@
           "media": "articles/do-what-makes-you-proud/slide-swan-sage"
         }
       ],
-      "arrows": false
+      "arrows": false,
+      "key": "r772ec"
     },
     {
       "type": "figure",
       "media": "articles/do-what-makes-you-proud/pasted-picture-2026-10-01-2-crop",
       "width": "content",
-      "lightbox": true
+      "lightbox": true,
+      "key": "dnujto"
     },
     {
       "type": "heading",
       "level": 2,
-      "text": "A shared standard, defined by each person."
+      "text": "A shared standard, defined by each person.",
+      "key": "mifick"
     },
     {
       "type": "text",
-      "markdown": "The most meaningful outcome wasn’t visual consistency. It was that the team could point to a shared idea of quality without reducing it to a checklist. “Do what makes you proud” made the standard memorable while leaving each person room to decide what pride asked of them."
+      "markdown": "The most meaningful outcome wasn’t visual consistency. It was that the team could point to a shared idea of quality without reducing it to a checklist. “Do what makes you proud” made the standard memorable while leaving each person room to decide what pride asked of them.",
+      "key": "44silb"
     },
     {
-      "type": "divider"
+      "type": "divider",
+      "key": "ov1s2p"
     },
     {
       "type": "heading",
       "level": 2,
-      "text": "Navigating to the best you"
+      "text": "Navigating to the best you",
+      "key": "exhv84"
     },
     {
       "type": "text",
-      "markdown": "_**In the Loom of Destiny**\\\n We are the weavers of our own tapestry,\\\n Threads spun from choices, both bold and wary.\\\n Each decision, a shuttle across time,\\\n Stitching our essence, a rhythm sublime._"
+      "markdown": "_**In the Loom of Destiny**\\\n We are the weavers of our own tapestry,\\\n Threads spun from choices, both bold and wary.\\\n Each decision, a shuttle across time,\\\n Stitching our essence, a rhythm sublime._",
+      "key": "elko65"
     },
     {
       "type": "text",
-      "markdown": "_**The Whisper of Small Choices**\\\n Listen closely to the rustle of leaves,\\\n For in the flutter of mundane moments, we believe.\\\n The morning brew—black or with cream?\\\n The path to work—left or right, it seems.\\\n These whispers of small choices, soft and fleet,\\\n Shape the contours of our life’s heartbeat._"
+      "markdown": "_**The Whisper of Small Choices**\\\n Listen closely to the rustle of leaves,\\\n For in the flutter of mundane moments, we believe.\\\n The morning brew—black or with cream?\\\n The path to work—left or right, it seems.\\\n These whispers of small choices, soft and fleet,\\\n Shape the contours of our life’s heartbeat._",
+      "key": "y4gyc7"
     },
     {
       "type": "text",
-      "markdown": "_**The Grand Crossroads Beckon**\\\n Yet, behold the grand crossroads, wide and vast,\\\n Where destiny unfurls its sail, taut and fast.\\\n To leap or linger, to risk or retreat,\\\n Here, our souls dance on the edge of fate.\\\n The career switch, the leap of faith,\\\n The moonlit kiss, the uncharted wraith.\\\n These monumental choices, etched in stardust,\\\n Define the constellations of our wanderlust._"
+      "markdown": "_**The Grand Crossroads Beckon**\\\n Yet, behold the grand crossroads, wide and vast,\\\n Where destiny unfurls its sail, taut and fast.\\\n To leap or linger, to risk or retreat,\\\n Here, our souls dance on the edge of fate.\\\n The career switch, the leap of faith,\\\n The moonlit kiss, the uncharted wraith.\\\n These monumental choices, etched in stardust,\\\n Define the constellations of our wanderlust._",
+      "key": "lyiw7u"
     },
     {
       "type": "text",
-      "markdown": "_**The Symphony of Regrets and Triumphs**\\\n And what of the roads not taken?\\\n They echo in the chambers of our hearts, unshaken.\\\n Regrets, like minor chords, hum their refrain,\\\n Yet they harmonize with triumphs, easing our pain.\\\n For we are not mere sum of our grand deeds,\\\n But the symphony of every choice, every seed._"
+      "markdown": "_**The Symphony of Regrets and Triumphs**\\\n And what of the roads not taken?\\\n They echo in the chambers of our hearts, unshaken.\\\n Regrets, like minor chords, hum their refrain,\\\n Yet they harmonize with triumphs, easing our pain.\\\n For we are not mere sum of our grand deeds,\\\n But the symphony of every choice, every seed._",
+      "key": "2r5gqm"
     },
     {
       "type": "text",
-      "markdown": "_**Navigating to the Best You**\\\n So, my fellow travelers, as we gather here,\\\n Let us honor the mosaic of our yesteryears.\\\n Embrace the tiny stitches, the cosmic leaps,\\\n For within them lies the map to our soul’s keeps.\\\n Career decisions—the compass of our flight,\\\n Guiding us toward the brightest starlight.\\\n Let’s set sail, charting our course anew,\\\n Navigating to the best version of me and you._"
+      "markdown": "_**Navigating to the Best You**\\\n So, my fellow travelers, as we gather here,\\\n Let us honor the mosaic of our yesteryears.\\\n Embrace the tiny stitches, the cosmic leaps,\\\n For within them lies the map to our soul’s keeps.\\\n Career decisions—the compass of our flight,\\\n Guiding us toward the brightest starlight.\\\n Let’s set sail, charting our course anew,\\\n Navigating to the best version of me and you._",
+      "key": "w9o4jy"
     },
     {
       "type": "carousel",
@@ -299,7 +342,8 @@
       "pager": "dots",
       "arrows": false,
       "showCaption": false,
-      "peek": true
+      "peek": true,
+      "key": "6lphz7"
     }
   ]
 }

@@ -643,5 +643,13 @@ Every phase also updates this page's as-built notes and the content spec, and pa
 
 ## 18. As built
 
-Nothing is built yet. Each phase records here what it built, where it differs from this spec, and its evidence.
+Each phase records here what it built, where it differs from this spec, and its evidence. Stage by stage evidence is in the [plan's status](ai-plan.md#5-status).
+
+### Block keys (phase 1, stage S1)
+
+- **The field and the check.** Every block type in `src/site/content/schema.ts` takes an optional `key` (`blockKey`, six lowercase letters and digits). The loader (`load.ts`, beside the heading-anchor check) refuses a repeated key in one article, naming the later block's `body.<n>.key`.
+- **The rules** are pure in `src/site/editor/model/keys.ts`: `withKeys` fills a missing or malformed key and re-keys the later of two blocks that share one (so a duplicate's original keeps its name), `findKey` finds a block, and `withoutKeys` lets `isMeaningful` ignore keys, so keying an article never moves its updated date.
+- **When a block gets one.** As built, keys are given at the save, not at the moment a block appears: the article editor keys the body in its one save queue before each `PUT`, and the server's `saveArticle` keys it again for any other writer. The result is the one §3 describes: a new, pasted or AI-added block is keyed on its first save, a copy gets its own. `ops.replace` carries the replaced block's key to a rebuilt one, so Turn into keeps it.
+- **The migration.** `node scripts/add-block-keys.mjs` (`--check` to only count, `--root` for another content folder) keyed the 17 articles in `content/`: 495 blocks, nothing else changed; a second run changes nothing. It differs from §3 in one way: **private pages weren't migrated.** `private-pages/` is its own repository, so its pages get their keys on their next save in edit mode instead. Nothing needs a key before a proposal is made, and a proposal is only made in edit mode, after a save.
+- **The site** never renders a key: the production build before and after the migration is the same (1,390 files, the sealed files the same shapes).
 

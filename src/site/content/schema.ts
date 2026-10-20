@@ -182,9 +182,13 @@ export const collectionItem = z
   })
   .refine((i) => i.heading || i.media || i.subtext || i.text, 'an item needs at least one of a heading, a picture, a subtext or its words');
 
+/** A block's stable name (documentation/editor/ai-editing.md §3): six lowercase letters and digits, unique in its article, so a proposal or a comment can follow the block as others move. Edit mode gives one; the site never renders it. */
+export const blockKey = z.string().regex(/^[a-z0-9]{6}$/).optional();
+
 export const block = z.discriminatedUnion('type', [
   z.strictObject({
     type: z.literal('text'),
+    key: blockKey,
     /** A paragraph opens with a drop cap (off unless asked for; a list ignores it). */
     dropcap: z.boolean().optional(),
     markdown: z
@@ -194,6 +198,7 @@ export const block = z.discriminatedUnion('type', [
   }),
   z.strictObject({
     type: z.literal('heading'),
+    key: blockKey,
     level: z.union([z.literal(2), z.literal(3), z.literal(4)]),
     text: z.string().min(1),
     id: id.optional(),
@@ -203,11 +208,12 @@ export const block = z.discriminatedUnion('type', [
     showMarker: z.boolean().optional(),
   }),
   /** A line or two more about the heading just above it, set close under it and read as part of it. */
-  z.strictObject({ type: z.literal('subheading'), text: z.string().min(1) }),
+  z.strictObject({ type: z.literal('subheading'), key: blockKey, text: z.string().min(1) }),
   /** A section's mark in the column ("1", "Chapter 1"), in the big marigold type of a heading's margin mark. */
-  z.strictObject({ type: z.literal('marker'), text: z.string().trim().min(1).max(60) }),
+  z.strictObject({ type: z.literal('marker'), key: blockKey, text: z.string().trim().min(1).max(60) }),
   z.strictObject({
     type: z.literal('figure'),
+    key: blockKey,
     media: mediaId,
     caption: z.string().optional(),
     credit: z.string().optional(),
@@ -222,10 +228,11 @@ export const block = z.discriminatedUnion('type', [
     rounded: rounded.optional(),
     shadow: shadow.optional(),
   }),
-  z.strictObject({ type: z.literal('gallery'), items: z.array(mediaUse).min(2), layout: z.enum(['grid', 'mosaic', 'row']).optional(), span: z.boolean().optional(), fit: z.enum(['cover', 'contain']).optional(), display: display.optional(), background: background.optional(), rounded: rounded.optional(), shadow: shadow.optional(), caption: z.string().optional(), showCaption: z.boolean().optional(), width: width.optional(), lightbox: z.boolean().optional() }),
-  z.strictObject({ type: z.literal('carousel'), items: z.array(mediaUse).min(2), label: z.string().min(1), peek: z.boolean().optional(), pager: z.enum(['dots', 'filmstrip', 'filmstrip-wrap']).optional(), arrows: z.boolean().optional(), showCaption: z.boolean().optional(), lightbox: z.boolean().optional(), display: display.optional(), background: background.optional(), rounded: rounded.optional(), shadow: shadow.optional() }),
+  z.strictObject({ type: z.literal('gallery'), key: blockKey, items: z.array(mediaUse).min(2), layout: z.enum(['grid', 'mosaic', 'row']).optional(), span: z.boolean().optional(), fit: z.enum(['cover', 'contain']).optional(), display: display.optional(), background: background.optional(), rounded: rounded.optional(), shadow: shadow.optional(), caption: z.string().optional(), showCaption: z.boolean().optional(), width: width.optional(), lightbox: z.boolean().optional() }),
+  z.strictObject({ type: z.literal('carousel'), key: blockKey, items: z.array(mediaUse).min(2), label: z.string().min(1), peek: z.boolean().optional(), pager: z.enum(['dots', 'filmstrip', 'filmstrip-wrap']).optional(), arrows: z.boolean().optional(), showCaption: z.boolean().optional(), lightbox: z.boolean().optional(), display: display.optional(), background: background.optional(), rounded: rounded.optional(), shadow: shadow.optional() }),
   z.strictObject({
     type: z.literal('video'),
+    key: blockKey,
     /** An uploaded video file (a `video` media ID), or else `embed`: exactly one (the loader checks). */
     media: mediaId.optional(),
     /**
@@ -249,10 +256,11 @@ export const block = z.discriminatedUnion('type', [
     /** A video file only: starts again when it ends. Off by default. */
     loop: z.boolean().optional(),
   }),
-  z.strictObject({ type: z.literal('quote'), text: z.string().min(1), cite: z.string().optional(), variant: z.enum(['block', 'pull']).default('block') }),
-  z.strictObject({ type: z.literal('divider') }),
+  z.strictObject({ type: z.literal('quote'), key: blockKey, text: z.string().min(1), cite: z.string().optional(), variant: z.enum(['block', 'pull']).default('block') }),
+  z.strictObject({ type: z.literal('divider'), key: blockKey }),
   z.strictObject({
     type: z.literal('collection'),
+    key: blockKey,
     /** Optional plain-text header for the whole collection, separate from its item headings. */
     heading: z.string().trim().min(1).max(80).optional(),
     /** Hide the header without discarding its words. Shown when a heading is set unless false. */
@@ -285,6 +293,7 @@ export const block = z.discriminatedUnion('type', [
   z
     .strictObject({
       type: z.literal('table'),
+      key: blockKey,
       /** Its rich-text column headings, in order. */
       columns: z.array(tableHeading).min(1).max(TABLE_MAX_COLUMNS),
       /** Its rows, in order: a cell for each column. */

@@ -20,44 +20,54 @@
   "body": [
     {
       "type": "marker",
-      "text": "WRONG!"
+      "text": "WRONG!",
+      "key": "u1voaz"
     },
     {
       "type": "text",
-      "markdown": "There's a moment I particularly enjoy when presenting design work."
+      "markdown": "There's a moment I particularly enjoy when presenting design work.",
+      "key": "82rfzz"
     },
     {
       "type": "text",
-      "markdown": "I've taken my stakeholders through an idea, explained the reasoning behind it, and watched the room become convinced that we've found the answer. Everyone understands the logic. The arguments hold up. We're all on the same page."
+      "markdown": "I've taken my stakeholders through an idea, explained the reasoning behind it, and watched the room become convinced that we've found the answer. Everyone understands the logic. The arguments hold up. We're all on the same page.",
+      "key": "vrsolw"
     },
     {
       "type": "text",
-      "markdown": "Then I say one word."
+      "markdown": "Then I say one word.",
+      "key": "bqrulf"
     },
     {
       "type": "text",
-      "markdown": "**\"WRONG.\"**"
+      "markdown": "**\"WRONG.\"**",
+      "key": "ez47ny"
     },
     {
       "type": "text",
-      "markdown": "I reveal the next piece of information, walk them through the reasoning that follows, and show them why our initial conviction no longer holds up. What seemed like the obvious solution just a moment ago gives way to a different one."
+      "markdown": "I reveal the next piece of information, walk them through the reasoning that follows, and show them why our initial conviction no longer holds up. What seemed like the obvious solution just a moment ago gives way to a different one.",
+      "key": "60tpmo"
     },
     {
       "type": "text",
-      "markdown": "The room has to rethink everything."
+      "markdown": "The room has to rethink everything.",
+      "key": "p8uzvm"
     },
     {
       "type": "text",
-      "markdown": "I enjoy this moment for the sheer fun of it, but there's a more important reason I present this way."
+      "markdown": "I enjoy this moment for the sheer fun of it, but there's a more important reason I present this way.",
+      "key": "pjt9zl"
     },
     {
       "type": "text",
-      "markdown": "I could have started with the final proposal and explained why the original idea was flawed. Instead, I let everyone arrive at the initial conclusion themselves. I want them to understand why it made sense, to feel as convinced as I once was, and then to experience what happens when new evidence changes the picture."
+      "markdown": "I could have started with the final proposal and explained why the original idea was flawed. Instead, I let everyone arrive at the initial conclusion themselves. I want them to understand why it made sense, to feel as convinced as I once was, and then to experience what happens when new evidence changes the picture.",
+      "key": "4wdq0a"
     },
     {
       "type": "quote",
       "variant": "pull",
-      "text": "The goal isn't just to get everyone to agree with the final proposal. It's to help them understand why we arrived there."
+      "text": "The goal isn't just to get everyone to agree with the final proposal. It's to help them understand why we arrived there.",
+      "key": "6f9ncq"
     },
     {
       "type": "figure",
@@ -67,72 +77,89 @@
       "display": "fit",
       "background": false,
       "rounded": false,
-      "showCaption": false
+      "showCaption": false,
+      "key": "1k4p0w"
     },
     {
       "type": "text",
-      "markdown": "When this works, the audience doesn't simply receive a conclusion. They reconstruct the reasoning behind it. And that can make all the difference between getting approval for an idea and building genuine conviction around a decision."
+      "markdown": "When this works, the audience doesn't simply receive a conclusion. They reconstruct the reasoning behind it. And that can make all the difference between getting approval for an idea and building genuine conviction around a decision.",
+      "key": "nsyti5"
     },
     {
       "type": "text",
-      "markdown": "I've often wondered why this approach works so well. The answer, I think, has something to do with how we learn."
+      "markdown": "I've often wondered why this approach works so well. The answer, I think, has something to do with how we learn.",
+      "key": "gl58eq"
     },
     {
       "type": "heading",
       "level": 2,
-      "text": "Knowing the answer isn't the same as understanding it"
+      "text": "Knowing the answer isn't the same as understanding it",
+      "key": "z6zu1v"
     },
     {
       "type": "text",
-      "markdown": "Think about how we learn about the solar system."
+      "markdown": "Think about how we learn about the solar system.",
+      "key": "wdxski"
     },
     {
       "type": "text",
-      "markdown": "Most of us learned the names of the planets as children. Mercury, Venus, Earth, Mars, Jupiter, Saturn, Uranus, Neptune. We could recite them in order, perhaps even remember a mnemonic to help us along."
+      "markdown": "Most of us learned the names of the planets as children. Mercury, Venus, Earth, Mars, Jupiter, Saturn, Uranus, Neptune. We could recite them in order, perhaps even remember a mnemonic to help us along.",
+      "key": "ui5bak"
     },
     {
       "type": "text",
-      "markdown": "But knowing the names of the planets tells us very little about how we came to know what we know about them."
+      "markdown": "But knowing the names of the planets tells us very little about how we came to know what we know about them.",
+      "key": "rjygnf"
     },
     {
       "type": "text",
-      "markdown": "There's a much more interesting story behind our understanding of the solar system. Planets that appeared as wandering points of light were observed and tracked for centuries. Astronomers developed models to explain their movements, made predictions based on those models, and discovered that some observations didn't quite fit. Mathematical reasoning eventually led to the prediction of Neptune's existence before it was observed in 1846."
+      "markdown": "There's a much more interesting story behind our understanding of the solar system. Planets that appeared as wandering points of light were observed and tracked for centuries. Astronomers developed models to explain their movements, made predictions based on those models, and discovered that some observations didn't quite fit. Mathematical reasoning eventually led to the prediction of Neptune's existence before it was observed in 1846.",
+      "key": "x5bie1"
     },
     {
       "type": "text",
-      "markdown": "Think about what happened there. Scientists inferred the existence of something they hadn't seen by reasoning about its effects on something they could see."
+      "markdown": "Think about what happened there. Scientists inferred the existence of something they hadn't seen by reasoning about its effects on something they could see.",
+      "key": "nhfqvl"
     },
     {
       "type": "text",
-      "markdown": "You can memorize that Neptune is the eighth planet from the Sun. Or you can follow the observations, predictions, and reasoning that led to its discovery. Both give you information, but the latter gives you a glimpse into how knowledge is constructed."
+      "markdown": "You can memorize that Neptune is the eighth planet from the Sun. Or you can follow the observations, predictions, and reasoning that led to its discovery. Both give you information, but the latter gives you a glimpse into how knowledge is constructed.",
+      "key": "t5lmb9"
     },
     {
       "type": "text",
-      "markdown": "I find this distinction fascinating. We can learn the final answer and move on, or we can retrace the journey that made the answer possible."
+      "markdown": "I find this distinction fascinating. We can learn the final answer and move on, or we can retrace the journey that made the answer possible.",
+      "key": "l9ydbm"
     },
     {
       "type": "text",
-      "markdown": "I feel the same way about atomic theory."
+      "markdown": "I feel the same way about atomic theory.",
+      "key": "0cqplj"
     },
     {
       "type": "text",
-      "markdown": "I could skip straight to our current understanding of atomic structure. I could learn about electrons, protons, neutrons, and the nucleus without knowing anything about Dalton, Thomson, or Rutherford."
+      "markdown": "I could skip straight to our current understanding of atomic structure. I could learn about electrons, protons, neutrons, and the nucleus without knowing anything about Dalton, Thomson, or Rutherford.",
+      "key": "0s5fza"
     },
     {
       "type": "text",
-      "markdown": "I'd know the answer. But I don't believe I'd understand the concept in quite the same way."
+      "markdown": "I'd know the answer. But I don't believe I'd understand the concept in quite the same way.",
+      "key": "57yu2g"
     },
     {
       "type": "text",
-      "markdown": "What fascinates me is retracing the journey through which our understanding developed."
+      "markdown": "What fascinates me is retracing the journey through which our understanding developed.",
+      "key": "bkbrsv"
     },
     {
       "type": "text",
-      "markdown": "Dalton proposed that matter consists of atoms, which he treated as indivisible particles. Later, Thomson's discovery of the electron challenged that picture. Rutherford's experiments then revealed that the atom's positive charge and most of its mass are concentrated in a tiny nucleus, overturning the prevailing picture of how its contents were arranged."
+      "markdown": "Dalton proposed that matter consists of atoms, which he treated as indivisible particles. Later, Thomson's discovery of the electron challenged that picture. Rutherford's experiments then revealed that the atom's positive charge and most of its mass are concentrated in a tiny nucleus, overturning the prevailing picture of how its contents were arranged.",
+      "key": "zfwqox"
     },
     {
       "type": "text",
-      "markdown": "Each model made sense in the context of what was known at the time. Each explained certain observations. And each encountered evidence that demanded a better explanation."
+      "markdown": "Each model made sense in the context of what was known at the time. Each explained certain observations. And each encountered evidence that demanded a better explanation.",
+      "key": "4ty09m"
     },
     {
       "type": "figure",
@@ -142,69 +169,85 @@
       "display": "fit",
       "background": false,
       "rounded": false,
-      "showCaption": false
+      "showCaption": false,
+      "key": "2bkwhv"
     },
     {
       "type": "text",
-      "markdown": "When I go through this journey, I'm not just memorizing a succession of historical models. I'm reconstructing the reasoning that made each model plausible, understanding its limitations, and following the logic that made the next model necessary."
+      "markdown": "When I go through this journey, I'm not just memorizing a succession of historical models. I'm reconstructing the reasoning that made each model plausible, understanding its limitations, and following the logic that made the next model necessary.",
+      "key": "sobu69"
     },
     {
       "type": "text",
-      "markdown": "I get to ask the questions myself. What would an atom look like? What evidence would support that picture? What happens when an observation contradicts it?"
+      "markdown": "I get to ask the questions myself. What would an atom look like? What evidence would support that picture? What happens when an observation contradicts it?",
+      "key": "ldhs84"
     },
     {
       "type": "text",
-      "markdown": "The historical journey and the logical journey aren't identical, of course. But retracing the reasoning helps me build a more fundamental understanding of the concept."
+      "markdown": "The historical journey and the logical journey aren't identical, of course. But retracing the reasoning helps me build a more fundamental understanding of the concept.",
+      "key": "5eihgs"
     },
     {
       "type": "text",
-      "markdown": "I could learn the latest model and move on. Instead, I want to understand why it became the answer."
+      "markdown": "I could learn the latest model and move on. Instead, I want to understand why it became the answer.",
+      "key": "5qhf20"
     },
     {
       "type": "quote",
       "variant": "pull",
-      "text": "There is a difference between knowing what someone concluded and understanding how they came to that conclusion."
+      "text": "There is a difference between knowing what someone concluded and understanding how they came to that conclusion.",
+      "key": "9vdenj"
     },
     {
       "type": "text",
-      "markdown": "And that difference matters far beyond science."
+      "markdown": "And that difference matters far beyond science.",
+      "key": "dj5bp0"
     },
     {
       "type": "heading",
       "level": 2,
-      "text": "The same principle applies to making products"
+      "text": "The same principle applies to making products",
+      "key": "a037a9"
     },
     {
       "type": "text",
-      "markdown": "When I present design work, I want to give my audience the same opportunity I seek when learning something new: the opportunity to reconstruct the reasoning."
+      "markdown": "When I present design work, I want to give my audience the same opportunity I seek when learning something new: the opportunity to reconstruct the reasoning.",
+      "key": "zzes2z"
     },
     {
       "type": "text",
-      "markdown": "I don't want stakeholders to simply see the final design and hear my explanation of why it's right. I want them to understand the problem, follow the investigation, examine the alternatives, and appreciate the reasoning behind the decisions."
+      "markdown": "I don't want stakeholders to simply see the final design and hear my explanation of why it's right. I want them to understand the problem, follow the investigation, examine the alternatives, and appreciate the reasoning behind the decisions.",
+      "key": "haeb07"
     },
     {
       "type": "text",
-      "markdown": "Sometimes that means taking them through a journey of discovery. Sometimes it means showing them why an initially convincing idea eventually falls apart. Sometimes it means explaining a seemingly mundane decision whose significance becomes apparent only when you understand the constraints surrounding it."
+      "markdown": "Sometimes that means taking them through a journey of discovery. Sometimes it means showing them why an initially convincing idea eventually falls apart. Sometimes it means explaining a seemingly mundane decision whose significance becomes apparent only when you understand the constraints surrounding it.",
+      "key": "k1dfwb"
     },
     {
       "type": "text",
-      "markdown": "The story doesn't have to be dramatic. Interest is a function of how invested you are in the problem. A graph of latency distributions might bore most people, but it could be fascinating to someone trying to understand why a product feels sluggish."
+      "markdown": "The story doesn't have to be dramatic. Interest is a function of how invested you are in the problem. A graph of latency distributions might bore most people, but it could be fascinating to someone trying to understand why a product feels sluggish.",
+      "key": "c1ifda"
     },
     {
       "type": "text",
-      "markdown": "What matters is that the story gives the audience access to the reasoning."
+      "markdown": "What matters is that the story gives the audience access to the reasoning.",
+      "key": "gup6se"
     },
     {
       "type": "text",
-      "markdown": "There's a difference between telling someone what you decided and helping them understand why you decided it. In the latter case, the audience can follow the logic, question the assumptions, and arrive at the conclusion with their own conviction."
+      "markdown": "There's a difference between telling someone what you decided and helping them understand why you decided it. In the latter case, the audience can follow the logic, question the assumptions, and arrive at the conclusion with their own conviction.",
+      "key": "lns0js"
     },
     {
       "type": "text",
-      "markdown": "This is particularly valuable when presenting to stakeholders. When people reconstruct the reasoning themselves, they aren't merely agreeing with your judgment. They're developing their own understanding of the problem and the solution."
+      "markdown": "This is particularly valuable when presenting to stakeholders. When people reconstruct the reasoning themselves, they aren't merely agreeing with your judgment. They're developing their own understanding of the problem and the solution.",
+      "key": "7srunj"
     },
     {
       "type": "text",
-      "markdown": "The story becomes a vehicle for shared understanding, rather than simply a means of communicating a conclusion."
+      "markdown": "The story becomes a vehicle for shared understanding, rather than simply a means of communicating a conclusion.",
+      "key": "vj9e8g"
     },
     {
       "type": "figure",
@@ -214,48 +257,59 @@
       "display": "fit",
       "background": false,
       "rounded": false,
-      "showCaption": false
+      "showCaption": false,
+      "key": "oqazzh"
     },
     {
       "type": "text",
-      "markdown": "But there's a catch."
+      "markdown": "But there's a catch.",
+      "key": "suiqd5"
     },
     {
       "type": "text",
-      "markdown": "For this to work, there must be some real reasoning to reconstruct in the first place."
+      "markdown": "For this to work, there must be some real reasoning to reconstruct in the first place.",
+      "key": "29yi65"
     },
     {
       "type": "heading",
       "level": 2,
-      "text": "You can't reconstruct a journey you never took"
+      "text": "You can't reconstruct a journey you never took",
+      "key": "xtdozd"
     },
     {
       "type": "text",
-      "markdown": "Designers are constantly told to become better storytellers."
+      "markdown": "Designers are constantly told to become better storytellers.",
+      "key": "x19mla"
     },
     {
       "type": "text",
-      "markdown": "We're encouraged to learn narrative structures, improve our presentations, build tension, and make our work more compelling. When stakeholders don't understand or appreciate a proposal, we often assume we need to communicate it better."
+      "markdown": "We're encouraged to learn narrative structures, improve our presentations, build tension, and make our work more compelling. When stakeholders don't understand or appreciate a proposal, we often assume we need to communicate it better.",
+      "key": "zt5u7s"
     },
     {
       "type": "text",
-      "markdown": "Sometimes that's true."
+      "markdown": "Sometimes that's true.",
+      "key": "gwwnkm"
     },
     {
       "type": "text",
-      "markdown": "But sometimes, I suspect, we're diagnosing the wrong problem."
+      "markdown": "But sometimes, I suspect, we're diagnosing the wrong problem.",
+      "key": "bkzpta"
     },
     {
       "type": "text",
-      "markdown": "Think about what it takes to make a product well. You need to investigate the problem, understand users, challenge assumptions, explore alternatives, and establish a coherent chain of reasoning connecting what you've learned to the decisions you make."
+      "markdown": "Think about what it takes to make a product well. You need to investigate the problem, understand users, challenge assumptions, explore alternatives, and establish a coherent chain of reasoning connecting what you've learned to the decisions you make.",
+      "key": "l7t7o3"
     },
     {
       "type": "text",
-      "markdown": "You need to work through uncertainty. You need to discover what the evidence actually tells you, rather than what you hoped it would tell you. You need to make difficult trade-offs and understand their consequences."
+      "markdown": "You need to work through uncertainty. You need to discover what the evidence actually tells you, rather than what you hoped it would tell you. You need to make difficult trade-offs and understand their consequences.",
+      "key": "5nxwm3"
     },
     {
       "type": "text",
-      "markdown": "Now imagine skipping much of that work."
+      "markdown": "Now imagine skipping much of that work.",
+      "key": "nyf8c5"
     },
     {
       "type": "figure",
@@ -265,32 +319,39 @@
       "display": "fit",
       "background": false,
       "rounded": false,
-      "showCaption": false
+      "showCaption": false,
+      "key": "vacor0"
     },
     {
       "type": "text",
-      "markdown": "You go with the first idea that comes to mind. You make decisions for convenience. You don't investigate contradictory evidence. You never establish a convincing connection between your user insights and your product decisions. Perhaps the solution is good; perhaps it isn't. But you're only partly convinced of why it's the right one."
+      "markdown": "You go with the first idea that comes to mind. You make decisions for convenience. You don't investigate contradictory evidence. You never establish a convincing connection between your user insights and your product decisions. Perhaps the solution is good; perhaps it isn't. But you're only partly convinced of why it's the right one.",
+      "key": "6uknbe"
     },
     {
       "type": "text",
-      "markdown": "Then comes the presentation."
+      "markdown": "Then comes the presentation.",
+      "key": "dz81b9"
     },
     {
       "type": "text",
-      "markdown": "You have a sequence of activities and a proposed solution, but little meaningful reasoning connecting them. There are no consequential discoveries to share, no difficult decisions you can explain, no clear account of why the alternatives fell short."
+      "markdown": "You have a sequence of activities and a proposed solution, but little meaningful reasoning connecting them. There are no consequential discoveries to share, no difficult decisions you can explain, no clear account of why the alternatives fell short.",
+      "key": "s0q332"
     },
     {
       "type": "text",
-      "markdown": "So you try to make the presentation more compelling."
+      "markdown": "So you try to make the presentation more compelling.",
+      "key": "52tl1h"
     },
     {
       "type": "text",
-      "markdown": "You work on the narrative, polish the slides, and rehearse the delivery. But the underlying problem remains."
+      "markdown": "You work on the narrative, polish the slides, and rehearse the delivery. But the underlying problem remains.",
+      "key": "8gcipu"
     },
     {
       "type": "quote",
       "variant": "pull",
-      "text": "Bad discipline in making product decisions often masquerades as bad storytelling."
+      "text": "Bad discipline in making product decisions often masquerades as bad storytelling.",
+      "key": "oqkmx8"
     },
     {
       "type": "figure",
@@ -300,37 +361,45 @@
       "display": "fit",
       "background": false,
       "rounded": false,
-      "showCaption": false
+      "showCaption": false,
+      "key": "ge8s7f"
     },
     {
       "type": "text",
-      "markdown": "A presentation can make weak reasoning sound convincing. It can also make strong reasoning easier to understand. But it cannot reliably substitute for the work required to establish that reasoning."
+      "markdown": "A presentation can make weak reasoning sound convincing. It can also make strong reasoning easier to understand. But it cannot reliably substitute for the work required to establish that reasoning.",
+      "key": "ib5ue5"
     },
     {
       "type": "text",
-      "markdown": "When there's no meaningful journey behind the product, you have very little to reconstruct for your audience."
+      "markdown": "When there's no meaningful journey behind the product, you have very little to reconstruct for your audience.",
+      "key": "v1rk7m"
     },
     {
       "type": "text",
-      "markdown": "And if you haven't done the work to convince yourself, how can you expect a presentation to create genuine conviction in others?"
+      "markdown": "And if you haven't done the work to convince yourself, how can you expect a presentation to create genuine conviction in others?",
+      "key": "xnw783"
     },
     {
       "type": "heading",
       "level": 2,
-      "text": "The story starts before the presentation"
+      "text": "The story starts before the presentation",
+      "key": "wye8aa"
     },
     {
       "type": "text",
-      "markdown": "In my own practice, I often start preparing a design pitch with a blank presentation deck."
+      "markdown": "In my own practice, I often start preparing a design pitch with a blank presentation deck.",
+      "key": "qux1lx"
     },
     {
       "type": "text",
-      "markdown": "I'll outline the story I want to tell: the problem, the evidence, the alternatives, the rationale for the final proposal. I'll create the slides, but leave them empty."
+      "markdown": "I'll outline the story I want to tell: the problem, the evidence, the alternatives, the rationale for the final proposal. I'll create the slides, but leave them empty.",
+      "key": "4lw3k6"
     },
     {
       "type": "quote",
       "variant": "pull",
-      "text": "Those blank slides become my todo list."
+      "text": "Those blank slides become my todo list.",
+      "key": "xe0l6u"
     },
     {
       "type": "figure",
@@ -340,64 +409,79 @@
       "display": "fit",
       "background": false,
       "rounded": false,
-      "showCaption": false
+      "showCaption": false,
+      "key": "bn9ydt"
     },
     {
       "type": "text",
-      "markdown": "If I have a slide explaining why a particular solution is right, I need to establish the reasoning that supports it. If I have a slide comparing alternatives, I need to understand the trade-offs. If I have a slide about the problem, I need evidence that the problem is worth solving."
+      "markdown": "If I have a slide explaining why a particular solution is right, I need to establish the reasoning that supports it. If I have a slide comparing alternatives, I need to understand the trade-offs. If I have a slide about the problem, I need evidence that the problem is worth solving.",
+      "key": "50deqf"
     },
     {
       "type": "text",
-      "markdown": "The structure of the anticipated story helps me identify the work I still need to do."
+      "markdown": "The structure of the anticipated story helps me identify the work I still need to do.",
+      "key": "54od3e"
     },
     {
       "type": "text",
-      "markdown": "Of course, the story must remain open to change. If the evidence leads somewhere unexpected, I have to change the story, not force the evidence to fit it."
+      "markdown": "Of course, the story must remain open to change. If the evidence leads somewhere unexpected, I have to change the story, not force the evidence to fit it.",
+      "key": "298xvj"
     },
     {
       "type": "text",
-      "markdown": "But this is precisely why I find the practice useful. Storytelling isn't something I leave until the work is finished. It helps me structure the investigation, identify gaps in my thinking, and understand what I need to establish before I can confidently recommend a solution."
+      "markdown": "But this is precisely why I find the practice useful. Storytelling isn't something I leave until the work is finished. It helps me structure the investigation, identify gaps in my thinking, and understand what I need to establish before I can confidently recommend a solution.",
+      "key": "ecb9jm"
     },
     {
       "type": "text",
-      "markdown": "Sometimes the work produces the story. Sometimes the anticipated story helps structure the work. The two reinforce each other."
+      "markdown": "Sometimes the work produces the story. Sometimes the anticipated story helps structure the work. The two reinforce each other.",
+      "key": "a04e8i"
     },
     {
       "type": "text",
-      "markdown": "The important thing is that the final narrative is grounded in the actual reasoning, evidence, and decisions that emerge from the process."
+      "markdown": "The important thing is that the final narrative is grounded in the actual reasoning, evidence, and decisions that emerge from the process.",
+      "key": "bcv3zi"
     },
     {
       "type": "text",
-      "markdown": "When the work is done well, the story doesn't need to be manufactured. It needs to be told."
+      "markdown": "When the work is done well, the story doesn't need to be manufactured. It needs to be told.",
+      "key": "k13ohx"
     },
     {
       "type": "heading",
       "level": 2,
-      "text": "Make a story worth reconstructing"
+      "text": "Make a story worth reconstructing",
+      "key": "45s2bu"
     },
     {
       "type": "text",
-      "markdown": "I'm not arguing that storytelling skills don't matter. Knowing how to structure a narrative, communicate complex ideas, and engage an audience is an important craft in its own right."
+      "markdown": "I'm not arguing that storytelling skills don't matter. Knowing how to structure a narrative, communicate complex ideas, and engage an audience is an important craft in its own right.",
+      "key": "qk11y9"
     },
     {
       "type": "text",
-      "markdown": "But I think we sometimes ask storytelling to do a job it cannot do alone."
+      "markdown": "But I think we sometimes ask storytelling to do a job it cannot do alone.",
+      "key": "q6n30t"
     },
     {
       "type": "text",
-      "markdown": "A good story about product work is more than a polished account of what happened. It's a way of making the reasoning behind an outcome understandable to someone else. It allows them to follow the journey, understand the decisions, and reconstruct the thinking that led to the final proposal."
+      "markdown": "A good story about product work is more than a polished account of what happened. It's a way of making the reasoning behind an outcome understandable to someone else. It allows them to follow the journey, understand the decisions, and reconstruct the thinking that led to the final proposal.",
+      "key": "3m9jsm"
     },
     {
       "type": "text",
-      "markdown": "That requires something substantive to begin with."
+      "markdown": "That requires something substantive to begin with.",
+      "key": "2e0on3"
     },
     {
       "type": "text",
-      "markdown": "It requires the discipline to investigate the problem, challenge assumptions, follow the evidence, explore alternatives, and make deliberate decisions. It requires a willingness to change your mind when new information demands it. It requires a coherent chain of reasoning from what you've learned about users to what you've ultimately chosen to build."
+      "markdown": "It requires the discipline to investigate the problem, challenge assumptions, follow the evidence, explore alternatives, and make deliberate decisions. It requires a willingness to change your mind when new information demands it. It requires a coherent chain of reasoning from what you've learned about users to what you've ultimately chosen to build.",
+      "key": "zofuym"
     },
     {
       "type": "text",
-      "markdown": "Do that work, and you give yourself something worth communicating."
+      "markdown": "Do that work, and you give yourself something worth communicating.",
+      "key": "ywpfny"
     },
     {
       "type": "figure",
@@ -407,24 +491,29 @@
       "display": "fit",
       "background": false,
       "rounded": false,
-      "showCaption": false
+      "showCaption": false,
+      "key": "p9jrek"
     },
     {
       "type": "text",
-      "markdown": "And once you've done that, we can talk about how to tell the story well."
+      "markdown": "And once you've done that, we can talk about how to tell the story well.",
+      "key": "3ypj61"
     },
     {
       "type": "text",
-      "markdown": "Until then, perhaps the question isn't *\"How do I become a better storyteller?\"*"
+      "markdown": "Until then, perhaps the question isn't *\"How do I become a better storyteller?\"*",
+      "key": "v3012f"
     },
     {
       "type": "text",
-      "markdown": "Perhaps it's this:"
+      "markdown": "Perhaps it's this:",
+      "key": "cqbdv6"
     },
     {
       "type": "quote",
       "variant": "pull",
-      "text": "How do I make a product that has a good story to tell?"
+      "text": "How do I make a product that has a good story to tell?",
+      "key": "2xogfv"
     }
   ]
 }

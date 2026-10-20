@@ -293,7 +293,7 @@ One résumé, as structured data, so it renders as an HTML page and can feed oth
 
 ## 6. Blocks
 
-A `body` is an array of blocks. Each block has a `type` and an optional `id` (an anchor; headings get one from their text if absent). The renderer maps each type onto one component. A type marked "new" needs a component added to the design system (in its tier, with a story) before content may use it.
+A `body` is an array of blocks. Each block has a `type` and an optional `id` (an anchor; headings get one from their text if absent). Each block can also carry a `key`: six lowercase letters and digits, unique in its article, that names the block while others move around it, so an AI proposal or a comment can follow it ([AI editing §3](../editor/ai-editing.md#3-blocks-need-a-stable-name)). Edit mode gives every block one when it saves, and gives a copied block a new one; `node scripts/add-block-keys.mjs` keyed the existing articles. The site never renders a key. The renderer maps each type onto one component. A type marked "new" needs a component added to the design system (in its tier, with a story) before content may use it.
 
 | Block | Fields | Renders with |
 |---|---|---|
@@ -390,7 +390,7 @@ The build runs these checks (`npm run content:check`), and names the file and fi
 | ID | Rule |
 |---|---|
 | V1 | Every resource matches its schema; unknown fields in mock files are errors |
-| V2 | IDs are unique within a type; node slugs are unique among siblings; paths are unique site-wide |
+| V2 | IDs are unique within a type; node slugs are unique among siblings; paths are unique site-wide; block keys are unique within their article |
 | V3 | Every reference resolves to a published resource of the right type (a published item may not link to a draft) |
 | V4 | Every menu entry, redirect and planet `fullPage` resolves; the primary menu has the IA's four destinations |
 | V5 | Every image used has alt text, unless it's marked `decorative`; third-party media has a credit and a licence |

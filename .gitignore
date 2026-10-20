@@ -16,6 +16,8 @@ assets-src/audio/.cache/
 .editor-test-remote.git/
 .editor-test-private.git/
 .editor-test-private-seed/
+# a site's local AI settings and proposals, beside its content (documentation/editor/ai-services.md §11): never committed
+.atiya/
 
 
 # the contact service's local settings can hold its secrets (documentation/contact/spec.md §4.4)

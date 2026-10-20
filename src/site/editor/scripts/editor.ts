@@ -10,6 +10,7 @@ import { api, announce, describeIssue, onContentChange, refreshPending, saveStat
 import { fillPicker } from './picker';
 import { isStructural, originsOf, renameTree, targetsOf, type Origin } from '../model/optimistic';
 import * as ops from '../model/ops';
+import { withKeys } from '../model/keys';
 import * as paste from '../model/paste';
 import { SaveQueue } from '../model/queue';
 import { isVideoFile } from '../model/upload';
@@ -99,6 +100,9 @@ export function initEditor(root: HTMLElement, signal: AbortSignal) {
     }),
     async (job, more) => {
       saveStatus.saving();
+      // every block keyed before it leaves (ai-editing.md §3): a new block gets its key, a copy its own
+      const keyed = withKeys(doc.body);
+      if (keyed !== doc.body) doc = { ...doc, body: keyed };
       const r = await api<{ article: Article }>('PUT', `articles/${state.id}`, {
         article: doc,
         ...(job.section !== undefined ? { section: job.section } : {}),

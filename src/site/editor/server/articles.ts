@@ -10,6 +10,7 @@ import { commit, jsonBytes, readDoc, readFile, versionOf, type Change, type Resu
 import { slugify, today, unique } from '../model/ids';
 import { childSlugs, nodeIds, place, sectionOf, unplace } from '../model/structure';
 import { isMeaningful } from '../model/ops';
+import { withKeys } from '../model/keys';
 import { readSnapshot, fileOf, hasPrivate, privateRoot } from '../../content/source';
 import { LEGACY_PLANET_FILE, PLANET_FILE } from '../../modes/contract';
 import { existsSync } from 'node:fs';
@@ -64,7 +65,8 @@ export async function saveArticle(req: SaveArticle): Promise<Result & { article?
   const key = articleKey(req.id);
   const current = readDoc<Article>(key);
   if (!current) return refuse(key, "doesn't exist");
-  let next: Article = { ...req.article, id: req.id };
+  // every block keyed, and a copy's key made its own (edit mode keys them too; this holds for any writer)
+  let next: Article = { ...req.article, id: req.id, ...(Array.isArray(req.article.body) ? { body: withKeys(req.article.body) } : {}) };
   const was = current.value;
 
   if (next.kind === 'talk' && was.kind !== 'talk') return refuse(key, "can't become a talk until the content model holds a talk's event, date and recording", 'kind');

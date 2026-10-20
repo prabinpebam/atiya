@@ -83,6 +83,26 @@ describe("a page's building", () => {
   });
 });
 
+describe('block keys on save (documentation/editor/ai-editing.md §3)', () => {
+  it('fills missing keys, re-keys a copy, keeps the rest, and a key alone leaves the updated date', async () => {
+    const key = '/content/articles/a.json';
+    type Doc = { updatedAt: string; body: { key?: string }[] };
+    put(key, article({ body: [{ type: 'text', markdown: 'One' }] }));
+    let a = readDoc<Doc>(key)!;
+    expect(await saveArticle({ id: 'a', article: a.value as never, ifMatch: { [key]: a.version } })).toMatchObject({ ok: true });
+    a = readDoc<Doc>(key)!;
+    const [first] = a.value.body;
+    expect(first.key).toMatch(/^[a-z0-9]{6}$/);
+    expect(a.value.updatedAt).toBe('2026-09-30');
+    const body = [first, { ...first }, { type: 'divider' }];
+    expect(await saveArticle({ id: 'a', article: { ...a.value, body } as never, ifMatch: { [key]: a.version } })).toMatchObject({ ok: true });
+    const keys = readDoc<Doc>(key)!.value.body.map((b) => b.key);
+    expect(keys[0]).toBe(first.key);
+    expect(new Set(keys).size).toBe(3);
+    expect(keys.every((k) => /^[a-z0-9]{6}$/.test(k ?? ''))).toBe(true);
+  });
+});
+
 describe('a published page moves freely: its old address simply goes (documentation/sections/spec.md §7.2)', () => {
   const structure = (section: string) => ({ home: { id: 'home', kind: 'hub', slug: '', title: 'Home', children: [{ id: 's', kind: 'hub', slug: 's', title: 'S', children: section === 's' ? [{ id: 'a', kind: 'item', item: { type: 'article', id: 'a' } }] : [] }, { id: 't', kind: 'hub', slug: 't', title: 'T', children: section === 't' ? [{ id: 'a', kind: 'item', item: { type: 'article', id: 'a' } }] : [] }] } });
   const save = (over: { section?: string | null; status?: string }) => {

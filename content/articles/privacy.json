@@ -13,65 +13,79 @@
   "body": [
     {
       "type": "text",
-      "markdown": "This site records a little about each visit, so I can see which of my work people read and whether the pages I share reach the people I share them with. It sets no cookies and shows no ads."
+      "markdown": "This site records a little about each visit, so I can see which of my work people read and whether the pages I share reach the people I share them with. It sets no cookies and shows no ads.",
+      "key": "uhmudb"
     },
     {
       "type": "heading",
       "level": 2,
-      "text": "What's recorded"
+      "text": "What's recorded",
+      "key": "zle2jq"
     },
     {
       "type": "text",
-      "markdown": "- The pages you open, with their address (never the part after a #), their title and the site you came from.\n- The links and buttons you click, and the videos you play.\n- Your device and browser, your IP address, and the city and country it suggests.\n- If you sign in with an access code or a link I sent you, the ID of that code or link (not your name), and when it opened a shared page and in which section (never that page's own address). On those pages only these events are recorded: never their titles, words or links."
+      "markdown": "- The pages you open, with their address (never the part after a #), their title and the site you came from.\n- The links and buttons you click, and the videos you play.\n- Your device and browser, your IP address, and the city and country it suggests.\n- If you sign in with an access code or a link I sent you, the ID of that code or link (not your name), and when it opened a shared page and in which section (never that page's own address). On those pages only these events are recorded: never their titles, words or links.",
+      "key": "2rjc88"
     },
     {
       "type": "heading",
       "level": 2,
-      "text": "Who processes it, and for how long"
+      "text": "Who processes it, and for how long",
+      "key": "0x18h0"
     },
     {
       "type": "text",
-      "markdown": "The records go to [PostHog](https://posthog.com/privacy), an analytics service, which keeps them for up to a year on the plan this site uses. Only I can see them. Nothing is sold or shared with anyone else."
+      "markdown": "The records go to [PostHog](https://posthog.com/privacy), an analytics service, which keeps them for up to a year on the plan this site uses. Only I can see them. Nothing is sold or shared with anyone else.",
+      "key": "kjoscx"
     },
     {
       "type": "heading",
       "level": 2,
-      "text": "Turning it off"
+      "text": "Turning it off",
+      "key": "ev50c1"
     },
     {
       "type": "text",
-      "markdown": "- If your browser sends Global Privacy Control or Do Not Track, nothing is recorded.\n- Open any page with `?telemetry=off` at the end of its address, and nothing is recorded on that device until you open one with `?telemetry=on`.\n- Blocking the analytics service in your browser works too: the site works the same without it."
+      "markdown": "- If your browser sends Global Privacy Control or Do Not Track, nothing is recorded.\n- Open any page with `?telemetry=off` at the end of its address, and nothing is recorded on that device until you open one with `?telemetry=on`.\n- Blocking the analytics service in your browser works too: the site works the same without it.",
+      "key": "3smxza"
     },
     {
       "type": "heading",
       "level": 2,
-      "text": "Messages you send me"
+      "text": "Messages you send me",
+      "key": "mfbsq1"
     },
     {
       "type": "text",
-      "markdown": "The contact form sends your name, your email and your message to my inbox, through a small service of mine on Microsoft Azure, and keeps no copy of them. Nothing you type in it is recorded by the analytics above."
+      "markdown": "The contact form sends your name, your email and your message to my inbox, through a small service of mine on Microsoft Azure, and keeps no copy of them. Nothing you type in it is recorded by the analytics above.",
+      "key": "az17i1"
     },
     {
       "type": "text",
-      "markdown": "To stop the form being misused, the service counts the messages sent from each IP address in an hour. It keeps the count under a one-way code made from the address, never the address itself."
+      "markdown": "To stop the form being misused, the service counts the messages sent from each IP address in an hour. It keeps the count under a one-way code made from the address, never the address itself.",
+      "key": "p6cegd"
     },
     {
       "type": "heading",
       "level": 2,
-      "text": "Agreeing before you see shared work"
+      "text": "Agreeing before you see shared work",
+      "key": "y6ahlo"
     },
     {
       "type": "text",
-      "markdown": "Before you see work I've shared with you, I ask you to agree to keep it confidential and use it only for the reason I shared it. When you agree, a record goes to that same service of mine: which access you used (its ID, never your code or link), the words you agreed to and what they showed, the page, and the time, your IP address and your browser. I keep it as a record of the agreement, in Azure's storage and in an email to myself, and your browser remembers that you agreed so it doesn't ask again."
+      "markdown": "Before you see work I've shared with you, I ask you to agree to keep it confidential and use it only for the reason I shared it. When you agree, a record goes to that same service of mine: which access you used (its ID, never your code or link), the words you agreed to and what they showed, the page, and the time, your IP address and your browser. I keep it as a record of the agreement, in Azure's storage and in an email to myself, and your browser remembers that you agreed so it doesn't ask again.",
+      "key": "ugfatq"
     },
     {
       "type": "heading",
       "level": 2,
-      "text": "Asking for your data to be deleted"
+      "text": "Asking for your data to be deleted",
+      "key": "4x1upa"
     },
     {
       "type": "text",
-      "markdown": "Write to me at [prabinpebam@gmail.com](mailto:prabinpebam@gmail.com) with the day you visited, or the code or link you used, and I'll delete what was recorded."
+      "markdown": "Write to me at [prabinpebam@gmail.com](mailto:prabinpebam@gmail.com) with the day you visited, or the code or link you used, and I'll delete what was recorded.",
+      "key": "0d8yzs"
     }
   ]
 }
