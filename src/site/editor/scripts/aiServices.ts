@@ -4,7 +4,14 @@
  * put back where it was. Test is busy on its own button, and its result is announced.
  */
 import { announce, api, describeIssue, saveStatus, startTask, swapRegions, type Reply } from './client';
-import { PRIVATE_LINE, testLine, type AiService, type CloudKind } from '../model/aiServices';
+import { PRIVATE_LINE, removeQuestion, testLine, type AiService, type CloudKind } from '../model/aiServices';
+
+/** Atiya Studio's side of keys (ai-services.md §6.1): its own dialog takes the key and answers only whether it was saved. */
+interface StudioKeys {
+  aiKey(id: string, name: string): Promise<{ saved: boolean }>;
+  forgetAiKey(id: string): Promise<unknown>;
+}
+const studioKeys = () => (window as unknown as { atiyaStudio?: Partial<StudioKeys> }).atiyaStudio;
 
 const REGIONS = ['ai-writer', 'ai-services'];
 const card = (id: string) => `[data-ai-card="${id}"]`;
@@ -63,6 +70,7 @@ export function initAiCard(el: HTMLElement, signal: AbortSignal) {
   const id = el.dataset.aiCard!;
   const name = el.dataset.aiName ?? id;
   const local = el.dataset.aiLocal !== undefined;
+  const studio = el.dataset.aiStudio !== undefined;
   el.addEventListener(
     'change',
     (e) => {
@@ -88,9 +96,21 @@ export function initAiCard(el: HTMLElement, signal: AbortSignal) {
         announce(testLine({ name, lastTest: r.data.lastTest }), r.data.lastTest.ok ? 'default' : 'negative');
         await refresh(`${card(id)} [data-ai-test]`);
       } else if (t.closest('[data-ai-remove]')) {
-        if (!confirm(`Remove ${name}? ${local ? 'Its models stay on this computer.' : 'Its key stays in Credential Manager until you delete it there.'}`)) return;
+        if (!confirm(removeQuestion(name, local ? 'local' : studio ? 'studio' : 'dev'))) return;
         const next = [...document.querySelectorAll<HTMLElement>('[data-ai-card]')].find((c) => c.dataset.aiCard !== id)?.dataset.aiCard;
-        await save('DELETE', `ai/services/${id}`, undefined, `Removed ${name}`, () => (next ? `${card(next)} [data-ai-test]` : '[data-ai-writer] [data-ai-look]'));
+        const r = await save('DELETE', `ai/services/${id}`, undefined, `Removed ${name}`, () => (next ? `${card(next)} [data-ai-test]` : '[data-ai-writer] [data-ai-look]'));
+        if (r.ok && studio) await studioKeys()?.forgetAiKey?.(id);
+      } else if (t.closest('[data-ai-key-enter]')) {
+        const bridge = studioKeys();
+        if (!bridge?.aiKey) {
+          announce('Open this site in Atiya Studio to enter its key.', 'negative');
+          return;
+        }
+        const { saved } = await bridge.aiKey(id, name);
+        if (!saved) return void t.closest<HTMLElement>('[data-ai-key-enter]')?.focus();
+        saveStatus.saved(`${name}'s key`);
+        await refresh(`${card(id)} [data-ai-test]`);
+        announce(`${name}'s key is saved. Test it.`);
       } else if (t.closest('[data-ai-copy]')) {
         const entry = t.closest<HTMLElement>('[data-ai-copy]')!.dataset.aiCopy!;
         await navigator.clipboard.writeText(entry).catch(() => undefined);

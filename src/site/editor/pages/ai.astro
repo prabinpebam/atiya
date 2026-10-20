@@ -9,7 +9,7 @@ import AiWriter from '../components/AiWriter.astro';
 import AiServiceList from '../components/AiServiceList.astro';
 import AiServiceCard from '../components/AiServiceCard.astro';
 import AiAddService from '../components/AiAddService.astro';
-import { credentialName, keyFor, keyVariable, readSettings } from '../server/aiSettings';
+import { credentialName, keyFor, keyVariable, readSettings, studioKeys } from '../server/aiSettings';
 import { findLocal } from '../server/aiLocal';
 import { offers } from '../model/aiServices';
 
@@ -26,7 +26,7 @@ const same = (a: string, b: string) => a.replace(/\/$/, '') === b.replace(/\/$/,
   <AiServiceList>
     {
       settings.services.map((s, i) => (
-        <AiServiceCard service={s} keyFound={keys[i]} models={runners.find((r) => same(r.base, s.base))?.models ?? null} writer={s.id === settings.writer} entry={credentialName(s.id)} variable={keyVariable(s.id)} />
+        <AiServiceCard service={s} keyFound={keys[i]} models={runners.find((r) => same(r.base, s.base))?.models ?? null} writer={s.id === settings.writer} entry={credentialName(s.id)} variable={keyVariable(s.id)} studio={studioKeys()} />
       ))
     }
     <AiAddService />

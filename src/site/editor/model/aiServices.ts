@@ -161,3 +161,10 @@ export const offerLine = (r: Runner): string => `${r.name} is running on this co
 
 /** What a cloud service's key needs, with plain dev (§7.3). */
 export const keyMissingLine = (entry: string): string => `Add the key to Windows Credential Manager as ${entry}, then restart the site.`;
+
+/** What a cloud service's key needs, in Atiya Studio (§7.2): the app's own dialog keeps it. */
+export const STUDIO_KEY_LINE = 'Enter its key. Atiya Studio keeps it encrypted on this computer.';
+
+/** Remove's question (§7.7): what happens to a key, where it's kept. */
+export const removeQuestion = (name: string, where: 'local' | 'studio' | 'dev'): string =>
+  `Remove ${name}? ${where === 'local' ? 'Its models stay on this computer.' : where === 'studio' ? 'Its key is deleted from this computer.' : 'Its key stays in Credential Manager until you delete it there.'}`;

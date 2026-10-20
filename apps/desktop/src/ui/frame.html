@@ -6,6 +6,7 @@
 <link rel="stylesheet" href="app.css">
 <link rel="stylesheet" href="frame.css">
 <link rel="stylesheet" href="finder.css">
+<link rel="stylesheet" href="keys.css">
 <script type="module" src="frame.js"></script>
 </head>
 <body class="frame">
@@ -117,6 +118,18 @@
   </div>
   <p class="finder-hints" id="finder-hints"></p>
   <p class="sr-only" id="finder-live" role="status" aria-live="polite"></p>
+</section>
+
+<!-- an AI service's key (documentation/editor/ai-services.md §6.1): typed here, over edit mode, never in its page -->
+<section class="keys" id="keys" role="dialog" aria-modal="true" aria-labelledby="keys-title" hidden>
+  <h2 id="keys-title">Key</h2>
+  <input id="keys-input" type="password" aria-labelledby="keys-title" aria-describedby="keys-line keys-error" autocomplete="off" spellcheck="false">
+  <p class="keys-line muted small" id="keys-line">Kept encrypted on this computer by Atiya Studio.</p>
+  <p class="keys-error small" id="keys-error" role="alert" hidden></p>
+  <div class="keys-actions">
+    <button type="button" id="keys-cancel">Cancel</button>
+    <button type="button" class="primary" id="keys-save">Save key</button>
+  </div>
 </section>
 
 <div class="handles" id="handles" aria-hidden="true">

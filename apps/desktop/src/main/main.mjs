@@ -4,7 +4,7 @@
  * stops the site's dev server, runs setup, and drives the window: a frame across the top (the app's own
  * page) and a body (the app's pages, or edit mode from the dev server). Views are sandboxed, with no Node.
  */
-import { app, BaseWindow, clipboard, dialog, ipcMain, Menu, nativeImage, nativeTheme, net, protocol, session, shell, Tray, WebContentsView } from 'electron';
+import { app, BaseWindow, clipboard, dialog, ipcMain, Menu, nativeImage, nativeTheme, net, protocol, safeStorage, session, shell, Tray, WebContentsView } from 'electron';
 import { appendFileSync, existsSync, readFileSync, rmSync } from 'node:fs';
 import { createHash, randomBytes } from 'node:crypto';
 import { homedir } from 'node:os';
@@ -36,6 +36,7 @@ import { parseRemote, siteAddress, sitesFor } from '../core/account.mjs';
 import { docsThemeScript, isDocsPage, parseTheme, siteThemeScript, THEME_SWITCHES_CSS } from '../core/theme.mjs';
 import { addressFor, checkTarget, recentFor, rememberFor } from '../core/finder.mjs';
 import { ACTION_IDS, checkAppSetting } from '../ui/find-catalogue.mjs';
+import { AiKeys, KEY, KEY_ID } from '../core/ai-keys.mjs';
 import { execFile } from 'node:child_process';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -52,6 +53,8 @@ const BODY_RADIUS = 12;
 // tests and a second copy of the app keep their own data folder
 if (process.env.ATIYA_USER_DATA) app.setPath('userData', process.env.ATIYA_USER_DATA);
 const settings = new SettingsStore(app.getPath('userData'));
+/** AI services' keys, encrypted by the system (documentation/editor/ai-services.md §6.1). */
+const aiKeys = new AiKeys(app.getPath('userData'), { encrypt: (t) => safeStorage.encryptString(t), decrypt: (d) => safeStorage.decryptString(d) });
 // an installed app carries its engine as one archive (plan stage 9P): the engine is where it's unpacked, its
 // manifest beside the archive until then
 const ENGINE_ARCHIVE = app.isPackaged ? engineArchive(process.resourcesPath) : null;
@@ -280,6 +283,7 @@ function createWindow() {
     if (fromFrame(e) && cmd && studioHeader && inEditMode()) body.webContents.send('studio:command', cmd);
   });
   finderIpc(fromFrame, inEditMode);
+  aiKeyIpc(fromFrame, inEditMode);
   // the dock's Close, from its own page alone
   ipcMain.on('dock:close', (e) => {
     if (dock && e.sender === dock.webContents && isDockPage(dock.webContents.getURL(), devOrigin())) closeDock();
@@ -479,6 +483,9 @@ async function openManaged(site, choices) {
       ATIYA_LAUNCH_TOKEN: LAUNCH_TOKEN,
       ATIYA_CACHE_DIR: join(app.getPath('userData'), 'cache', createHash('sha1').update(site.path.toLowerCase()).digest('hex').slice(0, 12)),
       ...editGitEnv(site.path),
+      // the AI services' keys are the app's alone: never the person's Credential Manager entries
+      ATIYA_AI_CREDENTIALS: 'off',
+      ...aiKeys.envFor(site.path),
     },
     { utility: true },
   );
@@ -889,6 +896,64 @@ function finderIpc(fromFrame, inEditMode) {
   });
   // the panel closed: the keys go back to the page
   ipcMain.on('finder:closed', (e) => fromFrame(e) && body.webContents.focus());
+}
+
+/** The key dialog's open request: edit mode hears only whether a key was saved. @type {{ id: string, done: (saved: boolean) => void } | null} */
+let keyAsk = null;
+
+/**
+ * AI services' keys (documentation/editor/ai-services.md §6.1): edit mode asks for one, the frame's own dialog
+ * takes it, the app keeps it encrypted and hands it to the running server in a write-only call. The key never
+ * reaches edit mode's page.
+ * @param {(e: Electron.IpcMainEvent | Electron.IpcMainInvokeEvent) => boolean} fromFrame
+ * @param {() => boolean} inEditMode
+ */
+function aiKeyIpc(fromFrame, inEditMode) {
+  const fromEditMode = (/** @type {Electron.IpcMainInvokeEvent} */ e) => e.sender === body.webContents && inEditMode() && workspace?.kind === 'managed';
+  /** @param {string} id @param {string | null} key */
+  const handOver = (id, key) => (serverUp() ? editFetch(`/_edit/api/ai/keys/${id}`, { method: 'PUT', body: { key } }).catch(() => null) : null);
+  const close = () => {
+    raiseFrame(false);
+    if (!body.webContents.isDestroyed()) body.webContents.focus();
+  };
+  ipcMain.handle('studio:ai-key', (e, id, name) => {
+    if (!fromEditMode(e) || typeof id !== 'string' || !KEY_ID.test(id) || !safeStorage.isEncryptionAvailable()) return { saved: false };
+    keyAsk?.done(false);
+    return new Promise((resolve) => {
+      keyAsk = { id, done: (saved) => resolve({ saved }) };
+      raiseFrame(true);
+      frame.webContents.focus();
+      frame.webContents.send('keys:open', { id, name: typeof name === 'string' && name.trim() ? name.trim().slice(0, 80) : id });
+    });
+  });
+  // the dialog's answer: a key to keep (refused when it isn't one, and the dialog stays), or null for Cancel
+  ipcMain.handle('keys:answer', async (e, key) => {
+    if (!fromFrame(e)) return { ok: false };
+    // nothing asked (a request edit mode replaced): the dialog just closes
+    if (!keyAsk) {
+      close();
+      return { ok: true };
+    }
+    const ask = keyAsk;
+    if (key === null) {
+      keyAsk = null;
+      ask.done(false);
+      close();
+      return { ok: true };
+    }
+    if (typeof key !== 'string' || !KEY.test(key.trim()) || !workspace || !aiKeys.save(workspace.path, ask.id, key.trim())) return { ok: false, error: "That isn't a key. Paste it again, without spaces." };
+    keyAsk = null;
+    await handOver(ask.id, key.trim());
+    ask.done(true);
+    close();
+    return { ok: true };
+  });
+  ipcMain.handle('studio:ai-forget', async (e, id) => {
+    if (!fromEditMode(e) || typeof id !== 'string' || !KEY_ID.test(id) || !workspace) return { ok: false };
+    aiKeys.remove(workspace.path, id);
+    await handOver(id, null);
+    return { ok: true };
+  });
 }
 
 /** The bridge: answers only the app's own pages. */

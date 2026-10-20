@@ -118,9 +118,20 @@ function storedKeys(env: NodeJS.ProcessEnv): Promise<Record<string, string>> {
   return stored;
 }
 
-/** A service's key: its environment variable, else (plain dev on Windows) its Credential Manager entry. Never written anywhere. */
+/** The site runs in Atiya Studio (a managed site, with the app's launch token): its keys come from the app's key dialog. */
+export const studioKeys = (env: NodeJS.ProcessEnv = process.env): boolean => !!env.ATIYA_LAUNCH_TOKEN;
+
+// Keys Atiya Studio handed this running server after its start (ai-services.md §6.1); null is a removed key, which
+// hides the one the server started with. On globalThis, so a module reloaded by the dev server keeps them.
+const HELD_KEYS = Symbol.for('atiya.ai.heldKeys');
+const held = ((globalThis as Record<symbol, unknown>)[HELD_KEYS] ??= new Map<string, string | null>()) as Map<string, string | null>;
+
+/** Holds a key Atiya Studio saved while the site runs (null: removed). In memory only, never written anywhere. */
+export const holdKey = (id: string, key: string | null): void => void held.set(id, key);
+
+/** A service's key: one Studio handed over while the site runs, else its environment variable, else (plain dev on Windows) its Credential Manager entry. Never written anywhere. */
 export const keyFor = async (id: string, env: NodeJS.ProcessEnv = process.env): Promise<string | undefined> =>
-  env[keyVariable(id)] || (await storedKeys(env))[credentialName(id)] || undefined;
+  held.has(id) ? held.get(id) || undefined : env[keyVariable(id)] || (await storedKeys(env))[credentialName(id)] || undefined;
 
 /** The writer, or null when there isn't one. */
 export const writerOf = (s: AiSettings): AiService | null => s.services.find((x) => x.id === s.writer) ?? null;

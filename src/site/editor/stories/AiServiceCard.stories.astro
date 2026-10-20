@@ -17,3 +17,11 @@ const [local, cloud, failed] = AI_SERVICES;
 <Example title="Its last test failed" description="The state tag and the line under it say what went wrong and what to do." layout="block">
   <AiServiceCard service={failed} keyFound entry="atiya-ai-my-router" variable="ATIYA_AI_MY_ROUTER_KEY" now={AI_NOW} />
 </Example>
+
+<Example title="In Atiya Studio, key missing" description="Enter key opens the app's own key dialog, so the key never enters this page." layout="block">
+  <AiServiceCard service={cloud} keyFound={false} entry="atiya-ai-openai" variable="ATIYA_AI_OPENAI_KEY" studio now={AI_NOW} />
+</Example>
+
+<Example title="In Atiya Studio, with its key" description="Replace key opens the same dialog; the old key is gone once the new one is saved." layout="block">
+  <AiServiceCard service={cloud} keyFound entry="atiya-ai-openai" variable="ATIYA_AI_OPENAI_KEY" studio now={AI_NOW} />
+</Example>

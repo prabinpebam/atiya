@@ -2,7 +2,8 @@
 /**
  * A service's card on the AI screen (documentation/editor/ai-services.md §8.2): its name, where it runs and its
  * state; its model; Don't send private pages; where its words go; Test, Remove and the last test. A cloud
- * service without its key names the Credential Manager entry to add, with Copy name. Each change saves at once.
+ * service without its key names the Credential Manager entry to add, with Copy name; in Atiya Studio it offers
+ * Enter key (Replace key once there's one), which opens the app's own key dialog. Each change saves at once.
  * @tier editor
  * @a11y A section named after its service; the state is text in a tag; the test's result is announced.
  */
@@ -16,7 +17,7 @@ import Link from '../../components/fundamentals/Link.astro';
 import Tag from '../../components/fundamentals/Tag.astro';
 import ActionBar from '../../components/compounds/ActionBar.astro';
 import Panel from '../kit/Panel.astro';
-import { cardState, disclaimerOf, keyMissingLine, testLine, type AiService } from '../model/aiServices';
+import { cardState, disclaimerOf, keyMissingLine, STUDIO_KEY_LINE, testLine, type AiService } from '../model/aiServices';
 
 interface Props {
   /** The service, as its settings hold it. */
@@ -31,18 +32,20 @@ interface Props {
   entry: string;
   /** Its key's environment variable (`ATIYA_AI_<ID>_KEY`). */
   variable: string;
+  /** The site runs in Atiya Studio: its key is entered in the app's own dialog, not Credential Manager. */
+  studio?: boolean;
   /** Now, for how long ago it was tested (a story fixes it). */
   now?: number;
 }
 
-const { service: s, keyFound, models, writer = false, entry, variable, now = Date.now() } = Astro.props;
+const { service: s, keyFound, models, writer = false, entry, variable, studio = false, now = Date.now() } = Astro.props;
 const state = cardState(s, keyFound);
 const d = disclaimerOf(s.provider);
 const titleId = `ai-service-${s.id}`;
 const listed = models?.length ? (models.includes(s.model) ? models : [s.model, ...models]) : null;
 ---
 
-<Panel gap="md" labelledby={titleId} data-ai-card={s.id} data-ai-name={s.name} data-ai-local={s.local ? '' : undefined}>
+<Panel gap="md" labelledby={titleId} data-ai-card={s.id} data-ai-name={s.name} data-ai-local={s.local ? '' : undefined} data-ai-studio={studio && !s.local ? '' : undefined}>
   <div class="head">
     <Heading level={2} size="h4" id={titleId}>{s.name}</Heading>
     <ActionBar gap="sm">
@@ -54,7 +57,14 @@ const listed = models?.length ? (models.includes(s.model) ? models : [s.model, .
   {listed ? <Select label="Model" name="model" value={s.model} options={listed.map((m) => ({ value: m, label: m }))} /> : <TextField label="Model" name="model" value={s.model} required />}
   {
     !s.local &&
-      (keyFound ? (
+      (studio ? (
+        <div class="key" data-ai-key="">
+          {keyFound ? <Text variant="small" tone="positive">Key found.</Text> : <Text variant="small">{STUDIO_KEY_LINE}</Text>}
+          <ActionBar gap="sm">
+            <Button variant="secondary" size="sm" icon="key" data-ai-key-enter="">{keyFound ? 'Replace key' : 'Enter key'}</Button>
+          </ActionBar>
+        </div>
+      ) : keyFound ? (
         <Text variant="small" tone="positive">Key found.</Text>
       ) : (
         <div class="key" data-ai-key="">

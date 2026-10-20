@@ -3,7 +3,7 @@
  * the writer, and test a service with a tiny request that needs a JSON answer. Everything is written through
  * `writeSettings` (never a key: keys come only from the environment).
  */
-import { readSettings, writeSettings, keyFor, type AiService } from './aiSettings';
+import { readSettings, writeSettings, keyFor, holdKey, studioKeys, type AiService } from './aiSettings';
 import { findLocal } from './aiLocal';
 import { AiError, writeOpenAI } from './aiOpenAI';
 import { addService, CLOUD_KINDS, idFor, removeService, setWriter, updateService, type TestState } from '../model/aiServices';
@@ -11,6 +11,8 @@ import { addService, CLOUD_KINDS, idFor, removeService, setWriter, updateService
 const json = (body: unknown, status = 200) => new Response(JSON.stringify(body), { status, headers: { 'content-type': 'application/json' } });
 const refuse = (message: string, status = 422) => json({ ok: false, issues: [{ file: '.atiya/ai.json', message }] }, status);
 const ID = /^[a-z0-9]+(-[a-z0-9]+)*$/;
+/** A key as services issue them: printable, with no spaces. */
+const KEY = /^[\x21-\x7e]{8,512}$/;
 const text = (v: unknown, max: number) => (typeof v === 'string' && v.trim() && v.length <= max ? v.trim() : null);
 
 /** The test's request: it needs a JSON answer of one shape, as every real request does. */
@@ -79,6 +81,18 @@ async function add(b: NewService): Promise<Response> {
 
 /** Routes under `ai/` for the AI screen; null when the request isn't one of them. */
 export async function aiServicesRoute(parts: string[], method: string, request: Request): Promise<Response | null> {
+  // Atiya Studio hands a key saved (or, with null, removed) in its own dialog to the running site (§6.1): write-only,
+  // and only on a site the app started; the answer never holds the key
+  if (parts[1] === 'keys') {
+    if (!studioKeys() || method !== 'PUT' || !ID.test(parts[2] ?? '') || parts[3]) return null;
+    const key = ((await request.json().catch(() => null)) as { key?: unknown } | null)?.key;
+    if (key !== null && !(typeof key === 'string' && KEY.test(key))) return refuse("That isn't a key.", 400);
+    holdKey(parts[2], key);
+    // a new key hasn't been tested
+    const s = readSettings();
+    if (s.services.some((x) => x.id === parts[2])) writeSettings(updateService(s, parts[2], { lastTest: undefined }));
+    return json({ ok: true });
+  }
   if (parts[1] === 'writer' && method === 'PUT') {
     const { id } = (await request.json()) as { id?: string };
     const s = readSettings();

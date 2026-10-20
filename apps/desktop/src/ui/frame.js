@@ -4,6 +4,7 @@
 // to the main process, which does the rest (core/window/custom-window.mjs). Ported in part from focus-notes.
 import { ICONS } from './site/icons.js';
 import { initFinder } from './finder.js';
+import { initKeys } from './keys.js';
 
 const $ = (id) => document.getElementById(id);
 const root = document.documentElement;
@@ -675,3 +676,6 @@ initFinder({
     $('sign-out').click();
   },
 });
+
+// ---------- an AI service's key (documentation/editor/ai-services.md §6.1) ----------
+initKeys();

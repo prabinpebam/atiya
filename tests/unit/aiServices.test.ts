@@ -13,12 +13,14 @@ import {
   offerLine,
   offers,
   removeService,
+  removeQuestion,
   setWriter,
+  STUDIO_KEY_LINE,
   testLine,
   updateService,
   type Runner,
 } from '../../src/site/editor/model/aiServices';
-import { EMPTY_SETTINGS, keyVariable, readSettings, settingsFile, type AiService } from '../../src/site/editor/server/aiSettings';
+import { EMPTY_SETTINGS, keyFor, keyVariable, readSettings, settingsFile, type AiService } from '../../src/site/editor/server/aiSettings';
 import { aiServicesRoute, testService } from '../../src/site/editor/server/aiServices';
 import { propose, writerLine, type AiEvent } from '../../src/site/editor/server/aiConnector';
 import { guard } from '../../src/site/editor/model/guard';
@@ -119,8 +121,15 @@ describe('the AI screen: where words go, and what is on this computer (§6.2, §
     expect(offerLine(runners[1])).toBe('LM Studio is running on this computer, with 1 model.');
   });
 
-  it('names the Credential Manager entry a missing key goes in', () => {
+  it('names the Credential Manager entry a missing key goes in, or the app that keeps it', () => {
     expect(keyMissingLine('atiya-ai-openai')).toBe('Add the key to Windows Credential Manager as atiya-ai-openai, then restart the site.');
+    expect(STUDIO_KEY_LINE).toBe('Enter its key. Atiya Studio keeps it encrypted on this computer.');
+  });
+
+  it("asks before removing, saying what happens to its key (§7.7)", () => {
+    expect(removeQuestion('OpenAI', 'studio')).toBe('Remove OpenAI? Its key is deleted from this computer.');
+    expect(removeQuestion('OpenAI', 'dev')).toBe('Remove OpenAI? Its key stays in Credential Manager until you delete it there.');
+    expect(removeQuestion('Ollama', 'local')).toBe('Remove Ollama? Its models stay on this computer.');
   });
 });
 
@@ -216,7 +225,7 @@ describe('the key scan: the AI routes never return or write a key (ai-plan.md S3
   });
 
   it('answers only behind edit mode guard: a write needs the header, this origin and a loopback client', () => {
-    for (const path of ['ai/propose', 'ai/services', 'ai/writer', 'ai/services/scan/test']) {
+    for (const path of ['ai/propose', 'ai/services', 'ai/writer', 'ai/services/scan/test', 'ai/keys/scan']) {
       const url = new URL(`http://localhost:4321/_edit/api/${path}`);
       const req = (headers: Record<string, string>, clientAddress = '127.0.0.1') => guard({ method: 'POST', url, clientAddress, header: (n) => headers[n.toLowerCase()] ?? null });
       const good = { host: 'localhost:4321', 'x-editor': '1', origin: 'http://localhost:4321', 'content-type': 'application/json' };
@@ -226,5 +235,53 @@ describe('the key scan: the AI routes never return or write a key (ai-plan.md S3
       expect(req({ ...good, 'sec-fetch-site': 'cross-site' }).ok).toBe(false);
       expect(req(good, '192.168.1.5').ok).toBe(false);
     }
+  });
+
+  describe("Atiya Studio's keys (ai-plan.md S6, ai-services.md §6.1)", () => {
+    const STUDIO_KEY = `sk-studio-${Math.random().toString(36).slice(2)}-never-shown`;
+    beforeAll(() => {
+      process.env.ATIYA_LAUNCH_TOKEN = 'launch-token-for-the-test';
+    });
+    afterAll(() => {
+      delete process.env.ATIYA_LAUNCH_TOKEN;
+      delete process.env[keyVariable('studio-b')];
+    });
+
+    it('takes a key only on a site Atiya Studio started, write-only: the answer never holds it', async () => {
+      delete process.env.ATIYA_LAUNCH_TOKEN;
+      expect(await call('keys/studio-a', 'PUT', { key: STUDIO_KEY })).toBe('');
+      process.env.ATIYA_LAUNCH_TOKEN = 'launch-token-for-the-test';
+      expect(await call('keys/studio-a', 'PUT', { key: STUDIO_KEY })).toBe('200 {"ok":true}');
+      expect(await call('keys/studio-a', 'GET')).toBe('');
+      expect(await call('keys/studio-a/more', 'PUT', { key: STUDIO_KEY })).toBe('');
+      expect(await call('keys/Not_An_Id', 'PUT', { key: STUDIO_KEY })).toBe('');
+      for (const key of ['', 'short', 'has a space in it', 'a'.repeat(513), 42, undefined]) expect(await call('keys/studio-a', 'PUT', { key })).toMatch(/^400 .*That isn't a key/);
+      expect(await keyFor('studio-a')).toBe(STUDIO_KEY);
+      expect(everyFile(dir)).not.toContain(STUDIO_KEY);
+    });
+
+    it("comes before the key the server started with, and a removed one hides it", async () => {
+      process.env[keyVariable('studio-b')] = 'sk-from-the-start-environment';
+      expect(await keyFor('studio-b')).toBe('sk-from-the-start-environment');
+      await call('keys/studio-b', 'PUT', { key: STUDIO_KEY });
+      expect(await keyFor('studio-b')).toBe(STUDIO_KEY);
+      expect(await call('keys/studio-b', 'PUT', { key: null })).toBe('200 {"ok":true}');
+      expect(await keyFor('studio-b')).toBeUndefined();
+    });
+
+    it("reaches the service's next test without a restart, and a new key isn't taken as tested", async () => {
+      await call('services', 'POST', { provider: 'other', name: 'Studio C', base: 'http://127.0.0.1:9/v1', model: 'm', accepted: true });
+      expect(await call('services/studio-c/test', 'POST')).toContain('"state":"key-missing"');
+      await call('keys/studio-c', 'PUT', { key: STUDIO_KEY });
+      expect(readSettings().services.find((s) => s.id === 'studio-c')?.lastTest).toBeUndefined();
+      const sent: string[] = [];
+      const r = await testService(readSettings().services.find((s) => s.id === 'studio-c')!, async (_u, init) => {
+        sent.push(String(new Headers(init?.headers).get('authorization')));
+        return new Response('{}', { status: 401 });
+      });
+      expect(r.state).toBe('key-refused');
+      expect(sent).toEqual([`Bearer ${STUDIO_KEY}`]);
+      expect(await call('services/studio-c', 'DELETE')).toContain('"ok":true');
+    });
   });
 });

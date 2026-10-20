@@ -92,11 +92,22 @@ if (location.protocol === 'app:') {
       remember: (key, isPrivate) => ipcRenderer.send('finder:remember', key, isPrivate),
       closed: () => ipcRenderer.send('finder:closed'),
     },
+    // an AI service's key dialog (documentation/editor/ai-services.md §6.1): opened for edit mode, answered here
+    keys: {
+      onOpen(cb) {
+        const listener = (_e, ask) => cb(ask);
+        ipcRenderer.on('keys:open', listener);
+        return () => ipcRenderer.removeListener('keys:open', listener);
+      },
+      answer: (key) => ipcRenderer.invoke('keys:answer', key),
+    },
   });
 }
 
 // Edit mode in the app's own view gets one thing: describing its header to the app's one title bar row, and
 // hearing the row's commands (plan stage 7B, src/site/editor/scripts/studio.ts). The main process checks both.
+// It can also ask for an AI service's key: the app's own dialog takes it, and edit mode hears only whether one was
+// saved (documentation/editor/ai-services.md §6.1).
 if (location.protocol === 'http:' && location.hostname === 'localhost' && location.pathname.startsWith('/_edit/')) {
   contextBridge.exposeInMainWorld('atiyaStudio', {
     publish: (header) => ipcRenderer.send('studio:header', header),
@@ -105,6 +116,8 @@ if (location.protocol === 'http:' && location.hostname === 'localhost' && locati
       ipcRenderer.on('studio:command', listener);
       return () => ipcRenderer.removeListener('studio:command', listener);
     },
+    aiKey: (id, name) => ipcRenderer.invoke('studio:ai-key', id, name),
+    forgetAiKey: (id) => ipcRenderer.invoke('studio:ai-forget', id),
   });
 }
 

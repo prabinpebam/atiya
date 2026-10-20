@@ -128,6 +128,45 @@ async function find(req, res) {
   }
   return false;
 }
+// AI services' keys (documentation/editor/ai-services.md §6.1): the key the server started with, one the app hands
+// over while it runs (write-only, null when removed), and a test that works only with the expected key
+const heldKeys = new Map();
+const keyOf = (id) => (heldKeys.has(id) ? heldKeys.get(id) : process.env[`ATIYA_AI_${id.toUpperCase().replace(/[^A-Z0-9]/g, '_')}_KEY`]);
+/** @param {import('node:http').IncomingMessage} req @param {import('node:http').ServerResponse} res */
+async function ai(req, res) {
+  const url = new URL(req.url ?? '/', `http://localhost:${port}`);
+  const key = /^\/_edit\/api\/ai\/keys\/([a-z0-9-]+)$/.exec(url.pathname);
+  if (req.method === 'PUT' && key) {
+    if (req.headers['x-editor'] !== '1' || req.headers.origin !== `http://localhost:${port}` || !String(req.headers['content-type']).startsWith('application/json')) return json(res, 403, { ok: false });
+    let raw = '';
+    for await (const c of req) raw += c;
+    heldKeys.set(key[1], JSON.parse(raw).key ?? null);
+    console.log(`stand-in: ai key ${key[1]} ${heldKeys.get(key[1]) ? 'held' : 'removed'}`);
+    return json(res, 200, { ok: true });
+  }
+  const test = /^\/_edit\/api\/ai\/services\/([a-z0-9-]+)\/test$/.exec(url.pathname);
+  if (req.method === 'POST' && test) {
+    const k = keyOf(test[1]);
+    return json(res, 200, { state: !k ? 'key-missing' : k === process.env.STUB_AI_EXPECT ? 'works' : 'key-refused' });
+  }
+  if (url.pathname === '/_edit/ai/')
+    return void res.end(
+      page(
+        'AI (stand-in)',
+        `<p><button type="button" id="ai-enter">Enter key</button> <button type="button" id="ai-test">Test</button> <button type="button" id="ai-remove">Remove</button></p><p id="ai-result" role="status"></p><script>
+  const b = window.atiyaStudio;
+  const say = (t) => (document.getElementById('ai-result').textContent = t);
+  document.getElementById('ai-enter').addEventListener('click', async () => say((await b.aiKey('openai', 'OpenAI')).saved ? 'saved' : 'not saved'));
+  document.getElementById('ai-test').addEventListener('click', async () => {
+    const r = await fetch('/_edit/api/ai/services/openai/test', { method: 'POST', headers: { 'x-editor': '1', 'content-type': 'application/json' }, body: '{}' });
+    say((await r.json()).state);
+  });
+  document.getElementById('ai-remove').addEventListener('click', async () => (await b.forgetAiKey('openai'), say('removed')));
+</script>`,
+      ),
+    );
+  return false;
+}
 createServer(async (req, res) => {
   res.setHeader('content-type', 'text/html; charset=utf-8');
   // as the engine's dev server does for a managed site (integrations/launch.mjs)
@@ -136,6 +175,7 @@ createServer(async (req, res) => {
     return res.end('This site is open in Atiya Studio. Open it there.');
   }
   if ((await find(req, res)) !== false) return;
+  if ((await ai(req, res)) !== false) return;
   if (req.url?.startsWith('/_edit/')) res.end(page(`Edit mode (stand-in)${owner}`, `<p><a id="out" href="https://example.com/">An outside link</a></p><p><a id="in" href="/">The site</a></p>${studio(req.headers['x-atiya-studio'] === '1')}`));
   // the documentation, as Slate keeps its theme: its own stored choice, auto following the system's, and a toggle
   else if (req.url?.startsWith('/docs/'))
