@@ -2,12 +2,14 @@
 /**
  * The AI prompt under a block (documentation/editor/ai-editing.md §4.2, §4.4): a field for what to change and
  * the quick actions, the line naming the service the article goes to, the step while AI works (with Stop), then
- * the result bar (Keep, Discard) while the block shows the proposal as a tracked change; or a note in place of
- * the result bar when AI can't, or fails (§10). Drawn in the canvas's overlay; the article editor runs the request.
+ * the result bar (Keep, Try again, Discard, the tries, Ask for more) while the block shows the proposal as a
+ * tracked change; or a note in place of the result bar when AI can't, or fails (§10). Drawn in the canvas's
+ * overlay; the article editor runs the request.
  * @tier editor
- * @a11y A named region; opening it focuses the field; the step and every note are read out as a status; the tracked change carries hidden "removed" and "added" words; Keep and Discard return focus to the block.
+ * @a11y A named region; opening it focuses the field; the step and every note are read out as a status; the tracked change carries hidden "removed" and "added" words; a proposal focuses Keep, and stepping to a try announces it; Keep and Discard return focus to the block.
  * @key Ctrl + Shift + Space: ask AI about the selected block
  * @key Enter: send (Shift + Enter: a new line); in the result bar, keep
+ * @key Esc: while writing, stop; with a proposal, discard; otherwise close
  */
 import Button from '../../components/fundamentals/Button.astro';
 import IconButton from '../../components/fundamentals/IconButton.astro';
@@ -26,9 +28,11 @@ interface Props {
   service?: string;
   /** The status or the note's words, for the story. */
   message?: string;
+  /** Where the result bar is among the tries ("2 of 3"), for the story; none with one try. */
+  tries?: string;
 }
 
-const { open = false, state = 'ready', service = '', message = '' } = Astro.props;
+const { open = false, state = 'ready', service = '', message = '', tries = '' } = Astro.props;
 ---
 
 <section class="ai-prompt" aria-label="Ask AI" data-editor-ai-prompt data-state={state} data-static={open ? '' : undefined} hidden={!open}>
@@ -49,11 +53,24 @@ const { open = false, state = 'ready', service = '', message = '' } = Astro.prop
   </div>
   <div class="ai-result" role="group" aria-label="Proposal" data-ai-result>
     <StatusNote live="off" data-ai-summary="">{state === 'proposed' ? message : ''}</StatusNote>
-    <Button size="sm" variant="primary" icon="check" data-ai-keep="">Keep</Button>
-    <Button size="sm" variant="secondary" data-ai-discard="">Discard</Button>
+    <div class="ai-bar">
+      <span class="ai-tries" data-ai-tries hidden={!tries}>
+        <IconButton label="Previous try" icon="chevron-left" size="sm" tooltip="top" data-ai-prev="" />
+        <span class="ai-tries-text" data-ai-tries-text>{tries}</span>
+        <IconButton label="Next try" icon="chevron-right" size="sm" tooltip="top" data-ai-next="" />
+      </span>
+      <Button size="sm" variant="primary" icon="check" data-ai-keep="">Keep</Button>
+      <Button size="sm" variant="secondary" data-ai-again="">Try again</Button>
+      <Button size="sm" variant="secondary" data-ai-discard="">Discard</Button>
+    </div>
+    <form class="ai-more" data-ai-more>
+      <TextField label="Ask for more" multiline rows={1} maxlength={4000} placeholder="Make it warmer" data-ai-more-field="" />
+      <IconButton label="Send" icon="arrow-up" variant="primary" size="sm" type="submit" tooltip="top" />
+    </form>
   </div>
   <div class="ai-note" data-ai-note>
     <StatusNote live="status" data-ai-note-text="">{state === 'note' ? message : ''}</StatusNote>
+    <span class="ai-back"><Button size="sm" variant="secondary" data-ai-back="">Show tries</Button></span>
     <Button size="sm" variant="secondary" data-ai-retry="">Try again</Button>
   </div>
   <StatusNote live="off" data-ai-service="">{service}</StatusNote>
@@ -86,16 +103,18 @@ const { open = false, state = 'ready', service = '', message = '' } = Astro.prop
 
   .ai-head,
   .ai-ask,
+  .ai-more,
   .ai-quick,
   .ai-working,
-  .ai-result,
+  .ai-bar,
   .ai-note {
     display: flex;
     align-items: end;
     gap: var(--space-2);
   }
 
-  .ai-quick {
+  .ai-quick,
+  .ai-bar {
     flex-wrap: wrap;
   }
 
@@ -108,21 +127,38 @@ const { open = false, state = 'ready', service = '', message = '' } = Astro.prop
     font: var(--type-label);
   }
 
-  .ai-ask > :first-child {
+  .ai-ask > :first-child,
+  .ai-more > :first-child {
     flex: 1;
   }
 
+  .ai-result {
+    display: grid;
+    gap: var(--space-3);
+  }
+
   .ai-working,
-  .ai-result,
+  .ai-bar,
   .ai-note {
     align-items: center;
     justify-content: flex-end;
   }
 
   .ai-working > :first-child,
-  .ai-result > :first-child,
   .ai-note > :first-child {
     flex: 1;
+  }
+
+  .ai-tries {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-1);
+    margin-inline-end: auto;
+  }
+
+  .ai-tries[hidden],
+  .ai-prompt:not([data-back]) .ai-back {
+    display: none;
   }
 
   /* one state at a time */

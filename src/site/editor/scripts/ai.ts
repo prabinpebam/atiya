@@ -6,12 +6,14 @@
  */
 import { TAB, announce, editorUrl } from './client';
 import { failureNote, keptLine, needsNote, readyLine, serviceLine, statusLine, STOPPED, type AiFailureCode, type AiNeeds, type AiOutside, type AiStep } from '../model/aiCopy';
+import { STOPPED_KEPT, stepTo, stoppedTry, tryLine, type AiTry } from '../model/aiTries';
 import { plainText } from '../../content/markdown';
 import type { AiDo, AiView } from './aiPrompt';
 import type { Article, Block } from '../../content/schema';
 
 type Writer = { name: string; model: string; local: boolean; privatePages: boolean } | null;
 type Proposal = { summary: string; body: Block[]; touched: string[] };
+type Asked = { instruction: string; action?: string; base?: Block };
 
 export interface AiHost {
   id: string;
@@ -56,14 +58,24 @@ export function initAi(host: AiHost, signal: AbortSignal) {
   let key: string | undefined;
   let view: AiView = { index: -1, phase: 'closed' };
   let request: AbortController | null = null;
-  let proposal: Proposal | null = null;
-  let last: { instruction: string; action?: string } | null = null;
+  // every answer, and what Stop kept, until one is kept or they're all discarded (§4.2)
+  let tries: AiTry[] = [];
+  let shown = 0;
+  let last: Asked | null = null;
+  // the block the running request started from, and its words as they stream
+  let from: Block | undefined;
+  let streamed = '';
   let ticker = 0;
 
   const draw = (v: Partial<AiView>) => {
     view = { ...view, ...v, index, service: serviceLine(writer, host.isPrivate) };
     host.toCanvas({ type: 'ai', view });
   };
+  const showTry = () => {
+    const t = tries[shown];
+    draw({ phase: 'proposed', after: wordsOf(t.block), summary: t.summary, shown, count: tries.length });
+  };
+  const noteOf = (note: string, retry: boolean) => draw({ phase: 'note', note, retry, back: tries.length > 0 });
   const stopTicker = () => {
     clearInterval(ticker);
     ticker = 0;
@@ -75,19 +87,23 @@ export function initAi(host: AiHost, signal: AbortSignal) {
   };
   const close = () => {
     cancel();
-    proposal = null;
+    tries = [];
+    shown = 0;
     draw({ phase: 'closed' });
     index = -1;
   };
   signal.addEventListener('abort', cancel);
 
-  const ask = async (instruction: string, action?: string) => {
+  const ask = async (asked: Asked) => {
     cancel();
-    last = { instruction, action };
-    proposal = null;
+    last = asked;
     const doc = host.doc();
     key = keyOf(doc.body[index]);
-    if (!key) return draw({ phase: 'note', note: failureNote('refused').title, retry: false });
+    if (!key) return noteOf(failureNote('refused').title, false);
+    // asking for more starts from the try shown
+    const body = asked.base ? doc.body.map((b) => (keyOf(b) === key ? asked.base! : b)) : doc.body;
+    from = asked.base ?? doc.body[index];
+    streamed = '';
     const started = Date.now();
     let step: AiStep = 'deciding';
     const status = () => statusLine(step, writer?.name, (Date.now() - started) / 1000);
@@ -98,7 +114,7 @@ export function initAi(host: AiHost, signal: AbortSignal) {
       const res = await fetch(editorUrl('api/ai/propose'), {
         method: 'POST',
         headers: { 'X-Editor': '1', 'X-Editor-Tab': TAB, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id: host.id, article: doc, target: { scope: 'block', key }, instruction, ...(action ? { action } : {}) }),
+        body: JSON.stringify({ id: host.id, article: { ...doc, body }, target: { scope: 'block', key }, instruction: asked.instruction, ...(asked.action ? { action: asked.action } : {}) }),
         credentials: 'same-origin',
         signal: ac.signal,
       });
@@ -107,22 +123,27 @@ export function initAi(host: AiHost, signal: AbortSignal) {
         if (e.type === 'status') {
           step = e.data.step as AiStep;
           draw({ status: status() });
-        } else if (e.type === 'words') draw({ words: plainText(String(e.data.text ?? '')) });
-        else if (e.type === 'proposal') {
-          proposal = e.data.proposal as Proposal;
-          const after = proposal.body.find((b) => keyOf(b) === key);
+        } else if (e.type === 'words') {
+          streamed = String(e.data.text ?? '');
+          draw({ words: plainText(streamed) });
+        } else if (e.type === 'proposal') {
+          const proposal = e.data.proposal as Proposal;
+          const block = proposal.body.find((b) => keyOf(b) === key);
           stopTicker();
-          draw({ phase: 'proposed', after: wordsOf(after), summary: proposal.summary });
+          if (!block) return noteOf(failureNote('refused').title, true);
+          tries.push({ summary: proposal.summary, block });
+          shown = tries.length - 1;
+          showTry();
           announce(readyLine(proposal.summary));
         } else if (e.type === 'note') {
           stopTicker();
           const n = needsNote(e.data.needs as AiNeeds, e.data.outside as AiOutside | undefined, e.data.reason as string | undefined);
-          draw({ phase: 'note', note: [n.title, n.detail].filter(Boolean).join(' '), retry: false });
+          noteOf([n.title, n.detail].filter(Boolean).join(' '), false);
           announce(n.title);
         } else if (e.type === 'error') {
           stopTicker();
           const n = failureNote(e.data.code as AiFailureCode, String(e.data.service ?? writer?.name ?? 'The service'), e.data.reason as string | undefined);
-          draw({ phase: 'note', note: [n.title, n.detail].filter(Boolean).join(' '), retry: n.choices.includes('retry') });
+          noteOf([n.title, n.detail].filter(Boolean).join(' '), n.choices.includes('retry'));
           announce(n.title, 'negative');
         }
       }
@@ -130,51 +151,70 @@ export function initAi(host: AiHost, signal: AbortSignal) {
       if (ac.signal.aborted) return;
       stopTicker();
       const n = failureNote('unreachable', 'the dev server');
-      draw({ phase: 'note', note: `${n.title} ${n.detail}`, retry: true });
+      noteOf(`${n.title} ${n.detail}`, true);
     } finally {
       if (request === ac) request = null;
       stopTicker();
     }
   };
 
+  // Stop keeps what was written as a try; with nothing written, the tries stay as they were (§4.2)
+  const stop = () => {
+    if (view.phase !== 'working') return;
+    cancel();
+    const t = stoppedTry(from, streamed);
+    if (t) {
+      tries.push(t);
+      shown = tries.length - 1;
+    }
+    if (tries.length) showTry();
+    else noteOf(STOPPED, true);
+    announce(t ? STOPPED_KEPT : STOPPED);
+  };
+
   const keep = () => {
-    if (!proposal || !key) return;
+    const t = tries[shown];
+    if (!t || !key) return;
     const doc = host.doc();
     const at = doc.body.findIndex((b) => keyOf(b) === key);
-    const block = proposal.body.find((b) => keyOf(b) === key);
-    const summary = proposal.summary;
     close();
-    if (at < 0 || !block) return announce("The block has gone: nothing changed.", 'negative');
+    if (at < 0) return announce("The block has gone: nothing changed.", 'negative');
     const next = doc.body.slice();
-    next[at] = block;
+    next[at] = t.block;
     host.keep(next, at);
-    announce(keptLine(summary));
+    announce(keptLine(t.summary));
   };
 
   return {
-    /** Opens the prompt on the block at this index. */
+    /** Opens the prompt on the block at this index; on the block it's already about, it shows where it was. */
     async open(at: number) {
       if (index !== at) close();
       index = at;
-      draw({ phase: 'ready', words: undefined, after: undefined });
+      if (view.phase === 'working') draw({});
+      else if (tries.length) showTry();
+      else draw({ phase: 'ready', words: undefined, after: undefined });
       const r = await fetch(editorUrl('api/ai/status'), { headers: { 'X-Editor': '1', 'X-Editor-Tab': TAB }, credentials: 'same-origin', signal }).catch(() => null);
       const s = r?.ok ? ((await r.json()) as { writer: Writer }) : null;
       writer = s?.writer ?? null;
-      if (index === at && view.phase === 'ready') draw({});
+      if (index === at && view.phase !== 'closed') draw({});
     },
     /** What the prompt asked for. */
     message(m: AiDo) {
-      if (m.do === 'send') void ask(m.instruction, m.action);
-      else if (m.do === 'retry' && last) void ask(last.instruction, last.action);
+      if (m.do === 'send') void ask({ instruction: m.instruction, action: m.action });
+      else if (m.do === 'more' && tries[shown]) void ask({ instruction: m.instruction, base: tries[shown].block });
+      else if (m.do === 'retry' && last) void ask(last);
       else if (m.do === 'keep') keep();
-      else if (m.do === 'stop') {
-        cancel();
-        draw({ phase: 'note', note: STOPPED, retry: true });
-        announce(STOPPED);
-      } else if (m.do === 'discard') {
-        proposal = null;
+      else if (m.do === 'stop') stop();
+      else if (m.do === 'step' && tries.length) {
+        shown = stepTo(shown, m.by, tries.length);
+        showTry();
+        announce(tryLine(shown, tries.length, tries[shown].summary));
+      } else if (m.do === 'back' && tries.length) showTry();
+      else if (m.do === 'discard') {
+        tries = [];
+        shown = 0;
         draw({ phase: 'ready', after: undefined, words: undefined });
-      } else close();
+      } else if (m.do === 'close') close();
     },
     /** Draws the prompt again in a canvas just drawn again (a save's redraw). */
     again() {

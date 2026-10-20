@@ -1,9 +1,9 @@
 /**
  * A stand-in AI service for edit mode's tests (documentation/editor/ai-plan.md, S3, S4): it answers like Ollama
  * (`/api/tags`, and the OpenAI-compatible `/v1/chat/completions`, streamed), so tests never reach a real model.
- * Its answer is canned: the block the request names, cut to its first sentence; the AI screen's connection test
- * gets `{"ok": true}`. A request that says "slowly" streams slowly enough to stop. A model named after a failure
- * fails that way (`FAILURES`), so a test can choose it on a card.
+ * Its answer is canned: the block the request names, cut to its first sentence (or, asked for "longer", with a
+ * sentence added); the AI screen's connection test gets `{"ok": true}`. A request that says "slowly" streams
+ * slowly enough to stop. A model named after a failure fails that way (`FAILURES`), so a test can choose it on a card.
  */
 import { createServer } from 'node:http';
 
@@ -18,6 +18,8 @@ const MODELS = ['stand-in', ...Object.keys(FAILURES)];
 
 /** The words a text block is cut to: its first sentence, or the whole of a short one. */
 const shorter = (s) => (/^[\s\S]*?[.!?](?=\s|$)/.exec(s)?.[0] ?? s).trim();
+/** The sentence a "longer" answer adds. */
+export const MORE = 'It says a little more.';
 
 /** The answer to one request, from its messages. */
 export function answerFor(messages) {
@@ -28,9 +30,11 @@ export function answerFor(messages) {
   const material = /<material>\n([\s\S]*)\n<\/material>/.exec(user)?.[1];
   const block = key && material ? JSON.parse(material).body.find((b) => b.key === key) : null;
   if (!block) return { changes: [], header: null, summary: 'Changed nothing', needs: { kind: 'unclear', reason: 'Which block?' } };
+  const longer = /longer/i.test(/^Request: (.*)$/m.exec(user)?.[1] ?? '');
+  const change = (s) => (longer ? `${s.trim()} ${MORE}` : shorter(s));
   const { key: _key, ...rest } = block;
-  const next = block.type === 'text' ? { ...rest, markdown: shorter(block.markdown) } : 'text' in block ? { ...rest, text: shorter(block.text) } : rest;
-  return { changes: [{ op: 'replace', key, after: null, block: next }], header: null, summary: 'Shortened the paragraph', needs: { kind: 'none', reason: null } };
+  const next = block.type === 'text' ? { ...rest, markdown: change(block.markdown) } : 'text' in block ? { ...rest, text: change(block.text) } : rest;
+  return { changes: [{ op: 'replace', key, after: null, block: next }], header: null, summary: longer ? 'Lengthened the paragraph' : 'Shortened the paragraph', needs: { kind: 'none', reason: null } };
 }
 
 /** Starts the stand-in on `port`; resolves to its server. */

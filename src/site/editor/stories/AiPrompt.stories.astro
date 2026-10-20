@@ -15,8 +15,8 @@ const note = failureNote('not-running', 'Ollama');
   <AiPrompt open state="working" service={service} message={statusLine('writing', 'Ollama', 4)} />
 </Example>
 
-<Example title="A proposal" description="The block shows the tracked change; Keep puts it in the article, Discard leaves the block as it was.">
-  <AiPrompt open state="proposed" service={service} message="Shortened the paragraph" />
+<Example title="A proposal" description="The block shows the tracked change; Keep puts it in the article, Try again asks once more and keeps both tries, Discard leaves the block as it was. Ask for more starts a new try from the one shown.">
+  <AiPrompt open state="proposed" service={service} message="Shortened the paragraph" tries="2 of 3" />
 </Example>
 
 <Example title="A note" description="When AI can't, or fails: what happened and what to do, with Try again.">

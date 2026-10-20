@@ -4,6 +4,7 @@
  * choice is posted to the editor, which holds the request (scripts/ai.ts).
  */
 import { wordDiff } from '../model/aiText';
+import { triesLine } from '../model/aiTries';
 
 /** What the editor sends to draw. */
 export interface AiView {
@@ -18,13 +19,22 @@ export interface AiView {
   /** The block's words in the proposal. */
   after?: string;
   summary?: string;
+  /** The try shown (from 0) and how many there are. */
+  shown?: number;
+  count?: number;
   note?: string;
   /** Whether the note offers Try again. */
   retry?: boolean;
+  /** Whether the note offers Show tries (a later try failed; the earlier ones are kept). */
+  back?: boolean;
 }
 
 /** What the prompt posts to the editor. */
-export type AiDo = { do: 'send'; instruction: string; action?: string } | { do: 'keep' | 'discard' | 'stop' | 'close' | 'retry' };
+export type AiDo =
+  | { do: 'send'; instruction: string; action?: string }
+  | { do: 'more'; instruction: string }
+  | { do: 'step'; by: number }
+  | { do: 'keep' | 'discard' | 'stop' | 'close' | 'retry' | 'back' };
 
 const blockAt = (index: number): HTMLElement | null => {
   const prose = document.querySelector('.prose');
@@ -67,6 +77,12 @@ export function initAiPrompt(root: HTMLElement, signal: AbortSignal) {
   const summary = $('[data-ai-summary]');
   const noteText = $('[data-ai-note-text]');
   const retry = $('[data-ai-retry]');
+  const tries = $('[data-ai-tries]');
+  const triesText = $('[data-ai-tries-text]');
+  const prev = $<HTMLButtonElement>('[data-ai-prev]');
+  const next = $<HTMLButtonElement>('[data-ai-next]');
+  const more = $<HTMLFormElement>('[data-ai-more]');
+  const moreField = $<HTMLTextAreaElement>('[data-ai-more-field] textarea');
 
   // the block as it was, put back on discard and close
   let saved: { el: HTMLElement; html: string; editable: string | null } | null = null;
@@ -101,6 +117,7 @@ export function initAiPrompt(root: HTMLElement, signal: AbortSignal) {
       return;
     }
     const opening = root.hidden || at !== v.index;
+    const was = root.dataset.state;
     if (at !== v.index) restore();
     at = v.index;
     root.dataset.state = v.phase;
@@ -110,6 +127,16 @@ export function initAiPrompt(root: HTMLElement, signal: AbortSignal) {
     summary.textContent = v.phase === 'proposed' ? (v.summary ?? '') : '';
     noteText.textContent = v.phase === 'note' ? (v.note ?? '') : '';
     retry.hidden = !v.retry;
+    root.toggleAttribute('data-back', v.phase === 'note' && !!v.back);
+    const shown = v.shown ?? 0;
+    const count = v.count ?? 0;
+    triesText.textContent = triesLine(shown, count);
+    tries.hidden = count < 2;
+    const left = document.activeElement;
+    prev.disabled = shown <= 0;
+    next.disabled = shown >= count - 1;
+    if (left === prev && prev.disabled && !next.disabled) next.focus();
+    else if (left === next && next.disabled && !prev.disabled) prev.focus();
     if (v.phase === 'working' && v.words) hold(block).textContent = v.words;
     else if (v.phase === 'proposed' && v.after !== undefined) {
       const el = hold(block);
@@ -117,7 +144,8 @@ export function initAiPrompt(root: HTMLElement, signal: AbortSignal) {
     } else if (v.phase !== 'working') restore();
     place(block);
     if (opening && v.phase === 'ready') field.focus();
-    if (v.phase === 'proposed') $('[data-ai-keep]').focus();
+    if (v.phase === 'proposed' && was !== 'proposed') $('[data-ai-keep]').focus();
+    if (v.phase === 'working' && was !== 'working') $('[data-ai-stop]').focus();
   };
 
   window.addEventListener(
@@ -139,16 +167,31 @@ export function initAiPrompt(root: HTMLElement, signal: AbortSignal) {
     },
     { signal },
   );
-  field.addEventListener(
-    'keydown',
+  more.addEventListener(
+    'submit',
     (e) => {
-      if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) {
-        e.preventDefault();
-        form.requestSubmit();
-      }
+      e.preventDefault();
+      const instruction = moreField.value.trim();
+      if (!instruction) return;
+      moreField.value = '';
+      post({ do: 'more', instruction });
     },
     { signal },
   );
+  for (const [input, owner] of [
+    [field, form],
+    [moreField, more],
+  ] as const)
+    input.addEventListener(
+      'keydown',
+      (e) => {
+        if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) {
+          e.preventDefault();
+          owner.requestSubmit();
+        }
+      },
+      { signal },
+    );
   root.addEventListener(
     'click',
     (e) => {
@@ -158,7 +201,10 @@ export function initAiPrompt(root: HTMLElement, signal: AbortSignal) {
       else if (hit('[data-ai-keep]')) post({ do: 'keep' });
       else if (hit('[data-ai-discard]')) post({ do: 'discard' });
       else if (hit('[data-ai-stop]')) post({ do: 'stop' });
-      else if (hit('[data-ai-retry]')) post({ do: 'retry' });
+      else if (hit('[data-ai-retry]') || hit('[data-ai-again]')) post({ do: 'retry' });
+      else if (hit('[data-ai-prev]')) post({ do: 'step', by: -1 });
+      else if (hit('[data-ai-next]')) post({ do: 'step', by: 1 });
+      else if (hit('[data-ai-back]')) post({ do: 'back' });
       else if (hit('[data-ai-close]')) post({ do: 'close' });
     },
     { signal },
@@ -169,7 +215,8 @@ export function initAiPrompt(root: HTMLElement, signal: AbortSignal) {
       if (e.key !== 'Escape') return;
       e.preventDefault();
       e.stopPropagation();
-      post({ do: root.dataset.state === 'proposed' ? 'discard' : 'close' });
+      const state = root.dataset.state;
+      post({ do: state === 'working' ? 'stop' : state === 'proposed' ? 'discard' : 'close' });
     },
     { signal },
   );
