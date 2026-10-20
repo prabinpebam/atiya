@@ -22,7 +22,7 @@ test.describe('editor: AI', () => {
   test.beforeEach(() => reset());
   test.afterAll(() => reset());
 
-  test('ask AI on a paragraph: Make shorter shows a tracked change in the block, and Keep saves it', async ({ page }) => {
+  test('ask AI on a paragraph: Make shorter shows a tracked change in the block, Keep saves it, and one undo brings it back', async ({ page }) => {
     // a plain paragraph of more than one sentence
     const p = blocks().findIndex((b) => b.type === 'text' && !/[*_[\]-]/.test(b.markdown!) && firstSentence(b.markdown!) !== b.markdown!.trim());
     const original = blocks()[p].markdown!;
@@ -50,5 +50,9 @@ test.describe('editor: AI', () => {
     await expect.poll(() => blocks()[p].markdown, { timeout: 15_000 }).toBe(firstSentence(original));
     expect(blocks()[p].key).toMatch(/^[a-z0-9]{6}$/);
     await expect(frame(page).locator('[data-editor-ai-prompt]')).toBeHidden();
+
+    // one undo step brings the block back
+    await page.locator('[data-editor-undo]').click();
+    await expect.poll(() => blocks()[p].markdown, { timeout: 15_000 }).toBe(original);
   });
 });

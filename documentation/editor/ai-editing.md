@@ -653,3 +653,17 @@ Each phase records here what it built, where it differs from this spec, and its 
 - **The migration.** `node scripts/add-block-keys.mjs` (`--check` to only count, `--root` for another content folder) keyed the 17 articles in `content/`: 495 blocks, nothing else changed; a second run changes nothing. It differs from §3 in one way: **private pages weren't migrated.** `private-pages/` is its own repository, so its pages get their keys on their next save in edit mode instead. Nothing needs a key before a proposal is made, and a proposal is only made in edit mode, after a save.
 - **The site** never renders a key: the production build before and after the migration is the same (1,390 files, the sealed files the same shapes).
 
+### The contract and the connector (phase 1, stages S2 and S3)
+
+- **Where they live.** The answer's shape, its strict schema, the scopes and applying an answer by key are pure in `src/site/editor/model/aiContract.ts`; Decide's rules in `model/aiDecide.ts`; the writer's messages (the article marked as material, cut to a budget outside the scope) in `model/aiPrompt.ts`; a block's words read out of a partial answer and the word diff in `model/aiText.ts`. The connector is `server/aiConnector.ts` (it writes nothing), and the dry run of the content check is `checkOnly` in `server/store.ts`, run against the editor's draft as sent, not the saved file.
+- **Not built yet:** the proposal store (S3.7). A proposal lives only in the open prompt: closing it or reloading the page loses it.
+
+### Ask AI on a block (phase 1, stage S5.1)
+
+- **Where it is.** The canvas's block toolbar has Ask AI (the sparkles icon), and Ctrl+Shift+Space opens it on the selected block. As built it's offered on text, subheadings, markers and quotes only; a heading (which asks about its section) and the other blocks come with the rest of S5.
+- **The parts.** The prompt is the `AiPrompt` part, composed into the canvas by `CanvasChrome`'s slot and placed under the block; every word it shows is in `model/aiCopy.ts`. The frame's side (`scripts/aiPrompt.ts`) draws it and the change; the editor's side (`scripts/ai.ts`) sends the request to `POST /_edit/api/ai/propose` and reads the answer as it streams.
+- **The change in the block.** The proposed words are drawn in the block itself, word by word, as `<ins>` and `<del>` with the text twins "added:" and "removed:". Their styles are in `CanvasChrome`, the one canvas part allowed to style markup it didn't write. The block's own content comes back on Discard, Close or Escape.
+- **Keep** makes the change through the editor's own `change`, so it saves, redraws and undoes in one step like any edit. The request sends the article as the editor has it, keyed in place, so a block added since the last save still has a key; the next save writes it.
+- **Not built yet:** keeping each try (Try again sends the request again), Stop keeping the words that arrived, and the "AI proposal" tag (S5.2); the notes for research, outside changes and a retype (S5.5 onwards).
+- **Tests** never reach a model: the fixture server starts a stand-in service (`scripts/lib/ai-stand-in.mjs`) that cuts a block to its first sentence, and sets it up as the writer ([AI services §16](ai-services.md#16-as-built)).
+

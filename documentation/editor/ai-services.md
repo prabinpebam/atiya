@@ -511,4 +511,13 @@ Tests never call a real service. Each phase's real tries are listed in [AI editi
 
 ## 16. As built
 
-Nothing is built yet. Each phase records here what differs from this page, with its evidence.
+Each phase records here what differs from this page, with its evidence. Stage by stage evidence is in the [plan's status](ai-plan.md#5-status).
+
+### The connector (phase 1, stage S3)
+
+- **Where it lives.** `src/site/editor/server/aiConnector.ts` runs Decide (rules), Write and Check for each request. The adapter for every OpenAI-compatible service, local or cloud, is `server/aiOpenAI.ts`; finding Ollama and LM Studio on this computer is `server/aiLocal.ts`; the settings are `server/aiSettings.ts`.
+- **Routes.** `GET /_edit/api/ai/status` names the writer (never a key); `POST /_edit/api/ai/propose` answers as server-sent events: `status` (the step), `words` (a block's words so far), `proposal`, `note` and `error`. Closing the request stops the writer. Both are behind edit mode's guard, like every `/_edit/api/` route.
+- **Settings and keys.** The settings are `.atiya/ai.json` in the site's folder, written atomically and never holding a key. A key is read only from the environment, `ATIYA_AI_<ID>_KEY`. Not built yet: `scripts/serve.ps1` filling those from Credential Manager in plain dev, and Atiya Studio's key dialog (S6).
+- **Local runners' addresses** can be moved with `ATIYA_AI_OLLAMA_URL` and `ATIYA_AI_LMSTUDIO_URL` (by default `http://localhost:11434` and `http://localhost:1234`).
+- **The tests' stand-in.** `scripts/lib/ai-stand-in.mjs` is an OpenAI-compatible service that answers every request by cutting the block to its first sentence, streamed ("slowly" in the request streams it at 400 ms a piece). The editor's fixture server (`scripts/editor-test-server.mjs`) starts it on port 4338, points `ATIYA_AI_OLLAMA_URL` at it and writes a settings file that makes it the writer, so the editor E2E never reaches a real model.
+- **Tried for real** on Ollama on this computer (qwen3.8:27b): shorten, rewrite and a table retype, each in 5 to 9.5 s.
