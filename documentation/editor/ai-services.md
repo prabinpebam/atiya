@@ -529,3 +529,15 @@ Each phase records here what differs from this page, with its evidence. Stage by
 - **Routes.** `PUT /_edit/api/ai/writer` chooses the writer; `POST /_edit/api/ai/services` adds one (a runner found on this computer, or a cloud service, which needs its disclaimer accepted); `PUT` and `DELETE /_edit/api/ai/services/<id>` change its model or private pages, or remove it; `POST …/<id>/test` runs a test and keeps its result. A refusal is a 422 that says why. A new model clears the last test.
 - **What differs from §8.** Only the OpenAI-compatible kinds can be added so far (Ollama, LM Studio, OpenAI, Azure OpenAI, OpenRouter, Other). A cloud service's model is typed, not chosen from a list. The Azure OpenAI and OpenRouter disclaimers are neutral words with no link. Remove asks with the browser's own confirm. Keys: see Settings and keys above (the server reads Credential Manager; `serve.ps1` doesn't, as §6.1 says).
 - **Tests.** The stand-in also scripts failures by model name (a refused key, no credit, busy, no answer in the shape), so the editor E2E "editor: AI screen" shows each one's state and words.
+
+### Jev's labelled requests (phase 2, stage P2.7, drafted)
+
+- **The set.** `tests/fixtures/ai/decide-labels.json` holds 122 requests labelled by hand with Decide's answers: what each needs (none, research, or a field AI can't change, and which), its kind, and whether it fits its scope. They're spread over a paragraph, a heading, a quote and a table, a section and the whole article. They're a draft for the owner's review: changing a label changes only the test's list of rules' misses.
+- **Where rules stand.** `tests/unit/aiDecideLabels.test.ts` checks every label's shape and that the set covers every answer, and lists each request rules route differently. On what a request needs, rules route 93 of the 122 as labelled. The 29 misses:
+  - 10 ask for research with no word on rules' list ("What do recent studies say…", "Find a quote from…");
+  - 8 use a word on the list for the article's own words ("Make the numbers easier to read", "Keep the current wording");
+  - 6 ask to change access, status, a picture or the address in words rules don't know ("Take this page down");
+  - 5 name the address, access, status or a picture's file while asking about the article's words ("Add the talk's URL at the end").
+
+  Rules call every typed request a rewrite that fits its scope, so 64 kinds and 7 fits are left to Jev.
+- **Not done yet:** Jev itself, so no threshold yet. The 0.8 in §9.1 stays until Jev has answered this set.
