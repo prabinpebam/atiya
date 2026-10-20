@@ -1196,7 +1196,9 @@ test.describe('content', () => {
         await expect(page.getByText('Nothing here yet. This section is being written.')).toHaveCount(0);
       } else await expect(page.getByText('Nothing here yet. This section is being written.')).toBeVisible();
     }
-    await page.goto('/');
+    // the hub lists the sections: `/` while it's the default view, else its own address (H2)
+    const home = (JSON.parse(readFileSync(new URL('structures/ways.json', CONTENT), 'utf8')) as { home?: { default?: string } }).home?.default ?? 'classic';
+    await page.goto(home === 'classic' ? '/' : '/views/classic/');
     const list = page.getByRole('list', { name: 'Sections' });
     await expect(list.getByRole('heading')).toHaveText(SECTIONS.map((s) => s.title));
     await expect(list.getByText('Being written')).toHaveCount(SECTIONS.filter((s) => !(s.children ?? []).length).length);

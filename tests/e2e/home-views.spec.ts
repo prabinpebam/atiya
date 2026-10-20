@@ -4,10 +4,16 @@
  * colleague's words on hover and focus, the evidence drawer by press, Esc and `#cap-<id>`), the Cover's jumps, the
  * Proof grid's cells (keys, the address, Esc and Close, a phone's accordion), Spotlight's stage (Next, the keys, the
  * rail, Jump to, the details that follow, `#h-<id>`, motion only when asked for), axe in both modes, a phone's
- * reflow and targets, the role lens (`?for=`), and the page for a view the site doesn't offer. `/` stays the hub.
+ * reflow and targets, the role lens (`?for=`), and the page for a view the site doesn't offer. `/` is the default
+ * view, whichever it is (H2), so these hold on any default.
  */
 import { devices, expect, test, type Page } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
+import { readFileSync } from 'node:fs';
+
+// the default view (content/structures/ways.json): what `/` shows; and a view to choose that isn't it
+const HOME = (JSON.parse(readFileSync(new URL('../../content/structures/ways.json', import.meta.url), 'utf8')) as { home?: { default?: string } }).home?.default ?? 'classic';
+const PICK = HOME === 'bento' ? 'cover' : 'bento';
 
 const BENTO = '/views/bento/';
 const COVER = '/views/cover/';
@@ -360,12 +366,18 @@ test.describe('home views', () => {
     expect(new URL(page.url()).pathname).toBe('/');
   });
 
-  test('the home page is still the hub, and the view names it as the canonical address', async ({ page }) => {
+  test('the home page is the default view, and a view names it as the canonical address', async ({ page }) => {
     await page.goto('/');
-    await expect(page.locator('[data-bento]')).toHaveCount(0);
-    await expect(page.locator('main[data-home-view]')).toHaveCount(0);
-    // while the hub is the default, `/` offers no Change view (plan.md 2.6)
-    await expect(page.locator('[data-dialog-open="change-view"]')).toHaveCount(0);
+    if (HOME === 'classic') {
+      await expect(page.locator('[data-bento]')).toHaveCount(0);
+      await expect(page.locator('main[data-home-view]')).toHaveCount(0);
+      // while the hub is the default, `/` offers no Change view (plan.md 2.6)
+      await expect(page.locator('[data-dialog-open="change-view"]')).toHaveCount(0);
+    } else {
+      await expect(page.locator(`main[data-home-view="${HOME}"]`)).toHaveCount(1);
+      await expect(page.locator('[data-dialog-open="change-view"]').first()).toBeVisible();
+      await expect(page.getByRole('list', { name: 'Sections' })).toBeVisible();
+    }
     await page.goto(BENTO);
     await expect(page.locator('main[data-home-view="bento"]')).toHaveCount(1);
     expect(new URL((await page.locator('link[rel="canonical"]').getAttribute('href'))!).pathname).toBe('/');
@@ -540,14 +552,14 @@ const openChoices = async (page: Page) => {
 
 test.describe('home views: change view', () => {
   test('a link shows its view without keeping it, and `?view=` at the root does the same', async ({ page }) => {
-    await page.goto(BENTO);
-    expect(await shown(page)).toBe('bento');
+    await page.goto(`/views/${PICK}/`);
+    expect(await shown(page)).toBe(PICK);
     expect(await kept(page)).toBeNull();
     await page.goto('/');
     expect(new URL(page.url()).pathname).toBe('/');
-    expect(await shown(page)).toBe('classic');
-    await page.goto('/?view=bento#top');
-    await expect(page).toHaveURL(/\/views\/bento\/#top$/);
+    expect(await shown(page)).toBe(HOME);
+    await page.goto(`/?view=${PICK}#top`);
+    await expect(page).toHaveURL(new RegExp(`/views/${PICK}/#top$`));
     expect(await kept(page)).toBeNull();
   });
 
@@ -559,23 +571,25 @@ test.describe('home views: change view', () => {
     const current = dialog.locator('a[data-view-choice="classic"]');
     await expect(current).toHaveAttribute('aria-current', 'page');
     await expect(current).toBeFocused();
-    await dialog.locator('a[data-view-choice="bento"]').click();
-    await expect(page).toHaveURL(/\/views\/bento\/$/);
-    expect(await kept(page)).toBe('bento');
-    await expect(page.locator('[data-home-status]')).toHaveText('Showing the Bento view');
+    const picked = new RegExp(`/views/${PICK}/$`);
+    const label = (JSON.parse(readFileSync(new URL('../../src/site/home/catalogue.json', import.meta.url), 'utf8')) as { views: Record<string, { label: string }> }).views[PICK].label;
+    await dialog.locator(`a[data-view-choice="${PICK}"]`).click();
+    await expect(page).toHaveURL(picked);
+    expect(await kept(page)).toBe(PICK);
+    await expect(page.locator('[data-home-status]')).toHaveText(`Showing the ${label} view`);
     // `/` is replaced before it's shown: going back skips it
     const section = await page.getByRole('list', { name: 'Sections' }).getByRole('link').first().getAttribute('href');
     await page.goto(section!);
     await page.locator('header .brand a').click();
-    await expect(page).toHaveURL(/\/views\/bento\/$/);
+    await expect(page).toHaveURL(picked);
     await page.goBack();
     expect(new URL(page.url()).pathname).toBe(section);
     await page.goForward();
-    await expect(page).toHaveURL(/\/views\/bento\/$/);
+    await expect(page).toHaveURL(picked);
     // Use the default: back to `/`, nothing kept
     await (await openChoices(page)).locator('a[data-view-default]').click();
     await expect(page).toHaveURL(/\/$/);
-    expect(await shown(page)).toBe('classic');
+    expect(await shown(page)).toBe(HOME);
     expect(await kept(page)).toBeNull();
   });
 
@@ -620,13 +634,13 @@ test.describe('home views: change view', () => {
       await route.fulfill({ status: 200, contentType: 'application/json', body: '{"status":1}' });
     });
     await page.goto('/views/classic/');
-    await (await openChoices(page)).locator('a[data-view-choice="bento"]').click();
-    await expect(page).toHaveURL(/\/views\/bento\/$/);
+    await (await openChoices(page)).locator(`a[data-view-choice="${PICK}"]`).click();
+    await expect(page).toHaveURL(new RegExp(`/views/${PICK}/$`));
     const ours = (name: string) => sent.filter((e) => e.event === name).map((e) => ({ view: e.properties.view, lens: e.properties.lens, source: e.properties.source, from: e.properties.from, to: e.properties.to }));
-    await expect.poll(() => ours('view_switch'), { timeout: 15_000 }).toEqual([{ view: undefined, lens: undefined, source: undefined, from: 'classic', to: 'bento' }]);
+    await expect.poll(() => ours('view_switch'), { timeout: 15_000 }).toEqual([{ view: undefined, lens: undefined, source: undefined, from: 'classic', to: PICK }]);
     await expect.poll(() => ours('home_view'), { timeout: 15_000 }).toEqual([
       { view: 'classic', lens: 'none', source: 'link', from: undefined, to: undefined },
-      { view: 'bento', lens: 'none', source: 'stored', from: undefined, to: undefined },
+      { view: PICK, lens: 'none', source: 'stored', from: undefined, to: undefined },
     ]);
     // a proof grid's cell: the strength, the view and the kind, nothing else
     await page.goto(GRID);

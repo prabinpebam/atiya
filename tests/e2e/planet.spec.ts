@@ -119,19 +119,25 @@ const noSeriousViolations = async (page: Page) => {
 };
 
 test.describe('landing & classic', () => {
+  // the default view (content/structures/ways.json, H2): the hub at `/` offers both modes; a view offers the planet beside its own actions
+  const HOME = (JSON.parse(readFileSync(new URL('../../content/structures/ways.json', import.meta.url), 'utf8')) as { home?: { default?: string } }).home?.default ?? 'classic';
+
   test('landing ships no game JS and offers both modes', async ({ page }) => {
     const scripts: string[] = [];
     page.on('request', (r) => r.resourceType() === 'script' && scripts.push(r.url()));
     await page.goto('/');
     const main = page.getByRole('main');
     await expect(main.getByRole('link', { name: 'Explore the planet' })).toBeVisible();
-    await expect(main.getByRole('link', { name: 'Read the site' })).toBeVisible();
+    if (HOME === 'classic') await expect(main.getByRole('link', { name: 'Read the site' })).toBeVisible();
+    else await expect(page.locator(`main[data-home-view="${HOME}"]`)).toHaveCount(1);
     // the site's own small scripts (the theme switch, the modes) but nothing of the game's
     expect(scripts.filter((s) => /game-|three|fiber|react|zustand/i.test(s))).toEqual([]);
-    // painted key art: sized (no layout shift), loaded, and the social card is advertised
-    const poster = main.getByRole('img', { name: /tiny planet/ });
-    await expect(poster).toHaveAttribute('width', '1200');
-    await expect.poll(() => poster.evaluate((img: HTMLImageElement) => img.complete && img.naturalWidth > 0)).toBe(true);
+    // painted key art (the hub's): sized (no layout shift), loaded, and the social card is advertised
+    if (HOME === 'classic') {
+      const poster = main.getByRole('img', { name: /tiny planet/ });
+      await expect(poster).toHaveAttribute('width', '1200');
+      await expect.poll(() => poster.evaluate((img: HTMLImageElement) => img.complete && img.naturalWidth > 0)).toBe(true);
+    }
     const og = await page.locator('meta[property="og:image"]').getAttribute('content');
     expect(og).toMatch(/\/og-image\.jpg$/);
     expect((await page.request.get('/og-image.jpg')).status()).toBe(200);
@@ -160,7 +166,8 @@ test.describe('landing & classic', () => {
     await page.goto('/play/?mode=classic');
     await expect.poll(() => new URL(page.url()).pathname + new URL(page.url()).hash).toBe('/#sections');
     expect(await page.evaluate(() => localStorage.getItem('site.mode'))).toBe('classic');
-    await page.goto('/');
+    // the hub's way into the site leads, wherever the hub is
+    await page.goto(HOME === 'classic' ? '/' : '/views/classic/');
     await expect(page.getByRole('main').getByRole('link', { name: 'Read the site' })).toHaveAttribute('data-variant', 'primary');
   });
 });
