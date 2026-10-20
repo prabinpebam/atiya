@@ -50,6 +50,9 @@ const json = JSON.stringify(blocks).replace(/</g, '\\u003c');
     <span class="turn" data-chrome-turn hidden>
       <IconButton label="Turn into…" icon="convert" size="sm" shape="square" tooltip="top" data-chrome-op="turn" />
     </span>
+    <span class="turn" data-chrome-ai hidden>
+      <IconButton label="Ask AI (Ctrl+Shift+Space)" icon="sparkles" size="sm" shape="square" tooltip="top" data-chrome-op="ai" />
+    </span>
     <IconButton label="Duplicate" icon="duplicate" size="sm" shape="square" tooltip="top" data-chrome-op="duplicate" />
     <IconButton label="Delete" icon="delete" size="sm" shape="square" tooltip="top" data-chrome-op="delete" />
   </div>
@@ -102,6 +105,8 @@ const json = JSON.stringify(blocks).replace(/</g, '\\u003c');
       <MenuItem data-chrome-table-op="delete-column">Delete column</MenuItem>
     </div>
   </div>
+  <!-- what the canvas adds over a block (the AI prompt): inside the overlay, so the canvas leaves its clicks and keys alone -->
+  <slot />
 </div>
 
 <style>
@@ -372,6 +377,16 @@ const json = JSON.stringify(blocks).replace(/</g, '\\u003c');
 
   :global([data-editor-editable]:focus) {
     outline: none;
+  }
+
+  /* AI's proposal in a block, as a tracked change (ai-editing.md §4.3; AiPrompt's script draws it) */
+  :global([data-ai-change] ins) {
+    background: var(--color-positive-soft);
+    color: var(--color-text);
+  }
+
+  :global([data-ai-change] del) {
+    color: var(--color-text-muted);
   }
 
   /* a new block shown at once (editor spec §3.6), named and shimmering until the canvas is drawn again

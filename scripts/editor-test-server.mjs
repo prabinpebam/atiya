@@ -17,6 +17,7 @@ import { cpSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import { execFileSync, spawn } from 'node:child_process';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { startStandIn } from './lib/ai-stand-in.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 export const FIXTURE = join(ROOT, '.editor-test');
@@ -26,6 +27,9 @@ export const PRIVATE = join(FIXTURE, 'private-pages');
 const SEED = join(ROOT, '.editor-test-private-seed');
 const args = process.argv.slice(2);
 const port = args.includes('--port') ? args[args.indexOf('--port') + 1] : '4330';
+/** The stand-in AI service's address (scripts/lib/ai-stand-in.mjs). */
+const AI_STAND_IN_PORT = 4338;
+export const AI_STAND_IN = `http://127.0.0.1:${AI_STAND_IN_PORT}`;
 
 const git = (cwd, ...a) => execFileSync('git', a, { cwd, stdio: 'pipe', env: { ...process.env, GIT_TERMINAL_PROMPT: '0' } }).toString();
 /** A local path as a submodule's address needs the file protocol allowed (git ≥ 2.38 refuses it by default). */
@@ -54,6 +58,11 @@ export function prepare() {
   mkdirSync(FIXTURE, { recursive: true });
   cpSync(join(ROOT, 'content'), join(FIXTURE, 'content'), { recursive: true });
   writeFileSync(join(FIXTURE, '.gitattributes'), 'content/**/*.json text eol=lf\n');
+  // AI settings (ai-services.md §11), kept through a reset: the writer is the stand-in (scripts/lib/ai-stand-in.mjs)
+  writeFileSync(join(FIXTURE, '.gitignore'), '.atiya/\n');
+  mkdirSync(join(FIXTURE, '.atiya'), { recursive: true });
+  const standIn = { id: 'ollama', kind: 'openai-compatible', provider: 'ollama', name: 'Ollama', base: `${AI_STAND_IN}/v1`, model: 'stand-in', local: true, privatePages: true };
+  writeFileSync(join(FIXTURE, '.atiya', 'ai.json'), `${JSON.stringify({ version: 1, services: [standIn], writer: 'ollama', decider: { kind: 'rules' }, agents: { propose: false } }, null, 2)}\n`);
   git(FIXTURE, 'init', '-q', '-b', 'main');
   identity(FIXTURE);
   gitFile(FIXTURE, 'submodule', 'add', '-q', '-b', 'main', PRIVATE_REMOTE, 'private-pages');
@@ -93,15 +102,19 @@ const isMain = process.argv[1] && fileURLToPath(import.meta.url) === process.arg
 if (isMain) {
   prepare();
   if (!args.includes('--prepare-only')) {
+    const ai = await startStandIn(AI_STAND_IN_PORT);
     // alongside a dev server that may already be running (Astro 7 allows one per project unless told otherwise)
     const child = spawn('npx', ['astro', 'dev', '--port', port, '--ignore-lock'], {
       cwd: ROOT,
       stdio: 'inherit',
       shell: process.platform === 'win32',
       // no warm-up (performance-report.md R12): the tests open screens at once, and one test asks for the starting page itself
-      env: { ...process.env, CONTENT_ROOT: join(FIXTURE, 'content'), PRIVATE_ROOT: PRIVATE, SITE_VITE_CACHE: join(ROOT, 'node_modules', '.vite-editor-test'), SITE_STRICT_PORT: '1', SITE_EDITOR_WARM: 'off', SITE_EDITOR_PROFILE_PHOTOS: 'off' },
+      env: { ...process.env, CONTENT_ROOT: join(FIXTURE, 'content'), PRIVATE_ROOT: PRIVATE, SITE_VITE_CACHE: join(ROOT, 'node_modules', '.vite-editor-test'), SITE_STRICT_PORT: '1', SITE_EDITOR_WARM: 'off', SITE_EDITOR_PROFILE_PHOTOS: 'off', ATIYA_AI_OLLAMA_URL: AI_STAND_IN, ATIYA_AI_LMSTUDIO_URL: 'http://127.0.0.1:9' },
     });
-    const stop = () => child.kill();
+    const stop = () => {
+      ai.close();
+      child.kill();
+    };
     process.on('SIGINT', stop);
     process.on('SIGTERM', stop);
     child.on('exit', (code) => process.exit(code ?? 0));

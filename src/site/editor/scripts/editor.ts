@@ -23,6 +23,8 @@ import { applySections, chooseSection, followSection, initSections, revealField 
 import { initRichFields } from './richtext';
 import { richMarkdown } from '../model/richText';
 import { openCrop } from './crop';
+import { initAi } from './ai';
+import type { AiDo } from './aiPrompt';
 import { PICTURE_SPECS } from '../../design/pictures';
 import { plainText } from '../../content/markdown';
 import type { Article, Block } from '../../content/schema';
@@ -494,6 +496,21 @@ export function initEditor(root: HTMLElement, signal: AbortSignal) {
     void save({ refresh: signs ? { ...refresh, quiet: true } : refresh, ...(opts.section !== undefined ? { section: opts.section } : {}), ...(opts.ready ? { ready: [opts.ready] } : {}), ...(signs ? { optimistic: true, signs } : {}) });
   };
   const body = (b: Block[]) => ({ ...doc, body: b });
+  // Ask AI (ai-editing.md §4): the article as it is now, every block keyed (the next save writes the keys)
+  const ai = initAi(
+    {
+      id: state.id,
+      isPrivate: state.access === 'private',
+      doc: () => {
+        const keyed = withKeys(doc.body);
+        if (keyed !== doc.body) doc = { ...doc, body: keyed };
+        return doc;
+      },
+      toCanvas,
+      keep: (next, at) => change(body(next), ALL, { select: at }),
+    },
+    signal,
+  );
   /** An embedded video's own shape, from its provider (the dev server asks its oEmbed); null, with a note, when it can't say (it's then shown 16:9). */
   const videoShape = async (url: string): Promise<{ width: number; height: number } | null> => {
     const r = await api<{ width: number; height: number }>('GET', `video-shape?url=${encodeURIComponent(url)}`);
@@ -680,6 +697,7 @@ export function initEditor(root: HTMLElement, signal: AbortSignal) {
         } else performance.mark('editor:canvas-first');
         toCanvas({ type: 'mode', preview: document.querySelector('[data-editor-preview]')?.getAttribute('aria-pressed') === 'true' });
         if (selected !== null) toCanvas({ type: 'select', index: selected });
+        ai.again();
         afterReady.splice(0).forEach((fn) => fn());
         break;
       }
@@ -841,6 +859,12 @@ export function initEditor(root: HTMLElement, signal: AbortSignal) {
       case 'turn':
         if (typeof m.to === 'string') turnInto([m.index as number], m.to);
         else openTurn([m.index as number]);
+        break;
+      case 'ai':
+        void ai.open(m.index as number);
+        break;
+      case 'ai-do':
+        ai.message(m as unknown as AiDo);
         break;
       case 'pending': {
         const at = m.index as number;

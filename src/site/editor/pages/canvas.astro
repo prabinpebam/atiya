@@ -6,6 +6,7 @@
  */
 import Page from '../../content/Page.astro';
 import CanvasChrome from '../components/CanvasChrome.astro';
+import AiPrompt from '../components/AiPrompt.astro';
 import { getPlacement } from '../../content/repository';
 import { load } from '../server/screens';
 import { kindOf } from '../model/ops';
@@ -21,5 +22,7 @@ const blocks = article.body.map((b) => ({ kind: kindOf(b), type: b.type }));
 ---
 
 <Page route={route} article={article} editable>
-  <CanvasChrome slot="page-end" blocks={blocks} />
+  <CanvasChrome slot="page-end" blocks={blocks}>
+    <AiPrompt />
+  </CanvasChrome>
 </Page>

@@ -1,7 +1,9 @@
 import { mkdtempSync, readFileSync, rmSync, existsSync } from 'node:fs';
+import type { AddressInfo } from 'node:net';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterAll, describe, expect, it } from 'vitest';
+import { startStandIn } from '../../scripts/lib/ai-stand-in.mjs';
 import type { Article, Block } from '../../src/site/content/schema';
 import { decideRules, instructionOf, QUICK_ACTIONS } from '../../src/site/editor/model/aiDecide';
 import { material, messages, retryMessages } from '../../src/site/editor/model/aiPrompt';
@@ -255,5 +257,20 @@ describe('the connector: decide, write, check (S3)', () => {
     const noPrivate = { ...settings, services: [{ ...ollama, privatePages: false }] };
     expect((await run([], { settings: () => noPrivate, isPrivate: () => true })).events.at(-1)).toMatchObject({ type: 'error', code: 'private' });
     expect((await run([new AiError('not-running')])).events.at(-1)).toEqual({ type: 'error', code: 'not-running', service: 'Ollama' });
+  });
+
+  it("works against the tests' stand-in service, over real HTTP and streaming", async () => {
+    const server = await startStandIn(0);
+    const { port } = server.address() as AddressInfo;
+    try {
+      const standIn = { ...settings, services: [{ ...ollama, base: `http://127.0.0.1:${port}/v1`, model: 'stand-in' }] };
+      const events: AiEvent[] = [];
+      await propose({ id: 'a', article, target: { scope: 'block', key: 'intro1' }, instruction: '', action: 'shorten' }, (e) => events.push(e), undefined, { settings: () => standIn, check: () => [], isPrivate: () => false, context: async () => 8192 });
+      expect(events.some((e) => e.type === 'words')).toBe(true);
+      const p = events.find((e) => e.type === 'proposal');
+      expect(p?.type === 'proposal' && p.proposal.body[0]).toEqual({ type: 'text', key: 'intro1', markdown: 'The intro.' });
+    } finally {
+      server.close();
+    }
   });
 });

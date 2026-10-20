@@ -34,10 +34,12 @@ type Out =
   | { type: 'link-request'; href: string }
   | { type: 'notice'; message: string }
   | { type: 'key'; key: 'undo' | 'redo' | 'save' | 'settings' }
-  | { type: 'turn'; index: number; to?: TextKind };
+  | { type: 'turn'; index: number; to?: TextKind }
+  | { type: 'ai'; index: number };
 
 const SOURCE = 'editor-canvas';
 const TEXTY = new Set(['text', 'heading', 'subheading', 'marker', 'quote']);
+const AI_BLOCKS = new Set(['text', 'subheading', 'marker', 'quote']);
 /** What a new, still empty block will be once it has words. */
 type Pending = 'text' | 'heading' | 'subheading' | 'marker';
 /** Blocks of plain words that keep their lines: Enter splits them, Shift + Enter breaks the line. */
@@ -71,6 +73,7 @@ export function initCanvas(chrome: HTMLElement, signal: AbortSignal) {
   const post = (m: Out) => window.parent.postMessage({ source: SOURCE, ...m }, location.origin);
   const kinds: Kind[] = JSON.parse(chrome.querySelector('[data-editor-blocks]')?.textContent ?? '[]');
   const turnButton = chrome.querySelector<HTMLElement>('[data-chrome-turn]');
+  const aiButton = chrome.querySelector<HTMLElement>('[data-chrome-ai]');
   const prose = document.querySelector<HTMLElement>('.prose');
   const header = document.querySelector<HTMLElement>('.article-header');
   const fields: Record<Field, HTMLElement | null> = {
@@ -110,6 +113,8 @@ export function initCanvas(chrome: HTMLElement, signal: AbortSignal) {
     return blocks.findIndex((b) => b === el || b.contains(el));
   };
   const typeOf = (i: number) => kinds[i]?.type ?? 'text';
+  // the blocks whose words AI can change here; a heading's (its section) and the rest come later (ai-plan.md §2)
+  const aiable = (i: number) => AI_BLOCKS.has(typeOf(i));
   const editableOf = (i: number): HTMLElement | null => {
     const b = blocks[i];
     if (!b) return null;
@@ -247,6 +252,7 @@ export function initCanvas(chrome: HTMLElement, signal: AbortSignal) {
     toolbar.style.setProperty('--y', `${r.top + scrollY}px`);
     toolLabel.textContent = selected !== null ? (kinds[selected]?.kind ?? '') : '';
     if (turnButton) turnButton.hidden = selected === null || !(TEXTY.has(typeOf(selected)) || typeOf(selected) === 'collection');
+    if (aiButton) aiButton.hidden = selected === null || !aiable(selected);
   };
   const select = (i: number | null, field: Field | null = null, tell = true, scroll = false) => {
     hideInsert();
@@ -413,7 +419,10 @@ export function initCanvas(chrome: HTMLElement, signal: AbortSignal) {
       if (b.dataset.chromeOp && selected !== null) {
         const op = b.dataset.chromeOp;
         if (op === 'turn') post({ type: 'turn', index: selected });
-        else post({ type: 'op', index: selected, op: op as 'up' | 'down' | 'duplicate' | 'delete' });
+        else if (op === 'ai') {
+          send(true);
+          post({ type: 'ai', index: selected });
+        } else post({ type: 'op', index: selected, op: op as 'up' | 'down' | 'duplicate' | 'delete' });
       } else if (b.hasAttribute('data-chrome-insert-button') && insertAt >= 0) {
         const at = insertAt;
         hideInsert();
@@ -1172,6 +1181,15 @@ export function initCanvas(chrome: HTMLElement, signal: AbortSignal) {
         e.preventDefault();
         send(true);
         post({ type: 'turn', index: at, to: kind });
+        return;
+      }
+      // ask AI about the block, even while its words are being typed (they're sent first)
+      if (mod && e.shiftKey && e.code === 'Space') {
+        const at = editing ? editing.index : selected;
+        if (at === null || at < 0 || !aiable(at)) return;
+        e.preventDefault();
+        send(true);
+        post({ type: 'ai', index: at });
         return;
       }
       if (e.key === 'Escape' && !moreMenu.hidden) {

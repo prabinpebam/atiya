@@ -72,6 +72,7 @@
     "c.dropcap.gap-initial": {"v":"0.12em"},
     "c.dropcap.lift": {"v":"0.06em"},
     "c.dropcap.size": {"v":"4.35em"},
+    "c.editor-ai-prompt.width": {"v":"34rem"},
     "c.editor-context.menu": {"v":"14rem"},
     "c.editor-crop.handle": {"v":"0.875rem"},
     "c.editor-crop.stage": {"v":"32rem"},
@@ -411,6 +412,17 @@
     "weight.semibold": {"v":"600"}
   },
   "entries": [
+    {
+      "date": "2026-10-20",
+      "changes": {
+        "c.editor-ai-prompt.width": [
+          null,
+          {
+            "v": "34rem"
+          }
+        ]
+      }
+    },
     {
       "date": "2026-10-19",
       "changes": {

@@ -1,0 +1,24 @@
+---
+import Example from '../../library/Example.astro';
+import AiPrompt from '../components/AiPrompt.astro';
+import { failureNote, serviceLine, statusLine } from '../model/aiCopy';
+
+const service = serviceLine({ name: 'Ollama', model: 'qwen3' }, false);
+const note = failureNote('not-running', 'Ollama');
+---
+
+<Example title="Ready to ask" description="Under the selected block: the field, the quick actions and where the article goes.">
+  <AiPrompt open service={service} />
+</Example>
+
+<Example title="Working" description="The step and Stop; the block fills with the new words as they come.">
+  <AiPrompt open state="working" service={service} message={statusLine('writing', 'Ollama', 4)} />
+</Example>
+
+<Example title="A proposal" description="The block shows the tracked change; Keep puts it in the article, Discard leaves the block as it was.">
+  <AiPrompt open state="proposed" service={service} message="Shortened the paragraph" />
+</Example>
+
+<Example title="A note" description="When AI can't, or fails: what happened and what to do, with Try again.">
+  <AiPrompt open state="note" service={service} message={`${note.title} ${note.detail}`} />
+</Example>
