@@ -6,7 +6,7 @@
  * tracked change; or a note in place of the result bar when AI can't, or fails (§10). Drawn in the canvas's
  * overlay; the article editor runs the request.
  * @tier editor
- * @a11y A named region; opening it focuses the field; the step and every note are read out as a status; the tracked change carries hidden "removed" and "added" words; a proposal focuses Keep, and stepping to a try announces it; Keep and Discard return focus to the block.
+ * @a11y A named region; opening it focuses the field; the step and every note are read out as a status; the tracked change carries hidden "removed" and "added" words; a proposal focuses Keep, a note its first choice, and stepping to a try announces it; Keep and Discard return focus to the block.
  * @key Ctrl + Shift + Space: ask AI about the selected block
  * @key Enter: send (Shift + Enter: a new line); in the result bar, keep
  * @key Esc: while writing, stop; with a proposal, discard; otherwise close
@@ -16,7 +16,7 @@ import IconButton from '../../components/fundamentals/IconButton.astro';
 import TextField from '../../components/fundamentals/TextField.astro';
 import StatusNote from '../kit/StatusNote.astro';
 import { QUICK_ACTIONS } from '../model/aiDecide';
-import { PLACEHOLDER } from '../model/aiCopy';
+import { CHOICES, PLACEHOLDER, type AiChoice } from '../model/aiCopy';
 import '../../styles/editor-tokens.css';
 
 interface Props {
@@ -30,9 +30,11 @@ interface Props {
   message?: string;
   /** Where the result bar is among the tries ("2 of 3"), for the story; none with one try. */
   tries?: string;
+  /** What the note offers, for the story. */
+  choices?: AiChoice[];
 }
 
-const { open = false, state = 'ready', service = '', message = '', tries = '' } = Astro.props;
+const { open = false, state = 'ready', service = '', message = '', tries = '', choices = ['retry'] } = Astro.props;
 ---
 
 <section class="ai-prompt" aria-label="Ask AI" data-editor-ai-prompt data-state={state} data-static={open ? '' : undefined} hidden={!open}>
@@ -71,7 +73,13 @@ const { open = false, state = 'ready', service = '', message = '', tries = '' } 
   <div class="ai-note" data-ai-note>
     <StatusNote live="status" data-ai-note-text="">{state === 'note' ? message : ''}</StatusNote>
     <span class="ai-back"><Button size="sm" variant="secondary" data-ai-back="">Show tries</Button></span>
-    <Button size="sm" variant="secondary" data-ai-retry="">Try again</Button>
+    {
+      (Object.keys(CHOICES) as (keyof typeof CHOICES)[]).map((c) => (
+        <span class="ai-choice" data-ai-choice={c} hidden={!choices.includes(c)}>
+          <Button size="sm" variant="secondary">{CHOICES[c]}</Button>
+        </span>
+      ))
+    }
   </div>
   <StatusNote live="off" data-ai-service="">{service}</StatusNote>
 </section>
@@ -157,8 +165,17 @@ const { open = false, state = 'ready', service = '', message = '', tries = '' } 
   }
 
   .ai-tries[hidden],
+  .ai-choice[hidden],
   .ai-prompt:not([data-back]) .ai-back {
     display: none;
+  }
+
+  .ai-note {
+    flex-wrap: wrap;
+  }
+
+  .ai-note > :first-child {
+    flex-basis: 100%;
   }
 
   /* one state at a time */

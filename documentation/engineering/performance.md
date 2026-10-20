@@ -52,6 +52,7 @@ Each is timed from the person's key or click (the last `pointerdown` or `keydown
 | `type-swap`, `type-swap-kb`, `type-to-settled` | After the save, the outline and inspector drawn again: how long, how much HTML it fetched, and the last key to that (since words alone redraw nothing, `type-to-settled` is the save, and the swap's size 0) |
 | `field-to-saved`, `field-to-canvas`, `field-canvas-redraw` | A field in the inspector committed (Tab) | Saved; the canvas drawn again with it; the redraw alone |
 | `picker-open`, `picker-images`, `picker-filled`, `picker-cards` | Choose on the thumbnail's field | The picker shown; its first pictures in view loaded; every card in (it fills a page at a time); how many cards it holds |
+| `ai-prompt-open` | Ctrl+Shift+Space in a paragraph's words | Ask AI's prompt shown under it (the canvas's `editor:ai-prompt-open` measure; [AI editing §18](../editor/ai-editing.md#18-as-built)) |
 | `add-block-shown`, `add-block-to-saved`, `add-block-to-canvas` | A block chosen in the palette | Its row and its place on the canvas shown (editor spec §3.6); saved; drawn on the canvas |
 | `move-shown`, `delete-shown` | Move down on a row; Delete on a selected row | The outline and the canvas both showing it |
 | `feedback-shown` | Each of the above, and a click on a picture in Media | The first visible sign (the result itself, or the card marked current) |

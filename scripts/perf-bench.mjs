@@ -8,7 +8,7 @@
  * editor: its own dev server on the editor's fixture (scripts/editor-test-server.mjs, port 4330: a git copy
  *   of content/ with a bare remote, so the real content is never written). It measures the server's start,
  *   its first-start warm-up (first-ready), and each screen's first load after it (cold), then every screen
- *   warm, the editing interactions (select, type and save, a field, the picker, a new block, undo, a move and
+ *   warm, the editing interactions (select, type and save, a field, the picker, opening Ask AI, a new block, undo, a move and
  *   a delete shown at once, the media details, another tab hearing a save, and the first visible sign of each:
  *   feedback-shown), and the API's slow calls. Each step also reads the dev server's own record of where its time went
  *   (integrations/perf.mjs: GET /_edit/api/perf), so a number comes with its causes. --cpu slows the
@@ -458,6 +458,17 @@ async function editorInteractions(browser, run, reset) {
     await page.waitForFunction(() => !document.querySelector('#editor-picker [data-media-preparing], #editor-picker [data-picker-pending]'), null, { timeout: 60_000, polling: 100 }).catch(() => {});
     sample('editor/interaction/picker-filled', (await page.evaluate(() => performance.timeOrigin + performance.now())) - openedAt);
     sample('editor/interaction/picker-cards', await dialog.locator('[data-editor-media]').count(), 'count');
+    await page.keyboard.press('Escape');
+  }
+
+  // 4b. Ask AI on a paragraph (Ctrl+Shift+Space): the prompt in place under it (ai-plan.md S5.9)
+  {
+    await canvas.locator('.prose > p').first().click();
+    await page.keyboard.press('Control+Shift+Space');
+    const askedAt = await lastInput(page);
+    await canvas.locator('[data-editor-ai-prompt]').waitFor({ state: 'visible' });
+    const shown = await page.evaluate(() => performance.timeOrigin + performance.now());
+    sample('editor/interaction/ai-prompt-open', shown - askedAt);
     await page.keyboard.press('Escape');
   }
 

@@ -9,6 +9,8 @@ import type { Block } from '../../content/schema';
 export interface AiTry {
   summary: string;
   block: Block;
+  /** Written after Ask anyway, without research. */
+  anyway?: boolean;
 }
 
 /** A stopped try's summary. */

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { failureNote, needsNote, serviceLine, statusLine, type AiFailureCode } from '../../src/site/editor/model/aiCopy';
+import { agentPrompt, failureNote, needsNote, serviceLine, statusLine, type AiFailureCode } from '../../src/site/editor/model/aiCopy';
 
 describe("AI's words (ai-editing.md §4.4, §10)", () => {
   it('shows the step, and the time only past 3 seconds of writing', () => {
@@ -28,8 +28,33 @@ describe("AI's words (ai-editing.md §4.4, §10)", () => {
   });
 
   it('offers research its own way forward, names what AI can’t change, and asks back in the writer’s words', () => {
-    expect(needsNote('research')).toMatchObject({ title: 'This needs research from the web.', choices: ['copy', 'anyway'] });
+    expect(needsNote('research')).toMatchObject({ title: 'This needs research from the web.', choices: ['copy', 'anyway', 'cancel'] });
     expect(needsNote('outside', 'access').title).toBe("AI can't change a page's access. Change it in Page settings.");
     expect(needsNote('unclear', undefined, 'Shorter for whom?').title).toBe('Shorter for whom?');
+  });
+
+  it('names the AI screen the way each note needs it (§10.4)', () => {
+    expect(failureNote('no-service').setup).toBeUndefined();
+    expect(failureNote('private').setup).toBe('Change on the AI screen');
+    expect(failureNote('key-refused', 'OpenAI').setup).toBe('Open AI screen');
+  });
+
+  it("copies a prompt for your agent naming the MCP server, the article, the block's section and your words (§10.1)", () => {
+    const article = {
+      title: 'Hiring well',
+      body: [
+        { type: 'text', key: 'aaaaaa' },
+        { type: 'heading', key: 'bbbbbb', text: 'The numbers' },
+        { type: 'text', key: 'cccccc' },
+      ],
+    };
+    const p = agentPrompt({ mcp: 'http://localhost:4321/_edit/mcp', id: 'hiring', article, key: 'cccccc', instruction: 'Add the latest numbers' });
+    expect(p).toContain('http://localhost:4321/_edit/mcp');
+    expect(p).toContain('Article: "Hiring well" (ID hiring)');
+    expect(p).toContain('Section: "The numbers" (key bbbbbb)');
+    expect(p).toContain('Block: key cccccc');
+    expect(p).toContain('Request: Add the latest numbers');
+    expect(p).toMatch(/your own tools[\s\S]*add_comment[\s\S]*propose_changes/);
+    expect(agentPrompt({ mcp: 'm', id: 'hiring', article, key: 'aaaaaa', instruction: 'x' })).toContain('Section: the start of the article');
   });
 });

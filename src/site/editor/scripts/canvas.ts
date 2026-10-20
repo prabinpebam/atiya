@@ -420,6 +420,7 @@ export function initCanvas(chrome: HTMLElement, signal: AbortSignal) {
         const op = b.dataset.chromeOp;
         if (op === 'turn') post({ type: 'turn', index: selected });
         else if (op === 'ai') {
+          performance.mark('editor:ai-ask');
           send(true);
           post({ type: 'ai', index: selected });
         } else post({ type: 'op', index: selected, op: op as 'up' | 'down' | 'duplicate' | 'delete' });
@@ -1188,6 +1189,7 @@ export function initCanvas(chrome: HTMLElement, signal: AbortSignal) {
         const at = editing ? editing.index : selected;
         if (at === null || at < 0 || !aiable(at)) return;
         e.preventDefault();
+        performance.mark('editor:ai-ask');
         send(true);
         post({ type: 'ai', index: at });
         return;

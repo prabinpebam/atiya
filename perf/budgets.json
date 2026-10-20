@@ -30,6 +30,7 @@
     "editor/interaction/feedback-shown": { "max": 100 },
     "editor/first-ready": { "max": 30000 },
     "editor/interaction/picker-open": { "max": 100 },
+    "editor/interaction/ai-prompt-open": { "max": 100 },
     "editor/interaction/picker-images": { "max": 1000 },
     "editor/interaction/media-details": { "max": 300 },
     "editor/interaction/media-save": { "max": 400 },

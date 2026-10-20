@@ -5,6 +5,7 @@
  */
 import { wordDiff } from '../model/aiText';
 import { triesLine } from '../model/aiTries';
+import { CHOICES, type AiChoice } from '../model/aiCopy';
 
 /** What the editor sends to draw. */
 export interface AiView {
@@ -23,8 +24,10 @@ export interface AiView {
   shown?: number;
   count?: number;
   note?: string;
-  /** Whether the note offers Try again. */
-  retry?: boolean;
+  /** What the note offers, in the order the prompt draws them (`CHOICES`). */
+  choices?: AiChoice[];
+  /** The label of the choice that opens the AI screen, when it isn't "Set up AI". */
+  setup?: string;
   /** Whether the note offers Show tries (a later try failed; the earlier ones are kept). */
   back?: boolean;
 }
@@ -34,7 +37,7 @@ export type AiDo =
   | { do: 'send'; instruction: string; action?: string }
   | { do: 'more'; instruction: string }
   | { do: 'step'; by: number }
-  | { do: 'keep' | 'discard' | 'stop' | 'close' | 'retry' | 'back' };
+  | { do: 'keep' | 'discard' | 'stop' | 'close' | 'retry' | 'back' | 'setup' | 'copy' | 'anyway' | 'cancel' };
 
 const blockAt = (index: number): HTMLElement | null => {
   const prose = document.querySelector('.prose');
@@ -76,7 +79,8 @@ export function initAiPrompt(root: HTMLElement, signal: AbortSignal) {
   const status = $('[data-ai-status]');
   const summary = $('[data-ai-summary]');
   const noteText = $('[data-ai-note-text]');
-  const retry = $('[data-ai-retry]');
+  const choices = Array.from(root.querySelectorAll<HTMLElement>('[data-ai-choice]'));
+  const setupLabel = $('[data-ai-choice="setup"] .label');
   const tries = $('[data-ai-tries]');
   const triesText = $('[data-ai-tries-text]');
   const prev = $<HTMLButtonElement>('[data-ai-prev]');
@@ -126,7 +130,8 @@ export function initAiPrompt(root: HTMLElement, signal: AbortSignal) {
     status.textContent = v.phase === 'working' ? (v.status ?? '') : '';
     summary.textContent = v.phase === 'proposed' ? (v.summary ?? '') : '';
     noteText.textContent = v.phase === 'note' ? (v.note ?? '') : '';
-    retry.hidden = !v.retry;
+    for (const c of choices) c.hidden = !v.choices?.includes(c.dataset.aiChoice as AiChoice);
+    setupLabel.textContent = v.setup ?? CHOICES.setup;
     root.toggleAttribute('data-back', v.phase === 'note' && !!v.back);
     const shown = v.shown ?? 0;
     const count = v.count ?? 0;
@@ -144,8 +149,15 @@ export function initAiPrompt(root: HTMLElement, signal: AbortSignal) {
     } else if (v.phase !== 'working') restore();
     place(block);
     if (opening && v.phase === 'ready') field.focus();
+    // from Ask AI to the prompt in place (perf/budgets.json: editor/interaction/ai-prompt-open)
+    if (opening && performance.getEntriesByName('editor:ai-ask', 'mark').length) {
+      performance.measure('editor:ai-prompt-open', 'editor:ai-ask');
+      performance.clearMarks('editor:ai-ask');
+    }
     if (v.phase === 'proposed' && was !== 'proposed') $('[data-ai-keep]').focus();
     if (v.phase === 'working' && was !== 'working') $('[data-ai-stop]').focus();
+    // a note takes the focus to its first choice, or back to the field
+    if (v.phase === 'note' && was !== 'note') (choices.find((c) => !c.hidden)?.querySelector('button') ?? field).focus();
   };
 
   window.addEventListener(
@@ -197,11 +209,13 @@ export function initAiPrompt(root: HTMLElement, signal: AbortSignal) {
     (e) => {
       const hit = (sel: string) => (e.target as Element).closest<HTMLElement>(sel);
       const action = hit('[data-ai-action]')?.dataset.aiAction;
+      const choice = hit('[data-ai-choice]')?.dataset.aiChoice as Exclude<AiChoice, 'settings'> | undefined;
       if (action) post({ do: 'send', instruction: field.value.trim(), action });
+      else if (choice && hit('button')) post({ do: choice });
       else if (hit('[data-ai-keep]')) post({ do: 'keep' });
       else if (hit('[data-ai-discard]')) post({ do: 'discard' });
       else if (hit('[data-ai-stop]')) post({ do: 'stop' });
-      else if (hit('[data-ai-retry]') || hit('[data-ai-again]')) post({ do: 'retry' });
+      else if (hit('[data-ai-again]')) post({ do: 'retry' });
       else if (hit('[data-ai-prev]')) post({ do: 'step', by: -1 });
       else if (hit('[data-ai-next]')) post({ do: 'step', by: 1 });
       else if (hit('[data-ai-back]')) post({ do: 'back' });

@@ -5,15 +5,15 @@
  * editor's own `change`, so it saves, undoes and redraws like any edit.
  */
 import { TAB, announce, editorUrl } from './client';
-import { failureNote, keptLine, needsNote, readyLine, serviceLine, statusLine, STOPPED, type AiFailureCode, type AiNeeds, type AiOutside, type AiStep } from '../model/aiCopy';
+import { agentPrompt, COPIED, failureNote, keptLine, needsNote, readyLine, serviceLine, statusLine, UNRESEARCHED, type AiFailureCode, type AiNeeds, type AiNote, type AiOutside, type AiStep } from '../model/aiCopy';
 import { STOPPED_KEPT, stepTo, stoppedTry, tryLine, type AiTry } from '../model/aiTries';
 import { plainText } from '../../content/markdown';
 import type { AiDo, AiView } from './aiPrompt';
 import type { Article, Block } from '../../content/schema';
 
 type Writer = { name: string; model: string; local: boolean; privatePages: boolean } | null;
-type Proposal = { summary: string; body: Block[]; touched: string[] };
-type Asked = { instruction: string; action?: string; base?: Block };
+type Proposal = { summary: string; body: Block[]; touched: string[]; anyway?: boolean };
+type Asked = { instruction: string; action?: string; base?: Block; anyway?: boolean };
 
 export interface AiHost {
   id: string;
@@ -73,9 +73,10 @@ export function initAi(host: AiHost, signal: AbortSignal) {
   };
   const showTry = () => {
     const t = tries[shown];
-    draw({ phase: 'proposed', after: wordsOf(t.block), summary: t.summary, shown, count: tries.length });
+    draw({ phase: 'proposed', after: wordsOf(t.block), summary: t.anyway ? `${t.summary}. ${UNRESEARCHED}.` : t.summary, shown, count: tries.length });
   };
-  const noteOf = (note: string, retry: boolean) => draw({ phase: 'note', note, retry, back: tries.length > 0 });
+  const noteOf = (n: AiNote, text = [n.title, n.detail].filter(Boolean).join(' ')) =>
+    draw({ phase: 'note', note: text, choices: n.choices, setup: n.setup, back: tries.length > 0 });
   const stopTicker = () => {
     clearInterval(ticker);
     ticker = 0;
@@ -99,7 +100,7 @@ export function initAi(host: AiHost, signal: AbortSignal) {
     last = asked;
     const doc = host.doc();
     key = keyOf(doc.body[index]);
-    if (!key) return noteOf(failureNote('refused').title, false);
+    if (!key) return noteOf({ ...failureNote('refused'), choices: [] });
     // asking for more starts from the try shown
     const body = asked.base ? doc.body.map((b) => (keyOf(b) === key ? asked.base! : b)) : doc.body;
     from = asked.base ?? doc.body[index];
@@ -114,7 +115,7 @@ export function initAi(host: AiHost, signal: AbortSignal) {
       const res = await fetch(editorUrl('api/ai/propose'), {
         method: 'POST',
         headers: { 'X-Editor': '1', 'X-Editor-Tab': TAB, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id: host.id, article: { ...doc, body }, target: { scope: 'block', key }, instruction: asked.instruction, ...(asked.action ? { action: asked.action } : {}) }),
+        body: JSON.stringify({ id: host.id, article: { ...doc, body }, target: { scope: 'block', key }, instruction: asked.instruction, ...(asked.action ? { action: asked.action } : {}), ...(asked.anyway ? { anyway: true } : {}) }),
         credentials: 'same-origin',
         signal: ac.signal,
       });
@@ -130,28 +131,27 @@ export function initAi(host: AiHost, signal: AbortSignal) {
           const proposal = e.data.proposal as Proposal;
           const block = proposal.body.find((b) => keyOf(b) === key);
           stopTicker();
-          if (!block) return noteOf(failureNote('refused').title, true);
-          tries.push({ summary: proposal.summary, block });
+          if (!block) return noteOf(failureNote('refused'));
+          tries.push({ summary: proposal.summary, block, ...(proposal.anyway ? { anyway: true } : {}) });
           shown = tries.length - 1;
           showTry();
           announce(readyLine(proposal.summary));
         } else if (e.type === 'note') {
           stopTicker();
           const n = needsNote(e.data.needs as AiNeeds, e.data.outside as AiOutside | undefined, e.data.reason as string | undefined);
-          noteOf([n.title, n.detail].filter(Boolean).join(' '), false);
+          noteOf(n);
           announce(n.title);
         } else if (e.type === 'error') {
           stopTicker();
           const n = failureNote(e.data.code as AiFailureCode, String(e.data.service ?? writer?.name ?? 'The service'), e.data.reason as string | undefined);
-          noteOf([n.title, n.detail].filter(Boolean).join(' '), n.choices.includes('retry'));
+          noteOf(n);
           announce(n.title, 'negative');
         }
       }
     } catch {
       if (ac.signal.aborted) return;
       stopTicker();
-      const n = failureNote('unreachable', 'the dev server');
-      noteOf(`${n.title} ${n.detail}`, true);
+      noteOf(failureNote('unreachable', 'the dev server'));
     } finally {
       if (request === ac) request = null;
       stopTicker();
@@ -168,8 +168,21 @@ export function initAi(host: AiHost, signal: AbortSignal) {
       shown = tries.length - 1;
     }
     if (tries.length) showTry();
-    else noteOf(STOPPED, true);
-    announce(t ? STOPPED_KEPT : STOPPED);
+    else noteOf(failureNote('stopped'));
+    announce(t ? STOPPED_KEPT : failureNote('stopped').title);
+  };
+
+  // Copy for your agent: the prompt goes to the clipboard, and the note says so (§10.1)
+  const copy = async () => {
+    if (!last || !key) return;
+    const text = agentPrompt({ mcp: new URL(editorUrl('mcp'), location.href).href, id: host.id, article: host.doc() as Parameters<typeof agentPrompt>[0]['article'], key, instruction: last.instruction });
+    const ok = await navigator.clipboard.writeText(text).then(
+      () => true,
+      () => false,
+    );
+    const n = needsNote('research');
+    if (ok) noteOf(n, COPIED);
+    announce(ok ? COPIED : "Couldn't copy the prompt. Try again.", ok ? undefined : 'negative');
   };
 
   const keep = () => {
@@ -196,21 +209,33 @@ export function initAi(host: AiHost, signal: AbortSignal) {
       const r = await fetch(editorUrl('api/ai/status'), { headers: { 'X-Editor': '1', 'X-Editor-Tab': TAB }, credentials: 'same-origin', signal }).catch(() => null);
       const s = r?.ok ? ((await r.json()) as { writer: Writer }) : null;
       writer = s?.writer ?? null;
-      if (index === at && view.phase !== 'closed') draw({});
+      if (index !== at || view.phase === 'closed') return;
+      // nothing would be sent: say so before anything is typed (§4.5, §10)
+      if (view.phase === 'ready' && !writer) noteOf(failureNote('no-service'));
+      else if (view.phase === 'ready' && host.isPrivate && !writer!.privatePages) noteOf(failureNote('private', writer!.name));
+      else draw({});
     },
     /** What the prompt asked for. */
     message(m: AiDo) {
       if (m.do === 'send') void ask({ instruction: m.instruction, action: m.action });
       else if (m.do === 'more' && tries[shown]) void ask({ instruction: m.instruction, base: tries[shown].block });
       else if (m.do === 'retry' && last) void ask(last);
-      else if (m.do === 'keep') keep();
+      else if (m.do === 'anyway' && last) void ask({ ...last, anyway: true });
+      else if (m.do === 'copy') void copy();
+      else if (m.do === 'setup') {
+        close();
+        location.assign(editorUrl('ai/'));
+      } else if (m.do === 'keep') keep();
       else if (m.do === 'stop') stop();
       else if (m.do === 'step' && tries.length) {
         shown = stepTo(shown, m.by, tries.length);
         showTry();
         announce(tryLine(shown, tries.length, tries[shown].summary));
       } else if (m.do === 'back' && tries.length) showTry();
-      else if (m.do === 'discard') {
+      else if (m.do === 'cancel') {
+        if (tries.length) showTry();
+        else draw({ phase: 'ready', after: undefined, words: undefined });
+      } else if (m.do === 'discard') {
         tries = [];
         shown = 0;
         draw({ phase: 'ready', after: undefined, words: undefined });
