@@ -1,9 +1,13 @@
 ---
 import Example from '../../library/Example.astro';
 import ContentIssues from '../components/ContentIssues.astro';
-import { ISSUES } from './samples';
+import { ISSUES, LEFT_OUT } from './samples';
 ---
 
 <Example title="The content's problems" description="What a screen shows instead when a file changed outside edit mode no longer passes the content check." layout="block">
   <ContentIssues issues={ISSUES} />
+</Example>
+
+<Example title="Files left out until they're fixed" description="Above every screen, when dev left the broken files out and everything else works." layout="block">
+  <ContentIssues issues={LEFT_OUT} leftOut />
 </Example>

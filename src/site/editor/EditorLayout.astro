@@ -36,6 +36,7 @@ import ChangeList from './components/ChangeList.astro';
 import ContentIssues from './components/ContentIssues.astro';
 import IconPattern from './components/IconPattern.astro';
 import { publishView } from './server/publishView';
+import { load } from './server/screens';
 
 interface Props {
   /** The document title: the screen's name. */
@@ -67,6 +68,10 @@ const pending = git ? pendingCount(git) : 0;
 const unknown = !!git?.error;
 const articlePublish = screen === 'article' && git && wants(asked, 'publish', 'publish-issues') ? await publishView(Astro.url) : null;
 const to = (p: string) => withBase(`/_edit/${p}`);
+// files dev left out because they don't pass the content check (content/load.ts loadContentLeavingOut): every
+// screen says so above its own, so a file broken by hand is seen and never stops edit mode
+const loaded = load();
+const leftOut = loaded.ok ? loaded.index.problems : [];
 // in Atiya Studio the app's one title bar row draws this header (desktop spec §7.2, scripts/studio.ts): the app's
 // view asks with this request header, so the page comes without its own row, and never flashes one
 const studio = Astro.request.headers.get('x-atiya-studio') === '1';
@@ -137,6 +142,7 @@ const groups = (['Content', 'Site', 'Checks'] as const)
         <Skeleton shape="block" ratio="21/9" />
         <Skeleton shape="text" lines={4} />
       </div>
+      <div class="left-out" data-region="left-out" hidden={!leftOut.length}>{leftOut.length > 0 && <ContentIssues issues={leftOut} leftOut />}</div>
       {
         heading ? (
           <div class="screen" data-region="screen">
@@ -399,6 +405,13 @@ const groups = (['Content', 'Site', 'Checks'] as const)
 
   .editor:not([data-nav]) .main {
     overflow: hidden;
+  }
+
+  /* files left out until they're fixed: above the screen, in its gutter */
+  .left-out:not([hidden]) {
+    display: grid;
+    max-inline-size: var(--size-wide);
+    padding: var(--space-8) var(--space-8) 0;
   }
 
   .screen {

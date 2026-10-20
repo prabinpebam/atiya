@@ -386,6 +386,8 @@ describe('the content in content/', () => {
   const masters = walk(join(ROOT, 'content/media')).filter((f) => /\.(webp|jpe?g|png|avif|gif)$/.test(f));
 
   it('validates, and every published article has a page', () => {
+    // dev leaves a broken file out (loadContentLeavingOut); the real content may leave nothing out
+    expect(c.problems).toEqual([]);
     expect(c.warnings).toEqual([]);
     expect(c.canonical.get('article/do-what-makes-you-proud')).toBe('/leadership/do-what-makes-you-proud/');
   });

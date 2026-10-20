@@ -85,6 +85,11 @@ export interface ContentIndex {
   fonts: Map<string, FontFileDoc>;
   /** Reported, not failed: a published item the site doesn't place (it has no page). */
   warnings: string[];
+  /**
+   * Files left out because they don't pass the check (dev only: loadContentLeavingOut), with why. Empty from a
+   * build, which fails instead: nothing broken is ever published.
+   */
+  problems: Issue[];
 }
 
 /** One thing wrong: the file (under the content folder), the field when there is one, and what's wrong. */
@@ -132,8 +137,9 @@ export const videosUsed = (a: Article): string[] => a.body.flatMap((b) => (b.typ
  * @param docs the JSON files under content/, keyed by their path from the project root (/content/…)
  * @param masters the media masters under content/media/, as paths from the project root
  * @param readErrors files the source couldn't read (not valid JSON, not a content file)
+ * @param leftOut files to treat as absent (an article as one that doesn't pass its check): loadContentLeavingOut's
  */
-export function loadContent(docs: Record<string, unknown>, masters: Set<string>, readErrors: string[] = []): ContentIndex {
+export function loadContent(docs: Record<string, unknown>, masters: Set<string>, readErrors: string[] = [], leftOut: ReadonlySet<string> = new Set()): ContentIndex {
   const issues: Issue[] = readErrors.map((e) => {
     const at = e.indexOf(': ');
     return { file: e.slice(0, at), message: e.slice(at + 2) };
@@ -180,6 +186,11 @@ export function loadContent(docs: Record<string, unknown>, masters: Set<string>,
   for (const [file, data] of Object.entries(docs).sort(([a], [b]) => a.localeCompare(b))) {
     const name = file.split('/').pop()!.replace(/\.json$/, '');
     let m: RegExpExecArray | null;
+    // a file left out (dev, loadContentLeavingOut): absent, but an article's place in the structure isn't "missing"
+    if (leftOut.has(file)) {
+      if (ARTICLE_FILE.test(file)) invalidArticles.add(name);
+      continue;
+    }
     if (file === '/content/site.json') site = parse(siteSettings, file, data);
     else if (file === '/content/structures/site.json') structure = parse(siteStructure, file, data);
     else if (file === '/content/redirects.json') redirects = parse(redirectList, file, data) ?? [];
@@ -284,6 +295,8 @@ export function loadContent(docs: Record<string, unknown>, masters: Set<string>,
         });
     } else add(file, 'not a resource the content model knows');
   }
+  // a left-out article that couldn't even be read (not valid JSON) is in no doc: still not "missing"
+  for (const f of leftOut) if (ARTICLE_FILE.test(f)) invalidArticles.add(f.split('/').pop()!.replace(/\.json$/, ''));
   for (const master of masters) {
     // a font's files are named by its own sidecar (content/fonts/<id>.json), checked below
     if (master.startsWith('/content/fonts/')) {
@@ -504,13 +517,14 @@ export function loadContent(docs: Record<string, unknown>, masters: Set<string>,
       });
       (g.scope.pages ?? []).forEach((pid, j) => {
         const page = protectedPages.find((p) => p.id === pid);
-        if (!page) add(ACCESS, `"${pid}" isn't a private page (V26)`, `${at}.scope.pages.${j}`);
+        // a page left out because it doesn't pass its own check is reported there, not here
+        if (!page && !invalidArticles.has(pid)) add(ACCESS, `"${pid}" isn't a private page (V26)`, `${at}.scope.pages.${j}`);
       });
       if (!covers(g, protectedPages).length && isValid(g, now)) warnings.push(`grant ${g.id} opens no page`);
     });
   }
 
-  const index: ContentIndex = { site: site!, structure: structure!, articles, origins, access, people, media, documents, videos, routes, canonical: canonicalPaths(routes), redirects, planet, ways, overlay, grants, accessMessage: message, themes, fonts, recommendations, warnings };
+  const index: ContentIndex = { site: site!, structure: structure!, articles, origins, access, people, media, documents, videos, routes, canonical: canonicalPaths(routes), redirects, planet, ways, overlay, grants, accessMessage: message, themes, fonts, recommendations, warnings, problems: [] };
   // the ways in (V33 to V37, documentation/desktop/modes.md §6), once the rest holds: a mode's structure that
   // already fails its own check (the planet's V14 to V16) isn't reported twice
   if (!issues.length && site && structure) {
@@ -523,6 +537,39 @@ export function loadContent(docs: Record<string, unknown>, masters: Set<string>,
   }
   if (issues.length) throw new ContentError(issues);
   return index;
+}
+
+/** An article's file, in either folder (its key as the source gives it). */
+const ARTICLE_FILE = /^\/(content|private)\/articles\/[^/]+\.json$/;
+/** What can be left out on its own: an article, or a piece of media (its sidecar or a file beside it). */
+const LEAVABLE = /^\/(content|private)\/(articles|media)\//;
+
+/**
+ * The content as dev reads it (documentation/content/spec.md §5.4): a file that doesn't pass the check is left out
+ * rather than failing every page, as long as it's one the rest can do without (an article, a piece of media).
+ * What only it causes goes with it, so it's read again until the rest holds; a problem in the site itself (its
+ * settings, structure, people, the private overlay or grants) still fails, as it would every page. The issues of
+ * what was left out come back as `problems`. A build never calls this: it uses loadContent, and stops.
+ */
+export function loadContentLeavingOut(docs: Record<string, unknown>, masters: Set<string>, readErrors: string[] = []): ContentIndex {
+  const leftOut = new Set<string>();
+  const problems: Issue[] = [];
+  const key = (file: string) => `/${file.replace(/^\//, '')}`;
+  for (let round = 0; ; round++) {
+    try {
+      const keptMasters = new Set([...masters].filter((m) => !leftOut.has(m)));
+      const keptErrors = readErrors.filter((e) => !leftOut.has(key(e.slice(0, e.indexOf(': ')))));
+      const index = loadContent(docs, keptMasters, keptErrors, leftOut);
+      return { ...index, problems };
+    } catch (e) {
+      if (!(e instanceof ContentError)) throw e;
+      const leavable = e.issues.filter((i) => LEAVABLE.test(key(i.file)) && !leftOut.has(key(i.file)));
+      // nothing more to leave out (or no end in sight): what's left is the site's own problem
+      if (!leavable.length || round >= 8) throw problems.length ? new ContentError([...problems, ...e.issues]) : e;
+      for (const i of leavable) leftOut.add(key(i.file));
+      problems.push(...leavable);
+    }
+  }
 }
 
 /** A path on this site a link may go to: a page of the tree, or one of the code's own (the planet, the docs, the design library). */

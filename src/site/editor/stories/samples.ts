@@ -177,6 +177,12 @@ export const ISSUES: Issue[] = [
   { file: 'content/structures/site.json', message: 'places a page that does not exist: the-old-bridge' },
 ];
 
+/** What dev leaves out: only articles and media can be (a problem in the site itself still stops it). */
+export const LEFT_OUT: Issue[] = [
+  { file: 'content/articles/a-walk-round-the-pond.json', path: 'body.4.markdown', message: 'a text block is one paragraph or one list: split it into two blocks at the blank line' },
+  { file: 'content/media/articles/a-walk-round-the-pond/ducks.json', message: 'its master content/media/articles/a-walk-round-the-pond/ducks.webp is missing' },
+];
+
 /** What changed since the last save to remote. */
 export const CHANGES = [
   { resource: 'article:a-walk-round-the-pond', kind: 'Article', name: 'A walk round the pond', status: 'changed' as const, keys: ['/content/articles/a-walk-round-the-pond.json'], href: 'articles/a-walk-round-the-pond/' },

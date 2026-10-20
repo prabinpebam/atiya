@@ -152,6 +152,34 @@ test.describe('editor', () => {
     expect(await site.evaluate(() => (window as unknown as { __kept?: number }).__kept)).toBeUndefined();
   });
 
+  test('a file broken by hand is left out until it is fixed: every other page and screen works, and edit mode names it (content spec §5)', async ({ page, request }) => {
+    const good = readFileSync(articleFile(), 'utf8');
+    // a text block holding two paragraphs, as a hand edit once left one
+    const doc = readJson(articleFile());
+    const at = doc.body.findIndex((b: { type: string }) => b.type === 'text');
+    doc.body[at].markdown = `${doc.body[at].markdown}\n\nA second paragraph in the same block.`;
+    writeFileSync(articleFile(), `${JSON.stringify(doc, null, 2)}\n`);
+    // the site: its section and home still load; only the broken page is gone
+    await expect.poll(async () => (await request.get(`/leadership/${ARTICLE}/`)).status(), { timeout: 15_000 }).toBe(404);
+    expect((await request.get('/leadership/')).status()).toBe(200);
+    expect((await request.get('/')).status()).toBe(200);
+    // edit mode: its screens load, each naming what's left out and why
+    for (const path of ['/_edit/', '/_edit/articles/', '/_edit/media/']) {
+      await page.goto(path);
+      const notice = page.locator('[data-region="left-out"]');
+      await expect(notice, path).toBeVisible();
+      await expect(notice.getByRole('heading', { name: '1 file is left out until it’s fixed' })).toBeVisible();
+      await expect(notice).toContainText(`content/articles/${ARTICLE}.json`);
+      await expect(notice).toContainText(`body.${at}.markdown`);
+    }
+    await noSeriousViolations(page, 'a left-out file');
+    // fixed by hand: it comes back, with no restart
+    writeFileSync(articleFile(), good);
+    await expect.poll(async () => (await request.get(`/leadership/${ARTICLE}/`)).status(), { timeout: 15_000 }).toBe(200);
+    await page.goto('/_edit/articles/');
+    await expect(page.locator('[data-region="left-out"]')).toBeHidden();
+  });
+
   test('the canvas is the public page: the same elements in the same order, apart from the overlay', async ({ page, context }) => {
     await openArticle(page);
     const canvas = page.frame({ url: /\/_edit\/canvas\// });

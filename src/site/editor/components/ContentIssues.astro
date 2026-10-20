@@ -1,7 +1,8 @@
 ---
 /**
  * The content's problems, when a file was broken by hand: each issue with its file and field, so the
- * editor says what to fix rather than failing. Every screen shows it in place of its content.
+ * editor says what to fix rather than failing. A screen that can't load shows it in place of its content; when dev
+ * only left the broken files out (`leftOut`), every screen shows it above its own.
  * @tier editor
  * @a11y A heading and a plain list; each file is named in code, each problem in words.
  */
@@ -13,14 +14,28 @@ import type { Issue } from '../../content/load';
 interface Props {
   /** The problems, from the content check. */
   issues: Issue[];
+  /** The files were left out, and everything else works (dev reads around a broken file), rather than the screen being unable to load. */
+  leftOut?: boolean;
 }
 
-const { issues } = Astro.props;
+const { issues, leftOut = false } = Astro.props;
+const files = new Set(issues.map((i) => i.file)).size;
 ---
 
-<section class="issues" aria-labelledby="content-issues">
-  <Heading level={2} size="h3" id="content-issues">The content has {issues.length} {issues.length === 1 ? 'problem' : 'problems'}</Heading>
-  <Text variant="ui" tone="muted">A file in the content folder was changed outside edit mode and no longer passes the content check. Fix these in the files, and this screen comes back.</Text>
+<section class="issues" aria-labelledby="content-issues" data-left-out={leftOut ? '' : undefined}>
+  {
+    leftOut ? (
+      <>
+        <Heading level={2} size="h3" id="content-issues">{files === 1 ? '1 file is left out until it’s fixed' : `${files} files are left out until they’re fixed`}</Heading>
+        <Text variant="ui" tone="muted">These changed outside edit mode and no longer pass the content check, so the site and edit mode leave them out. Everything else works. Fix them in the files, and they come back.</Text>
+      </>
+    ) : (
+      <>
+        <Heading level={2} size="h3" id="content-issues">{`The content has ${issues.length} ${issues.length === 1 ? 'problem' : 'problems'}`}</Heading>
+        <Text variant="ui" tone="muted">A file in the content folder was changed outside edit mode and no longer passes the content check. Fix these in the files, and this screen comes back.</Text>
+      </>
+    )
+  }
   <PlainList gap="md">
     {
       issues.map((i) => (

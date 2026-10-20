@@ -5,7 +5,7 @@
  * takes the store's snapshot as written instead of reading the folders again.
  */
 import { currentSnapshot, generation } from './source';
-import { loadContent, type ContentIndex, type MediaRecord, type VideoRecord } from './load';
+import { loadContent, loadContentLeavingOut, type ContentIndex, type MediaRecord, type VideoRecord } from './load';
 import { withBase } from '../design/meta';
 import { placeRoutes } from './navigation';
 import { timed } from './timing';
@@ -18,15 +18,21 @@ import type { Article, PlaceId } from './schema';
 
 let cached: { generation: number; index: ContentIndex } | undefined;
 
-/** Everything in the content folder, validated (the ways in too: V33 to V37); throws a ContentError that lists every problem. */
+/**
+ * Everything in the content folder, validated (the ways in too: V33 to V37). A build throws a ContentError that
+ * lists every problem, so nothing broken is published. Dev leaves out an article or a piece of media that doesn't
+ * pass, so one broken file never stops every page; what was left out, and why, is `problems` (edit mode shows it).
+ */
 export function content(): ContentIndex {
   const now = generation();
   if (!cached || cached.generation !== now) {
     // the store's snapshot after its write, when nothing else changed since; else read again (only the
     // documents that changed are parsed again: source.ts)
     const snap = timed('content.read', () => currentSnapshot());
-    const index = timed('content.validate', () => loadContent(snap.docs, snap.masters, snap.errors));
+    const load = import.meta.env.DEV ? loadContentLeavingOut : loadContent;
+    const index = timed('content.validate', () => load(snap.docs, snap.masters, snap.errors));
     for (const w of index.warnings) console.warn(`[content] ${w}`);
+    for (const p of index.problems) console.warn(`[content] left out until fixed: ${p.file}${p.path ? `: ${p.path}` : ''}: ${p.message}`);
     cached = { generation: now, index };
   }
   return cached.index;
