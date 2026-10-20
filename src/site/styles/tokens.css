@@ -357,6 +357,12 @@
   --c-recommendation-lines-row: 5;
   --c-recommendation-lines-wall: 9;
   --c-recommendation-mark: var(--color-highlight);
+  --c-bento-picture-side: 6rem;
+  --c-bento-picture-band: 5.5rem;
+  --c-bento-picture: 12rem;
+  --c-bento-evidence: 15rem;
+  --c-bento-query-two: 50rem;
+  --c-bento-query-one: 36rem;
   --c-story-card-row-picture: 11rem;
   --c-story-card-row-picture-compact: 6rem;
   --c-story-card-query-feature: 49.5rem;

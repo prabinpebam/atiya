@@ -35,7 +35,7 @@ export interface Route {
 }
 
 /** Paths the code owns: a node may not claim them. `classic` stays until the IA replaces it. */
-export const RESERVED = ['play', 'design', 'docs', '_astro', 'media', 'classic', '_edit', 'sign-in', '_sealed', '_access'];
+export const RESERVED = ['play', 'design', 'docs', '_astro', 'media', 'classic', '_edit', 'sign-in', '_sealed', '_access', 'views'];
 
 export type ItemTitle = (type: string, id: string) => { slug: string; title: string; navLabel?: string; published: boolean } | undefined;
 

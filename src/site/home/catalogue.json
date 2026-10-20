@@ -66,7 +66,7 @@
     "bento": {
       "label": "Bento",
       "line": "The default",
-      "built": false,
+      "built": true,
       "minimum": { "strengths": 3 },
       "settings": {
         "lead": { "label": "Lead", "type": "choice", "values": ["who", "highlight", "voice"], "labels": ["Who you are", "A highlight", "A voice"], "default": "who" },

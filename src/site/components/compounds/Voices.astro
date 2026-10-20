@@ -1,0 +1,103 @@
+---
+/**
+ * In their words (documentation/home-views/bento.md §4): what colleagues wrote about the person, one quote
+ * at a time with who said it, and Next quote to read the next. Nothing turns on its own (visual language
+ * §6). Every quote takes the same place, so the box keeps the height of the longest and nothing below moves.
+ * @tier compound
+ * @a11y A section named by its heading; each quote is a figure (Quote) with who said it; the quote shown changes politely for a screen reader.
+ * @key Enter / Space on Next quote: the next quote (after the last, the first)
+ */
+import Heading from '../fundamentals/Heading.astro';
+import Text from '../fundamentals/Text.astro';
+import Quote from '../fundamentals/Quote.astro';
+import Button from '../fundamentals/Button.astro';
+import { stableId } from '../../design/stableId';
+
+interface Props {
+  /** The quotes, the first shown first: the words, who wrote them and their title. */
+  voices: { text: string; name: string; title?: string }[];
+  /** Its heading. */
+  title?: string;
+  /** The heading's level. */
+  headingLevel?: 2 | 3;
+}
+
+const { voices, title = 'In their words', headingLevel = 2 } = Astro.props;
+const id = `voices-${stableId(Astro, 'Voices')}`;
+---
+
+<section class="voices" aria-labelledby={id} data-voices>
+  <Heading level={headingLevel} size="h4" id={id}>{title}</Heading>
+  <div class="stack" id={`${id}-quotes`} aria-live="polite">
+    {
+      voices.map((v, i) => (
+        <div class="voice" data-voice={String(i)} data-current={i === 0 ? '' : undefined}>
+          <Quote cite={v.name} source={v.title}>
+            {v.text}
+          </Quote>
+        </div>
+      ))
+    }
+  </div>
+  {
+    voices.length > 1 && (
+      <div class="next">
+        <Text variant="meta" as="p">
+          <span data-voices-count>1</span> of {voices.length}
+        </Text>
+        <Button variant="quiet" size="sm" iconEnd="arrow-right" aria-controls={`${id}-quotes`} data-voices-next="">
+          Next quote
+        </Button>
+      </div>
+    )
+  }
+</section>
+
+<style>
+  .voices {
+    display: grid;
+    grid-template-rows: auto minmax(0, 1fr) auto;
+    gap: var(--space-4);
+    padding: var(--space-6);
+    border: var(--border-hairline) solid var(--color-border);
+    border-radius: var(--radius-lg);
+    background: var(--color-bg-raised);
+  }
+
+  /* every quote in the one cell: the box is as tall as the longest */
+  .stack {
+    display: grid;
+    align-items: center;
+  }
+
+  .voice {
+    grid-area: 1 / 1;
+  }
+
+  .voice:not([data-current]) {
+    visibility: hidden;
+  }
+
+  .next {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-3);
+  }
+</style>
+
+<script>
+  import { each } from '../../scripts/page';
+
+  each<HTMLElement>('[data-voices]', (root) => {
+    const voices = [...root.querySelectorAll<HTMLElement>('[data-voice]')];
+    const count = root.querySelector<HTMLElement>('[data-voices-count]');
+    root.querySelector('[data-voices-next]')?.addEventListener('click', () => {
+      const at = voices.findIndex((v) => v.hasAttribute('data-current'));
+      const next = (at + 1) % voices.length;
+      voices.forEach((v, i) => v.toggleAttribute('data-current', i === next));
+      if (count) count.textContent = String(next + 1);
+    });
+  });
+</script>

@@ -1,0 +1,32 @@
+---
+import HomeLayout from '../layouts/HomeLayout.astro';
+import Bento from '../components/compounds/Bento.astro';
+import HomeLead from '../components/compounds/HomeLead.astro';
+import Voices from '../components/compounds/Voices.astro';
+import { sample } from '../design/samples';
+import { withBase } from '../design/meta';
+
+const nav = [
+  { label: 'Work', href: withBase('/work/') },
+  { label: 'Writing', href: withBase('/writing/') },
+  { label: 'About', href: withBase('/about/') },
+];
+const sections = [
+  { title: 'Work', summary: 'Case studies of products I have led.', href: withBase('/work/') },
+  { title: 'Writing', summary: 'Essays on design leadership and craft.', href: withBase('/writing/') },
+  { title: 'About', summary: 'Who I am, and how I lead teams.', href: withBase('/about/') },
+];
+const quote = { text: 'She made the hard calls look easy, and brought the whole team along.', name: 'Sam Rivera', title: 'Director of Product' };
+const tiles = [
+  { id: 'layout-teams', name: 'Leading design teams', line: 'Grew a studio of twelve.', label: 'Led · 4 pieces of evidence', picture: sample('workshop'), quote },
+  { id: 'layout-research', name: 'Research that changes plans', line: 'Studies that moved a roadmap.', label: 'Shipped · 3 pieces of evidence', picture: sample('bridge') },
+  { id: 'layout-systems', name: 'Design systems', line: 'One kit for forty products.', label: 'Built · 5 pieces of evidence', picture: sample('pond'), quote },
+].map((t) => ({ ...t, short: t.name.split(' ')[0], span: 4, details: [{ key: `${t.id}-a`, title: 'A case study that shows it', kindLabel: 'Case study', href: withBase('/design/') }] }));
+---
+
+<HomeLayout title="Alex Morgan" description="Head of Design." canonical="/" nav={nav} sections={sections} view="bento">
+  <Bento tiles={tiles}>
+    <HomeLead slot="lead" name="Alex Morgan" role="Head of Design" facts={['15 years', 'Teams of 40']} primary={{ label: 'Read my résumé', href: withBase('/design/') }} secondary={{ label: 'Get in touch', href: withBase('/design/') }} />
+    <Voices slot="voices" voices={[quote, { text: 'The clearest thinker in any room about what to build next.', name: 'Ana Lima' }]} />
+  </Bento>
+</HomeLayout>

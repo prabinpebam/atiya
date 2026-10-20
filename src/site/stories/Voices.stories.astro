@@ -1,0 +1,28 @@
+---
+import Example from '../library/Example.astro';
+import Voices from '../components/compounds/Voices.astro';
+
+const voices = [
+  { text: 'She made the hard calls look easy, and brought the whole team along.', name: 'Sam Rivera', title: 'Director of Product' },
+  { text: 'The clearest thinker in any room about what to build next. Every review with her left the work sharper and the people surer of it.', name: 'Ana Lima', title: 'Principal Engineer' },
+  { text: 'Every team she led shipped something they were proud of.', name: 'Jo Okafor' },
+];
+---
+
+<Example title="Three voices" layout="block" description="One quote at a time; Next quote reads the next. The box keeps the longest quote's height, so nothing moves.">
+  <div class="demo">
+    <Voices voices={voices} />
+  </div>
+</Example>
+
+<Example title="One voice" layout="block" description="With one quote there's nothing to turn.">
+  <div class="demo">
+    <Voices voices={voices.slice(0, 1)} title="What colleagues say" headingLevel={3} />
+  </div>
+</Example>
+
+<style>
+  .demo {
+    max-width: 28rem;
+  }
+</style>

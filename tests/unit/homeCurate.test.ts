@@ -325,8 +325,14 @@ describe('the views’ minimums (for-every-site §5)', () => {
   });
 
   it('only built views are offered; nothing chosen is Classic', () => {
-    expect(effectiveViews({}, counts())).toEqual({ default: 'classic', offered: ['classic'] });
-    expect(effectiveViews({ default: 'bento', offered: ['bento', 'classic'] }, counts())).toEqual({ default: 'classic', offered: ['classic'] });
+    const was = CATALOGUE.views.bento.built;
+    CATALOGUE.views.bento.built = false;
+    try {
+      expect(effectiveViews({}, counts())).toEqual({ default: 'classic', offered: ['classic'] });
+      expect(effectiveViews({ default: 'bento', offered: ['bento', 'classic'] }, counts())).toEqual({ default: 'classic', offered: ['classic'] });
+    } finally {
+      CATALOGUE.views.bento.built = was;
+    }
   });
 
   it('a default below its minimum falls back to Bento, else Classic; Classic is always there', () => {

@@ -53,6 +53,8 @@ test.describe('editor: ways to explore', () => {
   test.afterAll(() => reset());
 
   test('ways to explore: the little planet off and back on, the first offer, the site following, and axe in light and dark', async ({ page }) => {
+    // the home page's views (home-views plan 2a) are kept by every save of this screen
+    const kept = existsSync(WAYS) && readJson(WAYS).home ? { home: readJson(WAYS).home } : {};
     await open(page, '/_edit/ways/');
     await expect(page.getByRole('heading', { level: 1, name: 'Ways to explore' })).toBeVisible();
     // each scheme set before the page loads, so no colour is caught mid-transition
@@ -74,7 +76,7 @@ test.describe('editor: ways to explore', () => {
     await expect(firstOffer(page, /^Read the site/)).toBeChecked();
     await page.getByRole('button', { name: 'Save ways to explore' }).click();
     await expect(status(page)).toHaveText(/^Saved ways to explore/, { timeout: 120_000 });
-    expect(readJson(WAYS)).toEqual({ modes: [{ id: 'little-planet', on: false, mount: 'play' }], primary: 'site' });
+    expect(readJson(WAYS)).toEqual({ modes: [{ id: 'little-planet', on: false, mount: 'play' }], primary: 'site', ...kept });
     expect(existsSync(PLANET)).toBe(true);
     await expect(planetLink(page)).toHaveCount(0, { timeout: 120_000 });
     await expect(page.getByRole('checkbox', { name: /^Little planet/ })).toHaveAccessibleDescription(/Its map is kept/);
@@ -98,7 +100,7 @@ test.describe('editor: ways to explore', () => {
     await firstOffer(page, /^Little planet/).check();
     await page.getByRole('button', { name: 'Save ways to explore' }).click();
     await expect(status(page)).toHaveText(/^Saved ways to explore/, { timeout: 120_000 });
-    expect(readJson(WAYS)).toEqual({ modes: [{ id: 'little-planet', on: true, mount: 'play' }], primary: 'little-planet' });
+    expect(readJson(WAYS)).toEqual({ modes: [{ id: 'little-planet', on: true, mount: 'play' }], primary: 'little-planet', ...kept });
     expect(readFileSync(PLANET, 'utf8')).toBe(before);
     await expect(planetLink(page)).toBeVisible({ timeout: 120_000 });
     expect((await text(page, '/')).body).toContain('Explore the planet');

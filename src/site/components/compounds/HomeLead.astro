@@ -1,0 +1,128 @@
+---
+/**
+ * The lead of a home view (documentation/home-views/foundation.md §7): who the person is and what they do,
+ * the line they wrote about it (left out until they write one: never made up), a few facts, and the two
+ * actions every view keeps, the résumé and contact. A quiet way to the site's other ways in can follow in
+ * its slot. Tinted, it's the one spot of colour on the page.
+ * @tier compound
+ * @a11y A section named by the person's name, the page's one h1 on a home page; the actions are links.
+ */
+import Heading from '../fundamentals/Heading.astro';
+import Text from '../fundamentals/Text.astro';
+import Tag from '../fundamentals/Tag.astro';
+import Button from '../fundamentals/Button.astro';
+import { stableId } from '../../design/stableId';
+
+interface Props {
+  /** The person's name: the page's title. */
+  name: string;
+  /** Their role ("Principal Design Manager"). */
+  role?: string;
+  /** The line they wrote about what they do; left out until they write one. */
+  positioning?: string;
+  /** A few facts, a few words each ("18 years"). */
+  facts?: string[];
+  /** The main action: the résumé. */
+  primary?: { label: string; href: string };
+  /** The second action: contact. */
+  secondary?: { label: string; href: string };
+  /** The name's heading level: 1 on a home page. */
+  headingLevel?: 1 | 2;
+  /** tinted: the indigo spot, softly; plain: the page's paper. */
+  tone?: 'tinted' | 'plain';
+}
+
+const { name, role, positioning, facts = [], primary, secondary, headingLevel = 1, tone = 'tinted' } = Astro.props;
+const id = `home-lead-${stableId(Astro, 'HomeLead')}`;
+---
+
+<section class="lead" data-tone={tone} aria-labelledby={id}>
+  <div class="who">
+    <Heading level={headingLevel} size="h1" id={id}>{name}</Heading>
+    {role && <Text variant="lead">{role}</Text>}
+  </div>
+  {positioning && <Text variant="standfirst">{positioning}</Text>}
+  {
+    facts.length > 0 && (
+      <ul class="facts">
+        {facts.map((f) => (
+          <li>
+            <Tag>{f}</Tag>
+          </li>
+        ))}
+      </ul>
+    )
+  }
+  {
+    (primary || secondary || Astro.slots.has('default')) && (
+      <div class="actions">
+        {primary && (
+          <Button variant="primary" href={primary.href} icon="article">
+            {primary.label}
+          </Button>
+        )}
+        {secondary && (
+          <Button variant="secondary" href={secondary.href} icon="mail">
+            {secondary.label}
+          </Button>
+        )}
+        {Astro.slots.has('default') && (
+          <span class="more">
+            <slot />
+          </span>
+        )}
+      </div>
+    )
+  }
+</section>
+
+<style>
+  .lead {
+    display: grid;
+    gap: var(--space-4);
+    align-content: start;
+    padding: var(--space-6) var(--space-8);
+    border-radius: var(--radius-lg);
+  }
+
+  .lead[data-tone='tinted'] {
+    background: var(--color-accent-soft);
+  }
+
+  .lead[data-tone='plain'] {
+    border: var(--border-hairline) solid var(--color-border);
+  }
+
+  .who {
+    display: grid;
+    gap: var(--space-2);
+  }
+
+  .facts {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  /* the actions, and a quiet way in after them on the same row */
+  .actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-3) var(--space-5);
+  }
+
+  .more {
+    display: contents;
+  }
+
+  /* a phone: less room round the words */
+  @media (max-width: 40rem) {
+    .lead {
+      padding: var(--space-5);
+    }
+  }
+</style>

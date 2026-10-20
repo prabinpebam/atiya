@@ -13,6 +13,12 @@
     "breakpoint.md": {"v":"56rem"},
     "breakpoint.short": {"v":"30rem"},
     "breakpoint.sm": {"v":"40rem"},
+    "c.bento.evidence": {"v":"15rem"},
+    "c.bento.picture": {"v":"12rem"},
+    "c.bento.picture-band": {"v":"5.5rem"},
+    "c.bento.picture-side": {"v":"6rem"},
+    "c.bento.query-one": {"v":"36rem"},
+    "c.bento.query-two": {"v":"50rem"},
     "c.button.hover-wash": {"v":"var(--color-bg-hover)"},
     "c.button.pad-x-lg": {"v":"var(--space-8)"},
     "c.button.pad-x-md": {"v":"var(--space-6)"},
@@ -415,6 +421,42 @@
     {
       "date": "2026-10-20",
       "changes": {
+        "c.bento.evidence": [
+          null,
+          {
+            "v": "15rem"
+          }
+        ],
+        "c.bento.picture": [
+          null,
+          {
+            "v": "12rem"
+          }
+        ],
+        "c.bento.picture-band": [
+          null,
+          {
+            "v": "5.5rem"
+          }
+        ],
+        "c.bento.picture-side": [
+          null,
+          {
+            "v": "6rem"
+          }
+        ],
+        "c.bento.query-one": [
+          null,
+          {
+            "v": "36rem"
+          }
+        ],
+        "c.bento.query-two": [
+          null,
+          {
+            "v": "50rem"
+          }
+        ],
         "c.editor-ai-prompt.width": [
           null,
           {

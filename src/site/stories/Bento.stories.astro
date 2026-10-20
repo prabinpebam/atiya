@@ -1,0 +1,59 @@
+---
+import Example from '../library/Example.astro';
+import Bento from '../components/compounds/Bento.astro';
+import HomeLead from '../components/compounds/HomeLead.astro';
+import Voices from '../components/compounds/Voices.astro';
+import { sample } from '../design/samples';
+import { withBase } from '../design/meta';
+
+const pictures = [sample('workshop'), sample('bridge'), sample('pond'), sample('waterfall'), sample('plaza'), sample('lighthouse-dusk')];
+const strengths = [
+  { id: 'teams', name: 'Leading design teams', short: 'Teams', line: 'Grew a studio of twelve.', label: 'Led · 4 pieces of evidence' },
+  { id: 'research', name: 'Research that changes plans', short: 'Research', line: 'Studies that moved a roadmap.', label: 'Shipped · 3 pieces of evidence' },
+  { id: 'systems', name: 'Design systems', short: 'Systems', line: 'One kit for forty products.', label: 'Built · 5 pieces of evidence' },
+  { id: 'prototyping', name: 'Prototyping in code', short: 'Prototyping', line: 'Ideas you can hold early.', label: 'Made · 2 pieces of evidence' },
+  { id: 'writing', name: 'Writing and speaking', short: 'Writing', line: 'Talks, essays and workshops.', label: 'Shared · 3 pieces of evidence' },
+  { id: 'accessibility', name: 'Accessible products', short: 'Access', line: 'Built in, never bolted on.', label: 'Led · 2 pieces of evidence' },
+];
+const quote = { text: 'She made the hard calls look easy, and brought the whole team along.', name: 'Sam Rivera', title: 'Director of Product' };
+const details = (id: string) => [
+  { key: `${id}-a`, title: 'A case study that shows it', kindLabel: 'Case study', href: withBase('/design/'), ask: withBase('/design/') },
+  { key: `${id}-b`, title: 'A line from the résumé', kindLabel: 'Résumé', href: withBase('/design/') },
+  { key: `${id}-c`, title: 'What a colleague said', kindLabel: 'In their words' },
+];
+const tiles = (prefix: string, count: number, spans: number[], withPictures = true) =>
+  strengths.slice(0, count).map((s, i) => ({
+    ...s,
+    id: `${prefix}-${s.id}`,
+    span: spans[i],
+    picture: withPictures ? pictures[i] : undefined,
+    quote: i % 2 === 0 ? quote : undefined,
+    details: details(`${prefix}-${s.id}`),
+  }));
+const voices = [
+  quote,
+  { text: 'The clearest thinker in any room about what to build next.', name: 'Ana Lima', title: 'Principal Engineer' },
+  { text: 'Every team she led shipped something they were proud of.', name: 'Jo Okafor' },
+];
+---
+
+<Example title="Six strengths, calm" layout="block" description="Every strength in view at once, with the lead and In their words beside them. A quote shows under the pointer or focus; a press opens the drawer under its row.">
+  <Bento tiles={tiles('six', 6, [4, 4, 4, 4, 4, 4])} density="calm">
+    <HomeLead slot="lead" name="Alex Morgan" role="Head of Design" facts={['15 years', 'Teams of 40', 'Three products']} primary={{ label: 'Read my résumé', href: withBase('/design/') }} secondary={{ label: 'Get in touch', href: withBase('/design/') }} />
+    <Voices slot="voices" voices={voices} />
+  </Bento>
+</Example>
+
+<Example title="Five strengths, full" layout="block" description="Density full shows every quote at rest. The first two are wider.">
+  <Bento tiles={tiles('five', 5, [6, 6, 4, 4, 4])} density="full" />
+</Example>
+
+<Example title="Four strengths, no pictures" layout="block" description="A site with no pictures yet: the words carry the tiles.">
+  <Bento tiles={tiles('four', 4, [6, 6, 6, 6], false)} />
+</Example>
+
+<Example title="Three strengths, with a lead" layout="block" description="A new site: three tiles in a row.">
+  <Bento tiles={tiles('three', 3, [4, 4, 4])} headingLevel={3}>
+    <HomeLead slot="lead" name="Alex Morgan" role="Head of Design" primary={{ label: 'Read my résumé', href: withBase('/design/') }} headingLevel={2} />
+  </Bento>
+</Example>

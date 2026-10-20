@@ -270,24 +270,34 @@ a:active {
 
 /* a card that's one link, on its title: the card (data-card) holds it, and the title's link
    (data-card-link) stretches over the whole card, which underlines it while it's hovered. Each card
-   rounds the ring to its own shape (border-radius on the link's ::after) and answers a press its own way */
+   rounds the ring to its own shape (border-radius on the link's ::after) and answers a press its own way.
+   A card that opens something in place (a Bento tile's drawer) is one button on its title, the same way */
 [data-card] {
   position: relative;
 }
 
-a[data-card-link] {
+[data-card-link] {
   color: var(--color-text);
   text-decoration: none;
 }
 
-a[data-card-link]::after {
+button[data-card-link] {
+  padding: 0;
+  border: 0;
+  background: none;
+  font-weight: inherit;
+  text-align: start;
+  cursor: pointer;
+}
+
+[data-card-link]::after {
   content: '';
   position: absolute;
   inset: 0;
 }
 
 @media (hover: hover) {
-  [data-card]:hover a[data-card-link] {
+  [data-card]:hover [data-card-link] {
     text-decoration: underline;
     text-decoration-thickness: var(--underline-thickness-strong);
     text-decoration-color: var(--color-highlight);
@@ -295,11 +305,11 @@ a[data-card-link]::after {
   }
 }
 
-a[data-card-link]:focus-visible {
+[data-card-link]:focus-visible {
   outline: none;
 }
 
-a[data-card-link]:focus-visible::after {
+[data-card-link]:focus-visible::after {
   outline: var(--border-focus) solid var(--color-focus);
   outline-offset: var(--border-focus-offset);
 }

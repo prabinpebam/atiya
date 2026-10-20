@@ -28,6 +28,7 @@ const stories = readdirSync(join(ROOT, 'src/site/stories'))
 /** The pages a visitor sees most: the home hub, a section in each view, an article and the Sign in page. */
 const PAGES = [
   { name: 'home', path: '/' },
+  { name: 'home-bento', path: '/views/bento/' },
   { name: 'section-features', path: '/writing/' },
   { name: 'section-list', path: '/contact/' },
   { name: 'article', path: '/writing/the-best-learning-loop-will-win/' },

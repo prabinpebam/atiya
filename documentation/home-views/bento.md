@@ -8,6 +8,7 @@ Bento puts the whole profile on one screen: a lead tile with who he is and the t
 > - **The detail opens in place (L3):** a drawer under the tile's row with three to five evidence items, each a page, a résumé line or a recommendation. Its address (`/#cap-ai`) can be shared.
 > - **On a phone:** the lead, then an index of the six capabilities, then the tiles one under another. The first screen still names all six.
 > - **The role lens** puts the role's capability first and gives it the large tile.
+> - **As built:** offered at `/views/bento/` while the classic hub stays the default; the picture sits at the foot of each tile, and the quote takes its place on hover ([§13](#13-as-built-stage-2a)).
 
 <figure class="slate-figure" data-diagram="home-bento">
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 700" role="img" aria-labelledby="hv-bento__title hv-bento__desc" preserveAspectRatio="xMidYMid meet" data-slate-svg-motion="viewport" data-slate-safe-margin="24">
@@ -293,3 +294,27 @@ Nothing moves on its own, in keeping with [visual language §6](../site-ui/visua
 | B2 | Show evidence counts | Counts; the strongest kind only; both | Both, but the kind first ("a case study · 9 in all") |
 | B3 | The In their words tile | Beside the lead; at the foot | Beside the lead on wide screens: a colleague's words are the strongest L2 signal there is |
 | B4 | The drawer | Under the row; a side panel; a dialog | Under the row: it keeps the map in view and doesn't trap focus |
+
+## 13. As built (stage 2a)
+
+Bento is built and offered at `/views/bento/`. The classic hub stays at `/` until the owner names the strengths and picks the default (decisions H1, H2 and H9 in the [plan](plan.md)); making Bento the default is then one line of `content/structures/ways.json`. The view is drawn from the spine by [curation](curation.md)'s rules, so it shows whatever strengths a site has, 3 to 6.
+
+| Part | Where |
+|---|---|
+| The view | [`Bento.astro`](https://github.com/prabinpebam/atiya/blob/main/src/site/components/compounds/Bento.astro), with [`HomeLead.astro`](https://github.com/prabinpebam/atiya/blob/main/src/site/components/compounds/HomeLead.astro) and [`Voices.astro`](https://github.com/prabinpebam/atiya/blob/main/src/site/components/compounds/Voices.astro) in its slots; their stories are in the design library |
+| The page | [`HomeLayout.astro`](https://github.com/prabinpebam/atiya/blob/main/src/site/layouts/HomeLayout.astro) (the header, the view, the sections at the foot) and [`views/[view].astro`](https://github.com/prabinpebam/atiya/blob/main/src/pages/views/%5Bview%5D.astro), one page per offered view but the hub, with `/` as its canonical address |
+| From the spine to the tiles | [`present.ts`](https://github.com/prabinpebam/atiya/blob/main/src/site/home/present.ts) and [`bento.ts`](https://github.com/prabinpebam/atiya/blob/main/src/site/home/bento.ts) (pure, unit-tested), joined to the site's pages and pictures by [`homeView.ts`](https://github.com/prabinpebam/atiya/blob/main/src/site/content/homeView.ts) |
+| Its behaviour | [`scripts/bento.ts`](https://github.com/prabinpebam/atiya/blob/main/src/site/scripts/bento.ts): the drawers, Esc, the phone's index and the `#cap-<id>` address |
+| Its sizes | The `c.bento` tokens: the picture band, the phone's side picture, the evidence cards and its two container queries (50 and 36 rem) |
+
+Where the build differs from the design above:
+
+- **The tile reads top down:** its name (the button), its line, its evidence label, then its picture, shown whole in a band at the foot that takes what the row leaves. The design put the picture first; with it at the foot, all six names are in view at 1280 by 800 with the lead and In their words above them.
+- **The quote takes the picture's place:** at the calm density it fades in over the picture on hover and focus; a tile without a picture shows its quote at rest, and the full density shows both. On a phone the picture sits beside the words and the quote isn't shown; it stays in the button's description.
+- **The lead is tinted, not filled:** the accent's soft tint, so the name, the facts and the two actions keep the site's own colours. Its H1, the name, is visible.
+- **The button's name is the strength's,** not "Show the details: …"; its line, its label and its quote are its description.
+- **The phone's index entries** carry `data-capability` too: on a phone they are what's in view, so the coverage test counts them.
+- **Below 50 rem In their words follows the tiles,** and on every width the keyboard reaches it after them.
+- **Not built yet:** the identity strip (the site's header is used), the ink sketch drawing itself on hover, the lead's Highlight and Voice settings (Lead is Who you are only; the others come with the Home screen, stage 3), the role lens and telemetry (stage 2b).
+
+Evidence: the E2E group "home views" (coverage at 1280 by 800 and 360 by 740 in both modes, the three levels, the drawer's keys and address, axe with a drawer open in both modes, no sideways scroll and 44 px targets from 320 px), the design system's unit tests, and the screenshots of the stories and `/views/bento/` in the `visual` project.

@@ -1,0 +1,17 @@
+{
+  "modes": [
+    {
+      "id": "little-planet",
+      "on": true,
+      "mount": "play"
+    }
+  ],
+  "primary": "little-planet",
+  "home": {
+    "default": "classic",
+    "offered": [
+      "classic",
+      "bento"
+    ]
+  }
+}

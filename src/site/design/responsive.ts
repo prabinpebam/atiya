@@ -28,6 +28,8 @@ export const PICTURE_WIDTHS = {
   'collection-timeline-picture': 20,
   'image-portrait': 13,
   'image-portrait-sm': 8,
+  'bento-picture-side': 6,
+  'bento-picture': 12,
   'story-card-row-picture': 11,
   'story-card-row-picture-compact': 6,
 } as const;

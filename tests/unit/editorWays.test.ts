@@ -15,6 +15,12 @@ describe('turning ways to explore on and off', () => {
     expect(setMode({ modes: [], primary: 'site' }, 'little-planet', true, 'play')).toEqual({ modes: [{ id: 'little-planet', on: true, mount: 'play' }], primary: 'site' });
   });
 
+  it("keeps the home page's views and any other field (home-views plan 2a)", () => {
+    const home = { default: 'classic' as const, offered: ['classic' as const, 'bento' as const] };
+    expect(setMode({ ...ON, home }, 'little-planet', false, 'play')).toMatchObject({ home, primary: 'site' });
+    expect(setPrimary({ ...ON, home }, 'site')).toMatchObject({ home });
+  });
+
   it('the first offer is the site or a way that is on', () => {
     const off = setMode(ON, 'little-planet', false, 'play');
     expect(setPrimary(off, 'little-planet').primary).toBe('site');

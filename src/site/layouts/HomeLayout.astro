@@ -1,0 +1,76 @@
+---
+/**
+ * A home view's page (documentation/home-views/foundation.md §7): the masthead with the site's sections,
+ * the view itself (Bento, and the views to come), then the site's sections as an index at the foot, so
+ * every view still reaches every part of the site. Defined once; every home view uses it.
+ * @tier layout
+ * @a11y One h1 (the view's lead names the person); a main landmark with id="main" for the skip link; the index is a labelled list.
+ */
+import PageShell from '../components/compounds/PageShell.astro';
+import SiteHeader from '../components/compounds/SiteHeader.astro';
+import ContentsList, { type ContentsEntry } from '../components/compounds/ContentsList.astro';
+import SiteFooter from '../components/compounds/SiteFooter.astro';
+import type { NavItem } from '../components/compounds/SiteHeader.astro';
+
+interface Props {
+  /** The document title. */
+  title: string;
+  /** The search and social-card summary. */
+  description?: string;
+  /** The address search engines should index: `/`, since a view is another way to show the home page. */
+  canonical?: string;
+  /** The site's navigation, for the header. */
+  nav?: NavItem[];
+  /** Links the content adds to the footer (the Privacy page). */
+  footer?: { label: string; href: string }[];
+  /** The site's sections, listed after the view. */
+  sections?: ContentsEntry[];
+  /** Which view this is, for its tests and its telemetry (`bento`). */
+  view: string;
+}
+
+const { title, description, canonical, nav, footer, sections = [], view } = Astro.props;
+---
+
+<PageShell title={title} description={description} canonical={canonical} preload={['display', 'ui']}>
+  <SiteHeader nav={nav} access />
+  <main id="main" class="home" tabindex="-1" data-home-view={view}>
+    <div class="view">
+      <slot />
+    </div>
+    {
+      sections.length > 0 && (
+        <div class="sections" id="sections">
+          <ContentsList label="Sections" entries={sections} />
+        </div>
+      )
+    }
+  </main>
+  <SiteFooter more={footer} />
+</PageShell>
+
+<style>
+  .home {
+    flex: 1 0 auto;
+    display: grid;
+    align-content: start;
+    gap: var(--space-section);
+    outline: none;
+  }
+
+  .view,
+  .sections {
+    inline-size: 100%;
+    max-width: var(--size-wide);
+    margin-inline: auto;
+    padding-inline: var(--space-gutter);
+  }
+
+  .view {
+    padding-block-start: var(--space-8);
+  }
+
+  .sections {
+    scroll-margin-block-start: calc(var(--size-chrome-block) + var(--space-8));
+  }
+</style>

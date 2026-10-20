@@ -19,13 +19,13 @@ export const BUILDING_NAMES: Record<PlaceId, string> = {
 
 /**
  * Turns a mode on or off. A mode turned off keeps its place in the list (and so its structure: V37); if it
- * was the home page's first offer, the site takes its place.
+ * was the home page's first offer, the site takes its place. Every other field (the home page's views) is kept.
  */
 export function setMode(ways: Ways, id: string, on: boolean, mount: string): Ways {
   const known = ways.modes.some((m) => m.id === id);
   const modes = known ? ways.modes.map((m) => (m.id === id ? { ...m, on } : m)) : [...ways.modes, { id, on, mount }];
   const primary = !on && ways.primary === id ? 'site' : ways.primary;
-  return { modes, primary };
+  return { ...ways, modes, primary };
 }
 
 /** The home page's first offer: the site, or a mode that's on (anything else falls back to the site). */
