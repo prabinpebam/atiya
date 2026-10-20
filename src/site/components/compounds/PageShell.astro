@@ -23,7 +23,7 @@ import { fontUrl, siteTheme } from '../../design/siteTheme';
 import Text from '../fundamentals/Text.astro';
 import Button from '../fundamentals/Button.astro';
 import { needsConsent, TOOL_NAMES, toolsOf } from '../../scripts/countsRules';
-import { HOME_ROUTER, homeAttrs, type HomeRouting } from '../../scripts/homeRoute';
+import { HOME_MOVES, HOME_NAMES, HOME_ROUTER, homeAttrs, homeMoves, type HomeRouting } from '../../scripts/homeRoute';
 
 /** The faces a page can ask to have first: the ones its opening sets in. */
 export type PreloadFace = 'display' | 'display-italic' | 'text' | 'ui';
@@ -129,7 +129,8 @@ const csp = import.meta.env.PROD ? import.meta.env.PUBLIC_CSP : undefined;
         </Fragment>
       )
     }
-    {home && <script is:inline set:html={HOME_ROUTER} />}
+    {home && <script is:inline set:html={HOME_ROUTER + '\n' + HOME_NAMES} />}
+    {home && homeMoves(home) && <style is:inline set:html={HOME_MOVES} />}
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>{neutral ?? title}</title>
     {!neutral && <meta name="description" content={description} />}

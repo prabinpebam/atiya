@@ -230,6 +230,7 @@
     "c.table.row-heading-min": {"v":"10rem"},
     "c.video.play": {"v":"4.5rem"},
     "c.video.play-icon": {"v":"1.75rem"},
+    "c.view-choices.still": {"v":"6.5rem"},
     "color.accent": {"v":"light-dark(var(--p-color-indigo-700), var(--p-color-indigo-300))"},
     "color.accent-hover": {"v":"light-dark(var(--p-color-indigo-800), var(--p-color-indigo-200))"},
     "color.accent-soft": {"v":"light-dark(var(--p-color-indigo-100), var(--p-color-indigo-950))"},
@@ -458,6 +459,12 @@
           null,
           {
             "v": "12rem"
+          }
+        ],
+        "c.view-choices.still": [
+          null,
+          {
+            "v": "6.5rem"
           }
         ]
       }

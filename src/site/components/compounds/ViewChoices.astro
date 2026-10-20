@@ -13,6 +13,7 @@ import Heading from '../fundamentals/Heading.astro';
 import Link from '../fundamentals/Link.astro';
 import Tag from '../fundamentals/Tag.astro';
 import Text from '../fundamentals/Text.astro';
+import ViewStill from '../fundamentals/ViewStill.astro';
 import { stableId } from '../../design/stableId';
 
 /** A view the visitor can choose. */
@@ -29,6 +30,8 @@ export interface ViewCard {
   current?: boolean;
   /** It's the site's default. */
   isDefault?: boolean;
+  /** How many strengths its still draws (the classic hub: its sections); without it, the card has no still. */
+  count?: number;
 }
 
 /** Another way to explore the site (a navigation mode). */
@@ -78,20 +81,27 @@ const uid = stableId(Astro, 'view-choices');
     {
       views.map((v) => (
         <li class="view" data-card data-current={v.current ? '' : undefined}>
-          <Heading level={3} size="ui">
-            <a class="name" href={v.href} data-card-link data-view-choice={v.id} aria-current={v.current ? 'page' : undefined} aria-describedby={`${uid}-${v.id}`} autofocus={v.current}>
-              {v.label}
-            </a>
-          </Heading>
-          <Text variant="small" tone="muted" id={`${uid}-${v.id}`}>
-            {v.line}
-          </Text>
-          {(v.current || v.isDefault) && (
-            <span class="tags">
-              {v.current && <Tag tone="accent" size="sm">Showing</Tag>}
-              {v.isDefault && <Tag size="sm">Default</Tag>}
+          {v.count !== undefined && (
+            <span class="still">
+              <ViewStill view={v.id} count={v.count} />
             </span>
           )}
+          <div class="about">
+            <Heading level={3} size="ui">
+              <a class="name" href={v.href} data-card-link data-view-choice={v.id} aria-current={v.current ? 'page' : undefined} aria-describedby={`${uid}-${v.id}`} autofocus={v.current}>
+                {v.label}
+              </a>
+            </Heading>
+            <Text variant="small" tone="muted" id={`${uid}-${v.id}`}>
+              {v.line}
+            </Text>
+            {(v.current || v.isDefault) && (
+              <span class="tags">
+                {v.current && <Tag tone="accent" size="sm">Showing</Tag>}
+                {v.isDefault && <Tag size="sm">Default</Tag>}
+              </span>
+            )}
+          </div>
         </li>
       ))
     }
@@ -171,13 +181,29 @@ const uid = stableId(Astro, 'view-choices');
   /* a card is one link on its name (base.css: data-card, data-card-link); the one showing is filled in the spot colour */
   .view {
     display: grid;
-    gap: var(--space-1);
     align-content: center;
     min-block-size: var(--size-touch);
     padding: var(--space-4) var(--space-5);
     border: var(--border-hairline) solid var(--color-border);
     border-radius: var(--radius-lg);
     transition: background-color var(--duration-fast) var(--ease-standard);
+  }
+
+  /* the still beside the name and line, a still's width; it's part of the one link (data-card) */
+  .view:has(> .still) {
+    grid-template-columns: var(--c-view-choices-still) minmax(0, 1fr);
+    column-gap: var(--space-4);
+    align-items: center;
+  }
+
+  .still {
+    display: block;
+  }
+
+  .about {
+    display: grid;
+    gap: var(--space-1);
+    min-inline-size: 0;
   }
 
   .view[data-current] {

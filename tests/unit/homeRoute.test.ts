@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { HOME_KEYS, HOME_ROUTER, homeAttrs, type HomeRouting } from '../../src/site/scripts/homeRoute';
+import { HOME_KEYS, HOME_MOVES, HOME_NAMES, HOME_ROUTER, homeAttrs, homeMoves, type HomeRouting } from '../../src/site/scripts/homeRoute';
 import { HUB_WAYS } from '../../src/site/scripts/hub';
 
 // the router runs in the page's head; here it runs against a stand-in document, location, history and storage
@@ -203,5 +203,138 @@ describe("the hub's ways in", () => {
   it('takes ?mode=classic at the root as the choice, but not at the view address', () => {
     expect(ways({ modes: ['classic', 'play'], url: '/atiya/?mode=classic' })).toEqual({ classic: 'primary', play: 'secondary' });
     expect(ways({ modes: ['classic', 'play'], at: 'view', url: '/atiya/views/classic/?mode=classic' })).toEqual({ classic: 'secondary', play: 'primary' });
+  });
+});
+
+// the transition names (switcher.md §4) run against a stand-in page: elements with a box, hidden, faded,
+// covered or inside a parent that clips them; `blind` hit-tests only the root, as Chromium does in `pageswap`
+interface Box {
+  id: string;
+  box: [number, number, number, number];
+  hidden?: boolean;
+  faded?: boolean;
+  covered?: boolean;
+  clip?: [number, number, number, number];
+}
+
+function names(boxes: Box[], dialogs = 0, blind = false) {
+  const on: Record<string, (e: unknown) => void> = {};
+  const cover = { cover: true };
+  const root = { root: true };
+  const rect = (b: number[]) => ({ left: b[0], top: b[1], right: b[2], bottom: b[3] });
+  const els = boxes.map((b) => ({
+    b,
+    style: { viewTransitionName: '' },
+    getAttribute: () => b.id,
+    getClientRects: () => (b.hidden ? [] : [b.box]),
+    getBoundingClientRect: () => rect(b.box),
+    checkVisibility: () => !b.faded,
+    parentElement: b.clip ? { clips: true, getBoundingClientRect: () => rect(b.clip!), parentElement: root } : root,
+    contains: (x: unknown): boolean => x === els.find((e) => e.b === b),
+  }));
+  const closed: number[] = [];
+  const open = Array.from({ length: dialogs }, (_, i) => ({ close: () => void closed.push(i) }));
+  const document = {
+    documentElement: root,
+    querySelectorAll: (s: string) => (s === 'dialog[open]' ? open : els),
+    elementFromPoint: (x: number, y: number) => {
+      if (blind) return root;
+      const at = [...els].reverse().find((e) => !e.b.hidden && x >= e.b.box[0] && x < e.b.box[2] && y >= e.b.box[1] && y < e.b.box[3]);
+      return at?.b.covered ? cover : (at ?? null);
+    },
+  };
+  const window = {
+    innerWidth: 1280,
+    innerHeight: 800,
+    addEventListener: (t: string, f: (e: unknown) => void) => void (on[t] = f),
+    getComputedStyle: (p: { clips?: boolean }) => (p.clips ? { overflowX: 'auto', overflowY: 'hidden' } : { overflowX: 'visible', overflowY: 'visible' }),
+  };
+  new Function('window', 'document', HOME_NAMES)(window, document);
+  const named = () => Object.fromEntries(els.filter((e) => e.style.viewTransitionName).map((e) => [e.b.box.join(','), e.style.viewTransitionName]));
+  return { on, named, closed };
+}
+
+describe('home views: transition names', () => {
+  const finished = () => {
+    let done!: () => void;
+    const p = new Promise<void>((r) => (done = r));
+    return { finished: p, done };
+  };
+
+  it('names each strength once, on its largest element in view', () => {
+    const p = names([
+      { id: 'lead', box: [0, 80, 300, 100] },
+      { id: 'lead', box: [0, 200, 600, 500] },
+      { id: 'craft', box: [620, 200, 1200, 500] },
+    ]);
+    p.on.pageswap({ viewTransition: {} });
+    expect(p.named()).toEqual({ '0,200,600,500': 'cap-lead', '620,200,1200,500': 'cap-craft' });
+  });
+
+  it('leaves out what is off screen, hidden or covered, and counts only the part on screen', () => {
+    const p = names([
+      { id: 'below', box: [0, 900, 600, 1200] },
+      { id: 'hidden', box: [0, 100, 600, 400], hidden: true },
+      { id: 'covered', box: [0, 450, 600, 700], covered: true },
+      { id: 'part', box: [0, 700, 1280, 2000] },
+      { id: 'part', box: [0, 100, 300, 300] },
+    ]);
+    p.on.pagereveal({ viewTransition: finished() });
+    expect(p.named()).toEqual({ '0,700,1280,2000': 'cap-part' });
+  });
+
+  it('leaves out what is faded or scrolled out of a strip, and counts only the part the strip shows', () => {
+    const p = names([
+      { id: 'faded', box: [0, 100, 600, 400], faded: true },
+      { id: 'away', box: [1300, 100, 1600, 400], clip: [0, 0, 1280, 800] },
+      { id: 'away', box: [900, 100, 1200, 400], clip: [0, 0, 1000, 800] },
+      { id: 'edge', box: [0, 450, 400, 700], clip: [0, 0, 1280, 800] },
+      { id: 'edge', box: [800, 450, 1200, 700], clip: [1100, 0, 1280, 800] },
+    ]);
+    p.on.pagereveal({ viewTransition: finished() });
+    expect(p.named()).toEqual({ '900,100,1200,400': 'cap-away', '0,450,400,700': 'cap-edge' });
+  });
+
+  it('names the old page by its geometry when the browser can hit-test only the root (pageswap)', () => {
+    const p = names(
+      [
+        { id: 'seen', box: [0, 100, 600, 400], covered: true },
+        { id: 'strip', box: [1300, 100, 1600, 400], clip: [0, 0, 1280, 800] },
+        { id: 'below', box: [0, 900, 600, 1200] },
+      ],
+      0,
+      true,
+    );
+    p.on.pageswap({ viewTransition: {} });
+    expect(p.named()).toEqual({ '0,100,600,400': 'cap-seen' });
+  });
+
+  it('opts every view but the classic hub into the transition, and never under reduced motion', () => {
+    const at = { at: 'root' as const, default: 'bento', offered: [], known: [], lenses: [], base: '' };
+    expect(homeMoves({ ...at, view: 'bento' })).toBe(true);
+    expect(homeMoves({ ...at, view: 'cover' })).toBe(true);
+    expect(homeMoves({ ...at, view: 'classic' })).toBe(false);
+    expect(HOME_MOVES).toMatch(/^@media \(prefers-reduced-motion: no-preference\) \{ @view-transition \{ navigation: auto; \} \}$/);
+  });
+
+  it('closes an open dialog before naming the old page', () => {
+    const p = names([{ id: 'a', box: [0, 0, 100, 100] }], 2);
+    p.on.pageswap({ viewTransition: {} });
+    expect(p.closed).toEqual([0, 1]);
+  });
+
+  it('names nothing without a transition (reduced motion, or the hub), and clears the names once it ends', async () => {
+    const p = names([{ id: 'odd id', box: [0, 0, 100, 100] }], 1);
+    p.on.pageswap({ viewTransition: null });
+    p.on.pagereveal({ viewTransition: null });
+    expect(p.named()).toEqual({});
+    expect(p.closed).toEqual([]);
+    const vt = finished();
+    p.on.pagereveal({ viewTransition: vt });
+    expect(p.named()).toEqual({ '0,0,100,100': 'cap-odd-id' });
+    vt.done();
+    await vt.finished;
+    await Promise.resolve();
+    expect(p.named()).toEqual({});
   });
 });

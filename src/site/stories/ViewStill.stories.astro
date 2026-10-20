@@ -1,0 +1,74 @@
+---
+import Example from '../library/Example.astro';
+import Text from '../components/fundamentals/Text.astro';
+import ViewStill from '../components/fundamentals/ViewStill.astro';
+
+const views = [
+  { id: 'bento', label: 'Bento' },
+  { id: 'cover', label: 'Cover' },
+  { id: 'proof-grid', label: 'Proof grid' },
+  { id: 'spotlight', label: 'Spotlight' },
+  { id: 'keywords', label: 'Keywords' },
+  { id: 'questions', label: 'Questions' },
+];
+---
+
+<Example title="Every view" layout="block" description="Each view drawn for six strengths, and the classic hub for four sections, as Change view's cards show them.">
+  <div class="stills">
+    {
+      views.map((v) => (
+        <div class="item">
+          <ViewStill view={v.id} count={6} />
+          <Text variant="small" tone="muted">{v.label}</Text>
+        </div>
+      ))
+    }
+    <div class="item">
+      <ViewStill view="classic" count={4} />
+      <Text variant="small" tone="muted">Classic</Text>
+    </div>
+  </div>
+</Example>
+
+<Example title="Fewer strengths" layout="block" description="The same views for a site that shows three strengths (the hub: two sections). The layout follows the count.">
+  <div class="stills">
+    {
+      views.map((v) => (
+        <div class="item">
+          <ViewStill view={v.id} count={3} />
+          <Text variant="small" tone="muted">{v.label}</Text>
+        </div>
+      ))
+    }
+    <div class="item">
+      <ViewStill view="classic" count={2} />
+      <Text variant="small" tone="muted">Classic</Text>
+    </div>
+  </div>
+</Example>
+
+<Example title="Bento by count" layout="block" description="Bento's tiles from one strength to six: one row up to three, then two rows.">
+  <div class="stills">
+    {
+      [1, 2, 4, 5].map((n) => (
+        <div class="item">
+          <ViewStill view="bento" count={n} />
+          <Text variant="small" tone="muted">{n === 1 ? '1 strength' : `${n} strengths`}</Text>
+        </div>
+      ))
+    }
+  </div>
+</Example>
+
+<style>
+  .stills {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(10rem, 1fr));
+    gap: var(--space-5) var(--space-4);
+  }
+
+  .item {
+    display: grid;
+    gap: var(--space-2);
+  }
+</style>

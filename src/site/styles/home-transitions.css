@@ -1,0 +1,11 @@
+/* Moving between home views (documentation/home-views/switcher.md §4): a cross-document view transition,
+ * a short cross-fade in which each strength in view moves to where the next view shows it (the head's
+ * HOME_NAMES names them `cap-<id>`). The opt-in itself is inline in the head of every view but the classic
+ * hub (HOME_MOVES in scripts/homeRoute.ts); this is its timing, imported only by HomeLayout. None under
+ * reduced motion. */
+@media (prefers-reduced-motion: no-preference) {
+  ::view-transition-group(*) {
+    animation-duration: var(--duration-base);
+    animation-timing-function: var(--ease-standard);
+  }
+}

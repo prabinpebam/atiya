@@ -4,13 +4,13 @@ import ViewChoices from '../components/compounds/ViewChoices.astro';
 import { withBase } from '../design/meta';
 
 const views = [
-  { id: 'classic', label: 'Classic', line: 'The sections, in order', href: withBase('/design/'), isDefault: true },
-  { id: 'bento', label: 'Bento', line: 'Every strength at a glance', href: withBase('/design/'), current: true },
-  { id: 'cover', label: 'Cover', line: 'One story, then the rest', href: withBase('/design/') },
+  { id: 'classic', label: 'Classic', line: 'The sections, in order', href: withBase('/design/'), isDefault: true, count: 3 },
+  { id: 'bento', label: 'Bento', line: 'Every strength at a glance', href: withBase('/design/'), current: true, count: 5 },
+  { id: 'cover', label: 'Cover', line: 'One story, then the rest', href: withBase('/design/'), count: 5 },
 ];
 ---
 
-<Example title="Views and ways to explore" layout="block" description="Change view's choices, as a home page's dialog shows them: the view showing is marked, the site's default tagged, and the other ways to explore listed apart.">
+<Example title="Views and ways to explore" layout="block" description="Change view's choices, as a home page's dialog shows them: each view with a still of its first screen, the view showing marked, the site's default tagged, and the other ways to explore listed apart.">
   <ViewChoices views={views} modes={[{ id: 'play', label: 'Little planet', line: 'A game, at /play/', href: withBase('/design/') }]} defaultHref={withBase('/design/')} />
 </Example>
 

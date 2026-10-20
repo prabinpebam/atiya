@@ -101,6 +101,66 @@ export const HOME_ROUTER = `(function () {
   location.replace(to);
 })();`;
 
+/**
+ * Moving between views (switcher.md §4): a cross-document view transition, which every view but the classic
+ * hub opts into (HOME_MOVES; never under reduced motion). Each strength in view is named `cap-<id>` on both
+ * pages, so it moves to where the next view shows it: its most prominent element in view (the largest part on
+ * screen, inside every ancestor that clips it, so nothing scrolled out of a strip, faded or hidden), one element
+ * per name. Where the browser can hit-test (the new page), an element covered at its centre is left out too;
+ * Chromium can't during `pageswap` (it finds only the root), so the old page relies on the geometry. An open
+ * dialog closes first, so nothing behind it is lifted over it. Inline in the head after the router, since
+ * `pagereveal` fires before the first paint. Unit-tested against a stand-in page (tests/unit/homeRoute.test.ts).
+ */
+export const HOME_NAMES = `(function () {
+  var named = [];
+  var clear = function () { for (var i = 0; i < named.length; i++) named[i].style.viewTransitionName = ''; named = []; };
+  var name = function () {
+    clear();
+    var w = window.innerWidth, h = window.innerHeight, root = document.documentElement, best = {}, all = document.querySelectorAll('[data-capability]');
+    for (var i = 0; i < all.length; i++) {
+      var el = all[i], id = (el.getAttribute('data-capability') || '').replace(/[^\\w-]/g, '-');
+      if (!id || !el.getClientRects().length) continue;
+      if (el.checkVisibility && !el.checkVisibility({ opacityProperty: true, visibilityProperty: true })) continue;
+      var r = el.getBoundingClientRect();
+      var x0 = Math.max(r.left, 0), x1 = Math.min(r.right, w), y0 = Math.max(r.top, 0), y1 = Math.min(r.bottom, h);
+      for (var p = el.parentElement; p && p !== root && x1 > x0 && y1 > y0; p = p.parentElement) {
+        var s = window.getComputedStyle(p);
+        if (s.overflowX === 'visible' && s.overflowY === 'visible') continue;
+        var c = p.getBoundingClientRect();
+        x0 = Math.max(x0, c.left); x1 = Math.min(x1, c.right); y0 = Math.max(y0, c.top); y1 = Math.min(y1, c.bottom);
+      }
+      if (x1 <= x0 || y1 <= y0) continue;
+      var hit = document.elementFromPoint((x0 + x1) / 2, (y0 + y1) / 2);
+      if (hit && hit !== root && hit !== el && !el.contains(hit)) continue;
+      var area = (x1 - x0) * (y1 - y0);
+      if (!best[id] || area > best[id].area) best[id] = { el: el, area: area };
+    }
+    Object.keys(best).forEach(function (k) { best[k].el.style.viewTransitionName = 'cap-' + k; named.push(best[k].el); });
+  };
+  window.addEventListener('pageswap', function (e) {
+    if (!e.viewTransition) return;
+    var open = document.querySelectorAll('dialog[open]');
+    for (var i = 0; i < open.length; i++) open[i].close();
+    name();
+  });
+  window.addEventListener('pagereveal', function (e) {
+    if (!e.viewTransition) { clear(); return; }
+    name();
+    e.viewTransition.finished.then(clear, clear);
+  });
+})();`;
+
+/**
+ * The views' opt-in to that transition, inline in the head of every view but the classic hub: both pages must
+ * opt in, so a move to or from the hub is instant. Inline, not in the views' stylesheet: in Chromium (153, and
+ * Edge 156) a page opened with the opt-in only in a bundled stylesheet often had no transition in, whenever one
+ * of its module scripts was slow to arrive; inline, every move had one. The timing is home-transitions.css's.
+ */
+export const HOME_MOVES = '@media (prefers-reduced-motion: no-preference) { @view-transition { navigation: auto; } }';
+
+/** Whether a home page opts into the transition between views: every view but the classic hub. */
+export const homeMoves = (r: HomeRouting): boolean => r.view !== 'classic';
+
 /** A change the visitor made in Change view, kept for the page it opens. */
 export interface HomeChange {
   from: string;

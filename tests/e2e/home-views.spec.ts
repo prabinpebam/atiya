@@ -704,6 +704,61 @@ test.describe('home views: change view', () => {
     await expect(opener).toBeFocused();
   });
 
+  test('each card draws its view as a still, a mark for each strength (the hub: its sections)', async ({ page }) => {
+    await page.goto(BENTO);
+    const strengths = (await capabilities(page)).length;
+    const sections = await page.locator('#sections a').count();
+    const dialog = await openChoices(page);
+    const cards = dialog.locator('li:has(a[data-view-choice])');
+    expect(await cards.count()).toBeGreaterThan(1);
+    for (const card of await cards.all()) {
+      const id = (await card.locator('a[data-view-choice]').getAttribute('data-view-choice'))!;
+      const still = card.locator('svg[data-still]');
+      await expect(still).toHaveAttribute('data-still', id);
+      await expect(still).toHaveAttribute('aria-hidden', 'true');
+      await expect(still.locator('rect[data-mark]')).toHaveCount(id === 'classic' ? Math.min(Math.max(sections, 1), 4) : Math.min(Math.max(strengths, 1), 6));
+    }
+  });
+
+  test('moving between views is a view transition that carries each strength; none with reduced motion, or to the hub', async ({ page }) => {
+    // what each page's reveal says: whether it's a transition, and the names it carries once it's ready
+    await page.addInitScript(() => {
+      addEventListener('pagereveal', (e) => {
+        const vt = (e as Event & { viewTransition?: ViewTransition | null }).viewTransition;
+        const seen = { on: !!vt, names: [] as string[] };
+        (window as unknown as { __reveal: typeof seen }).__reveal = seen;
+        void vt?.ready.then(() => {
+          seen.names = [...document.querySelectorAll<HTMLElement>('[data-capability]')].map((el) => el.style.viewTransitionName).filter(Boolean);
+        });
+      });
+    });
+    const reveal = (page: Page) => page.evaluate(() => (window as unknown as { __reveal?: { on: boolean; names: string[] } }).__reveal);
+    const go = async (to: string) => {
+      await (await openChoices(page)).locator(`a[data-view-choice="${to}"]`).click();
+      await expect(page).toHaveURL(new RegExp(`/views/${to}/$|/$`));
+      await page.waitForLoadState();
+    };
+    await page.emulateMedia({ reducedMotion: 'no-preference' });
+    await page.goto(BENTO);
+    await go('cover');
+    expect(await shown(page)).toBe('cover');
+    await expect.poll(async () => (await reveal(page))?.names.length ?? 0).toBeGreaterThan(0);
+    const { on, names } = (await reveal(page))!;
+    expect(on).toBe(true);
+    for (const n of names) expect(n).toMatch(/^cap-[\w-]+$/);
+    expect(new Set(names).size).toBe(names.length);
+    // the classic hub doesn't take part: moving to it is instant
+    await go('classic');
+    expect(await shown(page)).toBe('classic');
+    await expect.poll(async () => (await reveal(page))?.on).toBe(false);
+    // reduced motion: no transition between views
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    await page.goto(BENTO);
+    await go('cover');
+    expect(await shown(page)).toBe('cover');
+    await expect.poll(async () => (await reveal(page))?.on).toBe(false);
+  });
+
   test('telemetry hears the view, the lens and how the visitor came, a switch and the evidence opened', async ({ page }) => {
     const sent: Sent[] = [];
     await page.addInitScript(() => localStorage.setItem('site.test.telemetry', '1'));

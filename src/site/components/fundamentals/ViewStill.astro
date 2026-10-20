@@ -1,0 +1,74 @@
+---
+/**
+ * A small schematic drawing of a home view's first screen (documentation/home-views/switcher.md §1): its
+ * lead, then its own layout drawn for as many strengths as the site shows (the classic hub: its sections),
+ * so Change view's cards show what each view looks like. Shapes only, in the site's colour roles, drawn
+ * from `design/stills.ts`; an unknown view draws its lead and an empty area.
+ * @tier fundamental
+ * @a11y Decorative: hidden from assistive technology, since the card's name and line say what the view is.
+ */
+import { STILL_BOX, stillShapes } from '../../design/stills';
+
+interface Props {
+  /** The view to draw (`bento`, `cover`, `proof-grid`, `spotlight`, `keywords`, `questions`, `classic`). */
+  view: string;
+  /** How many strengths it draws, one to six (the classic hub: its sections, one to four). */
+  count: number;
+  /** Data attributes pass through to the root element. */
+  [data: `data-${string}`]: string | undefined;
+}
+
+const { view, count, ...rest } = Astro.props;
+const shapes = stillShapes(view, count);
+---
+
+<svg class="still" viewBox={`0 0 ${STILL_BOX.w} ${STILL_BOX.h}`} aria-hidden="true" focusable="false" data-still={view} {...rest}>
+  {shapes.map((s) => <rect x={s.x} y={s.y} width={s.w} height={s.h} rx={s.r} data-tone={s.tone} data-mark={s.mark ? '' : undefined} />)}
+</svg>
+
+<style>
+  .still {
+    display: block;
+    inline-size: 100%;
+    block-size: auto;
+    aspect-ratio: 8 / 5;
+    border: var(--border-hairline) solid var(--color-border);
+    border-radius: var(--radius-md);
+    background: var(--color-bg);
+  }
+
+  [data-tone='ink'] {
+    fill: var(--color-text-muted);
+  }
+
+  [data-tone='faint'] {
+    fill: var(--color-rule-strong);
+  }
+
+  [data-tone='accent'] {
+    fill: var(--color-accent);
+  }
+
+  [data-tone='soft'] {
+    fill: var(--color-accent-soft);
+  }
+
+  [data-tone='sunk'] {
+    fill: var(--color-bg-sunk);
+  }
+
+  [data-tone='tile'],
+  [data-tone='ring'] {
+    stroke: var(--color-border-strong);
+    stroke-width: var(--border-hairline);
+    vector-effect: non-scaling-stroke;
+  }
+
+  [data-tone='tile'] {
+    fill: var(--color-bg-raised);
+  }
+
+  [data-tone='ring'] {
+    fill: none;
+  }
+</style>

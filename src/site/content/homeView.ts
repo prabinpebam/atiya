@@ -72,6 +72,8 @@ export interface ViewChoice {
   href: string;
   current: boolean;
   isDefault: boolean;
+  /** How many strengths its still draws (the classic hub: its sections). */
+  count: number;
 }
 
 /**
@@ -83,6 +85,9 @@ export function viewSwitch(current: ViewId, lens?: string) {
   const home = getHome();
   const offered = viewPaths();
   if (!home || offered.length < 2) return null;
+  const strengths = strengthsInOrder(home.picks, 'yours').length;
+  const hub = getRoute('/');
+  const sections = hub ? getRoutes().filter((r) => r.parent === hub.node).length : 0;
   const views: ViewChoice[] = offered.map((id) => ({
     id,
     label: CATALOGUE.views[id].label,
@@ -90,6 +95,7 @@ export function viewSwitch(current: ViewId, lens?: string) {
     href: lens && id !== 'classic' ? viewHref(id, lens) : withBase(id === home.default ? '/' : `/views/${id}/`),
     current: id === current,
     isDefault: id === home.default,
+    count: id === 'classic' ? sections : strengths,
   }));
   const modes = getPlanet() ? [{ id: 'play', label: 'Little planet', line: 'A game, at /play/', href: withBase('/play/') }] : [];
   const lenses =
