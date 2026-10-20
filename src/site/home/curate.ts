@@ -91,7 +91,7 @@ const KEYWORDS_PER_GROUP = 8;
 
 const escape = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 /** A term as a whole word or phrase, in normalised text. */
-const termPattern = (term: string, flags = 'u') => new RegExp(`(?<![\\p{L}\\p{N}])${escape(term)}(?![\\p{L}\\p{N}])`, flags);
+export const termPattern = (term: string, flags = 'u') => new RegExp(`(?<![\\p{L}\\p{N}])${escape(term)}(?![\\p{L}\\p{N}])`, flags);
 /** A topic ID as words: `figma-plugin` is "figma plugin". */
 export const humanise = (id: string) => id.replace(/-/g, ' ');
 

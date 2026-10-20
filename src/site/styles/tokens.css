@@ -377,6 +377,10 @@
   --c-spotlight-rail-item: 12rem;
   --c-spotlight-query-stack: 48rem;
   --c-spotlight-query-phone: 36rem;
+  --c-keywords-group: 12rem;
+  --c-keywords-card: 18rem;
+  --c-keywords-query-stack: 52rem;
+  --c-keywords-query-phone: 36rem;
   --c-story-card-row-picture: 11rem;
   --c-story-card-row-picture-compact: 6rem;
   --c-story-card-query-feature: 49.5rem;

@@ -1,0 +1,73 @@
+---
+import Example from '../library/Example.astro';
+import Keywords from '../components/compounds/Keywords.astro';
+import HomeLead from '../components/compounds/HomeLead.astro';
+import Voices from '../components/compounds/Voices.astro';
+import { withBase } from '../design/meta';
+
+const page = withBase('/design/');
+type Size = 1 | 2 | 3;
+const kw = (id: string, label: string, size: Size, matches: string[], synonyms: string[] = []) => ({ id, label, size, matches, synonyms });
+const strengths = [
+  {
+    id: 'teams',
+    name: 'Leading design teams',
+    short: 'Teams',
+    line: 'Hiring, growing and running studios that ship.',
+    headline: 'studio',
+    keywords: [kw('hiring', 'Hiring', 3, ['studio', 'mentoring', 'review']), kw('mentoring', 'Mentoring', 2, ['mentoring', 'studio'], ['coaching']), kw('critique', 'Design critique', 1, ['review'])],
+  },
+  {
+    id: 'research',
+    name: 'Research that changes plans',
+    short: 'Research',
+    line: 'Studies that moved a roadmap, not a slide.',
+    headline: 'roadmap',
+    keywords: [kw('interviews', 'Interviews', 2, ['roadmap', 'diary']), kw('diary', 'Diary studies', 1, ['diary']), kw('insight', 'Insight to plan', 2, ['roadmap'], ['strategy'])],
+  },
+  {
+    id: 'systems',
+    name: 'Design systems',
+    short: 'Systems',
+    line: 'One kit for many products, and the team that keeps it.',
+    headline: 'kit',
+    keywords: [kw('tokens', 'Design tokens', 3, ['kit', 'car', 'theming']), kw('components', 'Components', 2, ['kit', 'car']), kw('theming', 'Theming', 1, ['theming'], ['dark mode'])],
+  },
+  {
+    id: 'prototyping',
+    name: 'Prototyping in code',
+    short: 'Prototyping',
+    line: 'Ideas you can hold within a week.',
+    headline: 'hold',
+    keywords: [kw('prototypes', 'Prototypes', 2, ['hold', 'car']), kw('motion', 'Motion design', 1, ['hold'], ['animation'])],
+  },
+];
+const items = [
+  { key: 'studio', title: 'How twelve designers became one studio', kindLabel: 'Led', href: page, ask: page, line: 'Two years of hiring, rituals and a shared kit, and what it shipped.', capability: 'teams' },
+  { key: 'roadmap', title: 'The study that moved a roadmap', kindLabel: 'Shipped', href: page, line: 'Forty interviews, one finding, and the quarter it changed.', capability: 'research' },
+  { key: 'kit', title: 'One kit for forty products', kindLabel: 'Shipped', href: page, ask: page, line: 'Tokens, components and the team that keeps them.', capability: 'systems' },
+  { key: 'hold', title: 'Prototypes you can hold', kindLabel: 'Shipped', href: page, line: 'Ideas in code in a week, tested before they were planned.', capability: 'prototyping' },
+  { key: 'mentoring', title: 'Mentoring a second studio', kindLabel: 'Led', href: page, line: 'What carried over from the first, and what didn’t.', capability: 'teams' },
+  { key: 'car', title: 'A design system for a car', kindLabel: 'Shipped', href: page, line: 'The same kit, on a screen you look at for a second.', capability: 'systems' },
+  { key: 'review', title: 'Sam Rivera, in their words', kindLabel: 'Said', line: 'She made the hard calls look easy, and brought the whole team along.', capability: 'teams' },
+  { key: 'diary', title: 'Six weeks of diaries', kindLabel: 'Shipped', href: page, line: 'What people did, not what they said they did.', capability: 'research' },
+  { key: 'theming', title: 'Dark mode in a week', kindLabel: 'Shipped', href: page, line: 'Every product, one change of tokens.', capability: 'systems' },
+];
+const voices = [
+  { text: 'She made the hard calls look easy, and brought the whole team along.', name: 'Sam Rivera', title: 'Director of Product' },
+  { text: 'The clearest thinker in any room about what to build next.', name: 'Ana Lima', title: 'Principal Engineer' },
+];
+// a smaller site: two strengths, every keyword with a little proof
+const two = strengths.slice(0, 2).map((g) => ({ ...g, keywords: g.keywords.map((k) => ({ ...k, size: 1 as Size })) }));
+---
+
+<Example title="Four strengths, lively, typing on" layout="block" description="What a site starts with: the lead, then the field of keywords grouped by strength beside the matches. With nothing picked, the matches name every strength with its headline. A pick fills the tray and brings the matching proof forward, best first, each saying what it matched; Or type a skill suggests keywords through their synonyms (try coaching or dark mode). Lively settles like gentle until its drift is built.">
+  <Keywords groups={strengths} items={items} contact={page} motion="lively">
+    <HomeLead slot="lead" name="Alex Morgan" role="Head of Design" facts={['15 years', 'Teams of 40', 'Three products']} primary={{ label: 'Read my résumé', href: page }} secondary={{ label: 'Get in touch', href: page }} headingLevel={2} layout="strip" />
+    <Voices slot="voices" voices={voices} />
+  </Keywords>
+</Example>
+
+<Example title="Two strengths, still, no typing" layout="block" description="Motion still: a pick changes the matches without moving them. Typing off leaves out Or type a skill; with no contact page there's no Ask about these. Every keyword has a little proof, so they're all the same size.">
+  <Keywords groups={two} items={items} motion="still" typing={false} />
+</Example>

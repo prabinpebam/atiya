@@ -144,7 +144,7 @@ What a view **says** is the person's content, shared by every view, so changing 
 | [Cover](cover.md) | Density (Full: features; Calm: a list), Order | **Cover picture**; **Cover story:** a highlight | Full, Yours |
 | [Spotlight](spotlight.md) | Motion, Order | **Highlights:** 4 to 8; **The rail:** Titles, Thumbnails | Gentle, Yours, 8, Titles |
 | [Showreel](showreel.md) | Order | **Pace:** Slower, Standard; **The film:** Offer the download, Don't | Yours, Standard, Offer |
-| [Keywords](keywords.md) | Motion (Lively: the drift), Order | **Typing a skill:** On, Off; **Per group:** 4 to 8 keywords | Lively, Yours, On, 8 |
+| [Keywords](keywords.md) | Motion (Lively: the drift), Order | **Typing a skill:** On, Off; **Per group:** 4 to 8 keywords | Lively, Yours, On, 6 |
 | [Proof grid](proof-grid.md) | Density (Full: counts; Calm: marks), Order | **Columns:** which five kinds; **Empty cells:** Show, Hide | Full, Yours, the five most used, Show |
 | [Questions](questions.md) | Order | **Questions:** the goal's set, edited; **Ask something else:** On, Off | Yours, the goal's, On |
 

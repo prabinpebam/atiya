@@ -1,0 +1,499 @@
+---
+/**
+ * Keywords, a home view (documentation/home-views/keywords.md): the visitor says what they hire for. A group of
+ * keywords per strength (L1: the groups name every strength), each sized by how much proof it has (L2); the picks
+ * bring the matching proof forward, best first, each match saying what it matched, and a match opens to its links
+ * and its strength's other proof (L3). With nothing picked, the matches column names every strength with its
+ * headline. Or type a skill suggests keywords through their synonyms, and says when the site shows no such skill.
+ * The picks are in the address (`?pick=`) for Copy link; Ask about these opens the contact page. Nothing moves on its own.
+ * @tier compound
+ * @a11y Each group is named by its strength; each keyword is a toggle button (aria-pressed), the picked ones ticked.
+ * @a11y The field is one Tab stop (the arrow keys move across its keywords and groups); a change is said once in a polite status line ("Agentic AI picked. 3 matches.").
+ * @a11y Or type a skill is a combobox with a listbox of suggestions; with none it says so in words.
+ * @a11y A match's title is a button that says whether its links are open (aria-expanded); no link is inside a button.
+ * @a11y On a phone each group is a row that says how many of its keywords are picked and opens them (aria-expanded).
+ * @key Arrow keys, Home, End: move between the keywords
+ * @key Space, Enter: pick or unpick a keyword; open a match
+ * @key Down, Up, Enter, Escape: in Or type a skill, choose a suggestion, pick it, close the list
+ */
+import Heading from '../fundamentals/Heading.astro';
+import Text from '../fundamentals/Text.astro';
+import Tag from '../fundamentals/Tag.astro';
+import Link from '../fundamentals/Link.astro';
+import Button from '../fundamentals/Button.astro';
+import IconButton from '../fundamentals/IconButton.astro';
+import RowButton from '../fundamentals/RowButton.astro';
+import Icon from '../fundamentals/Icon.astro';
+import TextField from '../fundamentals/TextField.astro';
+import { stableId } from '../../design/stableId';
+
+interface Item {
+  /** Its key: what the keywords' matches name. */
+  key: string;
+  title: string;
+  /** Its kind of proof (Shipped, Led, Said). */
+  kindLabel?: string;
+  /** Its page, or the résumé. */
+  href?: string;
+  /** The contact page about it. */
+  ask?: string;
+  /** Its proof line: its page's summary, or a colleague's words. */
+  line?: string;
+  /** The strength it proves. */
+  capability: string;
+}
+
+interface Props {
+  /** A group per strength shown, in order. */
+  groups: {
+    id: string;
+    name: string;
+    /** Its short name: a phone's row. */
+    short: string;
+    line: string;
+    /** Its keywords: `size` 1 to 3 from how much proof each has; `matches`, the items' keys, best first; `synonyms`, folded words that suggest it. */
+    keywords: { id: string; label: string; synonyms: string[]; size: 1 | 2 | 3; matches: string[] }[];
+    /** Its headline's key: what its summary leads with when nothing is picked. */
+    headline?: string;
+  }[];
+  /** Every proof item a pick can bring forward, once, best first. */
+  items: Item[];
+  /** How a pick moves things: still (none), gentle (the tray and the matches settle); lively is gentle, with no drift (not built). */
+  motion?: 'still' | 'gentle' | 'lively';
+  /** Shows Or type a skill. */
+  typing?: boolean;
+  /** The contact page: Ask about these, and Ask me about it for a skill the site doesn't show. */
+  contact?: string;
+}
+
+const { groups, items, motion = 'gentle', typing = true, contact } = Astro.props;
+const uid = `keywords-${stableId(Astro, 'Keywords')}`;
+const byKey = new Map(items.map((x) => [x.key, x]));
+const keywords = groups.flatMap((g) => g.keywords);
+const used = new Set(keywords.flatMap((k) => k.matches));
+const shown = items.filter((x) => used.has(x.key));
+const also = (x: Item) => items.filter((o) => o.capability === x.capability && o.key !== x.key).slice(0, 3);
+const index = JSON.stringify(keywords.map(({ id, label, synonyms, matches }) => ({ id, label, synonyms, matches }))).replace(/</g, '\\u003c');
+---
+
+<div class="keywords" data-keywords data-motion={motion} data-contact={contact}>
+  <slot name="lead" />
+  <section class="tray" aria-labelledby={`${uid}-tray`} data-kw-tray hidden>
+    <Text variant="label" as="p" id={`${uid}-tray`}>Your picks</Text>
+    <ul class="picked" data-kw-picked>
+      {
+        keywords.map((k) => (
+          <li data-kw-tray-item={k.id} hidden>
+            {k.label}
+            <IconButton label={`Remove ${k.label}`} icon="close" size="sm" tooltip="none" data-kw-remove={k.id} />
+          </li>
+        ))
+      }
+    </ul>
+    <span class="tools">
+      <Button variant="quiet" size="sm" icon="close" data-kw-clear="">Clear all</Button>
+      <Button variant="quiet" size="sm" icon="link" data-kw-copy="">Copy link</Button>
+      {contact && <Button size="sm" icon="mail" href={contact} data-kw-ask="">Ask about these</Button>}
+    </span>
+  </section>
+  <div class="body">
+    <section class="field" aria-labelledby={`${uid}-field`} data-kw-field>
+      <Heading level={2} size="h3" id={`${uid}-field`}>Pick what you hire for</Heading>
+      <Text variant="small" tone="muted">A bigger keyword has more proof behind it.</Text>
+      <div class="groups">
+        {
+          groups.map((g) => (
+            <div class="group" role="group" aria-labelledby={`${uid}-${g.id}`} data-kw-group={g.id} data-capability={g.id}>
+              <span class="name"><Text variant="label" tone="muted" as="span" id={`${uid}-${g.id}`}>{g.name}</Text></span>
+              <span class="row">
+                <RowButton data-kw-row={`${uid}-${g.id}-k`}>
+                  {g.short}
+                  <span slot="detail" data-kw-count />
+                  <Fragment slot="icon"><Icon name="chevron-down" /></Fragment>
+                </RowButton>
+              </span>
+              <div class="chips" id={`${uid}-${g.id}-k`}>
+                {g.keywords.map((k) => (
+                  <button type="button" class="kw" aria-pressed="false" tabindex={k.id === keywords[0]?.id ? 0 : -1} data-kw={k.id} data-size={String(k.size)}>
+                    <span class="tick"><Icon name="check" /></span>
+                    {k.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          ))
+        }
+      </div>
+      {
+        typing && (
+          <div class="type" data-kw-type>
+            <TextField label="Or type a skill" icon="search" autocomplete="off" />
+            <ul class="suggestions" role="listbox" id={`${uid}-suggest`} aria-label="Keywords like it" data-kw-suggestions hidden>
+              {groups.flatMap((g) =>
+                g.keywords.map((k) => (
+                  <li role="option" id={`${uid}-o-${k.id}`} aria-selected="false" data-kw-option={k.id} hidden>
+                    {k.label}
+                    <Text variant="small" tone="muted" as="span">{g.short}</Text>
+                  </li>
+                )),
+              )}
+            </ul>
+            <p class="none" data-kw-none hidden>
+              <span data-kw-none-text />
+              {contact && <Link href={contact} variant="quiet" data-kw-none-ask="">Ask me about it</Link>}
+            </p>
+          </div>
+        )
+      }
+    </section>
+    <section class="matches" aria-labelledby={`${uid}-matches`} data-kw-matches>
+      <Heading level={2} size="h4" id={`${uid}-matches`}>
+        <span data-kw-heading data-rest={`${groups.length} strengths`}>{groups.length} strengths</span>
+      </Heading>
+      <ol class="summaries" data-kw-summaries>
+        {
+          groups.map((g) => {
+            const h = g.headline ? byKey.get(g.headline) : undefined;
+            return (
+              <li data-capability={g.id}>
+                <Text variant="label">{g.name}</Text>
+                <Text variant="small" tone="muted">{g.line}</Text>
+                {h && (
+                  <span class="meta">
+                    {h.href ? <Link href={h.href} variant="quiet">{h.title}</Link> : <Text variant="small" as="span">{h.title}</Text>}
+                    {h.kindLabel && <Tag size="sm">{h.kindLabel}</Tag>}
+                  </span>
+                )}
+              </li>
+            );
+          })
+        }
+      </ol>
+      <ol class="cards" data-kw-cards hidden>
+        {
+          shown.map((x, i) => (
+            <li class="card" data-kw-item={x.key} data-kw-strength={x.capability} hidden>
+              <button type="button" class="title" aria-expanded="false" aria-controls={`${uid}-m${i}`} data-kw-open>{x.title}</button>
+              <span class="meta">
+                {x.kindLabel && <Tag size="sm">{x.kindLabel}</Tag>}
+                <Text variant="small" tone="muted" as="span"><span data-kw-why /></Text>
+              </span>
+              {x.line && <Text variant="small">{x.line}</Text>}
+              <div class="more" id={`${uid}-m${i}`} hidden>
+                <span class="meta">
+                  {x.href && <Link href={x.href} variant="standalone">Read it</Link>}
+                  {x.ask && <Link href={x.ask} variant="quiet">Ask me about it</Link>}
+                </span>
+                {also(x).length > 0 && (
+                  <ul class="also" aria-label="More of this strength's proof">
+                    {also(x).map((o) => (
+                      <li>
+                        {o.href ? <Link href={o.href} variant="quiet">{o.title}</Link> : <Text variant="small" as="span">{o.title}</Text>}
+                        {o.kindLabel && <Tag size="sm">{o.kindLabel}</Tag>}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            </li>
+          ))
+        }
+      </ol>
+      <span data-kw-all hidden><Button variant="quiet" size="sm" iconEnd="chevron-down" data-kw-show-all="">Show all</Button></span>
+      <p class="sr-only" aria-live="polite" aria-atomic="true" data-kw-status></p>
+    </section>
+  </div>
+  <slot name="voices" />
+  <script is:inline type="application/json" data-kw-index set:html={index} />
+</div>
+
+<style>
+  /* Keywords lays itself out by its own width (c.keywords.query-*), never the screen's */
+  .keywords {
+    container: keywords / inline-size;
+    display: grid;
+    gap: var(--space-6);
+  }
+
+  :is(ul, ol) {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  /* rows that wrap: the tray and its parts, the keywords, a match's links */
+  .tray,
+  .picked,
+  .tools,
+  .chips,
+  .meta,
+  .none,
+  .also li {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+    align-items: center;
+  }
+
+  /* columns: the field, the matches and their parts */
+  .field,
+  .matches,
+  .group,
+  .type,
+  .summaries,
+  .cards,
+  .more,
+  .also {
+    display: grid;
+    gap: var(--space-3);
+    align-content: start;
+    min-inline-size: 0;
+  }
+
+  .tray {
+    padding: var(--space-3) var(--space-4);
+    border: var(--border-hairline) solid var(--color-rule);
+    border-radius: var(--radius-lg);
+    background: var(--color-bg-raised);
+  }
+
+  .picked li {
+    display: inline-flex;
+    align-items: center;
+    padding-inline-start: var(--space-4);
+    border-radius: var(--radius-pill);
+    background: var(--color-accent-soft);
+    color: var(--color-on-accent-soft);
+    font: var(--type-control);
+  }
+
+  .tools {
+    margin-inline-start: auto;
+  }
+
+  .body {
+    display: grid;
+    grid-template-columns: minmax(0, 7fr) minmax(0, 5fr);
+    gap: var(--space-8);
+    align-items: start;
+  }
+
+  .groups {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(var(--c-keywords-group), 100%), 1fr));
+    gap: var(--space-4) var(--space-6);
+    padding-block: var(--space-2);
+  }
+
+  .row,
+  .kw:not([aria-pressed='true']) .tick,
+  .keywords:not([data-ready]) .type {
+    display: none;
+  }
+
+  /* a keyword: a pill, its size from its proof (3 in Fraunces), picked fills with the spot colour and ticks */
+  .kw {
+    display: inline-flex;
+    gap: var(--space-1);
+    align-items: center;
+    min-block-size: var(--size-touch);
+    padding-inline: var(--space-4);
+    border: var(--border-hairline) solid var(--color-border);
+    border-radius: var(--radius-pill);
+    background: var(--color-bg);
+    color: var(--color-text);
+    font: var(--type-control);
+    cursor: pointer;
+  }
+
+  .kw[data-size='2'] {
+    font-size: var(--text-lg);
+    font-weight: var(--weight-medium);
+  }
+
+  .kw[data-size='3'] {
+    padding-inline: var(--space-5);
+    font-family: var(--font-display);
+    font-variation-settings: var(--axes-display);
+    font-size: var(--text-h4);
+    font-weight: var(--weight-display);
+  }
+
+  .kw[aria-pressed='true'] {
+    border-color: var(--color-accent);
+    background: var(--color-accent);
+    color: var(--color-on-accent);
+  }
+
+  @media (hover: hover) {
+    .kw:not([aria-pressed='true']):hover {
+      background: var(--color-bg-hover);
+    }
+
+    .title:hover {
+      text-decoration-line: underline;
+      text-decoration-color: var(--color-highlight);
+      text-underline-offset: var(--underline-offset);
+    }
+  }
+
+  .kw:not([aria-pressed='true']):active {
+    background: var(--color-bg-hover);
+  }
+
+  .title:active {
+    text-decoration-line: underline;
+    text-underline-offset: var(--underline-offset);
+  }
+
+  /* Or type a skill: its suggestions under it, in the page's flow */
+  .type {
+    max-inline-size: var(--size-measure-narrow);
+  }
+
+  .suggestions {
+    display: grid;
+    padding: var(--space-1);
+    border: var(--border-hairline) solid var(--color-border);
+    border-radius: var(--radius-md);
+    background: var(--color-bg-raised);
+  }
+
+  .suggestions li {
+    display: flex;
+    gap: var(--space-2);
+    justify-content: space-between;
+    align-items: center;
+    min-block-size: var(--size-touch);
+    padding-inline: var(--space-3);
+    border-radius: var(--radius-sm);
+    font: var(--type-control);
+    cursor: pointer;
+  }
+
+  .suggestions li[aria-selected='true'] {
+    background: var(--color-accent-soft);
+    color: var(--color-on-accent-soft);
+  }
+
+  .none {
+    margin: 0;
+    font: var(--type-note);
+  }
+
+  /* the matches: the strengths at rest, the matching proof once something is picked */
+  .summaries li,
+  .card {
+    display: grid;
+    gap: var(--space-1);
+    justify-items: start;
+    padding: var(--space-3) var(--space-4);
+    border: var(--border-hairline) solid var(--color-rule);
+    border-radius: var(--radius-md);
+  }
+
+  /* a touch target across the card: one line's spare height above and below it, given back by its margins */
+  .title {
+    position: relative;
+    justify-self: stretch;
+    min-block-size: var(--size-touch);
+    padding-block: calc((var(--size-touch) - var(--text-h4) * var(--leading-heading)) / 2);
+    margin-block: calc((var(--text-h4) * var(--leading-heading) - var(--size-touch)) / 2);
+    padding-inline: 0;
+    border: 0;
+    background: none;
+    color: var(--color-text);
+    font-family: var(--font-display);
+    font-variation-settings: var(--axes-display);
+    font-size: var(--text-h4);
+    font-weight: var(--weight-display);
+    line-height: var(--leading-heading);
+    text-align: start;
+    cursor: pointer;
+  }
+
+  .more {
+    justify-self: stretch;
+    padding-block-start: var(--space-2);
+    border-block-start: var(--border-hairline) solid var(--color-rule);
+  }
+
+  /* after every display rule: the scope class gives `.picked li` this rule's weight, so the later one wins */
+  :is(.tray, .picked li, .summaries, .cards, .card, .more, .suggestions, .suggestions li, .none)[hidden] {
+    display: none;
+  }
+
+  /* motion: only after a pick, only as the person chose, never for those who ask for less */
+  @media (prefers-reduced-motion: no-preference) {
+    .keywords:not([data-motion='still']) :is(.picked li, .more, .tray) {
+      animation: keywords-in var(--duration-base) var(--ease-enter);
+    }
+
+    .keywords:not([data-motion='still']) .kw {
+      transition: background-color var(--duration-fast) var(--ease-standard), color var(--duration-fast) var(--ease-standard);
+    }
+  }
+
+  @keyframes keywords-in {
+    from {
+      opacity: 0;
+      translate: 0 var(--space-1);
+    }
+  }
+
+  /* narrower: the matches under the field, two to a row */
+  @container keywords (width < 52rem) {
+    .body {
+      grid-template-columns: minmax(0, 1fr);
+    }
+
+    .summaries,
+    .cards {
+      grid-template-columns: repeat(auto-fill, minmax(min(var(--c-keywords-card), 100%), 1fr));
+    }
+  }
+
+  /* a phone: each group a row that opens its keywords */
+  @container keywords (width < 36rem) {
+    .groups {
+      gap: 0;
+      padding-block: 0;
+    }
+
+    .group {
+      gap: 0;
+      border-block-end: var(--border-hairline) solid var(--color-rule);
+    }
+
+    .keywords[data-ready] .name,
+    .keywords[data-ready] .group:not([data-open]) .chips {
+      display: none;
+    }
+
+    .keywords[data-ready] .row {
+      display: block;
+    }
+
+    .chips {
+      padding-block-end: var(--space-3);
+    }
+
+    .tools {
+      margin-inline-start: 0;
+    }
+  }
+
+  /* print: the strengths and their keywords, nothing to press */
+  @media print {
+    :is(.tray, .type) {
+      display: none;
+    }
+  }
+</style>
+
+<script>
+  import { each } from '../../scripts/page';
+  import { setupKeywords } from '../../scripts/keywords';
+
+  each<HTMLElement>('[data-keywords]', setupKeywords);
+</script>

@@ -172,7 +172,7 @@ Every view was designed at six. Here's what each does with fewer, so a site with
 | [Cover](cover.md) | Three cover lines, larger, each with its line | Four lines | Five lines | Six numbered lines |
 | [Spotlight](spotlight.md) | Jump to holds three buttons; the rail keeps every highlight | Four buttons | Five buttons | Six buttons, eight highlights |
 | [Showreel](showreel.md) | Five chapters, about 60 seconds | Six, about 70 seconds | Seven, about 80 seconds | Eight chapters, about 90 seconds |
-| [Keywords](keywords.md) | Three groups, up to 8 keywords each | Four groups | Five groups | Six groups |
+| [Keywords](keywords.md) | Three groups, 6 keywords each by default (4 to 8) | Four groups | Five groups | Six groups |
 | [Proof grid](proof-grid.md) | Three rows; the extra height goes to bigger cells | Four rows | Five rows | Six rows |
 | [Questions](questions.md) | Question 1's answer lists three strengths | Four | Five | Six |
 

@@ -98,6 +98,11 @@ export function getHome(lens?: string): Home | null {
   return home;
 }
 
+/** The evidence index the home page's picks were made from (Keywords matches words against it); null with no home. */
+export function getHomeEvidence(): EvidenceIndex | null {
+  return getHome() ? homeCache!.evidence : null;
+}
+
 /**
  * What a built-in mode is given (documentation/desktop/modes.md §5.2): its slots and the site's published
  * open pages, nothing private or draft. Null when the mode is off or has no structure.

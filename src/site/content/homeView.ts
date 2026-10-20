@@ -3,7 +3,7 @@
  * components' props, every address and picture resolved. The views' pages call it; the components never
  * read the home model (they're tiers below it), and the model never reads the site's addresses.
  */
-import { canonicalPath, content, getAccess, getArticle, getHome, getPerson, getPlanet, getRecommendations, getRoute, getRoutes, getSite, getStructure } from './repository';
+import { canonicalPath, content, getAccess, getArticle, getHome, getHomeEvidence, getPerson, getPlanet, getRecommendations, getRoute, getRoutes, getSite, getStructure } from './repository';
 import { footerLinks, siteNav } from './navigation';
 import { picture } from './pictures';
 import { withBase } from '../design/meta';
@@ -11,6 +11,7 @@ import { bentoSettings, bentoTiles } from '../home/bento';
 import { coverIssue, coverSettings } from '../home/cover';
 import { proofGrid, proofGridSettings } from '../home/proofGrid';
 import { spotlightSettings, spotlightShow } from '../home/spotlight';
+import { keywordsField, keywordsSettings } from '../home/keywords';
 import { CATALOGUE } from '../home/catalogue';
 import { KIND_LABEL, leadOf, strengthsInOrder, voicesOf, type PresentEnv, type Voice } from '../home/present';
 import { VIEW_IDS, type ViewId } from '../home/ids';
@@ -286,5 +287,24 @@ export async function spotlightView(lens?: string) {
     jump: show.jump,
     voices: voicesOf(home.picks, env).map(voiceProps),
     motion: settings.motion,
+  };
+}
+
+/** Keywords' props (documentation/home-views/keywords.md): the lead, a group of keywords per strength with what each matches, the proof they bring forward, the voices; ordered for a lens when one is given. Null when there's no home. */
+export function keywordsView(lens?: string) {
+  const home = getHome(lens);
+  const evidence = getHomeEvidence();
+  if (!home || !evidence) return null;
+  const env = presentEnv();
+  const settings = keywordsSettings(home.settings.keywords);
+  const field = keywordsField(home.picks, evidence, content().topics?.topics ?? [], settings, env);
+  return {
+    lead: homeLead(home, env),
+    groups: field.groups.map(({ total: _total, ...g }) => g),
+    items: field.items.map(({ source: _source, ...x }) => x),
+    voices: voicesOf(home.picks, env).map(voiceProps),
+    motion: settings.motion,
+    typing: settings.typing === 'on',
+    contact: env.contactHref,
   };
 }

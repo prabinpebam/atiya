@@ -275,7 +275,7 @@ The drift is motion on its own, so it falls under the same amendment as the Show
 | Index | Built at build time into the page: keywords, synonyms and matches. No server and no external search |
 | Tests | Coverage at 1280 and 360 (the group labels, and the six summaries with nothing picked); picking by keyboard; `?pick=` restores; the no-evidence path; drift stops under reduced motion and on hover; axe; screenshots |
 | Telemetry | `keyword_pick` (`id`, `on`), `skill_typed` (`matched`: true or false only, never the text), plus the shared events |
-| On every site | 3 to 6 groups, one per strength, up to 8 keywords each ([for every site §4](for-every-site.md)). The keywords are each strength's `keywords`, offered from the topic vocabulary's labels and synonyms ([curation §4.1](curation.md)) for the person to edit. Offered with 12 keywords and 8 proof items ([§5](for-every-site.md)). Settings: Motion, Order, Typing a skill and Per group ([controls §3](controls.md)) |
+| On every site | 3 to 6 groups, one per strength, 6 keywords each by default (4 to 8: Per group) ([for every site §4](for-every-site.md)). The keywords are each strength's `keywords`, offered from the topic vocabulary's labels and synonyms ([curation §4.1](curation.md)) for the person to edit. Offered with 12 keywords and 8 proof items ([§5](for-every-site.md)). Settings: Motion, Order, Typing a skill and Per group ([controls §3](controls.md)) |
 
 ## 11. Risks
 
@@ -295,3 +295,27 @@ The drift is motion on its own, so it falls under the same amendment as the Show
 | K2 | Free typing | Keywords only; typing with synonyms | Typing with synonyms, and the honest no-evidence answer |
 | K3 | Picks in the link | Yes; no | Yes: a recruiter's filtered link is the view's best use |
 | K4 | Matching two picks | A match for any pick; only for all | Any, ranked by how many it matches |
+
+## 13. As built (stage 6)
+
+Keywords is built and offered at `/views/keywords/`. It shows a group per strength the site shows, 3 to 6, each with at most the person's Per group keywords (4 to 8, 6 by default). With nothing picked, the matches column names every strength with its headline, so every strength is on the first screen whether or not the visitor picks. K2, K3 and K4 are built as recommended; K1, the drift, waits on H4.
+
+| Part | Where |
+|---|---|
+| The view | [`Keywords.astro`](https://github.com/prabinpebam/atiya/blob/main/src/site/components/compounds/Keywords.astro), with the lead and [`Voices.astro`](https://github.com/prabinpebam/atiya/blob/main/src/site/components/compounds/Voices.astro) in its slots; its story is in the design library |
+| From the spine to the field | [`keywords.ts`](https://github.com/prabinpebam/atiya/blob/main/src/site/home/keywords.ts) (pure, unit-tested in `homeKeywords.test.ts`): the settings; each group's keywords, their synonyms from the topic vocabulary, their matches and sizes; the proof items a pick can bring forward |
+| Its behaviour | [`scripts/keywords.ts`](https://github.com/prabinpebam/atiya/blob/main/src/site/scripts/keywords.ts): picking, the tray, the matches, the address, Or type a skill, the status line and telemetry. Its rules are pure in [`keywordsRules.ts`](https://github.com/prabinpebam/atiya/blob/main/src/site/scripts/keywordsRules.ts) (`picksFrom`, `withPicks`, `matchesFor`, `suggest`, `askAbout`, `pickStatus`) |
+| Its sizes | The `c.keywords` tokens: a group's least width (12 rem), a match card's least width (18 rem), and the container queries at which the matches go under the field (52 rem) and the groups become a phone's rows (36 rem) |
+
+Where the build differs from the design above:
+
+- **The keywords:** each strength's own `keywords` come first, then its proof's most frequent topic labels, up to Per group. A strength's own keywords are kept for it, so an earlier group's topic labels never take one, and a keyword is in one group only, the first that has it. A singular and its plural are one keyword ("Design system" and "Design systems"), and the first one met stays. A strength with no keywords offers its own name.
+- **Matching:** a keyword matches a proof item by its topics, by its words in the item's title, summary or headings, or by a body that uses them twice. A résumé line and a colleague's words match too. A keyword nothing matches leads to its strength's headline and is drawn at the smallest size. Sizes are 1 to 3: one match, two or three, four or more.
+- **The picks (K4):** a match for any pick, the items matching more picks first, then in the page's order. Each match says what it matched and its kind, and its title is a button that opens its links and its strength's other proof. Six matches show, then Show all.
+- **In the address (K3):** the picks are `?pick=` (known IDs only, each once, in order), replaced without a history entry. The tray has Remove on each pick, Clear all, Copy link, and Ask about these, which opens the contact page with the picks as its topic.
+- **Or type a skill (K2):** a combobox over the same keywords, by label first and then by synonym, from two letters. A skill the site doesn't show says so in words and offers Ask me about it. Nothing typed leaves the browser.
+- **The options are rendered with the page:** the groups, their keywords and the matches are in the first HTML, and the index the script reads is a JSON block in the page.
+- **Motion:** nothing moves on its own. Gentle and Lively slide the matches to their new places and fade the new ones in (`--duration-base`); Still swaps them, and nothing moves for a visitor who asks for less motion. Lively is read as Gentle until H4, so the drift and Stop the drift aren't built; a pick appears in the tray without travelling to it.
+- **The layout:** the field and the matches side by side wide, with the groups in three columns at 1280 px; the matches go under the field below 52 rem. Below 36 rem each group is a row (a RowButton) that says how many of its keywords are picked and opens them. The tray's Remove is a small IconButton whose touch area is 44 px. A match's title keeps its look but its button is 44 px tall, at any number of lines.
+- **Telemetry:** `keyword_pick` (`id`, `on`), `skill_typed` (`matched` only, never the words), and `capability_l3_open` with `view: 'keywords'` when a match opens.
+- **Print:** the strengths and their keywords, with nothing to press.

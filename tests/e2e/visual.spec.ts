@@ -32,6 +32,7 @@ const PAGES = [
   { name: 'home-cover', path: '/views/cover/' },
   { name: 'home-proof-grid', path: '/views/proof-grid/' },
   { name: 'home-spotlight', path: '/views/spotlight/' },
+  { name: 'home-keywords', path: '/views/keywords/' },
   // a role lens's page: the note under the lead, in the block lead and the strip
   { name: 'home-bento-lens', path: '/views/bento/for/ai/' },
   { name: 'home-proof-grid-lens', path: '/views/proof-grid/for/ai/' },

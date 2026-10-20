@@ -256,7 +256,7 @@ The views share one set of picks.
 | **L3** | Pins in order, then by score, up to `detail` (5), with **kind balance**: at most 2 of one kind while other kinds are waiting. Then Show all |
 | **Highlights** (at most 8) | Pins, then one per strength in order, the best candidate with a picture, round after round until 8 or none left. No page twice |
 | **Showreel** | The highlights, at most 2 per strength |
-| **Keywords** | Each strength's keywords, then its proof's most frequent topic labels, up to 8 per group |
+| **Keywords** | Each strength's keywords, then its proof's most frequent topic labels, 6 per group by default (Per group, 4 to 8); a strength's own keywords are kept for it, and a singular and its plural are one keyword |
 | **Questions** | The person's answers; each answer's evidence is the picks of the strengths it names |
 | **Facts** | The person's only |
 

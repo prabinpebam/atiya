@@ -3,9 +3,10 @@
  * spotlight.md): every strength in view on the first screen in every view, Bento's three levels (names at rest, a
  * colleague's words on hover and focus, the evidence drawer by press, Esc and `#cap-<id>`), the Cover's jumps, the
  * Proof grid's cells (keys, the address, Esc and Close, a phone's accordion), Spotlight's stage (Next, the keys, the
- * rail, Jump to, the details that follow, `#h-<id>`, motion only when asked for), axe in both modes, a phone's
- * reflow and targets, the role lens (`?for=`), and the page for a view the site doesn't offer. `/` is the default
- * view, whichever it is (H2), so these hold on any default.
+ * rail, Jump to, the details that follow, `#h-<id>`, motion only when asked for), Keywords (keywords.md: one Tab
+ * stop, a pick and what it brings forward, `?pick=`, Remove, Clear all, Or type a skill, a phone's rows), axe in
+ * both modes, a phone's reflow and targets, the role lens (`?for=`), and the page for a view the site doesn't offer.
+ * `/` is the default view, whichever it is (H2), so these hold on any default.
  */
 import { devices, expect, test, type Page } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
@@ -19,7 +20,8 @@ const BENTO = '/views/bento/';
 const COVER = '/views/cover/';
 const GRID = '/views/proof-grid/';
 const SPOT = '/views/spotlight/';
-const VIEWS = [BENTO, COVER, GRID, SPOT];
+const KEYS = '/views/keywords/';
+const VIEWS = [BENTO, COVER, GRID, SPOT, KEYS];
 
 // axe reads colours: the animations that end (a fade, a rise) are over first; a scroll-driven one never ends, and only moves
 const settled = (page: Page) =>
@@ -399,12 +401,20 @@ test.describe('home views on a phone', () => {
         return e.tagName === 'A' && !!p && ['P', 'LI', 'FIGCAPTION', 'SPAN', 'EM', 'STRONG', 'DIV'].includes(p.tagName) && p.textContent!.trim().length > e.textContent!.trim().length + 5;
       };
       const stretched = (e: Element) => getComputedStyle(e, '::after').position === 'absolute';
+      // a small control's touch area can be a ::before set out round it (IconButton's sm): count that area
+      const hit = (e: Element) => {
+        const b = e.getBoundingClientRect();
+        const s = getComputedStyle(e, '::before');
+        if (s.position !== 'absolute' || s.content === 'none') return b;
+        const px = (v: string) => parseFloat(v) || 0;
+        return { width: b.width - px(s.left) - px(s.right), height: b.height - px(s.top) - px(s.bottom) };
+      };
       return [...document.querySelectorAll('main a[href], main button')]
         .filter((e) => {
           const b = e.getBoundingClientRect();
           return b.width > 0 && b.height > 0 && getComputedStyle(e).visibility !== 'hidden' && !inText(e) && !stretched(e);
         })
-        .map((e) => ({ e, b: e.getBoundingClientRect() }))
+        .map((e) => ({ e, b: hit(e) }))
         .filter(({ b }) => b.height < 44 || b.width < 44)
         .map(({ e, b }) => `${e.tagName} "${(e.getAttribute('aria-label') || e.textContent || '').trim().slice(0, 24)}" ${Math.round(b.width)}x${Math.round(b.height)}`);
     });
@@ -484,6 +494,40 @@ test.describe('home views on a phone', () => {
     await swipe(160);
     await expect(page.locator('[data-slide][data-current]')).toHaveAttribute('data-slide', ids[0]);
     expect(await page.evaluate(() => document.documentElement.scrollWidth - innerWidth)).toBe(0);
+  });
+
+  test('keywords on a phone: rows that open their keywords, no sideways scroll and 44 px targets from 320 px, with picks made', async ({ page }) => {
+    for (const size of [
+      { width: 320, height: 640 },
+      { width: 360, height: 740 },
+      { width: 844, height: 390 },
+    ]) {
+      await page.setViewportSize(size);
+      await page.goto(KEYS);
+      await expect(page.locator('[data-keywords]')).toHaveAttribute('data-ready', '');
+      expect(await page.evaluate(() => document.documentElement.scrollWidth - innerWidth), `${size.width}`).toBe(0);
+      expect(await smallTargets(page), `${size.width}`).toEqual([]);
+      const group = page.locator('[data-kw-group]').first();
+      const row = group.locator('[data-kw-row]');
+      const chip = group.locator('[data-kw]').first();
+      if (size.width < 576) {
+        // a row per strength, closed: its keywords are out of the Tab order until it opens
+        await expect(row).toBeVisible();
+        await expect(row).toHaveAttribute('aria-expanded', 'false');
+        await expect(chip).toBeHidden();
+        await row.click();
+        await expect(row).toHaveAttribute('aria-expanded', 'true');
+        await expect(chip).toBeVisible();
+        await expect(chip).toHaveAttribute('tabindex', '0');
+      } else await expect(row).toBeHidden();
+      await chip.click();
+      await expect(chip).toHaveAttribute('aria-pressed', 'true');
+      if (size.width < 576) await expect(row).toContainText('1 picked');
+      await expect(page.locator('[data-kw-tray]')).toBeVisible();
+      await page.locator('[data-kw-cards] [data-kw-item]:not([hidden]) [data-kw-open]').first().click();
+      expect(await page.evaluate(() => document.documentElement.scrollWidth - innerWidth), `${size.width}, picked`).toBe(0);
+      expect(await smallTargets(page), `${size.width}, picked`).toEqual([]);
+    }
   });
 
   test('proof grid on a phone: an accordion, the first row open on its kinds, a kind opens its evidence', async ({ page }) => {
@@ -716,5 +760,166 @@ test.describe('home views: role lens', () => {
     await expect(page.getByText('Ordered for')).toHaveCount(0);
     await page.goto(COVER);
     await arrived(page, /\/views\/cover\/$/);
+  });
+});
+
+// Keywords (keywords.md; plan.md stage 6): the field is one Tab stop; a pick brings its matches forward, says so and
+// is kept in the address; Remove and Clear all; Or type a skill finds labels and synonyms, and says honestly when the
+// site shows nothing for a skill
+type IndexedKeyword = { id: string; label: string; synonyms: string[]; matches: string[] };
+const keywordIndex = (page: Page) => page.locator('[data-kw-index]').evaluate((e) => JSON.parse(e.textContent!) as IndexedKeyword[]);
+const matchCount = (n: number) => (n === 1 ? '1 match' : `${n} matches`);
+const picksIn = (page: Page) => new URL(page.url()).searchParams.get('pick');
+
+test.describe('home views: keywords', () => {
+  test.beforeEach(async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 800 });
+    await page.goto(KEYS);
+    await expect(page.locator('[data-keywords]')).toHaveAttribute('data-ready', '');
+  });
+
+  test('one Tab stop, the arrows, a pick says what it found and brings it forward, the address keeps the picks, Remove and Clear all', async ({ page }) => {
+    const words = await keywordIndex(page);
+    expect(words.length).toBeGreaterThanOrEqual(3);
+    const chips = page.locator('[data-kw]');
+    const status = page.locator('[data-kw-status]');
+    expect(await chips.evaluateAll((els) => els.filter((e) => (e as HTMLElement).tabIndex === 0).length)).toBe(1);
+    await expect(page.locator('[data-kw-tray]')).toBeHidden();
+    await expect(page.locator('[data-kw-summaries]')).toBeVisible();
+
+    // the arrows move the one stop; Space picks
+    await chips.first().focus();
+    await page.keyboard.press('ArrowRight');
+    await expect(chips.nth(1)).toBeFocused();
+    await expect(chips.nth(1)).toHaveAttribute('tabindex', '0');
+    await expect(chips.first()).toHaveAttribute('tabindex', '-1');
+    await page.keyboard.press('Space');
+    const a = words[1];
+    await expect(chips.nth(1)).toHaveAttribute('aria-pressed', 'true');
+    await expect(status).toHaveText(`${a.label} picked. ${matchCount(a.matches.length)}.`);
+    expect(picksIn(page)).toBe(a.id);
+    await expect(page.locator(`[data-kw-tray-item="${a.id}"]`)).toBeVisible();
+    await expect(page.locator('[data-kw-summaries]')).toBeHidden();
+    await expect(page.locator('[data-kw-heading]')).toHaveText(`${matchCount(a.matches.length)}, best first`);
+    const cards = page.locator('[data-kw-cards] [data-kw-item]:visible');
+    await expect(cards).toHaveCount(Math.min(a.matches.length, 6));
+    await expect(cards.first().locator('[data-kw-why]')).toHaveText(`Match: ${a.label}`);
+    // a match opens its links
+    const open = cards.first().locator('[data-kw-open]');
+    await open.click();
+    await expect(open).toHaveAttribute('aria-expanded', 'true');
+    await expect(page.locator(`#${await open.getAttribute('aria-controls')}`)).toBeVisible();
+
+    // End, then Space: a second pick, both in the address in the order picked
+    await chips.nth(1).focus();
+    await page.keyboard.press('End');
+    await expect(chips.last()).toBeFocused();
+    await page.keyboard.press('Space');
+    const b = words[words.length - 1];
+    expect(picksIn(page)).toBe(`${a.id},${b.id}`);
+
+    // the address brings the picks back
+    await page.reload();
+    await expect(page.locator('[data-keywords]')).toHaveAttribute('data-ready', '');
+    await expect(page.locator(`[data-kw="${a.id}"]`)).toHaveAttribute('aria-pressed', 'true');
+    await expect(page.locator(`[data-kw="${b.id}"]`)).toHaveAttribute('aria-pressed', 'true');
+    expect(await page.locator('[data-kw-tray-item]:visible').evaluateAll((els) => els.map((e) => (e as HTMLElement).dataset.kwTrayItem))).toEqual([a.id, b.id]);
+
+    // Remove keeps the keyboard in the tray
+    await page.locator(`[data-kw-remove="${a.id}"]`).click();
+    await expect(page.locator(`[data-kw-remove="${b.id}"]`)).toBeFocused();
+    await expect(status).toHaveText(`${a.label} removed. ${matchCount(b.matches.length)}.`);
+    expect(picksIn(page)).toBe(b.id);
+
+    // Clear all: every strength again, the keyboard back in the field, the address clean
+    await page.locator('[data-kw-clear]').click();
+    await expect(status).toHaveText('Picks cleared. Showing every strength.');
+    await expect(page.locator('[data-kw-tray]')).toBeHidden();
+    await expect(page.locator('[data-kw-summaries]')).toBeVisible();
+    await expect(page.locator('[data-kw][tabindex="0"]')).toBeFocused();
+    expect(picksIn(page)).toBeNull();
+  });
+
+  test('Or type a skill: a synonym finds its keyword, the arrows and Enter pick it, Esc closes, and a skill the site doesn’t show says so', async ({ page }) => {
+    const words = await keywordIndex(page);
+    const k = words.find((w) => w.synonyms.some((s) => s.length >= 3 && !w.label.toLowerCase().includes(s)));
+    expect(k, 'a keyword with a synonym').toBeTruthy();
+    const synonym = k!.synonyms.find((s) => s.length >= 3 && !k!.label.toLowerCase().includes(s))!;
+    const input = page.locator('[data-kw-type] input');
+    await input.fill(synonym);
+    await expect(input).toHaveAttribute('aria-expanded', 'true');
+    const shown = await page.locator('[data-kw-option]:visible').evaluateAll((els) => els.map((e) => (e as HTMLElement).dataset.kwOption!));
+    expect(shown).toContain(k!.id);
+    for (let i = 0; i <= shown.indexOf(k!.id); i++) await page.keyboard.press('ArrowDown');
+    const option = page.locator(`[data-kw-option="${k!.id}"]`);
+    await expect(option).toHaveAttribute('aria-selected', 'true');
+    await expect(input).toHaveAttribute('aria-activedescendant', (await option.getAttribute('id'))!);
+    await page.keyboard.press('Enter');
+    await expect(page.locator(`[data-kw="${k!.id}"]`)).toHaveAttribute('aria-pressed', 'true');
+    await expect(input).toHaveValue('');
+    await expect(input).toHaveAttribute('aria-expanded', 'false');
+    await expect(page.locator('[data-kw-status]')).toHaveText(`${k!.label} picked. ${matchCount(k!.matches.length)}.`);
+
+    // Esc closes the suggestions, then clears the text
+    await input.fill(synonym);
+    await expect(page.locator('[data-kw-suggestions]')).toBeVisible();
+    await page.keyboard.press('Escape');
+    await expect(page.locator('[data-kw-suggestions]')).toBeHidden();
+    await expect(input).toHaveValue(synonym);
+    await page.keyboard.press('Escape');
+    await expect(input).toHaveValue('');
+
+    // nothing on the site for it: said plainly, and Ask me about it carries the skill
+    const skill = 'Underwater basket weaving';
+    await input.fill(skill);
+    await expect(page.locator('[data-kw-suggestions]')).toBeHidden();
+    await page.keyboard.press('Enter');
+    const none = page.locator('[data-kw-none]');
+    await expect(none).toBeVisible();
+    await expect(none).toContainText(`Nothing on the site shows ${skill} yet.`);
+    await expect(page.locator('[data-kw-status]')).toHaveText(`Nothing on the site shows ${skill} yet.`);
+    const ask = none.locator('[data-kw-none-ask]');
+    if (await ask.count()) expect(new URL((await ask.getAttribute('href'))!, page.url()).searchParams.get('topic')).toBe(skill);
+  });
+
+  test('axe finds nothing serious in light or dark, with picks made and a match open', async ({ page }) => {
+    const words = await keywordIndex(page);
+    for (const colorScheme of ['light', 'dark'] as const) {
+      await page.emulateMedia({ colorScheme });
+      await page.goto(KEYS);
+      await noSeriousViolations(page);
+      await page.goto(`${KEYS}?pick=${words[0].id},${words[words.length - 1].id}`);
+      await expect(page.locator('[data-kw-tray]')).toBeVisible();
+      await page.locator('[data-kw-cards] [data-kw-item]:not([hidden]) [data-kw-open]').first().click();
+      await page.locator('[data-kw-type] input').fill('Underwater basket weaving');
+      await page.keyboard.press('Enter');
+      await expect(page.locator('[data-kw-none]')).toBeVisible();
+      await noSeriousViolations(page);
+    }
+  });
+
+  test('telemetry hears a pick and whether a typed skill matched, never the words typed', async ({ page }) => {
+    const sent: Sent[] = [];
+    await page.addInitScript(() => localStorage.setItem('site.test.telemetry', '1'));
+    await page.context().route(`${TELEMETRY}/**`, async (route) => {
+      const body = route.request().postData() ?? '';
+      if (body) sent.push(...decode(body));
+      await route.fulfill({ status: 200, contentType: 'application/json', body: '{"status":1}' });
+    });
+    await page.goto(KEYS);
+    await expect(page.locator('[data-keywords]')).toHaveAttribute('data-ready', '');
+    const words = await keywordIndex(page);
+    await page.locator(`[data-kw="${words[0].id}"]`).click();
+    await page.locator(`[data-kw="${words[0].id}"]`).click();
+    const input = page.locator('[data-kw-type] input');
+    await input.fill(words[1].label);
+    await page.keyboard.press('Enter');
+    await input.fill('Underwater basket weaving');
+    await page.keyboard.press('Enter');
+    await expect
+      .poll(() => sent.filter((e) => e.event === 'keyword_pick').map((e) => e.properties), { timeout: 15_000 })
+      .toEqual([expect.objectContaining({ id: words[0].id, on: true }), expect.objectContaining({ id: words[0].id, on: false }), expect.objectContaining({ id: words[1].id, on: true })]);
+    await expect.poll(() => sent.filter((e) => e.event === 'skill_typed').map((e) => e.properties.matched), { timeout: 15_000 }).toEqual([true, false]);
+    expect(JSON.stringify(sent)).not.toContain('basket');
   });
 });

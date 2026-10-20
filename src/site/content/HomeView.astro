@@ -1,7 +1,7 @@
 ---
 /**
  * A home view other than the classic hub (documentation/home-views/foundation.md §7): its page frame, the
- * view itself (Bento, Cover, Proof grid or Spotlight), and Change view in the lead and again at the foot (switcher.md §1).
+ * view itself (Bento, Cover, Proof grid, Spotlight or Keywords), and Change view in the lead and again at the foot (switcher.md §1).
  * Shown at the view's own address, and at `/` when it's the site's default.
  */
 import HomeLayout from '../layouts/HomeLayout.astro';
@@ -9,6 +9,7 @@ import Bento from '../components/compounds/Bento.astro';
 import Cover from '../components/compounds/Cover.astro';
 import ProofGrid from '../components/compounds/ProofGrid.astro';
 import Spotlight from '../components/compounds/Spotlight.astro';
+import Keywords from '../components/compounds/Keywords.astro';
 import Voices from '../components/compounds/Voices.astro';
 import Dialog from '../components/compounds/Dialog.astro';
 import ViewChoices from '../components/compounds/ViewChoices.astro';
@@ -16,10 +17,10 @@ import Button from '../components/fundamentals/Button.astro';
 import ViewLead from './ViewLead.astro';
 import { CATALOGUE } from '../home/catalogue';
 import type { ViewId } from '../home/ids';
-import { bentoView, coverView, homeFrame, homeRouting, lensChip, proofGridView, spotlightView, viewSwitch } from './homeView';
+import { bentoView, coverView, homeFrame, homeRouting, keywordsView, lensChip, proofGridView, spotlightView, viewSwitch } from './homeView';
 
 interface Props {
-  /** The view (`bento`, `cover`, `proof-grid`, `spotlight`). */
+  /** The view (`bento`, `cover`, `proof-grid`, `spotlight`, `keywords`). */
   view: ViewId;
   /** Where it's shown: the site's root (it's the default), or its own address. */
   at: 'root' | 'view';
@@ -33,6 +34,7 @@ const bento = view === 'bento' ? await bentoView(lens) : null;
 const cover = view === 'cover' ? await coverView(lens) : null;
 const grid = view === 'proof-grid' ? proofGridView(lens) : null;
 const spot = view === 'spotlight' ? await spotlightView(lens) : null;
+const words = view === 'keywords' ? keywordsView(lens) : null;
 const choices = viewSwitch(view, lens);
 const chip = lensChip(view, lens);
 ---
@@ -68,6 +70,14 @@ const chip = lensChip(view, lens);
         <ViewLead slot="lead" lead={spot.lead} planet={frame.planet} change={!!choices} lens={chip} layout="strip" />
         {spot.voices.length > 0 && <Voices slot="voices" voices={spot.voices} />}
       </Spotlight>
+    )
+  }
+  {
+    words && (
+      <Keywords groups={words.groups} items={words.items} motion={words.motion} typing={words.typing} contact={words.contact}>
+        <ViewLead slot="lead" lead={words.lead} planet={frame.planet} change={!!choices} lens={chip} layout="strip" />
+        {words.voices.length > 0 && <Voices slot="voices" voices={words.voices} />}
+      </Keywords>
     )
   }
   {

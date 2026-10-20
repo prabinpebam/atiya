@@ -135,6 +135,10 @@
     "c.image.shimmer": {"v":"var(--color-bg-raised)"},
     "c.image.shimmer-cycle": {"v":"1400ms"},
     "c.index.card-min": {"v":"18rem"},
+    "c.keywords.card": {"v":"18rem"},
+    "c.keywords.group": {"v":"12rem"},
+    "c.keywords.query-phone": {"v":"36rem"},
+    "c.keywords.query-stack": {"v":"52rem"},
     "c.library.nav-max": {"v":"17rem"},
     "c.library.nav-min": {"v":"14rem"},
     "c.lightbox.drift-scale": {"v":"1.04"},
@@ -511,6 +515,30 @@
           null,
           {
             "v": "34rem"
+          }
+        ],
+        "c.keywords.card": [
+          null,
+          {
+            "v": "18rem"
+          }
+        ],
+        "c.keywords.group": [
+          null,
+          {
+            "v": "12rem"
+          }
+        ],
+        "c.keywords.query-phone": [
+          null,
+          {
+            "v": "36rem"
+          }
+        ],
+        "c.keywords.query-stack": [
+          null,
+          {
+            "v": "52rem"
           }
         ],
         "c.proof-grid.capability": [

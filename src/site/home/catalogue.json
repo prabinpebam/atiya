@@ -114,13 +114,13 @@
     "keywords": {
       "label": "Keywords",
       "line": "By what you pick",
-      "built": false,
+      "built": true,
       "minimum": { "keywords": 12, "proof": 8 },
       "settings": {
         "motion": { "label": "Motion", "type": "choice", "values": ["still", "gentle", "lively"], "labels": ["Still", "Gentle", "Lively"], "default": "lively" },
         "order": { "label": "Order", "type": "choice", "values": ["yours", "strongest"], "labels": ["Yours", "Strongest first"], "default": "yours" },
         "typing": { "label": "Typing a skill", "type": "choice", "values": ["on", "off"], "labels": ["On", "Off"], "default": "on" },
-        "perGroup": { "label": "Per group", "type": "number", "min": 4, "max": 8, "default": 8 }
+        "perGroup": { "label": "Per group", "type": "number", "min": 4, "max": 8, "default": 6 }
       }
     },
     "proof-grid": {
