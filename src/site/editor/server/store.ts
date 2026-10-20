@@ -129,6 +129,28 @@ export function withWriterLock<T>(fn: () => Promise<T>): Promise<T> {
   return result;
 }
 
+/**
+ * The content check a commit runs, on the content as it would be after `changes` (JSON documents only),
+ * writing nothing: an AI answer is checked exactly as a save is (documentation/editor/ai-editing.md §2.4).
+ * Only issues the content doesn't already have count: the content on disk, or with `base` (an unsaved draft) made.
+ */
+export function checkOnly(changes: Change[], opts: Pick<StoreOptions, 'root' | 'privateRoot'> = {}, base: Change[] = []): Issue[] {
+  const snap = timed('store.read', () => readSnapshot(opts.root ?? contentRoot(), opts.privateRoot ?? privateRoot()));
+  const made = (list: Change[]) => {
+    const docs = { ...snap.docs };
+    for (const c of list) {
+      if (!c.key.endsWith('.json')) continue;
+      if (c.bytes) docs[c.key] = JSON.parse(c.bytes.toString('utf8'));
+      else delete docs[c.key];
+    }
+    return { docs, masters: snap.masters, errors: snap.errors };
+  };
+  const after = check(made([...base, ...changes])).issues;
+  if (!after.length) return after;
+  const before = new Set(check(made(base)).issues.map(describe));
+  return after.filter((i) => !before.has(describe(i)));
+}
+
 async function apply(tx: Transaction, opts: StoreOptions, origin: string | null = null): Promise<Result> {
   const root = opts.root ?? contentRoot();
   const priv = opts.privateRoot ?? privateRoot();

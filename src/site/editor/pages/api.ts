@@ -83,6 +83,44 @@ async function tests(parts: string[], url: URL, request: Request): Promise<Respo
   return json({ ok: false, issues: [{ file: '', message: 'unknown tests request' }] }, 404);
 }
 
+/**
+ * AI (documentation/editor/ai-editing.md, ai-services.md §9): the writer's line for the prompt, and a request
+ * through the connector, answered as server-sent events (status, words, proposal, note, error). Closing the
+ * request stops the writer.
+ */
+async function ai(parts: string[], method: string, request: Request): Promise<Response> {
+  const { propose, writerLine } = await import('../server/aiConnector');
+  if (method === 'GET' && parts[1] === 'status') return json({ ok: true, writer: writerLine() });
+  if (method !== 'POST' || parts[1] !== 'propose') return json({ ok: false, issues: [{ file: '', message: 'unknown AI request' }] }, 404);
+  const req = await body<import('../server/aiConnector').ProposeRequest>(request);
+  const scopes = ['block', 'section', 'article', 'empty', 'comments'];
+  if (!ID.test(req?.id ?? '') || !Array.isArray(req.article?.body) || !scopes.includes(req.target?.scope) || typeof req.instruction !== 'string' || req.instruction.length > 4000)
+    return json({ ok: false, issues: [{ file: '', message: 'not an AI request' }] }, 400);
+  const enc = new TextEncoder();
+  const stop = new AbortController();
+  request.signal.addEventListener('abort', () => stop.abort());
+  const stream = new ReadableStream<Uint8Array>({
+    start(ctrl) {
+      const send = (e: { type: string }) => {
+        try {
+          ctrl.enqueue(enc.encode(`event: ${e.type}\ndata: ${JSON.stringify(e)}\n\n`));
+        } catch {
+          stop.abort();
+        }
+      };
+      void propose(req, send, stop.signal).finally(() => {
+        try {
+          ctrl.close();
+        } catch {
+          /* already closed */
+        }
+      });
+    },
+    cancel: () => stop.abort(),
+  });
+  return new Response(stream, { headers: { 'content-type': 'text/event-stream; charset=utf-8', 'cache-control': 'no-store', connection: 'keep-alive' } });
+}
+
 const handle: APIRoute = async ({ request, params, url }) => {
   const path = (params.path ?? '').replace(/\/$/, '');
   const method = request.method.toUpperCase();
@@ -90,6 +128,9 @@ const handle: APIRoute = async ({ request, params, url }) => {
   try {
     // ---------- test runs, read only (documentation/editor/test-runs.md §7) ----------
     if (method === 'GET' && parts[0] === 'tests') return await tests(parts, url, request);
+
+    // ---------- AI: the writer's line and a request through the connector ----------
+    if (parts[0] === 'ai') return await ai(parts, method, request);
 
     // ---------- where the dev server's time went (documentation/engineering/performance.md §3) ----------
     if (method === 'GET' && path === 'perf') {
