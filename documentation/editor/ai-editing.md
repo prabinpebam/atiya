@@ -656,7 +656,7 @@ Each phase records here what it built, where it differs from this spec, and its 
 ### The contract and the connector (phase 1, stages S2 and S3)
 
 - **Where they live.** The answer's shape, its strict schema, the scopes and applying an answer by key are pure in `src/site/editor/model/aiContract.ts`; Decide's rules in `model/aiDecide.ts`; the writer's messages (the article marked as material, cut to a budget outside the scope) in `model/aiPrompt.ts`; a block's words read out of a partial answer and the word diff in `model/aiText.ts`. The connector is `server/aiConnector.ts` (it writes nothing), and the dry run of the content check is `checkOnly` in `server/store.ts`, run against the editor's draft as sent, not the saved file.
-- **Not built yet:** the proposal store (S3.7). A proposal lives only in the open prompt: closing it or reloading the page loses it.
+- **The proposal store** (S3.7, built in phase 2 as P2.1) is `server/aiProposals.ts`: one file per article in `.atiya/proposals/`, holding the body the proposal was made from, so the review can be shown again after a reload; the review's rules (the rows, applying accepted changes, conflicts, its words) are pure in `model/aiReview.ts`. A block's proposal isn't kept in it: it lives only in the open prompt, so closing the prompt or reloading the page loses it.
 
 ### Ask AI on a block (phase 1, stage S5.1)
 

@@ -56,23 +56,27 @@ export function readSettings(file = settingsFile()): AiSettings {
 
 const HELD = new Set(['EPERM', 'EBUSY', 'EACCES']);
 
-/** Writes the settings atomically. Anything key-shaped never reaches the file: only the fields a service has. */
-export function writeSettings(s: AiSettings, file = settingsFile()): void {
-  const pick = ({ id, kind, provider, name, base, model, local, privatePages, acceptedAt, lastTest }: AiService): AiService => ({ id, kind, provider, name, base, model, local, privatePages, acceptedAt, lastTest });
-  const clean: AiSettings = { version: 1, services: s.services.map(pick), writer: s.writer, decider: s.decider, agents: s.agents };
+/** Writes JSON to a temporary file and renames it over the file, retrying while Windows briefly holds it. */
+export function writeJsonAtomic(file: string, value: unknown): void {
   mkdirSync(dirname(file), { recursive: true });
   const tmp = `${file}.${process.pid}.tmp`;
-  writeFileSync(tmp, `${JSON.stringify(clean, null, 2)}\n`, 'utf8');
+  writeFileSync(tmp, `${JSON.stringify(value, null, 2)}\n`, 'utf8');
   for (let attempt = 0; ; attempt++) {
     try {
       renameSync(tmp, file);
       return;
     } catch (e) {
-      // Windows refuses while something briefly holds the file (an indexer, an antivirus, a reader): wait and retry
+      // an indexer, an antivirus or a reader can hold it for a moment: wait and retry
       if (!HELD.has((e as NodeJS.ErrnoException).code ?? '') || attempt >= 6) throw e;
       Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 20 * 2 ** attempt);
     }
   }
+}
+
+/** Writes the settings atomically. Anything key-shaped never reaches the file: only the fields a service has. */
+export function writeSettings(s: AiSettings, file = settingsFile()): void {
+  const pick = ({ id, kind, provider, name, base, model, local, privatePages, acceptedAt, lastTest }: AiService): AiService => ({ id, kind, provider, name, base, model, local, privatePages, acceptedAt, lastTest });
+  writeJsonAtomic(file, { version: 1, services: s.services.map(pick), writer: s.writer, decider: s.decider, agents: s.agents } satisfies AiSettings);
 }
 
 /** A service's key's environment variable: `ATIYA_AI_<ID>_KEY`. */
