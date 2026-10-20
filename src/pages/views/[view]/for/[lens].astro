@@ -1,0 +1,16 @@
+---
+import HomeView from '../../../../site/content/HomeView.astro';
+import { lensPaths } from '../../../../site/content/homeView';
+import type { ViewId } from '../../../../site/home/ids';
+
+// a home view ordered for a role lens (documentation/home-views/foundation.md §6, switcher.md §2): the same
+// strengths and proof in the lens's order, with its lead voice; `/` stays the canonical address
+export function getStaticPaths() {
+  return lensPaths().map(({ view, lens }) => ({ params: { view, lens } }));
+}
+
+const view = Astro.params.view as ViewId;
+const { lens } = Astro.params;
+---
+
+<HomeView view={view} at="view" lens={lens} />

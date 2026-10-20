@@ -223,6 +223,6 @@ Where the build differs from the design above:
 - **`/views/classic/`** is the hub at its own address, so choosing the hub works like choosing any view. There, `?mode=` doesn't move the visitor, and its canonical address is `/`.
 - **`/?view=<id>`** is sent on by the router, with `location.replace`, rather than by a server, since the site is static. The rest of the query and the fragment are kept. `?mode=` skips the router, so the hub's ways in work as before.
 - **Two more keys, for the visit only.** `sessionStorage['site.homeArrival']` and `['site.homeChanged']` carry how the visitor came and what they changed to the next page, for the status line and telemetry. Both are read once and removed.
-- **The role lens (`?for=`) comes in stage 2c.** Until then, such an address isn't found.
+- **The role lens (`?for=`)** came in stage 2c: it's chosen in this dialog, under "Order by role", and kept for the visit ([foundation §6, as built](foundation.md#as-built-stage-2c)). On a lens's page, the cards for the views link to that view's page for the same lens.
 - **A view the site doesn't offer** (stage 4) answers at `/views/<id>/` with a short page, "This view isn't offered", that isn't indexed and links home: every view in the catalogue has an address, offered or not, so an old link never lands on a missing page.
 - **Telemetry** sends §8's events with view and lens IDs and the source only. They aren't on the protected pages' allowlist, because a home page is never protected.

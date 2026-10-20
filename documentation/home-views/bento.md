@@ -315,6 +315,6 @@ Where the build differs from the design above:
 - **The button's name is the strength's,** not "Show the details: …"; its line, its label and its quote are its description.
 - **The phone's index entries** carry `data-capability` too: on a phone they are what's in view, so the coverage test counts them.
 - **Below 50 rem In their words follows the tiles,** and on every width the keyboard reaches it after them.
-- **Not built yet:** the identity strip (the site's header is used), the ink sketch drawing itself on hover, the lead's Highlight and Voice settings (Lead is Who you are only; the others come with the Home screen, stage 3), the role lens and telemetry (stage 2b).
+- **Not built yet:** the identity strip (the site's header is used), the ink sketch drawing itself on hover, the lead's Highlight and Voice settings (Lead is Who you are only; the others come with the Home screen, stage 3). The role lens came in stage 2c: its first strength takes the large first tile ([foundation §6, as built](foundation.md#as-built-stage-2c)).
 
 Evidence: the E2E group "home views" (coverage at 1280 by 800 and 360 by 740 in both modes, the three levels, the drawer's keys and address, axe with a drawer open in both modes, no sideways scroll and 44 px targets from 320 px), the design system's unit tests, and the screenshots of the stories and `/views/bento/` in the `visual` project.

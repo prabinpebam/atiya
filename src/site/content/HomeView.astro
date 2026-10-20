@@ -15,28 +15,31 @@ import Button from '../components/fundamentals/Button.astro';
 import ViewLead from './ViewLead.astro';
 import { CATALOGUE } from '../home/catalogue';
 import type { ViewId } from '../home/ids';
-import { bentoView, coverView, homeFrame, homeRouting, proofGridView, viewSwitch } from './homeView';
+import { bentoView, coverView, homeFrame, homeRouting, lensChip, proofGridView, viewSwitch } from './homeView';
 
 interface Props {
   /** The view (`bento`, `cover`, `proof-grid`). */
   view: ViewId;
   /** Where it's shown: the site's root (it's the default), or its own address. */
   at: 'root' | 'view';
+  /** The role lens it's ordered for (`/views/<id>/for/<lens>/`). */
+  lens?: string;
 }
 
-const { view, at } = Astro.props;
+const { view, at, lens } = Astro.props;
 const frame = homeFrame();
-const bento = view === 'bento' ? await bentoView() : null;
-const cover = view === 'cover' ? await coverView() : null;
-const grid = view === 'proof-grid' ? proofGridView() : null;
-const choices = viewSwitch(view);
+const bento = view === 'bento' ? await bentoView(lens) : null;
+const cover = view === 'cover' ? await coverView(lens) : null;
+const grid = view === 'proof-grid' ? proofGridView(lens) : null;
+const choices = viewSwitch(view, lens);
+const chip = lensChip(view, lens);
 ---
 
-<HomeLayout title={frame.title} description={frame.description} canonical={at === 'view' ? '/' : undefined} nav={frame.nav} footer={frame.footer} sections={frame.sections} view={view} home={homeRouting(view, at)}>
+<HomeLayout title={frame.title} description={frame.description} canonical={at === 'view' ? '/' : undefined} nav={frame.nav} footer={frame.footer} sections={frame.sections} view={view} home={homeRouting(view, at, lens)}>
   {
     bento && (
       <Bento tiles={bento.tiles} density={bento.density}>
-        <ViewLead slot="lead" lead={bento.lead} planet={frame.planet} change={!!choices} />
+        <ViewLead slot="lead" lead={bento.lead} planet={frame.planet} change={!!choices} lens={chip} />
         {bento.voices.length > 0 && <Voices slot="voices" voices={bento.voices} />}
       </Bento>
     )
@@ -44,7 +47,7 @@ const choices = viewSwitch(view);
   {
     cover && (
       <Cover lines={cover.lines} story={cover.story} picture={cover.picture} quote={cover.quote} also={cover.also} density={cover.density}>
-        <ViewLead slot="lead" lead={cover.lead} planet={frame.planet} change={!!choices} tone="plain" />
+        <ViewLead slot="lead" lead={cover.lead} planet={frame.planet} change={!!choices} lens={chip} tone="plain" />
         {cover.voices.length > 0 && <Voices slot="voices" voices={cover.voices} />}
       </Cover>
     )
@@ -52,7 +55,7 @@ const choices = viewSwitch(view);
   {
     grid && (
       <ProofGrid columns={grid.columns} rows={grid.rows} density={grid.density} empty={grid.empty}>
-        <ViewLead slot="lead" lead={grid.lead} planet={frame.planet} change={!!choices} layout="strip" />
+        <ViewLead slot="lead" lead={grid.lead} planet={frame.planet} change={!!choices} lens={chip} layout="strip" />
         {grid.voices.length > 0 && <Voices slot="voices" voices={grid.voices} />}
       </ProofGrid>
     )
@@ -64,7 +67,7 @@ const choices = viewSwitch(view);
           Change view
         </Button>
         <Dialog id="change-view" title="Change view">
-          <ViewChoices views={choices.views} modes={choices.modes} defaultHref={choices.defaultHref} />
+          <ViewChoices views={choices.views} modes={choices.modes} defaultHref={choices.defaultHref} lenses={choices.lenses} />
         </Dialog>
         <p class="sr-only" aria-live="polite" data-home-status data-label={CATALOGUE.views[view].label} />
       </Fragment>

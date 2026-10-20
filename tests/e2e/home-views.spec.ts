@@ -2,8 +2,8 @@
  * Home views in the browser (documentation/home-views/plan.md, stages 2 and 4; bento.md, cover.md, proof-grid.md):
  * every strength in view on the first screen in every view, Bento's three levels (names at rest, a colleague's words
  * on hover and focus, the evidence drawer by press, Esc and `#cap-<id>`), the Cover's jumps, the Proof grid's cells
- * (keys, the address, Esc and Close, a phone's accordion), axe in both modes, a phone's reflow and targets, and the
- * page for a view the site doesn't offer. `/` stays the hub.
+ * (keys, the address, Esc and Close, a phone's accordion), axe in both modes, a phone's reflow and targets, the
+ * role lens (`?for=`), and the page for a view the site doesn't offer. `/` stays the hub.
  */
 import { devices, expect, test, type Page } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
@@ -499,5 +499,63 @@ test.describe('home views: change view', () => {
     await expect
       .poll(() => sent.filter((e) => e.event === 'capability_l3_open').map((e) => ({ id: e.properties.id, view: e.properties.view, kind: e.properties.kind })), { timeout: 15_000 })
       .toEqual([{ id, view: 'proof-grid', kind }]);
+  });
+});
+
+// The role lens (foundation.md §6; plan.md 2c): `?for=` orders every view for a role and keeps it for the visit;
+// it puts the role's strength first and never hides one; Use usual order clears it
+const lensKept = (page: Page) => page.evaluate(() => sessionStorage.getItem('site.homeLens'));
+const arrived = async (page: Page, url: RegExp) => {
+  await expect(page).toHaveURL(url);
+  await page.waitForLoadState();
+};
+
+test.describe('home views: role lens', () => {
+  test('`?for=` puts the role’s strength first in every view, hides none, is kept for the visit and cleared by Use usual order', async ({ page }) => {
+    await page.goto(BENTO);
+    const all = (await capabilities(page)).sort();
+    await page.goto('/?for=ai');
+    await arrived(page, /\/views\/[\w-]+\/for\/ai\/$/);
+    expect(await lensKept(page)).toBe('ai');
+    for (const view of VIEWS) {
+      // a view's own address follows the lens kept for the visit
+      await page.goto(view);
+      await arrived(page, new RegExp(`${view}for/ai/$`));
+      const shownIds = await capabilities(page);
+      expect(shownIds[0], view).toBe('ai');
+      expect([...shownIds].sort(), view).toEqual(all);
+      const note = page.locator('[data-lens-clear]').first().locator('..');
+      await expect(note).toContainText('Ordered for');
+      await expect(note).toContainText('AI and design');
+    }
+    // on a phone the note gives way, so every strength stays in the first screen; Change view still names the lens
+    await page.setViewportSize({ width: 360, height: 740 });
+    for (const view of VIEWS) {
+      await page.goto(`${view}for/ai/`);
+      expect(await outOfView(page), `${view}for/ai/ on a phone`).toEqual([]);
+      expect(await page.evaluate(() => document.documentElement.scrollWidth - innerWidth), `${view}for/ai/: no sideways scroll`).toBe(0);
+      await expect(page.getByText('Ordered for')).toBeHidden();
+    }
+    await expect((await openChoices(page)).locator('a[data-lens-choice][aria-current]')).toHaveText('AI and design');
+    await page.setViewportSize({ width: 1280, height: 800 });
+    await page.goto(`${BENTO}for/ai/`);
+    for (const colorScheme of ['light', 'dark'] as const) {
+      await page.emulateMedia({ colorScheme });
+      await noSeriousViolations(page);
+    }
+    // Change view names the lens showing and offers the others
+    const dialog = await openChoices(page);
+    await expect(dialog.locator('a[data-lens-choice][aria-current]')).toHaveText('AI and design');
+    await dialog.locator('a[data-lens-choice]', { hasText: 'Design leader' }).click();
+    await arrived(page, /\/views\/bento\/for\/leader\/$/);
+    expect(await lensKept(page)).toBe('leader');
+    await expect(page.locator('[data-lens-clear]').first().locator('..')).toContainText('Design leader');
+    // Use usual order: the view without a lens, nothing kept
+    await page.locator('[data-lens-clear]').first().click();
+    await arrived(page, /\/views\/bento\/$/);
+    expect(await lensKept(page)).toBeNull();
+    await expect(page.getByText('Ordered for')).toHaveCount(0);
+    await page.goto(COVER);
+    await arrived(page, /\/views\/cover\/$/);
   });
 });

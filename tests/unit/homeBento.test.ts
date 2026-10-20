@@ -70,6 +70,13 @@ describe("Bento's tiles", () => {
     expect(bentoTiles({ ...p, lens: 'ai' }, { ...BENTO_DEFAULTS, order: 'strongest' }, env).map((t) => t.id)).toEqual(['a', 'b']);
   });
 
+  it("under a lens, its first strength takes the first tile (the widest, when the count makes one) and none is left out", () => {
+    // curate puts the lens's order in picks.strengths; the view keeps it, whatever its own order setting
+    const lensed = picks(['e', 'a', 'b', 'c', 'd'].map((id, i) => strength(id, { weight: i / 10 })), { lens: 'maker' });
+    const tiles = bentoTiles(lensed, { ...BENTO_DEFAULTS, order: 'strongest' }, env);
+    expect(tiles.map((t) => [t.id, t.span])).toEqual([['e', 6], ['a', 6], ['b', 4], ['c', 4], ['d', 4]]);
+  });
+
   it("reads the view's settings, anything unknown as its default", () => {
     expect(bentoSettings()).toEqual(BENTO_DEFAULTS);
     expect(bentoSettings({ lead: 'voice', density: 'loud', pictures: 'none', order: 'strongest', words: 'off' })).toEqual({ lead: 'voice', density: 'calm', pictures: 'none', order: 'strongest', words: 'off' });

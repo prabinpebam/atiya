@@ -2,6 +2,8 @@
 import Example from '../library/Example.astro';
 import HomeLead from '../components/compounds/HomeLead.astro';
 import Link from '../components/fundamentals/Link.astro';
+import Tag from '../components/fundamentals/Tag.astro';
+import Text from '../components/fundamentals/Text.astro';
 import { withBase } from '../design/meta';
 ---
 
@@ -34,5 +36,23 @@ import { withBase } from '../design/meta';
     layout="strip"
   >
     <Link href={withBase('/design/')} variant="quiet">Explore the planet</Link>
+  </HomeLead>
+</Example>
+
+<Example title="Ordered for a role" layout="block" description="On a role lens's page, a line under the actions says what the view is ordered for, with the way back to the usual order.">
+  <HomeLead
+    name="Alex Morgan"
+    role="Head of Design"
+    positioning="I build design teams that ship calm, accessible products."
+    primary={{ label: 'Read my résumé', href: withBase('/design/') }}
+    secondary={{ label: 'Get in touch', href: withBase('/design/') }}
+    headingLevel={2}
+  >
+    <Link href={withBase('/design/')} variant="quiet">Explore the planet</Link>
+    <Fragment slot="note">
+      <Text variant="small" tone="muted" as="span">Ordered for</Text>
+      <Tag size="sm">Design leader</Tag>
+      <Link href={withBase('/design/')} variant="quiet">Use usual order</Link>
+    </Fragment>
   </HomeLead>
 </Example>

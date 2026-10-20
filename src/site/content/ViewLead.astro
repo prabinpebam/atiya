@@ -1,11 +1,14 @@
 ---
 /**
  * A home view's lead (documentation/home-views/foundation.md §7): the person, what they do and their actions,
- * with the way to the planet and Change view after them (switcher.md §1). Each view places it in its lead slot.
+ * with the way to the planet and Change view after them (switcher.md §1), and under them, on a lens's page,
+ * what it's ordered for with the way back (foundation.md §6). Each view places it in its lead slot.
  */
 import HomeLead from '../components/compounds/HomeLead.astro';
 import Button from '../components/fundamentals/Button.astro';
 import Link from '../components/fundamentals/Link.astro';
+import Tag from '../components/fundamentals/Tag.astro';
+import Text from '../components/fundamentals/Text.astro';
 import type { Lead } from '../home/present';
 
 interface Props {
@@ -15,13 +18,15 @@ interface Props {
   planet?: string;
   /** Whether there's another view to change to. */
   change: boolean;
+  /** The lens the page is ordered for: its name, and the view's address with the lens cleared. */
+  lens?: { label: string; clear: string };
   /** Plain for a view whose lead is a masthead (Cover); tinted otherwise. */
   tone?: 'tinted' | 'plain';
   /** strip: one compact row, for a view whose content must start high (Proof grid). */
   layout?: 'block' | 'strip';
 }
 
-const { lead, planet, change, tone, layout } = Astro.props;
+const { lead, planet, change, lens, tone, layout } = Astro.props;
 ---
 
 <HomeLead {...lead} tone={tone} layout={layout}>
@@ -35,4 +40,17 @@ const { lead, planet, change, tone, layout } = Astro.props;
       Change view
     </Button>
   )}
+  {
+    lens && (
+      <Fragment slot="note">
+        <Text variant="small" tone="muted" as="span">
+          Ordered for
+        </Text>
+        <Tag size="sm">{lens.label}</Tag>
+        <Link href={lens.clear} variant="quiet" data-lens-clear>
+          Use usual order
+        </Link>
+      </Fragment>
+    )
+  }
 </HomeLead>

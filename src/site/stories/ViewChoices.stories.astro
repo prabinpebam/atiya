@@ -17,3 +17,19 @@ const views = [
 <Example title="Showing the default" layout="block" description="The site's default showing, on a site with no other way to explore: the list of ways is left out.">
   <ViewChoices views={views.map((v) => ({ ...v, current: v.id === 'classic' }))} defaultHref={withBase('/design/')} />
 </Example>
+
+<Example title="Ordered for a role" layout="block" description="On a view that can be ordered for a role lens: the lenses, each with what it puts first, and the usual order. The one showing is marked; it's kept for the visit.">
+  <ViewChoices
+    views={views}
+    defaultHref={withBase('/design/')}
+    lenses={{
+      heading: 'Order by role',
+      items: [
+        { id: 'leader', label: 'Design leader', line: 'Starts with Design leadership', href: withBase('/design/'), current: true },
+        { id: 'maker', label: 'Hands-on maker', line: 'Starts with Prototyping', href: withBase('/design/') },
+      ],
+      clear: withBase('/design/'),
+      usual: false,
+    }}
+  />
+</Example>

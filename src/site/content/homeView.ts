@@ -11,7 +11,7 @@ import { bentoSettings, bentoTiles } from '../home/bento';
 import { coverIssue, coverSettings } from '../home/cover';
 import { proofGrid, proofGridSettings } from '../home/proofGrid';
 import { CATALOGUE } from '../home/catalogue';
-import { KIND_LABEL, leadOf, voicesOf, type PresentEnv, type Voice } from '../home/present';
+import { KIND_LABEL, leadOf, strengthsInOrder, voicesOf, type PresentEnv, type Voice } from '../home/present';
 import { VIEW_IDS, type ViewId } from '../home/ids';
 import type { HomeRouting } from '../scripts/homeRoute';
 
@@ -23,16 +23,35 @@ export function viewPaths(): ViewId[] {
   return (home?.offered ?? []).filter((v) => CATALOGUE.views[v].built);
 }
 
+/** The role lens's pages (foundation.md §6): `/views/<id>/for/<lens>/` for each offered view but the classic hub, each lens. */
+export function lensPaths(): { view: ViewId; lens: string }[] {
+  const home = getHome();
+  if (!home) return [];
+  return viewPaths()
+    .filter((v) => v !== 'classic')
+    .flatMap((view) => home.lenses.map((l) => ({ view, lens: l.id })));
+}
+
+/** A view's address, for a lens or none. */
+const viewHref = (view: ViewId, lens?: string) => withBase(`/views/${view}/${lens && view !== 'classic' ? `for/${lens}/` : ''}`);
+
 /**
  * What the head's router needs on a home page (switcher.md §3): which view this page shows and where it is,
- * the site's default and offered views. None without a `home` key (the classic hub is all the site has).
- * Every view has an address (one that isn't offered answers with a short page), so a link may name any.
- * The lenses get their pages in stage 2c (plan.md §6).
+ * the site's default and offered views, its lenses and the one this page is ordered for. None without a
+ * `home` key (the classic hub is all the site has). Every view has an address (one that isn't offered
+ * answers with a short page), so a link may name any.
  */
-export function homeRouting(view: ViewId, at: HomeRouting['at']): HomeRouting | undefined {
+export function homeRouting(view: ViewId, at: HomeRouting['at'], lens?: string): HomeRouting | undefined {
   const home = getHome();
   if (!home) return undefined;
-  return { at, view, default: home.default, offered: viewPaths(), known: [...VIEW_IDS], lenses: [], base: withBase('/').replace(/\/$/, '') };
+  const lenses = home.lenses.map((l) => l.id);
+  return { at, view, default: home.default, offered: viewPaths(), known: [...VIEW_IDS], lenses, ...(lens ? { lens } : {}), base: withBase('/').replace(/\/$/, '') };
+}
+
+/** The lens chip under a view's lead (foundation.md §6): what the page is ordered for, and the way back to the usual order. */
+export function lensChip(view: ViewId, lens?: string) {
+  const l = lens ? getHome()?.lenses.find((x) => x.id === lens) : undefined;
+  return l ? { label: l.label, clear: `${viewHref(view)}?for=` } : undefined;
 }
 
 /** The views a site with a home page doesn't offer now (or that aren't built yet): each answers at its address with a short page. */
@@ -54,9 +73,10 @@ export interface ViewChoice {
 
 /**
  * Change view's choices (switcher.md §1): a card per offered view (the default's links to `/`), Use the
- * default, and the other ways to explore. Null when there's nothing to change to.
+ * default, the lenses (foundation.md §6: on a view that can show one), and the other ways to explore.
+ * On a lens's page every card keeps the lens. Null when there's nothing to change to.
  */
-export function viewSwitch(current: ViewId) {
+export function viewSwitch(current: ViewId, lens?: string) {
   const home = getHome();
   const offered = viewPaths();
   if (!home || offered.length < 2) return null;
@@ -64,12 +84,27 @@ export function viewSwitch(current: ViewId) {
     id,
     label: CATALOGUE.views[id].label,
     line: CATALOGUE.views[id].line,
-    href: withBase(id === home.default ? '/' : `/views/${id}/`),
+    href: lens && id !== 'classic' ? viewHref(id, lens) : withBase(id === home.default ? '/' : `/views/${id}/`),
     current: id === current,
     isDefault: id === home.default,
   }));
   const modes = getPlanet() ? [{ id: 'play', label: 'Little planet', line: 'A game, at /play/', href: withBase('/play/') }] : [];
-  return { views, modes, defaultHref: withBase('/') };
+  const lenses =
+    current !== 'classic' && home.lenses.length > 0
+      ? {
+          heading: `Order ${CATALOGUE.goals[home.picks.goal].lenses.toLowerCase()}`,
+          items: home.lenses.map((l) => ({
+            id: l.id,
+            label: l.label,
+            line: `Starts with ${strengthsInOrder(getHome(l.id)!.picks, 'yours')[0]?.capability.name ?? 'your strengths'}`,
+            href: viewHref(current, l.id),
+            current: l.id === lens,
+          })),
+          clear: `${viewHref(current)}?for=`,
+          usual: !lens,
+        }
+      : undefined;
+  return { views, modes, defaultHref: withBase('/'), ...(lenses ? { lenses } : {}) };
 }
 
 /** Addresses and people as the home model asks for them. */
@@ -128,9 +163,9 @@ export function homeFrame() {
   };
 }
 
-/** Bento's props (documentation/home-views/bento.md): the lead, the tiles with their pictures, the voices. Null when there's no home. */
-export async function bentoView() {
-  const home = getHome();
+/** Bento's props (documentation/home-views/bento.md): the lead, the tiles with their pictures, the voices; ordered for a lens when one is given. Null when there's no home. */
+export async function bentoView(lens?: string) {
+  const home = getHome(lens);
   if (!home) return null;
   const env = presentEnv();
   const settings = bentoSettings(home.settings.bento);
@@ -163,9 +198,9 @@ function homeLead(home: Home, env: PresentEnv) {
   });
 }
 
-/** Cover's props (documentation/home-views/cover.md): the lead, In this issue, the cover story and picture, a feature per strength, a colleague's words. Null when there's no home. */
-export async function coverView() {
-  const home = getHome();
+/** Cover's props (documentation/home-views/cover.md): the lead, In this issue, the cover story and picture, a feature per strength, a colleague's words; ordered for a lens when one is given. Null when there's no home. */
+export async function coverView(lens?: string) {
+  const home = getHome(lens);
   if (!home) return null;
   const env = presentEnv();
   const settings = coverSettings(home.settings.cover);
@@ -201,9 +236,9 @@ export async function coverView() {
   };
 }
 
-/** Proof grid's props (documentation/home-views/proof-grid.md): the lead, the columns with their names, a row per strength, the colleagues' words. Null when there's no home. */
-export function proofGridView() {
-  const home = getHome();
+/** Proof grid's props (documentation/home-views/proof-grid.md): the lead, the columns with their names, a row per strength, the colleagues' words; ordered for a lens when one is given. Null when there's no home. */
+export function proofGridView(lens?: string) {
+  const home = getHome(lens);
   if (!home) return null;
   const env = presentEnv();
   const settings = proofGridSettings(home.settings['proof-grid']);

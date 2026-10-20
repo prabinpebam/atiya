@@ -31,6 +31,9 @@ const PAGES = [
   { name: 'home-bento', path: '/views/bento/' },
   { name: 'home-cover', path: '/views/cover/' },
   { name: 'home-proof-grid', path: '/views/proof-grid/' },
+  // a role lens's page: the note under the lead, in the block lead and the strip
+  { name: 'home-bento-lens', path: '/views/bento/for/ai/' },
+  { name: 'home-proof-grid-lens', path: '/views/proof-grid/for/ai/' },
   { name: 'section-features', path: '/writing/' },
   { name: 'section-list', path: '/contact/' },
   { name: 'article', path: '/writing/the-best-learning-loop-will-win/' },

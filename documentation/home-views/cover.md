@@ -226,6 +226,6 @@ Where the build differs from the design above:
 - **The cover story** is the person's choice (Cover story), else the lens's first strength's first highlight, else the first highlight; only an open page of a strength shown. The cover picture is the person's (Cover picture), else the story's, else the first strength's.
 - **The pull quote** is the first voice, set large between the features' two halves. The full Voices strip follows the last feature.
 - **Motion:** features rise a little as they scroll into view (a scroll-driven animation), only under `prefers-reduced-motion: no-preference`. The cover picture doesn't ease back yet.
-- **Not built yet:** the ink sketch portrait (C1, the owner's to approve), the departments as their own block (the site's sections index follows as on every view), the role lens (stage 2c).
+- **Not built yet:** the ink sketch portrait (C1, the owner's to approve), the departments as their own block (the site's sections index follows as on every view). The role lens came in stage 2c: the cover story becomes the lens's first strength's ([foundation §6, as built](foundation.md#as-built-stage-2c)).
 
 Evidence: the E2E group "home views" (coverage at 1280 by 800 and 360 by 740 in both modes; an entry jumps to its feature under the header, Also leads to the voices, nothing runs on its own; axe in both modes), "home views on a phone" (no sideways scroll and 44 px targets from 320 px), the design system's unit tests, and the screenshots of the story and `/views/cover/` in the `visual` project.

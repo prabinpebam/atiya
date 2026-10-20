@@ -3,7 +3,8 @@
  * The lead of a home view (documentation/home-views/foundation.md §7): who the person is and what they do,
  * the line they wrote about it (left out until they write one: never made up), a few facts, and the two
  * actions every view keeps, the résumé and contact. A quiet way to the site's other ways in can follow in
- * its slot. Tinted, it's the one spot of colour on the page.
+ * its slot, and a line under them in `note` (what the page is ordered for), left out on a phone so what follows
+ * keeps the first screen. Tinted, it's the one spot of colour on the page.
  * @tier compound
  * @a11y A section named by the person's name, the page's one h1 on a home page; the actions are links.
  */
@@ -37,6 +38,8 @@ interface Props {
 const { name, role, positioning, facts = [], primary, secondary, headingLevel = 1, tone = 'tinted', layout = 'block' } = Astro.props;
 const id = `home-lead-${stableId(Astro, 'HomeLead')}`;
 const size = layout === 'strip' ? 'sm' : 'md';
+// a slot given inside a condition is passed even when it renders nothing: show the line only when it says something
+const note = Astro.slots.has('note') ? (await Astro.slots.render('note')).trim() : '';
 ---
 
 <section class="lead" data-tone={tone} data-layout={layout} aria-labelledby={id}>
@@ -81,6 +84,7 @@ const size = layout === 'strip' ? 'sm' : 'md';
       </div>
     )
   }
+  {note && <div class="note" set:html={note} />}
 </section>
 
 <style>
@@ -131,6 +135,14 @@ const size = layout === 'strip' ? 'sm' : 'md';
     display: contents;
   }
 
+  /* a line after the actions: what the page is ordered for (the role lens), with the way back */
+  .note {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-1) var(--space-3);
+  }
+
   /* the strip: who, what about them and the actions on one row; two rows, then a stack, as the screen narrows */
   .lead[data-layout='strip'] {
     grid-template-columns: auto minmax(0, 1fr) auto;
@@ -138,6 +150,14 @@ const size = layout === 'strip' ? 'sm' : 'md';
     align-items: center;
     gap: var(--space-3) var(--space-8);
     padding-block: var(--space-4);
+  }
+
+  .lead[data-layout='strip']:has(> .note) {
+    grid-template-areas: 'who about actions' 'note note note';
+  }
+
+  [data-layout='strip'] .note {
+    grid-area: note;
   }
 
   [data-layout='strip'] .who {
@@ -161,6 +181,10 @@ const size = layout === 'strip' ? 'sm' : 'md';
       grid-template-columns: minmax(0, 1fr) auto;
       grid-template-areas: 'who actions' 'about about';
     }
+
+    .lead[data-layout='strip']:has(> .note) {
+      grid-template-areas: 'who actions' 'about about' 'note note';
+    }
   }
 
   @media (max-width: 56rem) {
@@ -169,12 +193,17 @@ const size = layout === 'strip' ? 'sm' : 'md';
       grid-template-areas: 'who' 'about' 'actions';
     }
 
+    .lead[data-layout='strip']:has(> .note) {
+      grid-template-areas: 'who' 'about' 'actions' 'note';
+    }
+
     [data-layout='strip'] .actions {
       justify-content: start;
     }
   }
 
-  /* a phone: less room round the words */
+  /* a phone: less room round the words, and no note: every strength after the lead must stay in the first screen
+     (Change view still says what the page is ordered for) */
   @media (max-width: 40rem) {
     .lead {
       padding: var(--space-5);
@@ -183,6 +212,14 @@ const size = layout === 'strip' ? 'sm' : 'md';
     .lead[data-layout='strip'] {
       gap: var(--space-2);
       padding: var(--space-4);
+    }
+
+    .lead[data-layout='strip']:has(> .note) {
+      grid-template-areas: 'who' 'about' 'actions';
+    }
+
+    .note {
+      display: none;
     }
   }
 </style>

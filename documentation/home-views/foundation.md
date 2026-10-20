@@ -219,6 +219,16 @@ A recruiter often knows the role. The lens lets a link say it: `/?for=ai` opens 
 
 **On every site,** the lenses are the goal's presets (by role for Get hired, by service or industry for Win clients, by theme for Share my work) plus any the person makes, and a person can make a link for one job: the same lens behind a generated code, with who it's for kept privately ([owner flows §5](owner-flows.md)).
 
+### As built (stage 2c)
+
+The lens is built over Bento, Cover and Proof grid. Each lens has its own page for each view, `/views/<view>/for/<lens>/`, made at build time from the site's lenses; the views' unit tests and the E2E group "home views: role lens" hold it.
+
+- **The address.** `/?for=<lens>` is read by the router before the first paint, kept in `sessionStorage['site.homeLens']` for the visit, and sent on to the default view's lens page; when the default is the classic hub, which has no order to change, to the first offered view that isn't. While a lens is kept, a view's own address moves to its lens page, and `?for=` with no value clears it. A lens the site doesn't have is ignored. Each lens page's canonical address is `/`, like every view's.
+- **The note, not a chip with its own menu.** Under the lead's actions, a quiet line says "Ordered for", the lens's name as a tag, and "Use usual order", which clears it. Choosing another lens is in Change view, under "Order by role" (the goal's own word for its lenses): each lens with what it puts first, the one showing marked, and "Use the usual order". One place to change how the home page shows, rather than two menus.
+- **On a phone the note gives way** (below the small breakpoint): every strength must stay in the first screen, and the line would push the last of them below it. Change view still names the lens and offers the usual order there.
+- **What changes:** Bento's large first tile, the Cover's story and the Proof grid's first row (the one open on a phone) go to the lens's first strength, and In their words starts with the lens's voice. Nothing else moves: every strength and every piece of evidence stays, so the coverage rule holds under every lens (the E2E checks it on a phone).
+- **Not built yet:** the views' Copy link; until there is one, the link to send is `/?for=<lens>` or the lens page's own address. The lens in Spotlight, Showreel, Keywords and Questions comes as each is built.
+
 ## 7. Always on screen
 
 In every view, at every width:

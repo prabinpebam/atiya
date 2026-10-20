@@ -1,8 +1,9 @@
 ---
 /**
  * Change view's choices (documentation/home-views/switcher.md §1): how the choice is kept, a card per view
- * the site offers (the one showing marked, the default tagged), Use the default, and the other ways to
- * explore apart. Each card is a link to its view, so it works without scripts; with them, a choice is kept
+ * the site offers (the one showing marked, the default tagged), Use the default, the role lenses the view can
+ * be ordered for (foundation.md §6, kept for the visit), and the other ways to explore apart. Each card is a
+ * link to its view, so it works without scripts; with them, a choice is kept
  * on this device (scripts/homeViews.ts). A home page places it in a Dialog.
  * @tier compound
  * @a11y The views are a list of links, each named by its view and described by its line; the one showing has aria-current="page" and takes the focus when the dialog opens.
@@ -42,6 +43,20 @@ export interface ModeCard {
   href: string;
 }
 
+/** A lens the visitor can order the view for (foundation.md §6). */
+export interface LensCard {
+  /** Its ID (`ai`). */
+  id: string;
+  /** Its name (AI and design). */
+  label: string;
+  /** What it puts first ("Starts with AI transformation"). */
+  line: string;
+  /** This view's address for it: `/views/<id>/for/<lens>/`. */
+  href: string;
+  /** It's the lens showing now. */
+  current?: boolean;
+}
+
 interface Props {
   /** The views the site offers, in its order. */
   views: ViewCard[];
@@ -49,9 +64,11 @@ interface Props {
   modes?: ModeCard[];
   /** Where Use the default goes: the home page, with the visitor's choice cleared. */
   defaultHref: string;
+  /** The lenses this view can be ordered for, kept for the visit: the heading ("Order by role"), each lens, and the usual order's address (`usual`: it's showing). */
+  lenses?: { heading: string; items: LensCard[]; clear: string; usual: boolean };
 }
 
-const { views, modes = [], defaultHref } = Astro.props;
+const { views, modes = [], defaultHref, lenses } = Astro.props;
 const uid = stableId(Astro, 'view-choices');
 ---
 
@@ -82,6 +99,37 @@ const uid = stableId(Astro, 'view-choices');
   <span class="reset">
     <Link href={defaultHref} variant="standalone" data-view-default>Use the default</Link>
   </span>
+  {
+    lenses && (
+      <section class="modes" aria-labelledby={`${uid}-lenses`} data-lens-choices>
+        <Heading level={3} size="ui" tone="muted" id={`${uid}-lenses`}>
+          {lenses.heading}
+        </Heading>
+        <Text variant="small" tone="muted">
+          Puts what matters most first; hides nothing. Kept for this visit.
+        </Text>
+        <ul class="list" role="list">
+          {lenses.items.map((l) => (
+            <li class="mode">
+              <Link href={l.href} variant="standalone" current={l.current} data-lens-choice={l.id}>
+                {l.label}
+              </Link>
+              <Text variant="small" tone="muted" as="span">
+                {l.line}
+              </Text>
+              {l.current && <Tag tone="accent" size="sm">Showing</Tag>}
+            </li>
+          ))}
+          <li class="mode">
+            <Link href={lenses.clear} variant="standalone" current={lenses.usual} data-lens-clear>
+              Use the usual order
+            </Link>
+            {lenses.usual && <Tag tone="accent" size="sm">Showing</Tag>}
+          </li>
+        </ul>
+      </section>
+    )
+  }
   {
     modes.length > 0 && (
       <section class="modes" aria-labelledby={`${uid}-modes`}>
