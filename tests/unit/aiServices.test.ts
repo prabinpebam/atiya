@@ -1,4 +1,7 @@
-import { describe, expect, it } from 'vitest';
+import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { mkdtempSync, readFileSync, readdirSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import {
   addService,
   ago,
@@ -15,8 +18,10 @@ import {
   updateService,
   type Runner,
 } from '../../src/site/editor/model/aiServices';
-import { EMPTY_SETTINGS, type AiService } from '../../src/site/editor/server/aiSettings';
-import { testService } from '../../src/site/editor/server/aiServices';
+import { EMPTY_SETTINGS, keyVariable, readSettings, settingsFile, type AiService } from '../../src/site/editor/server/aiSettings';
+import { aiServicesRoute, testService } from '../../src/site/editor/server/aiServices';
+import { propose, writerLine, type AiEvent } from '../../src/site/editor/server/aiConnector';
+import { guard } from '../../src/site/editor/model/guard';
 
 const service = (id: string, more: Partial<AiService> = {}): AiService => ({ id, kind: 'openai-compatible', provider: 'other', name: id, base: `https://${id}.test/v1`, model: 'm', local: false, privatePages: true, ...more });
 const NOW = Date.parse('2026-10-20T12:00:00Z');
@@ -142,5 +147,84 @@ describe('the AI screen: Test (§7.4)', () => {
     expect((await testService(service('keyed'), async () => sse('{"fine":1}'))).state).toBe('shape');
     expect((await testService(service('keyed'), async () => new Response('{}', { status: 401 }))).state).toBe('key-refused');
     expect((await testService(service('keyed'), async () => new Response('insufficient_quota', { status: 402 }))).state).toBe('no-credit');
+  });
+});
+
+describe('the key scan: the AI routes never return or write a key (ai-plan.md S3.8, D4)', () => {
+  const KEY = `sk-scan-${Math.random().toString(36).slice(2)}-never-shown`;
+  let dir = '';
+  let was: string | undefined;
+  beforeAll(() => {
+    dir = mkdtempSync(join(tmpdir(), 'atiya-ai-scan-'));
+    was = process.env.CONTENT_ROOT;
+    process.env.CONTENT_ROOT = join(dir, 'content');
+    process.env.ATIYA_AI_CREDENTIALS = 'off';
+    process.env[keyVariable('scan')] = KEY;
+  });
+  afterAll(() => {
+    if (was === undefined) delete process.env.CONTENT_ROOT;
+    else process.env.CONTENT_ROOT = was;
+    delete process.env[keyVariable('scan')];
+    rmSync(dir, { recursive: true, force: true });
+  });
+  const call = async (path: string, method: string, body?: unknown) => {
+    const res = await aiServicesRoute(['ai', ...path.split('/')], method, new Request('http://localhost/', { method: method === 'GET' ? 'GET' : 'POST', body: body === undefined ? undefined : JSON.stringify(body) }));
+    return res ? `${res.status} ${await res.text()}` : '';
+  };
+  const everyFile = (root: string): string => readdirSync(root, { withFileTypes: true, recursive: true }).filter((e) => e.isFile()).map((e) => readFileSync(join(e.parentPath, e.name), 'utf8')).join('\n');
+
+  it('adds, changes, chooses, tests and removes a keyed service without the key in any answer or in the settings', async () => {
+    const answers = [
+      await call('services', 'POST', { provider: 'other', name: 'Scan', base: 'http://127.0.0.1:9/v1', model: 'm', accepted: true }),
+      await call('writer', 'PUT', { id: 'scan' }),
+      await call('services/scan', 'PUT', { model: 'm2', privatePages: false }),
+      await call('services/scan/test', 'POST'),
+      JSON.stringify(writerLine()),
+    ];
+    expect(answers[0]).toContain('"id":"scan"');
+    expect(answers[3]).toContain('"state":"unreachable"');
+    expect(readSettings().writer).toBe('scan');
+    expect(answers.join('\n')).not.toContain(KEY);
+    expect(everyFile(dir)).not.toContain(KEY);
+    expect(await call('services/scan', 'DELETE')).toContain('"ok":true');
+    expect(readFileSync(settingsFile(), 'utf8')).not.toContain(KEY);
+  });
+
+  it('hands the key only to the writer: no event of a request holds it, even when the service fails', async () => {
+    const settings = { ...structuredClone(EMPTY_SETTINGS), services: [service('scan')], writer: 'scan' };
+    const article = { id: 'a', title: 'A', summary: 'S', kind: 'note', body: [{ type: 'text', key: 'abc123', markdown: 'One. Two.' }] } as never;
+    const req = { id: 'a', article, target: { scope: 'block' as const, key: 'abc123' }, instruction: 'Make it shorter' };
+    const handed: (string | undefined)[] = [];
+    const answer = JSON.stringify({ changes: [{ op: 'replace', key: 'abc123', after: null, block: { type: 'text', markdown: 'One.' } }], header: null, summary: 'Shortened it', needs: { kind: 'none', reason: null } });
+    for (const fails of [false, true]) {
+      const events: AiEvent[] = [];
+      await propose(req, (e) => events.push(e), undefined, {
+        settings: () => settings,
+        isPrivate: () => false,
+        check: () => [],
+        context: async () => null,
+        write: async (c) => {
+          handed.push(c.key);
+          if (fails) throw new Error(`refused key ${c.key}`);
+          return { text: answer, cut: false, ms: 1, firstMs: 1 };
+        },
+      });
+      expect(events.some((e) => e.type === (fails ? 'error' : 'proposal'))).toBe(true);
+      expect(JSON.stringify(events)).not.toContain(KEY);
+    }
+    expect(handed).toEqual([KEY, KEY]);
+  });
+
+  it('answers only behind edit mode guard: a write needs the header, this origin and a loopback client', () => {
+    for (const path of ['ai/propose', 'ai/services', 'ai/writer', 'ai/services/scan/test']) {
+      const url = new URL(`http://localhost:4321/_edit/api/${path}`);
+      const req = (headers: Record<string, string>, clientAddress = '127.0.0.1') => guard({ method: 'POST', url, clientAddress, header: (n) => headers[n.toLowerCase()] ?? null });
+      const good = { host: 'localhost:4321', 'x-editor': '1', origin: 'http://localhost:4321', 'content-type': 'application/json' };
+      expect(req(good).ok).toBe(true);
+      expect(req({ ...good, 'x-editor': '' }).ok).toBe(false);
+      expect(req({ ...good, origin: 'https://evil.test' }).ok).toBe(false);
+      expect(req({ ...good, 'sec-fetch-site': 'cross-site' }).ok).toBe(false);
+      expect(req(good, '192.168.1.5').ok).toBe(false);
+    }
   });
 });
