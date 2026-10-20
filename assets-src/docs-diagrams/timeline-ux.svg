@@ -1,0 +1,41 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 470">
+<title>Timeline: the proposed view</title>
+<desc>Opening the timeline turns the article editor's canvas read-only: it shows the article as it was at the chosen version, with what changed since the previous one marked. Under it, a rail holds a tick for every version, with marks for named, published and AI versions; dragging it, or the arrow keys, steps through them. On the right, the inspector's History tab lists the versions by day with their messages, and the chosen one offers Restore this version, Compare and Copy blocks.</desc>
+<g id="canvas">
+<rect class="src" x="40" y="40" width="600" height="290" rx="18" />
+<text class="name" x="60" y="72">The article, as it was</text>
+<text class="note" x="60" y="94">read only; what changed since the previous version is marked</text>
+<rect class="chip" x="60" y="120" width="560" height="44" rx="10" />
+<text class="line" x="76" y="148">Heading and paragraphs, drawn as the page draws them</text>
+<rect class="gate" x="60" y="180" width="560" height="60" rx="10" />
+<text class="line" x="76" y="206">A changed paragraph: removed words struck,</text>
+<text class="line" x="76" y="228">new ones marked</text>
+<rect class="chip" x="60" y="256" width="560" height="54" rx="10" />
+<text class="line" x="76" y="288">A figure, from that version's picture</text>
+</g>
+<g id="rail">
+<rect class="box" x="40" y="350" width="600" height="80" rx="16" />
+<text class="name" x="60" y="378">Rail</text>
+<text class="note" x="60" y="400">drag, or arrow keys: one version a step; Page Up, a day</text>
+<rect class="chip" x="430" y="364" width="8" height="30" rx="3" />
+<rect class="chip" x="470" y="364" width="8" height="30" rx="3" />
+<rect class="gate" x="520" y="360" width="12" height="38" rx="3" />
+<rect class="chip" x="560" y="364" width="8" height="30" rx="3" />
+<rect class="out" x="600" y="360" width="12" height="38" rx="3" />
+</g>
+<g id="history">
+<rect class="box" x="680" y="40" width="280" height="390" rx="18" />
+<text class="name" x="700" y="72">History</text>
+<text class="note" x="700" y="94">the inspector's tab, by day</text>
+<text class="line" x="700" y="134">Today</text>
+<text class="line" x="700" y="162">14:32 Edited Approach</text>
+<text class="line" x="700" y="190">11:05 Before AI rewrite</text>
+<text class="line" x="700" y="230">Yesterday</text>
+<text class="line" x="700" y="258">18:40 Saved to remote</text>
+<text class="line" x="700" y="286">09:12 Named: first draft</text>
+<text class="code" x="700" y="336">Restore this version</text>
+<text class="code" x="700" y="362">Compare</text>
+<text class="code" x="700" y="388">Copy blocks</text>
+</g>
+<text class="label" x="40" y="458">The rail and the list are the same versions: choosing in one moves the other.</text>
+</svg>

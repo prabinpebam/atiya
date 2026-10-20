@@ -1,0 +1,52 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 580">
+<title>Timeline: versions kept beside your branch, not on it</title>
+<desc>Edit mode saves every edit to disk, as now. A checkpoint policy decides when a save becomes a version: after a quiet spell, when enough has changed in a long session, or at an event such as an AI change or a restore. It skips changes that change nothing and keeps at most one automatic version per five minutes. Each version is a commit on a timeline ref of its own, one in the public repository and one in the private one, written without touching your branch, your staging area or your files. Save to remote still commits and pushes your branch, as now. The timeline shows an article's versions from both refs and from the branch, found by the article's ID.</desc>
+<g id="saves">
+<rect class="src" x="40" y="40" width="220" height="190" rx="18" />
+<text class="name" x="60" y="72">Edit mode saves</text>
+<text class="note" x="60" y="94">every edit, to disk</text>
+<text class="line" x="60" y="132">content/</text>
+<text class="line" x="60" y="160">private-pages/</text>
+</g>
+<g id="policy">
+<rect class="gate" x="340" y="40" width="240" height="190" rx="18" />
+<text class="name" x="360" y="72">Checkpoint policy</text>
+<text class="note" x="360" y="94">quiet, size, events</text>
+<text class="line" x="360" y="132">Skips no-op changes</text>
+<text class="line" x="360" y="160">One per 5 minutes at most</text>
+<text class="line" x="360" y="188">Always before AI, restore</text>
+</g>
+<g id="refs">
+<rect class="box" x="660" y="40" width="300" height="80" rx="16" />
+<text class="name" x="680" y="70">Public repository</text>
+<text class="code" x="680" y="94">refs/atiya/timeline</text>
+<rect class="box" x="660" y="150" width="300" height="80" rx="16" />
+<text class="name" x="680" y="180">Private repository</text>
+<text class="code" x="680" y="204">refs/atiya/timeline</text>
+</g>
+<g id="remote">
+<rect class="box" x="40" y="320" width="220" height="90" rx="16" />
+<text class="name" x="60" y="352">Save to remote</text>
+<text class="note" x="60" y="374">as now, when you choose</text>
+<rect class="box" x="660" y="320" width="300" height="90" rx="16" />
+<text class="name" x="680" y="352">Your branch</text>
+<text class="note" x="680" y="374">commits, pushed: also versions</text>
+</g>
+<g id="timeline">
+<rect class="out" x="340" y="460" width="620" height="70" rx="16" />
+<text class="out-name" x="360" y="490">Timeline</text>
+<text class="out-note" x="360" y="512">an article's versions from the refs and the branch, by its ID</text>
+</g>
+<text class="label" x="268" y="126">saves</text>
+<text class="label" x="592" y="70">version</text>
+<text class="label" x="592" y="180">version</text>
+<text class="label" x="160" y="276">your choice</text>
+<text class="label" x="400" y="356">commit, push</text>
+<text class="label" x="40" y="566">The timeline refs never move your branch, your staging area or your files, and are never pushed unless you choose a backup.</text>
+<path class="arrow" d="M260 135 H337" />
+<path class="arrow" d="M580 80 H657" />
+<path class="arrow" d="M580 190 H657" />
+<path class="arrow" d="M150 230 V317" />
+<path class="arrow" d="M260 365 H657" />
+<path class="arrow" d="M810 410 V457" />
+</svg>

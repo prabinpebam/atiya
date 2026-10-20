@@ -1,0 +1,54 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 520">
+<title>AI services: a harness for APIs, an MCP server for agents</title>
+<desc>The article editor sends edit requests to an AI harness in the dev server, where the keys stay. The harness has one adapter per kind of API: cloud APIs (OpenAI, Claude, Gemini, Azure), models on this computer (Ollama, LM Studio), and later agent SDKs such as GitHub's Copilot SDK. It checks every answer. The other way in runs the opposite direction: edit mode is an MCP server, and the owner's own agent (Claude Code, Codex, Copilot CLI, OpenClaw, Hermes Agent), signed in its own way and run in Atiya Studio's terminal, calls its tools; what it proposes comes back to the editor for review like any other answer.</desc>
+<g id="editor">
+<rect class="src" x="40" y="40" width="220" height="150" rx="18" />
+<text class="name" x="60" y="72">Article editor</text>
+<text class="note" x="60" y="94">edit mode</text>
+<text class="line" x="60" y="132">Edit requests</text>
+<text class="line" x="60" y="162">Review and apply</text>
+</g>
+<g id="harness">
+<rect class="gate" x="340" y="40" width="240" height="150" rx="18" />
+<text class="name" x="360" y="72">AI harness</text>
+<text class="note" x="360" y="94">dev server, keys stay here</text>
+<text class="line" x="360" y="132">One adapter per API</text>
+<text class="line" x="360" y="162">Checks every answer</text>
+</g>
+<g id="apis">
+<rect class="box" x="660" y="40" width="300" height="70" rx="16" />
+<text class="name" x="680" y="70">Cloud APIs</text>
+<text class="note" x="680" y="92">OpenAI, Claude, Gemini, Azure</text>
+<rect class="box" x="660" y="130" width="300" height="70" rx="16" />
+<text class="name" x="680" y="160">On this computer</text>
+<text class="note" x="680" y="182">Ollama, LM Studio</text>
+<rect class="later" x="660" y="220" width="300" height="70" rx="16" />
+<text class="name" x="680" y="250">Agent SDKs</text>
+<text class="note" x="680" y="272">GitHub's Copilot SDK, later</text>
+</g>
+<g id="mcp">
+<rect class="box" x="340" y="350" width="240" height="110" rx="16" />
+<text class="name" x="360" y="382">MCP server</text>
+<text class="note" x="360" y="404">edit mode's own tools</text>
+<text class="code" x="360" y="436">get_article, propose</text>
+</g>
+<g id="agent">
+<rect class="later" x="660" y="350" width="300" height="110" rx="16" />
+<text class="name" x="680" y="382">Your own agent</text>
+<text class="note" x="680" y="404">signed in its own way</text>
+<text class="line" x="680" y="432">Claude Code, Codex, Copilot CLI</text>
+<text class="line" x="680" y="452">OpenClaw, Hermes Agent</text>
+</g>
+<text class="label" x="270" y="104">request</text>
+<text class="label" x="592" y="66">key</text>
+<text class="label" x="592" y="156">no key</text>
+<text class="label" x="592" y="372">calls tools</text>
+<text class="label" x="160" y="300">proposals come back for review</text>
+<text class="label" x="40" y="500">Either way, an answer is a proposal, checked against the content contract, and nothing changes until you accept it.</text>
+<path class="arrow" d="M260 115 H337" />
+<path class="arrow" d="M580 80 H657" />
+<path class="arrow" d="M580 165 H657" />
+<path class="dashed" d="M560 190 V255 H657" />
+<path class="dashed" d="M660 405 H583" />
+<path class="dashed" d="M340 405 H150 V193" />
+</svg>

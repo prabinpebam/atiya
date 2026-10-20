@@ -351,6 +351,42 @@
       "group": "Content and publishing/Edit mode"
     },
     {
+      "path": "editor/ai-editing.md",
+      "title": "AI editing and comments",
+      "order": 25.5,
+      "icon": "auto_awesome",
+      "status": "review",
+      "updated": "2026-10-20",
+      "group": "Content and publishing/Edit mode"
+    },
+    {
+      "path": "editor/ai-services.md",
+      "title": "AI services",
+      "order": 25.6,
+      "icon": "hub",
+      "status": "review",
+      "updated": "2026-10-20",
+      "group": "Content and publishing/Edit mode"
+    },
+    {
+      "path": "editor/timeline.md",
+      "title": "Timeline",
+      "order": 25.7,
+      "icon": "history",
+      "status": "review",
+      "updated": "2026-10-20",
+      "group": "Content and publishing/Edit mode"
+    },
+    {
+      "path": "editor/ai-research.md",
+      "title": "AI and history: research",
+      "order": 25.8,
+      "icon": "travel_explore",
+      "status": "review",
+      "updated": "2026-10-20",
+      "group": "Content and publishing/Edit mode"
+    },
+    {
       "path": "access/spec.md",
       "title": "Protected content and telemetry",
       "order": 30,
