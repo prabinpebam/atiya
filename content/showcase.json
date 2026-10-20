@@ -1,0 +1,275 @@
+{
+  "goal": "hired",
+  "facts": [
+    {
+      "id": "years",
+      "text": "18 years",
+      "source": "ref:article/resume"
+    }
+  ],
+  "capabilities": [
+    {
+      "id": "leadership",
+      "name": "Design leadership",
+      "short": "Leadership",
+      "line": "Built Belong's design org",
+      "keywords": [
+        "Design leadership",
+        "Hiring",
+        "Developing people",
+        "Team building",
+        "Culture"
+      ],
+      "match": {
+        "topics": [
+          "leadership"
+        ],
+        "sections": [
+          "leadership"
+        ]
+      },
+      "proof": [
+        {
+          "kind": "led",
+          "ref": "ref:article/do-what-makes-you-proud"
+        },
+        {
+          "kind": "led",
+          "resume": "Built the Belong Design organization from scratch"
+        },
+        {
+          "kind": "led",
+          "resume": "managing teams of 5–9 designers"
+        }
+      ],
+      "voice": {
+        "recommendation": "diego-baca",
+        "quote": "a great manager who stays deeply involved in the work"
+      }
+    },
+    {
+      "id": "strategy",
+      "name": "Product strategy",
+      "short": "Strategy",
+      "line": "Family Safety to Family",
+      "keywords": [
+        "Product strategy",
+        "Vision",
+        "Roadmap",
+        "Cross-device",
+        "Microsoft Family"
+      ],
+      "match": {
+        "sections": [
+          "work"
+        ]
+      },
+      "proof": [
+        {
+          "kind": "shipped",
+          "ref": "ref:article/defining-microsoft-family"
+        },
+        {
+          "kind": "led",
+          "resume": "Defined the strategy for Family Safety and its evolution into the broader Microsoft Family product"
+        },
+        {
+          "kind": "led",
+          "resume": "Defined product strategy for Windows cross-device experiences"
+        }
+      ],
+      "voice": {
+        "recommendation": "prabu-ambravaneswaran",
+        "quote": "can challenge the strongest product thinkers on their own turf"
+      }
+    },
+    {
+      "id": "ai",
+      "name": "AI transformation",
+      "short": "AI",
+      "line": "Handoff is now code",
+      "keywords": [
+        "AI",
+        "Agentic experiences",
+        "Coded prototypes",
+        "AI transformation",
+        "Copilot"
+      ],
+      "match": {
+        "topics": [
+          "ai"
+        ]
+      },
+      "proof": [
+        {
+          "kind": "led",
+          "resume": "Figma is no longer how Designers hand off specifications",
+          "ask": true
+        },
+        {
+          "kind": "led",
+          "resume": "AI transformation program for Design",
+          "ask": true
+        },
+        {
+          "kind": "wrote",
+          "ref": "ref:article/the-best-learning-loop-will-win"
+        }
+      ],
+      "voice": {
+        "recommendation": "diego-baca",
+        "quote": "He stays at the cutting edge of AI"
+      }
+    },
+    {
+      "id": "making",
+      "name": "Hands-on making",
+      "short": "Making",
+      "line": "Cloner Pro: 3,530 people",
+      "keywords": [
+        "Figma plugins",
+        "Prototyping",
+        "Web apps",
+        "Building with AI",
+        "Tools"
+      ],
+      "match": {
+        "topics": [
+          "side-project"
+        ],
+        "sections": [
+          "side-projects"
+        ]
+      },
+      "proof": [
+        {
+          "kind": "built",
+          "ref": "ref:article/cloner-pro"
+        }
+      ],
+      "voice": {
+        "recommendation": "diego-baca",
+        "quote": "Prabin is both a designer and a maker"
+      }
+    },
+    {
+      "id": "craft",
+      "name": "Craft and storytelling",
+      "short": "Craft",
+      "line": "Led Craft in Windows",
+      "keywords": [
+        "Craft",
+        "Storytelling",
+        "Visual design",
+        "Motion design",
+        "Quality"
+      ],
+      "match": {
+        "topics": [
+          "motion-design",
+          "photography"
+        ]
+      },
+      "proof": [
+        {
+          "kind": "led",
+          "resume": "Led the effort for improving Craft in Windows"
+        },
+        {
+          "kind": "wrote",
+          "ref": "ref:article/you-dont-have-a-storytelling-problem"
+        }
+      ],
+      "voice": {
+        "recommendation": "march-roger",
+        "quote": "He pairs this thinking with real craft"
+      }
+    },
+    {
+      "id": "systems",
+      "name": "Systems and operating models",
+      "short": "Systems",
+      "line": "Belong Design System",
+      "keywords": [
+        "Design systems",
+        "Operating models",
+        "Ways of working",
+        "Documentation"
+      ],
+      "match": {
+        "topics": [
+          "design-system",
+          "documentation"
+        ]
+      },
+      "proof": [
+        {
+          "kind": "built",
+          "resume": "Built the Belong Design System from scratch"
+        },
+        {
+          "kind": "built",
+          "ref": "ref:article/slate"
+        }
+      ],
+      "voice": {
+        "recommendation": "march-roger",
+        "quote": "raises the standards of the organization he's part of"
+      }
+    }
+  ],
+  "lenses": [
+    {
+      "id": "leader",
+      "label": "Design leader",
+      "order": [
+        "leadership",
+        "strategy",
+        "systems",
+        "ai",
+        "craft",
+        "making"
+      ],
+      "voice": "march-roger"
+    },
+    {
+      "id": "ai",
+      "label": "AI and design",
+      "order": [
+        "ai",
+        "making",
+        "strategy",
+        "leadership",
+        "systems",
+        "craft"
+      ],
+      "voice": "diego-baca"
+    },
+    {
+      "id": "strategy",
+      "label": "Product strategy",
+      "order": [
+        "strategy",
+        "leadership",
+        "ai",
+        "systems",
+        "craft",
+        "making"
+      ],
+      "voice": "prabu-ambravaneswaran"
+    },
+    {
+      "id": "maker",
+      "label": "Hands-on maker",
+      "order": [
+        "making",
+        "ai",
+        "craft",
+        "systems",
+        "strategy",
+        "leadership"
+      ],
+      "voice": "diego-baca"
+    }
+  ]
+}

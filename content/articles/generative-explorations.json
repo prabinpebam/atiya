@@ -2,6 +2,7 @@
   "id": "generative-explorations",
   "type": "article",
   "kind": "note",
+  "contribution": "built",
   "slug": "generative-explorations",
   "title": "Generative explorations: pictures made with code",
   "summary": "Five small browser tools for generating mesh gradients, animated noise, stipple drawings, guilloche patterns and string art.",

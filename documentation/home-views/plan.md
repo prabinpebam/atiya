@@ -168,7 +168,7 @@ Other features are being built at the same time, in their own worktrees and on `
 | Stage | Status | Evidence |
 |---|---|---|
 | 0 | Done | This page; the docs checks |
-| 1 | Not started | |
+| 1 | Done | 1.1 `homeContract.test.ts` (25 tests); 1.2 to 1.5 `homeCurate.test.ts` (34 tests: matching, the score, slots, kind balance, lens, hold, recency, ties, the health report, minimums, sites of 3, 40 and 500 pages, the 500 curating well under 150 ms); the 30 other suites that import the content contract pass (416 tests); 1.6 the owner's spine (`content/showcase.json`, `content/topics.json`, `resumePage`, `contribution` on 8 pages) passes the strict check, `npm run check` 0 errors, `npm run build` 134 pages, and no page renders the new code yet, so the home page is unchanged |
 | 2 | Not started | |
 | 3 | Not started | |
 | 4 | Not started | |

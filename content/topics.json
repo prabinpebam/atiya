@@ -1,0 +1,120 @@
+{
+  "topics": [
+    {
+      "id": "about",
+      "label": "About"
+    },
+    {
+      "id": "ai",
+      "label": "AI",
+      "synonyms": [
+        "artificial intelligence",
+        "generative AI"
+      ]
+    },
+    {
+      "id": "azure",
+      "label": "Azure"
+    },
+    {
+      "id": "career",
+      "label": "Career"
+    },
+    {
+      "id": "community",
+      "label": "Community"
+    },
+    {
+      "id": "curiosity",
+      "label": "Curiosity"
+    },
+    {
+      "id": "design-system",
+      "label": "Design system",
+      "synonyms": [
+        "design systems"
+      ]
+    },
+    {
+      "id": "designup",
+      "label": "DesignUp"
+    },
+    {
+      "id": "desktop-app",
+      "label": "Desktop app"
+    },
+    {
+      "id": "documentation",
+      "label": "Documentation"
+    },
+    {
+      "id": "figma-plugin",
+      "label": "Figma plugin",
+      "synonyms": [
+        "Figma plugins"
+      ]
+    },
+    {
+      "id": "generative-art",
+      "label": "Generative art"
+    },
+    {
+      "id": "leadership",
+      "label": "Leadership"
+    },
+    {
+      "id": "liquid-glass",
+      "label": "Liquid glass"
+    },
+    {
+      "id": "making",
+      "label": "Making"
+    },
+    {
+      "id": "motion-design",
+      "label": "Motion design"
+    },
+    {
+      "id": "personal-site",
+      "label": "Personal site"
+    },
+    {
+      "id": "photography",
+      "label": "Photography"
+    },
+    {
+      "id": "privacy",
+      "label": "Privacy"
+    },
+    {
+      "id": "pwa",
+      "label": "PWA",
+      "synonyms": [
+        "progressive web app"
+      ]
+    },
+    {
+      "id": "side-project",
+      "label": "Side project",
+      "synonyms": [
+        "side projects"
+      ]
+    },
+    {
+      "id": "static-site",
+      "label": "Static site"
+    },
+    {
+      "id": "tools",
+      "label": "Tools"
+    },
+    {
+      "id": "voice",
+      "label": "Voice"
+    },
+    {
+      "id": "web",
+      "label": "Web"
+    }
+  ]
+}

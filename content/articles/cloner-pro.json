@@ -2,6 +2,7 @@
   "id": "cloner-pro",
   "type": "article",
   "kind": "note",
+  "contribution": "built",
   "slug": "cloner-pro",
   "title": "Cloner Pro: bringing Cinema 4D's Cloner into Figma",
   "summary": "A Figma plugin that brings Cinema 4D-style cloning into 2D design, built with AI assistance and used by 3,530 people.",

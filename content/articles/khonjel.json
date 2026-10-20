@@ -2,6 +2,7 @@
   "id": "khonjel",
   "type": "article",
   "kind": "note",
+  "contribution": "built",
   "slug": "khonjel",
   "title": "Khonjel: voice AI that stays local",
   "summary": "A local-first desktop voice app for dictation, cleanup and notes, built around on-device speech and language models.",

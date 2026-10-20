@@ -4,6 +4,7 @@
  * Pure: the site's build and its checks read it; a mode reads only `ModeData`.
  */
 import { z } from 'astro/zod';
+import { VIEW_IDS } from '../home/ids';
 
 /** The contract versions this engine hosts (modes.md §11). */
 export const HOSTED_API = { min: 1, max: 1 } as const;
@@ -61,12 +62,24 @@ export const siteModes = z.object({
 export type SiteModes = z.infer<typeof siteModes>;
 
 /**
+ * The home page's views (documentation/home-views/switcher.md §5): the default, the views offered in Change view and
+ * each view's settings where they differ from the catalogue's defaults. Left out, the home page is the Classic hub.
+ */
+export const homeWays = z.strictObject({
+  default: z.enum(VIEW_IDS).optional(),
+  offered: z.array(z.enum(VIEW_IDS)).optional(),
+  settings: z.partialRecord(z.enum(VIEW_IDS), z.record(z.string(), z.union([z.string(), z.number(), z.boolean(), z.array(z.string())]))).optional(),
+});
+export type HomeWaysFile = z.infer<typeof homeWays>;
+
+/**
  * The site's ways in (`content/structures/ways.json`; plan stage 8A, D-W1): which modes are on, and the
  * home page's first offer, `site` or a mode that's on. Content: edit mode's Ways to explore screen writes it.
  */
 export const waysFile = z.strictObject({
   modes: z.array(siteMode),
   primary: z.string().min(1),
+  home: homeWays.optional(),
 });
 export type Ways = z.infer<typeof waysFile>;
 /** Where the ways file lives in the content folder. */

@@ -15,6 +15,11 @@ import { buildModeData } from '../modes/data';
 import { effectiveWays, isOn, LITTLE_PLANET } from '../modes/ways';
 import type { Route } from './routes';
 import type { Article, PlaceId } from './schema';
+import { buildEvidence, type EvidenceIndex } from '../home/evidence';
+import { curate, type HomePicks } from '../home/curate';
+import { countsOf, effectiveViews, health, type HealthItem } from '../home/health';
+import { viewSettings } from '../home/catalogue';
+import type { ViewId } from '../home/ids';
 
 let cached: { generation: number; index: ContentIndex } | undefined;
 
@@ -50,6 +55,48 @@ export const getWays = () => effectiveWays({ ways: content().ways, hasPlanet: !!
  * it's off (its structure is kept: V37) or there's no planet structure, so every page leaves the planet out.
  */
 export const getPlanet = () => (isOn(getWays(), LITTLE_PLANET) ? content().planet : null);
+
+/** The home page as its views draw it (documentation/home-views/): which views, their settings, the picks and the health report. */
+export interface Home {
+  default: ViewId;
+  offered: ViewId[];
+  /** Each offered view's settings, defaults filled in. */
+  settings: Partial<Record<ViewId, Record<string, unknown>>>;
+  picks: HomePicks;
+  health: HealthItem[];
+  lenses: { id: string; label: string }[];
+}
+
+let homeCache: { generation: number; evidence: EvidenceIndex; byLens: Map<string, Home> } | undefined;
+
+/**
+ * The home page's picks, for a lens when one is asked for (curation.md): null while the site has no spine
+ * (content/showcase.json) or no home key in its ways file, so its home page is the Classic hub. Read once per
+ * content generation and lens.
+ */
+export function getHome(lens?: string): Home | null {
+  const index = content();
+  const ways = index.ways?.home;
+  if (!index.showcase || !ways) return null;
+  const now = generation();
+  if (!homeCache || homeCache.generation !== now) homeCache = { generation: now, evidence: timed('home.evidence', () => buildEvidence(index)), byLens: new Map() };
+  const key = lens ?? '';
+  const hit = homeCache.byLens.get(key);
+  if (hit) return hit;
+  const showcase = index.showcase;
+  const evidence = homeCache.evidence;
+  const picks = timed('home.curate', () => curate({ showcase, evidence, topics: index.topics?.topics, lens }));
+  const views = effectiveViews(ways, countsOf(picks, showcase));
+  const home: Home = {
+    ...views,
+    settings: Object.fromEntries(views.offered.map((v) => [v, viewSettings(v, ways.settings?.[v])])),
+    picks,
+    health: health(picks, showcase, evidence, ways),
+    lenses: (showcase.lenses ?? []).map((l) => ({ id: l.id, label: l.label })),
+  };
+  homeCache.byLens.set(key, home);
+  return home;
+}
 
 /**
  * What a built-in mode is given (documentation/desktop/modes.md §5.2): its slots and the site's published

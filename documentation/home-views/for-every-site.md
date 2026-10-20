@@ -195,6 +195,8 @@ A view below its minimum isn't offered: it's left out of Change view, and edit m
 
 The default view can't be one below its minimum; if the default falls below it (a page made private, a picture removed), the site uses Bento, or the Classic hub, and the health report says why ([curation §8](curation.md)).
 
+**As built:** the content check doesn't refuse a view below its minimum, because a page made private elsewhere would then stop the whole site. The site falls back as above (`effectiveViews` in `src/site/home/health.ts`), and edit mode's Home screen refuses to save such a view as the default.
+
 ## 6. Thin sites and big sites
 
 The home page has **fixed budgets per level**, so a site with 500 pages has the same calm first screen as a site with five.

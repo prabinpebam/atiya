@@ -2,6 +2,7 @@
   "id": "atiya",
   "type": "article",
   "kind": "note",
+  "contribution": "built",
   "slug": "atiya",
   "title": "Atiya: a personal site on a little planet",
   "summary": "A walkable little planet and a magazine-like portfolio, with a local-first editor, private pages, and a publishing system built around two repositories.",

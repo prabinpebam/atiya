@@ -5,6 +5,7 @@
   "locale": "en",
   "contactPage": "contact",
   "privacyPage": "privacy",
+  "resumePage": "resume",
   "services": {
     "contact": {
       "endpoint": "https://atiya-contact-8a66d9.azurewebsites.net"

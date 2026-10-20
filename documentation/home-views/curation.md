@@ -318,3 +318,14 @@ A blocking item never blocks Save to remote for anything else; it only stops the
 | CU5 | Stale pages | Rank lower; exclude | Rank lower, and list them in the health report |
 | CU6 | Automatic voices | Never; suggest only | Never chosen by a rule; suggested in the health report |
 | CU7 | A strength with no proof | Hide it from visitors; show it with Ask me about it | Hide it: a claim with nothing behind it hurts more than a gap |
+
+## 11. As built
+
+Stage 1 of the [plan](plan.md) built the rules as specified above, in `src/site/home/` (`evidence.ts`, `curate.ts`, `health.ts`, `check.ts`), with these differences and details:
+
+- **`curation.leaveOut` is an object:** `{ "sections": [], "topics": [], "kinds": [] }`, so each list is checked against its own IDs.
+- **Not proof:** the résumé, contact and privacy pages never enter the evidence index as pages. The résumé proves through pinned résumé lines instead.
+- **A page's date** is `publishedAt`, else `updatedAt`.
+- **Held picks** (`held`, written when Hold automatic changes is turned on) keep each strength's pages and the highlights as `{ ref, capability }` pairs.
+- **Headlines follow the person's order whatever the lens:** a lens reorders the strengths and swaps the lead voice, but never moves a proof from one strength to another.
+- **Cost:** a made-up site of 500 pages curates in well under 150 ms in the unit tests; the owner's 17 pages take about 33 ms cold and under 2 ms warm.

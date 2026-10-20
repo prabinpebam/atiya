@@ -140,6 +140,8 @@ The spine is a content file, `content/showcase.json`, edited like any other cont
 - every `resume` fragment and every `quote` appears word for word in its source, so an edit there can't leave the home page saying something its source no longer does;
 - every highlight's capability exists.
 
+**As built** (stage 1 of the [plan](plan.md)): a capability's `media` is a media ID (`<owner>/<id>`, like a page's lead picture), not a ref; a fact's `text` is found word for word in its source page; a question may name no strengths (a general answer). The schema is `src/site/home/schema.ts`.
+
 **On every site, most of this is found, not written.** The `proof` list above is the owner's hand-picked one; in the general model a `proof` list holds only **pins**, and the rules find the rest in the site's published pages each time it's built. The decisions the curation adds (the goal, what each strength matches, hides, the curation settings) and what's computed instead of stored are in [curation §2](curation.md).
 
 ## 3. The six capabilities

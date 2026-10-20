@@ -2,6 +2,7 @@
   "id": "liquid-glass-for-web",
   "type": "article",
   "kind": "note",
+  "contribution": "built",
   "slug": "liquid-glass-for-web",
   "title": "Liquid glass for the web",
   "summary": "A web experiment that turns Apple's 2025 Liquid Glass idea into a reusable SVG-filter engine, wrappers and a live design library.",

@@ -1,0 +1,149 @@
+{
+  "$comment": "The engine's home page catalogue (documentation/home-views/for-every-site.md, controls.md §3): goals, starting strengths and the views with their minimums and settings. Never content: every site reads the same one. A view's built flips to true in the stage that builds it (documentation/home-views/plan.md).",
+  "goals": {
+    "hired": {
+      "label": "Get hired",
+      "actions": { "primary": "Read résumé", "secondary": "Contact me" },
+      "counts": ["shipped", "led", "said"],
+      "view": "bento",
+      "lenses": "By role",
+      "questions": [
+        { "id": "kind", "question": "What kind of leader?", "full": "What kind of leader is this person?" },
+        { "id": "outcomes", "question": "What outcomes did they influence?", "full": "What outcomes have they influenced?" },
+        { "id": "made", "question": "What did they lead or make?", "full": "What did they personally lead, decide, make, or enable?" },
+        { "id": "breadth", "question": "How broad, and where deepest?", "full": "How broad is the practice, and where is the deepest expertise?" },
+        { "id": "together", "question": "How do they work with others?", "full": "How do they work with design, product, engineering, and leadership?" },
+        { "id": "teams", "question": "How do they build teams?", "full": "How do they build teams and culture?" },
+        { "id": "ai-and-code", "question": "How do they use AI and code?", "full": "How are AI and code used as part of the work?" },
+        { "id": "public", "question": "What can be discussed publicly?", "full": "What can be discussed publicly, given confidentiality constraints?" },
+        { "id": "contact", "question": "Contact, or a short résumé?", "full": "How can I contact them or review a concise résumé?" }
+      ]
+    },
+    "clients": {
+      "label": "Win clients",
+      "actions": { "primary": "See the work", "secondary": "Start a project" },
+      "counts": ["shipped", "said", "recognised"],
+      "view": "bento",
+      "lenses": "By service or by industry",
+      "questions": [
+        { "id": "what", "question": "What do you do?" },
+        { "id": "for-whom", "question": "For whom?" },
+        { "id": "results", "question": "What came of it?" },
+        { "id": "how", "question": "How do you work?" },
+        { "id": "start", "question": "How do we start?" }
+      ]
+    },
+    "share": {
+      "label": "Share my work",
+      "actions": { "primary": "Read the latest", "secondary": "Get in touch" },
+      "counts": ["wrote", "spoke", "built"],
+      "view": "cover",
+      "lenses": "By theme",
+      "questions": [
+        { "id": "about", "question": "What's this about?" },
+        { "id": "start", "question": "Where do I start?" },
+        { "id": "new", "question": "What's new?" },
+        { "id": "who", "question": "Who are you?" }
+      ]
+    }
+  },
+  "strengths": {
+    "design": ["Design leadership", "Product strategy", "Interaction design", "Design systems", "Visual and brand design", "Prototyping"],
+    "engineering": ["Systems architecture", "Front-end engineering", "Developer tools", "Performance", "Engineering leadership", "Open source"],
+    "product": ["Product strategy", "Discovery", "Growth", "Platform products", "Product leadership", "Go to market"],
+    "research": ["User research", "Research operations", "Mixed methods", "Insight to strategy", "Accessibility research"],
+    "writing": ["Long-form writing", "Editing", "Technical writing", "Speaking", "Teaching"],
+    "other": ["Leadership", "Community building", "Making", "Craft"]
+  },
+  "views": {
+    "classic": {
+      "label": "Classic",
+      "line": "The sections, as a list",
+      "built": true,
+      "minimum": {},
+      "settings": {}
+    },
+    "bento": {
+      "label": "Bento",
+      "line": "The default",
+      "built": false,
+      "minimum": { "strengths": 3 },
+      "settings": {
+        "lead": { "label": "Lead", "type": "choice", "values": ["who", "highlight", "voice"], "labels": ["Who you are", "A highlight", "A voice"], "default": "who" },
+        "density": { "label": "Density", "type": "choice", "values": ["calm", "full"], "labels": ["Calm", "Full"], "default": "calm" },
+        "pictures": { "label": "Pictures", "type": "choice", "values": ["work", "chosen", "none"], "labels": ["From the work", "Chosen only", "Type only"], "default": "work" },
+        "order": { "label": "Order", "type": "choice", "values": ["yours", "strongest"], "labels": ["Yours", "Strongest first"], "default": "yours" },
+        "words": { "label": "In their words", "type": "choice", "values": ["on", "off"], "labels": ["On", "Off"], "default": "on" }
+      }
+    },
+    "cover": {
+      "label": "Cover",
+      "line": "A magazine cover",
+      "built": false,
+      "minimum": { "strengths": 3, "pictures": 1 },
+      "settings": {
+        "density": { "label": "Density", "type": "choice", "values": ["calm", "full"], "labels": ["Calm", "Full"], "default": "full" },
+        "order": { "label": "Order", "type": "choice", "values": ["yours", "strongest"], "labels": ["Yours", "Strongest first"], "default": "yours" },
+        "picture": { "label": "Cover picture", "type": "picture" },
+        "story": { "label": "Cover story", "type": "highlight" }
+      }
+    },
+    "spotlight": {
+      "label": "Spotlight",
+      "line": "One at a time",
+      "built": false,
+      "minimum": { "highlights": 4 },
+      "settings": {
+        "motion": { "label": "Motion", "type": "choice", "values": ["still", "gentle", "lively"], "labels": ["Still", "Gentle", "Lively"], "default": "gentle" },
+        "order": { "label": "Order", "type": "choice", "values": ["yours", "strongest"], "labels": ["Yours", "Strongest first"], "default": "yours" },
+        "count": { "label": "Highlights", "type": "number", "min": 4, "max": 8, "default": 8 },
+        "rail": { "label": "The rail", "type": "choice", "values": ["titles", "thumbnails"], "labels": ["Titles", "Thumbnails"], "default": "titles" }
+      }
+    },
+    "showreel": {
+      "label": "Showreel",
+      "line": "A 90-second film",
+      "built": false,
+      "minimum": { "highlights": 5, "everyPicture": true },
+      "settings": {
+        "order": { "label": "Order", "type": "choice", "values": ["yours", "strongest"], "labels": ["Yours", "Strongest first"], "default": "yours" },
+        "pace": { "label": "Pace", "type": "choice", "values": ["slower", "standard"], "labels": ["Slower", "Standard"], "default": "standard" },
+        "film": { "label": "The film", "type": "choice", "values": ["offer", "none"], "labels": ["Offer the download", "Don't"], "default": "offer" }
+      }
+    },
+    "keywords": {
+      "label": "Keywords",
+      "line": "By what you pick",
+      "built": false,
+      "minimum": { "keywords": 12, "proof": 8 },
+      "settings": {
+        "motion": { "label": "Motion", "type": "choice", "values": ["still", "gentle", "lively"], "labels": ["Still", "Gentle", "Lively"], "default": "lively" },
+        "order": { "label": "Order", "type": "choice", "values": ["yours", "strongest"], "labels": ["Yours", "Strongest first"], "default": "yours" },
+        "typing": { "label": "Typing a skill", "type": "choice", "values": ["on", "off"], "labels": ["On", "Off"], "default": "on" },
+        "perGroup": { "label": "Per group", "type": "number", "min": 4, "max": 8, "default": 8 }
+      }
+    },
+    "proof-grid": {
+      "label": "Proof grid",
+      "line": "Claims and proof",
+      "built": false,
+      "minimum": { "kinds": 3, "proof": 8 },
+      "settings": {
+        "density": { "label": "Density", "type": "choice", "values": ["calm", "full"], "labels": ["Calm", "Full"], "default": "full" },
+        "order": { "label": "Order", "type": "choice", "values": ["yours", "strongest"], "labels": ["Yours", "Strongest first"], "default": "yours" },
+        "columns": { "label": "Columns", "type": "kinds", "max": 5 },
+        "empty": { "label": "Empty cells", "type": "choice", "values": ["show", "hide"], "labels": ["Show", "Hide"], "default": "show" }
+      }
+    },
+    "questions": {
+      "label": "Questions",
+      "line": "Ask, get answers",
+      "built": false,
+      "minimum": { "answers": 5 },
+      "settings": {
+        "order": { "label": "Order", "type": "choice", "values": ["yours", "strongest"], "labels": ["Yours", "Strongest first"], "default": "yours" },
+        "ask": { "label": "Ask something else", "type": "choice", "values": ["on", "off"], "labels": ["On", "Off"], "default": "on" }
+      }
+    }
+  }
+}

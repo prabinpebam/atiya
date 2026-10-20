@@ -2,6 +2,7 @@
   "id": "slate",
   "type": "article",
   "kind": "note",
+  "contribution": "built",
   "slug": "slate",
   "title": "Slate: a documentation harness for work that keeps changing",
   "summary": "A portable harness that turns project notes into navigable, visual-first static docs, now powering this site's own documentation.",

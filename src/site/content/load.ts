@@ -13,6 +13,8 @@ import { LEGACY_PLANET_FILE, PLANET_FILE, WAYS_FILE, waysFile, type Ways } from 
 import { checkModes } from '../modes/rules';
 import { BUILTIN_MODES } from '../modes/builtin';
 import { effectiveWays } from '../modes/ways';
+import { SHOWCASE_FILE, TOPICS_FILE, showcaseFile, topicsFile, type Showcase, type TopicsFile } from '../home/schema';
+import { checkHome } from '../home/check';
 
 /** Where a resource comes from: the public content folder, or private-pages/ (documentation/access/spec.md §3). */
 export type Origin = 'public' | 'private';
@@ -83,6 +85,10 @@ export interface ContentIndex {
   recommendations: Recommendation[];
   /** The fonts imported into the site (content/fonts/), by ID. */
   fonts: Map<string, FontFileDoc>;
+  /** The home page's spine (content/showcase.json: documentation/home-views/foundation.md §2), null without it. */
+  showcase: Showcase | null;
+  /** The topic vocabulary (content/topics.json: home-views/curation.md §4.1), null without it. */
+  topics: TopicsFile | null;
   /** Reported, not failed: a published item the site doesn't place (it has no page). */
   warnings: string[];
   /**
@@ -160,6 +166,8 @@ export function loadContent(docs: Record<string, unknown>, masters: Set<string>,
   let grants: GrantRecord[] = [];
   let message: AccessMessage | null = null;
   let ways: Ways | null = null;
+  let showcase: Showcase | null = null;
+  let topics: TopicsFile | null = null;
   // Little planet's structure: where it was read from (the new place, or the old one during the move: M1.1)
   let planetFile = '';
   const planetFiles: string[] = [];
@@ -203,6 +211,8 @@ export function loadContent(docs: Record<string, unknown>, masters: Set<string>,
       }
       planetFiles.push(file);
     } else if (file === `/content/${WAYS_FILE}`) ways = parse(waysFile, file, data) ?? null;
+    else if (file === `/content/${SHOWCASE_FILE}`) showcase = parse(showcaseFile, file, data) ?? null;
+    else if (file === `/content/${TOPICS_FILE}`) topics = parse(topicsFile, file, data) ?? null;
     else if (file === '/content/recommendations.json') {
       recommendations = parse(recommendationsFile, file, data)?.items ?? [];
       const seen = new Set<string>();
@@ -454,12 +464,13 @@ export function loadContent(docs: Record<string, unknown>, masters: Set<string>,
 
     // the navigation (V17): every entry points at a node of the tree, or at a real address; never a protected page (V25)
     const STRUCTURE_FILE = 'content/structures/site.json';
-    for (const field of ['contactPage', 'privacyPage'] as const) {
+    for (const field of ['contactPage', 'privacyPage', 'resumePage'] as const) {
       const node = site?.[field];
       if (!node) continue;
       const r = routes.find((x) => x.node.id === node);
       if (!r) add('content/site.json', `${field} "${node}" isn't a node of the site's tree`, field);
       else if (r.access !== 'open') add('content/site.json', `${field} "${node}" is a private page (V25)`, field);
+      else if (field === 'resumePage' && r.node.kind !== 'item') add('content/site.json', `resumePage "${node}" is a section: it names the résumé's page`, field);
     }
     (structure.menus?.primary ?? []).forEach((e, i) => {
       const at = `menus.primary.${i}`;
@@ -531,7 +542,10 @@ export function loadContent(docs: Record<string, unknown>, masters: Set<string>,
     });
   }
 
-  const index: ContentIndex = { site: site!, structure: structure!, articles, origins, access, people, media, documents, videos, routes, canonical: canonicalPaths(routes), redirects, planet, ways, overlay, grants, accessMessage: message, themes, fonts, recommendations, warnings, problems: [] };
+  const index: ContentIndex = { site: site!, structure: structure!, articles, origins, access, people, media, documents, videos, routes, canonical: canonicalPaths(routes), redirects, planet, ways, overlay, grants, accessMessage: message, themes, fonts, recommendations, showcase, topics, warnings, problems: [] };
+  // the home page (documentation/home-views/foundation.md §2): what the spine names is open and found word for word;
+  // a page already failing its own check isn't reported again through it
+  if (site && structure) for (const i of checkHome(index, ways, invalidArticles)) add(i.file, i.message, i.path);
   // the ways in (V33 to V37, documentation/desktop/modes.md §6), once the rest holds: a mode's structure that
   // already fails its own check (the planet's V14 to V16) isn't reported twice
   if (!issues.length && site && structure) {
@@ -548,8 +562,8 @@ export function loadContent(docs: Record<string, unknown>, masters: Set<string>,
 
 /** An article's file, in either folder (its key as the source gives it). */
 const ARTICLE_FILE = /^\/(content|private)\/articles\/[^/]+\.json$/;
-/** What can be left out on its own: an article, or a piece of media (its sidecar or a file beside it). */
-const LEAVABLE = /^\/(content|private)\/(articles|media)\//;
+/** What can be left out on its own: an article, a piece of media (its sidecar or a file beside it), or the home page's spine or vocabulary (the home is then the Classic hub). */
+const LEAVABLE = /^\/(content|private)\/(articles|media)\/|^\/content\/(showcase|topics)\.json$/;
 
 /**
  * The content as dev reads it (documentation/content/spec.md §5.4): a file that doesn't pass the check is left out

@@ -2,6 +2,7 @@
   "id": "liquid-glass-pro",
   "type": "article",
   "kind": "note",
+  "contribution": "built",
   "slug": "liquid-glass-pro",
   "title": "Liquid Glass Pro: liquid glass in Figma, before Figma had it",
   "summary": "A Figma plugin for making Apple-inspired Liquid Glass effects before Figma had official support for them.",

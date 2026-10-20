@@ -314,6 +314,13 @@ const itemRef = z.strictObject({ type: z.enum(['article', 'caseStudy', 'practice
 export const PAGE_KINDS = ['note', 'page', 'gallery', 'talk'] as const;
 export type PageKind = (typeof PAGE_KINDS)[number];
 
+/**
+ * The person's part in a page's work, its kind of proof on the home page (documentation/home-views/curation.md §2):
+ * set as Your part; left out, the page's kind decides (a note wrote it, a talk spoke it, a gallery built it).
+ */
+export const CONTRIBUTIONS = ['shipped', 'led', 'built', 'wrote', 'spoke', 'recognised'] as const;
+export type Contribution = (typeof CONTRIBUTIONS)[number];
+
 export const article = z.strictObject({
   id,
   type: z.literal('article'),
@@ -338,6 +345,8 @@ export const article = z.strictObject({
   body: z.array(block),
   related: z.array(itemRef).max(3).optional(),
   topics: z.array(id).optional(),
+  /** The person's part in the work (Your part): what kind of proof the page is on the home page. */
+  contribution: z.enum(CONTRIBUTIONS).optional(),
   seo: z.strictObject({ title: z.string().optional(), description: z.string().max(SEARCH_DESCRIPTION_MAX).optional(), image: mediaId.optional(), noindex: z.boolean().optional() }).optional(),
 });
 
@@ -362,6 +371,11 @@ export const siteSettings = z.strictObject({
   contactPage: id.optional(),
   /** The privacy page the footer links to (a node of the site structure): what telemetry records (documentation/access/spec.md §9.6). */
   privacyPage: id.optional(),
+  /**
+   * The person's résumé (a node of the site structure, an open page): Read résumé on the home page goes to it, and a
+   * strength's résumé lines are checked word for word against it (documentation/home-views/for-every-site.md §2).
+   */
+  resumePage: id.optional(),
   /** The site's theme (documentation/site-ui/theming.md §3): a preset's ID or a theme in content/themes/; without it, the site's own (Atiya). */
   theme: id.optional(),
   /**

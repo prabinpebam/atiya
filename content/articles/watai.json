@@ -2,6 +2,7 @@
   "id": "watai",
   "type": "article",
   "kind": "note",
+  "contribution": "built",
   "slug": "watai",
   "title": "Watai: a private AI assistant of my own",
   "summary": "A private, Azure-backed personal AI assistant I built so my data and credentials stay under my control.",
