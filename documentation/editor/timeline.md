@@ -1,10 +1,11 @@
 # Edit mode: Timeline (plan)
 
-The plan for an article's history in edit mode. Versions are kept automatically at moments that mean something, a timeline lets you scrub through them, and you can restore a whole version or copy blocks out of one. It's built on three principles: right-sized for a personal site's articles, private, and never mixed with anyone's code commits, so it works the same for a person who only uses Atiya Studio. Why each alternative was left out is in §4.4 and §9; what other products do is in [AI and history: research §4](ai-research.md#4-version-history).
+The plan for an article's history in edit mode. Versions are kept automatically at moments that mean something, a timeline lets you scrub through them, and you can restore a whole version or copy blocks out of one. It's built on three principles: right-sized for a personal site's articles, private, and kept out of the site's repository, which holds only what you publish. Why each alternative was left out is in §4.4 and §9; what other products do is in [AI and history: research §4](ai-research.md#4-version-history).
 
 > **TL;DR.**
 > - **When:** a version when you stop for 10 minutes; in a long session, one when 20 minutes *and* a real change (about 100 words, or 2 blocks added, removed, moved or retyped) have passed; never more than an hour of editing without one; and always before an AI change, before a restore, at Save to remote and when an article is published. Never two automatic versions within 5 minutes, never one that changes nothing. A two-hour session gives about four to seven.
 > - **Where:** a history store on this computer: a small git repository of its own, outside the site's folder, with one line of versions per article. Your repositories get nothing: no commits, no refs, no hidden branches. Save to remote works exactly as now. Nothing in the store is ever pushed, built or sent anywhere.
+> - **The same for everyone:** a person who uses only Atiya Studio has no code in their repository, but it's public and a push publishes, so versions kept there would publish every draft step. That alone puts the store outside it. The owner, whose repository also holds the code, needs nothing more: one design, no separate mode for people who work on the code.
 > - **What a version holds:** the article and the pictures it uses, so an old version shows its own pictures. Git stores each picture once, however many versions use it.
 > - **How you see it:** a History button opens the timeline: the canvas shows the article as it was, with what changed since the version before marked; a rail under it scrubs through versions; the inspector's History tab lists them by day.
 > - **What you can do:** Restore this version (a new version, nothing lost), Copy blocks into today's article, Name this version. Compare with now and bringing back one block in place come later, with AI editing's review.
@@ -91,7 +92,7 @@ The plan for an article's history in edit mode. Versions are kept automatically 
 |---|---|
 | **Right-sized for a personal site** | One person, tens of articles, each a few thousand words. So: a few versions per session, not one per keystroke; keep everything rather than build thinning; a list and a rail, not three ways to browse; no sync, no backup service, no collaboration. |
 | **Private** | Drafts, deleted sentences and private pages stay on this computer. The store is never pushed, never inside the site's folder (so it can't be committed by accident), never in a build, and never sent to an AI service. You can forget an article's history, or all of it. |
-| **Never mixed with code** | Versions don't touch git as you use it: no commits on any branch, no refs in your repositories, nothing in `git log --all`, a graph view or `git gc`. The owner's code commits stay his; a person who only uses Atiya Studio gets a repository holding only what Save to remote made. |
+| **Kept out of the site's repository** | The repository holds what you publish, and only that. For a person who uses only Atiya Studio it has no code (`content/`, `atiya.json`, a short workflow and `AGENTS.md`: [desktop spec §6](../desktop/spec.md)), but it's public and a push to `main` publishes, so versions there would put every draft step and deleted sentence on GitHub for good. For the owner it also holds the site's code, so versions there would also crowd his code history. The same store answers both: there's no separate mode for people who work on the code. |
 
 ## 2. Scope
 
@@ -184,14 +185,19 @@ Names you give versions are kept in one small file in the store (`names.json`: v
 
 ### 4.4 Why not in your repository
 
-Each of these was weighed in the proposal and fails a principle:
+A site's repository is one of two kinds, and each alternative fails on at least one:
 
-| Alternative | Fails |
-|---|---|
-| Commits on your branch | **Mixed with code, and not private:** dozens of commits a day in the owner's code history, and every draft step published on GitHub with the next push |
-| Commits on your branch, squashed at Save to remote | **Mixed with code:** rewrites the branch you work on, and the versions vanish at the push |
-| A hidden ref in your repository | **Mixed with code:** shows in `git log --all` and graph views, travels with `git gc` and clones, and lives in an app user's site repository |
-| Plain copies of files (like VS Code's local history) | **Right-sized, but no simpler:** we'd write our own de-duplication of pictures, which git already does |
+- **An app user's site:** content only, public, created by Atiya Studio; a push to `main` publishes.
+- **The owner's site:** content and the site's code together, in this repository.
+
+| Alternative | An app user's site | The owner's site |
+|---|---|---|
+| Commits on the branch | Every draft step, and every sentence deleted before publishing, public on GitHub from the next push; Discard ("since Save to remote") loses its meaning | The same, and dozens of commits a day among his code commits |
+| Commits on the branch, squashed at Save to remote | Private, but the versions vanish at the push, so a store is needed anyway | The same, and it rewrites the branch he works on |
+| A hidden ref in the repository | Private while it stays local, but one `git push --mirror` or a backup tool publishes it, and a clone into a new folder loses it | The same, and it shows in `git log --all`, graph views and `gc` |
+| Plain copies of files (like VS Code's local history) | Works, but we'd write our own de-duplication of pictures, which git already does | The same |
+
+So the local store isn't extra machinery for developers: an app user's site needs it for privacy, and the owner's site then needs nothing different.
 
 ## 5. Browsing
 
@@ -307,7 +313,7 @@ WordPress's review of its own revisions slider found a missing `aria-valuetext`,
 | Question | Decision | Why |
 |---|---|---|
 | When | The policy in §3.1, with those numbers | Few versions, each meaningful; tunable later |
-| Where | A local history store of its own (§4) | All three principles; the proposal's hidden ref in your repository failed "never mixed with code" |
+| Where | A local history store of its own (§4) | An app user's public repository would publish every draft step; the owner's would also mix them with code. One store serves both |
 | Backup | None | Private; Save to remote already keeps what you publish |
 | How long | Everything, with Forget and Clear | Small at this scale; simpler than thinning |
 | The view | The list and the rail together | What you asked for, without a third mode |
