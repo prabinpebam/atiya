@@ -10,6 +10,7 @@ import { withBase } from '../design/meta';
 import { bentoSettings, bentoTiles } from '../home/bento';
 import { coverIssue, coverSettings } from '../home/cover';
 import { proofGrid, proofGridSettings } from '../home/proofGrid';
+import { spotlightSettings, spotlightShow } from '../home/spotlight';
 import { CATALOGUE } from '../home/catalogue';
 import { KIND_LABEL, leadOf, strengthsInOrder, voicesOf, type PresentEnv, type Voice } from '../home/present';
 import { VIEW_IDS, type ViewId } from '../home/ids';
@@ -261,5 +262,29 @@ export function proofGridView(lens?: string) {
     voices: voicesOf(home.picks, env).map(voiceProps),
     density: settings.density,
     empty: settings.empty,
+  };
+}
+
+/** Spotlight's props (documentation/home-views/spotlight.md): the lead, Jump to, the highlights on the stage with their pictures and details, the voices; ordered for a lens when one is given. Null when there's no home. */
+export async function spotlightView(lens?: string) {
+  const home = getHome(lens);
+  if (!home) return null;
+  const env = presentEnv();
+  const settings = spotlightSettings(home.settings.spotlight);
+  const show = spotlightShow(home.picks, settings, env);
+  const slides = await Promise.all(
+    show.slides.map(async ({ picture: media, details, ...s }) => ({
+      ...s,
+      ...(getArticle(s.id)?.summary ? { summary: getArticle(s.id)!.summary } : {}),
+      details: details.map(({ key, title, kindLabel, href, ask }) => ({ key, title, ...(kindLabel ? { kindLabel } : {}), ...(href ? { href } : {}), ...(ask ? { ask } : {}) })),
+      ...(media ? { picture: await cardPicture(media, 'content') } : {}),
+    })),
+  );
+  return {
+    lead: homeLead(home, env),
+    slides,
+    jump: show.jump,
+    voices: voicesOf(home.picks, env).map(voiceProps),
+    motion: settings.motion,
   };
 }

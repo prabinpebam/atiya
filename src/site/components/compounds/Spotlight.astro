@@ -1,0 +1,486 @@
+---
+/**
+ * Spotlight, a home view (documentation/home-views/spotlight.md): one highlight at a time on a stage, with room for
+ * its picture and its point (L2) and its details a press away (L3). Jump to names every strength the person shows
+ * and the rail every highlight (L1), so nothing is hidden behind a slide nobody reaches. Nothing moves on its own:
+ * Previous, Next, a swipe, the rail and Jump to change the highlight, with a fade or a slide as the person chose,
+ * and none when less motion is asked for. Next after the last goes back to the first.
+ * @tier compound
+ * @a11y The stage follows the WAI-ARIA carousel pattern: a region named Highlights, each highlight a group named "2 of 8: its title".
+ * @a11y Every highlight is in the page and reachable without a script: the rail and Jump to are links to #h-<id>, Previous and Next too.
+ * @a11y A change is said once in a polite status line ("3 of 8: its title"); the current rail item and strength carry aria-current.
+ * @a11y Show the details is a button that says whether its evidence is open (aria-expanded); the evidence follows the highlight.
+ * @key Left, Right: the previous or next highlight, while the keyboard is in the stage
+ * @key Tab: Jump to, the highlight's title, Show the details, Previous, Next, then the rail
+ */
+import Heading from '../fundamentals/Heading.astro';
+import Text from '../fundamentals/Text.astro';
+import Image from '../fundamentals/Image.astro';
+import Tag from '../fundamentals/Tag.astro';
+import Link from '../fundamentals/Link.astro';
+import Button from '../fundamentals/Button.astro';
+import { type CardPicture } from '../../design/pictures';
+import { sizes } from '../../design/responsive';
+import { stableId } from '../../design/stableId';
+
+interface Props {
+  /** The highlights in the show's order; the first is on the stage when the page opens. */
+  slides: {
+    /** Its page's ID: its address is #h-<id>. */
+    id: string;
+    /** Its page. */
+    href: string;
+    title: string;
+    /** The strength it proves: its name on the stage, its short name on the rail. */
+    capability: { id: string; name: string; short: string };
+    /** Its page's summary: a line or two. */
+    summary?: string;
+    /** Its picture, the stage's hero. */
+    picture?: CardPicture;
+    /** Its details: its page first, then the rest of its strength's evidence. */
+    details: { key: string; title: string; kindLabel?: string; href?: string; ask?: string }[];
+  }[];
+  /** Every strength shown, in order: a press goes to its first highlight, again to its next; one without a highlight leads to its evidence. */
+  jump: { id: string; name: string; short: string; slides: string[]; href?: string }[];
+  /** How a change of highlight moves: still (a swap), gentle (a fade) or lively (a slide). Never on its own. */
+  motion?: 'still' | 'gentle' | 'lively';
+}
+
+const { slides, jump, motion = 'gentle' } = Astro.props;
+const uid = `spotlight-${stableId(Astro, 'Spotlight')}`;
+const lead = Astro.slots.has('lead');
+const voices = Astro.slots.has('voices');
+const n = slides.length;
+const first = slides[0];
+const at = (i: number) => slides[(i + n) % n];
+const pictureSizes = sizes(['md', '92vw'], 'spotlight-picture');
+const imageOf = (p: CardPicture) => ({
+  src: p.src,
+  srcset: p.srcset,
+  sizes: pictureSizes,
+  alt: p.alt,
+  width: p.width,
+  height: p.height,
+  rounded: p.rounded !== false,
+  shadow: p.shadow,
+  bg: p.background && p.bg ? { light: p.bg, dark: p.dark?.bg } : undefined,
+  dark: p.dark,
+});
+---
+
+<div class="spotlight" data-spotlight data-motion={motion}>
+  {lead && <div class="lead"><slot name="lead" /></div>}
+  <nav class="jump" aria-labelledby={`${uid}-jump`}>
+    <Text variant="label" tone="muted" as="p" id={`${uid}-jump`}>Jump to</Text>
+    <ul>
+      {jump.map((j) => (
+        <li>
+          {j.href ? (
+            <a class="chip" href={j.href} data-capability={j.id} data-jump={j.id} data-slides={j.slides.join(' ')} aria-current={first && j.id === first.capability.id ? 'true' : undefined}>
+              <span class="full">{j.name}</span>
+              <span class="short">{j.short}</span>
+            </a>
+          ) : (
+            <span class="chip" data-capability={j.id}>
+              <span class="full">{j.name}</span>
+              <span class="short">{j.short}</span>
+            </span>
+          )}
+        </li>
+      ))}
+    </ul>
+  </nav>
+  {n > 0 && (
+    <div class="stage" role="region" aria-roledescription="carousel" aria-label="Highlights" data-spotlight-stage>
+      {slides.map((s, i) => (
+        <div class="slide" role="group" aria-roledescription="slide" aria-label={`${i + 1} of ${n}: ${s.title}`} id={`h-${s.id}`} data-slide={s.id} data-capability={s.capability.id} data-current={i === 0 ? '' : undefined}>
+          {s.picture && <div class="picture"><Image {...imageOf(s.picture)} display="fit" fill priority={i === 0} /></div>}
+          <div class="panel">
+            <Text variant="label" tone="muted" as="p">{i + 1} of {n}</Text>
+            <Heading level={2} size="h2"><a class="title" href={s.href}>{s.title}</a></Heading>
+            <span class="tag"><Tag tone="accent">{s.capability.name}</Tag></span>
+            {s.summary && <Text variant="lead" tone="muted">{s.summary}</Text>}
+            <div class="actions">
+              {s.details.length > 0 && (
+                <Button variant="quiet" size="sm" iconEnd="chevron-down" aria-expanded="false" aria-controls={`h-${s.id}-details`} data-spotlight-details={s.id}>
+                  <span data-details-label>Show the details</span>
+                </Button>
+              )}
+              {n > 1 && (
+                <span class="steps">
+                  <Button variant="quiet" size="sm" href={`#h-${at(i - 1).id}`} icon="chevron-left" data-step="prev">Previous</Button>
+                  <Button size="sm" href={`#h-${at(i + 1).id}`} iconEnd="chevron-right" data-step="next">Next</Button>
+                </span>
+              )}
+            </div>
+          </div>
+          {s.details.length > 0 && (
+            <ul class="details" id={`h-${s.id}-details`} aria-label={`${s.title}: the details`} hidden>
+              {s.details.map((d) => (
+                <li data-evidence={d.key}>
+                  {d.href ? <Link href={d.href} variant="standalone">{d.title}</Link> : <Text as="p">{d.title}</Text>}
+                  {(d.kindLabel || d.ask) && (
+                    <span class="meta">
+                      {d.kindLabel && <Tag size="sm">{d.kindLabel}</Tag>}
+                      {d.ask && <Link href={d.ask} variant="quiet">Ask me about it</Link>}
+                    </span>
+                  )}
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      ))}
+      <p class="sr-only" aria-live="polite" aria-atomic="true" data-spotlight-status></p>
+    </div>
+  )}
+  {n > 1 && (
+    <nav class="rail" aria-labelledby={`${uid}-rail`}>
+      <Text variant="label" tone="muted" as="p" id={`${uid}-rail`}>All {n} highlights</Text>
+      <ol data-scrollbar>
+        {slides.map((s, i) => (
+          <li data-card data-capability={s.capability.id}>
+            <a href={`#h-${s.id}`} data-card-link data-rail={s.id} aria-current={i === 0 ? 'true' : undefined}>{s.title}</a>
+            <Tag size="sm">{s.capability.short}</Tag>
+          </li>
+        ))}
+      </ol>
+    </nav>
+  )}
+  {voices && <div class="voices"><slot name="voices" /></div>}
+</div>
+
+<style>
+  /* the spotlight lays itself out by its own width (c.spotlight.query-*), never the screen's */
+  .spotlight {
+    container: spotlight / inline-size;
+    display: grid;
+    gap: var(--space-6);
+  }
+
+  .lead,
+  .voices {
+    display: grid;
+  }
+
+  /* ---------- Jump to: every strength, the current highlight's marked ---------- */
+  .jump {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2) var(--space-4);
+    align-items: center;
+  }
+
+  .jump ul {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2) var(--space-3);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .chip {
+    display: inline-flex;
+    align-items: center;
+    min-block-size: var(--size-touch);
+    padding-inline: var(--space-4);
+    border: var(--border-hairline) solid var(--color-border);
+    border-radius: var(--radius-pill);
+    color: var(--color-text);
+    font: var(--type-control);
+    text-decoration: none;
+  }
+
+  span.chip {
+    color: var(--color-text-muted);
+    border-style: dashed;
+  }
+
+  .chip[aria-current='true'],
+  .rail li:has([aria-current='true']) {
+    border-color: var(--color-accent);
+    background: var(--color-accent-soft);
+  }
+
+  .chip[aria-current='true'],
+  .rail li:has([aria-current='true']) a {
+    color: var(--color-on-accent-soft);
+  }
+
+  @media (hover: hover) {
+    a.chip:not([aria-current='true']):hover {
+      background: var(--color-bg-hover);
+    }
+  }
+
+  a.chip:not([aria-current='true']):active {
+    background: var(--color-bg-hover);
+  }
+
+  .short {
+    display: none;
+  }
+
+  /* ---------- the stage: one highlight, its picture the hero and its words beside it ---------- */
+  .stage {
+    display: grid;
+    /* a sideways swipe is the stage's (spotlight.ts); scrolling and zooming stay the page's */
+    touch-action: pan-y pinch-zoom;
+  }
+
+  .slide {
+    display: grid;
+    grid-template-columns: minmax(0, 7fr) minmax(0, 5fr);
+    grid-template-areas: 'picture panel' 'details details';
+    gap: var(--space-6) var(--space-8);
+    scroll-margin-block-start: calc(var(--size-chrome-block) + var(--space-4));
+  }
+
+  .slide:not(:has(.picture)) {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas: 'panel' 'details';
+  }
+
+  /* only the current highlight shows; without a script, the one the address names (#h-<id>) */
+  .slide:not([data-current]),
+  .spotlight:not([data-ready]) .stage:has(> .slide:target) > .slide:not(:target) {
+    display: none;
+  }
+
+  .spotlight:not([data-ready]) .stage > .slide:target {
+    display: grid;
+  }
+
+  .picture {
+    grid-area: picture;
+    display: grid;
+    block-size: var(--c-spotlight-picture-height);
+  }
+
+  .panel {
+    grid-area: panel;
+    display: grid;
+    gap: var(--space-3);
+    align-content: center;
+    justify-items: start;
+  }
+
+  .title {
+    color: var(--color-text);
+    text-decoration: none;
+  }
+
+  @media (hover: hover) {
+    .title:hover {
+      text-decoration: underline;
+      text-decoration-color: var(--color-highlight);
+    }
+  }
+
+  .title:active {
+    text-decoration: underline;
+  }
+
+  .actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2) var(--space-6);
+    align-items: center;
+    justify-self: stretch;
+    padding-block-start: var(--space-2);
+  }
+
+  .steps {
+    display: flex;
+    gap: var(--space-2);
+    margin-inline-start: auto;
+  }
+
+  /* the details: the highlight's evidence, the width of the stage, under it */
+  .details {
+    grid-area: details;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: var(--space-2) var(--space-6);
+    margin: 0;
+    padding: var(--space-4) 0 0;
+    border-block-start: var(--border-hairline) solid var(--color-rule);
+    list-style: none;
+  }
+
+  .details[hidden] {
+    display: none;
+  }
+
+  .details li {
+    display: grid;
+    gap: var(--space-1);
+    align-content: start;
+    justify-items: start;
+  }
+
+  .meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-1) var(--space-3);
+    align-items: center;
+  }
+
+  /* ---------- the rail: every highlight, the current one filled ---------- */
+  .rail {
+    display: grid;
+    gap: var(--space-2);
+  }
+
+  .rail ol {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: var(--space-2);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .rail li {
+    display: grid;
+    gap: var(--space-1);
+    align-content: start;
+    justify-items: start;
+    padding: var(--space-2) var(--space-3);
+    border: var(--border-hairline) solid var(--color-rule);
+    border-radius: var(--radius-md);
+  }
+
+  .rail a {
+    font: var(--type-control);
+  }
+
+  .rail a::after {
+    border-radius: var(--radius-md);
+  }
+
+  @media (hover: hover) {
+    .rail li:not(:has([aria-current='true'])):hover {
+      background: var(--color-bg-hover);
+    }
+  }
+
+  .rail li:has(a:active) {
+    background: var(--color-bg-hover);
+  }
+
+  /* ---------- motion: only after a change, only as the person chose, only for those who don't ask for less ---------- */
+  @media (prefers-reduced-motion: no-preference) {
+    [data-motion='gentle'][data-moved] .slide[data-current],
+    .spotlight:not([data-motion='still']) .details:not([hidden]) {
+      animation: spotlight-fade var(--duration-base) var(--ease-enter);
+    }
+
+    [data-motion='lively'][data-moved] .slide[data-current] {
+      animation: spotlight-slide var(--duration-base) var(--ease-enter);
+    }
+
+    [data-motion='lively'][data-moved][data-direction='back'] .slide[data-current] {
+      animation-name: spotlight-slide-back;
+    }
+
+    .spotlight:not([data-motion='still']) :is(.chip, .rail li) {
+      transition: background-color var(--duration-fast) var(--ease-standard);
+    }
+  }
+
+  @keyframes spotlight-fade {
+    from {
+      opacity: 0;
+    }
+  }
+
+  @keyframes spotlight-slide {
+    from {
+      opacity: 0;
+      translate: var(--space-8) 0;
+    }
+  }
+
+  @keyframes spotlight-slide-back {
+    from {
+      opacity: 0;
+      translate: calc(var(--space-8) * -1) 0;
+    }
+  }
+
+  /* ---------- narrower: the picture over the words, the rail one row that scrolls sideways ---------- */
+  @container spotlight (width < 48rem) {
+    .slide {
+      grid-template-columns: minmax(0, 1fr);
+      grid-template-areas: 'picture' 'panel' 'details';
+      gap: var(--space-4);
+    }
+
+    .picture {
+      block-size: auto;
+      aspect-ratio: 16 / 9;
+    }
+
+    .details {
+      grid-template-columns: minmax(0, 1fr);
+    }
+
+    .rail ol {
+      grid-template-columns: none;
+      grid-auto-flow: column;
+      grid-auto-columns: minmax(var(--c-spotlight-rail-item), 1fr);
+      overflow-x: auto;
+      overscroll-behavior-inline: contain;
+      scroll-snap-type: inline proximity;
+    }
+
+    .rail li {
+      scroll-snap-align: start;
+    }
+  }
+
+  /* ---------- a phone: Jump to shows short names, every one a 44 px target ---------- */
+  @container spotlight (width < 36rem) {
+    .jump {
+      gap: var(--space-2);
+    }
+
+    .full {
+      display: none;
+    }
+
+    .short {
+      display: inline;
+    }
+
+    .steps {
+      margin-inline-start: 0;
+    }
+  }
+
+  /* ---------- print: every highlight with its details, nothing to press ---------- */
+  @media print {
+    .spotlight .stage > .slide {
+      display: grid;
+      break-inside: avoid;
+    }
+
+    .details[hidden] {
+      display: grid;
+    }
+
+    .actions,
+    .rail {
+      display: none;
+    }
+  }
+</style>
+
+<script>
+  import { each } from '../../scripts/page';
+  import { setupSpotlight } from '../../scripts/spotlight';
+
+  each<HTMLElement>('[data-spotlight]', setupSpotlight);
+</script>

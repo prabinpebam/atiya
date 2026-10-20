@@ -91,7 +91,7 @@
     "spotlight": {
       "label": "Spotlight",
       "line": "One at a time",
-      "built": false,
+      "built": true,
       "minimum": { "highlights": 4 },
       "settings": {
         "motion": { "label": "Motion", "type": "choice", "values": ["still", "gentle", "lively"], "labels": ["Still", "Gentle", "Lively"], "default": "gentle" },

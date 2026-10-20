@@ -1,0 +1,78 @@
+---
+import Example from '../library/Example.astro';
+import Spotlight from '../components/compounds/Spotlight.astro';
+import HomeLead from '../components/compounds/HomeLead.astro';
+import Voices from '../components/compounds/Voices.astro';
+import { sample } from '../design/samples';
+import { withBase } from '../design/meta';
+
+const pictures = [sample('workshop'), sample('bridge'), sample('pond'), sample('waterfall'), sample('plaza'), sample('lighthouse-dusk')];
+const strengths = [
+  { id: 'teams', name: 'Leading design teams', short: 'Teams' },
+  { id: 'research', name: 'Research that changes plans', short: 'Research' },
+  { id: 'systems', name: 'Design systems', short: 'Systems' },
+  { id: 'prototyping', name: 'Prototyping in code', short: 'Prototyping' },
+  { id: 'writing', name: 'Writing and speaking', short: 'Writing' },
+  { id: 'accessibility', name: 'Accessible products', short: 'Access' },
+];
+const works = [
+  { title: 'How twelve designers became one studio', summary: 'Two years of hiring, rituals and a shared kit, and what it shipped.', strength: 0 },
+  { title: 'The study that moved a roadmap', summary: 'Forty interviews, one finding, and the quarter it changed.', strength: 1 },
+  { title: 'One kit for forty products', summary: 'Tokens, components and the team that keeps them.', strength: 2 },
+  { title: 'Prototypes you can hold', summary: 'Ideas in code in a week, tested before they were planned.', strength: 3 },
+  { title: 'A talk on calm interfaces', summary: 'The talk, the essay behind it and what people asked after.', strength: 4 },
+  { title: 'Accessible by default', summary: 'Built in from the first sketch, never bolted on at the end.', strength: 5 },
+  { title: 'Mentoring a second studio', summary: 'What carried over from the first, and what didn’t.', strength: 0 },
+  { title: 'A design system for a car', summary: 'The same kit, on a screen you look at for a second.', strength: 2 },
+];
+const details = (id: string) => [
+  { key: `${id}-a`, title: 'The case study', kindLabel: 'Shipped', href: withBase('/design/'), ask: withBase('/design/') },
+  { key: `${id}-b`, title: 'A line from the résumé', kindLabel: 'Led', href: withBase('/design/') },
+  { key: `${id}-c`, title: 'Sam Rivera, in their words', kindLabel: 'Said' },
+];
+/** A show of `count` highlights over the first `over` strengths, IDs prefixed so each example's addresses are its own. */
+const show = (prefix: string, count: number, over = 6, withPictures = true) => {
+  const shown = strengths.slice(0, over);
+  const slides = works
+    .filter((w) => w.strength < over)
+    .slice(0, count)
+    .map((w, i) => ({
+      id: `${prefix}-${i + 1}`,
+      href: withBase('/design/'),
+      title: w.title,
+      summary: w.summary,
+      capability: shown[w.strength],
+      picture: withPictures && i !== 2 ? pictures[i % pictures.length] : undefined,
+      details: details(`${prefix}-${i + 1}`),
+    }));
+  const jump = shown.map((s) => {
+    const own = slides.filter((x) => x.capability.id === s.id).map((x) => x.id);
+    return { ...s, slides: own, href: own[0] ? `#h-${own[0]}` : undefined };
+  });
+  return { slides, jump };
+};
+const eight = show('eight', 8);
+const four = show('four', 4, 4);
+const lively = show('lively', 4);
+// a strength with no highlight leads to its evidence; one with nothing to lead to is a name only
+lively.jump[4] = { ...lively.jump[4], href: withBase('/design/') };
+const voices = [
+  { text: 'She made the hard calls look easy, and brought the whole team along.', name: 'Sam Rivera', title: 'Director of Product' },
+  { text: 'The clearest thinker in any room about what to build next.', name: 'Ana Lima', title: 'Principal Engineer' },
+];
+---
+
+<Example title="Eight highlights, gentle" layout="block" description="The default: the lead, Jump to with every strength, one highlight on the stage with its picture, then the rail with all eight. Previous, Next, the rail and Jump to change it with a fade; Show the details opens its evidence.">
+  <Spotlight slides={eight.slides} jump={eight.jump}>
+    <HomeLead slot="lead" name="Alex Morgan" role="Head of Design" facts={['15 years', 'Teams of 40', 'Three products']} primary={{ label: 'Read my résumé', href: withBase('/design/') }} secondary={{ label: 'Get in touch', href: withBase('/design/') }} headingLevel={2} layout="strip" />
+    <Voices slot="voices" voices={voices} />
+  </Spotlight>
+</Example>
+
+<Example title="Four highlights, still" layout="block" description="Motion still: a change is a swap. Four strengths, a highlight each; the third has no picture, so its words take the stage.">
+  <Spotlight slides={four.slides} jump={four.jump} motion="still" />
+</Example>
+
+<Example title="Lively, strengths without a highlight" layout="block" description="Motion lively: a change slides in from the side it came from. Six strengths and four highlights: Writing has none, so Jump to leads to its evidence; Access has nothing yet, so it's a name only.">
+  <Spotlight slides={lively.slides} jump={lively.jump} motion="lively" />
+</Example>

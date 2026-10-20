@@ -227,7 +227,7 @@ The lens is built over Bento, Cover and Proof grid. Each lens has its own page f
 - **The note, not a chip with its own menu.** Under the lead's actions, a quiet line says "Ordered for", the lens's name as a tag, and "Use usual order", which clears it. Choosing another lens is in Change view, under "Order by role" (the goal's own word for its lenses): each lens with what it puts first, the one showing marked, and "Use the usual order". One place to change how the home page shows, rather than two menus.
 - **On a phone the note gives way** (below the small breakpoint): every strength must stay in the first screen, and the line would push the last of them below it. Change view still names the lens and offers the usual order there.
 - **What changes:** Bento's large first tile, the Cover's story and the Proof grid's first row (the one open on a phone) go to the lens's first strength, and In their words starts with the lens's voice. Nothing else moves: every strength and every piece of evidence stays, so the coverage rule holds under every lens (the E2E checks it on a phone).
-- **Not built yet:** the views' Copy link; until there is one, the link to send is `/?for=<lens>` or the lens page's own address. The lens in Spotlight, Showreel, Keywords and Questions comes as each is built.
+- **Not built yet:** the views' Copy link; until there is one, the link to send is `/?for=<lens>` or the lens page's own address. Spotlight took the lens when it was built (stage 5a: the lens's strength leads Jump to, and its first highlight the stage and the rail, [Spotlight §13](spotlight.md#13-as-built-stage-5)); the lens in Showreel, Keywords and Questions comes as each is built.
 
 ## 7. Always on screen
 

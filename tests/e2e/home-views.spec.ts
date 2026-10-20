@@ -1,9 +1,10 @@
 /**
- * Home views in the browser (documentation/home-views/plan.md, stages 2 and 4; bento.md, cover.md, proof-grid.md):
- * every strength in view on the first screen in every view, Bento's three levels (names at rest, a colleague's words
- * on hover and focus, the evidence drawer by press, Esc and `#cap-<id>`), the Cover's jumps, the Proof grid's cells
- * (keys, the address, Esc and Close, a phone's accordion), axe in both modes, a phone's reflow and targets, the
- * role lens (`?for=`), and the page for a view the site doesn't offer. `/` stays the hub.
+ * Home views in the browser (documentation/home-views/plan.md, stages 2, 4 and 5; bento.md, cover.md, proof-grid.md,
+ * spotlight.md): every strength in view on the first screen in every view, Bento's three levels (names at rest, a
+ * colleague's words on hover and focus, the evidence drawer by press, Esc and `#cap-<id>`), the Cover's jumps, the
+ * Proof grid's cells (keys, the address, Esc and Close, a phone's accordion), Spotlight's stage (Next, the keys, the
+ * rail, Jump to, the details that follow, `#h-<id>`, motion only when asked for), axe in both modes, a phone's
+ * reflow and targets, the role lens (`?for=`), and the page for a view the site doesn't offer. `/` stays the hub.
  */
 import { devices, expect, test, type Page } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
@@ -11,7 +12,8 @@ import AxeBuilder from '@axe-core/playwright';
 const BENTO = '/views/bento/';
 const COVER = '/views/cover/';
 const GRID = '/views/proof-grid/';
-const VIEWS = [BENTO, COVER, GRID];
+const SPOT = '/views/spotlight/';
+const VIEWS = [BENTO, COVER, GRID, SPOT];
 
 // axe reads colours: the animations that end (a fade, a rise) are over first; a scroll-driven one never ends, and only moves
 const settled = (page: Page) =>
@@ -179,6 +181,102 @@ test.describe('home views', () => {
     }
   });
 
+  test('spotlight: Next, the keys, the rail and Jump to change the highlight in place, the details follow, #h- addresses, nothing moves by itself', async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 800 });
+    await page.goto(SPOT);
+    const root = page.locator('[data-spotlight]');
+    await expect(root).toHaveAttribute('data-ready', '');
+    const ids = await page.locator('[data-slide]').evaluateAll((els) => els.map((e) => (e as HTMLElement).dataset.slide!));
+    expect(ids.length).toBeGreaterThanOrEqual(4);
+    const current = page.locator('[data-slide][data-current]');
+    const on = async (id: string) => {
+      await expect(current).toHaveCount(1);
+      await expect(current).toHaveAttribute('data-slide', id);
+      await expect(current).toBeVisible();
+      await expect(page.locator(`[data-rail="${id}"]`)).toHaveAttribute('aria-current', 'true');
+      await expect(page.locator('[data-rail][aria-current]')).toHaveCount(1);
+    };
+    // nothing moves by itself
+    await page.waitForTimeout(1500);
+    await on(ids[0]);
+    expect(new URL(page.url()).hash).toBe('');
+    await expect(page.getByRole('heading', { level: 1 })).toHaveCount(1);
+
+    // Next: in place, the address follows, the status line says it, the keyboard stays on Next
+    await current.locator('[data-step="next"]').click();
+    await on(ids[1]);
+    expect(new URL(page.url()).hash).toBe(`#h-${ids[1]}`);
+    await expect(page.locator('[data-spotlight-status]')).toHaveText(new RegExp(`^2 of ${ids.length}: `));
+    await current.locator('[data-step="next"]').focus();
+    await page.keyboard.press('ArrowLeft');
+    await on(ids[0]);
+    await expect(current.locator('[data-step="next"]')).toBeFocused();
+    // Previous from the first goes round to the last
+    await current.locator('[data-step="prev"]').click();
+    await on(ids.at(-1)!);
+
+    // the rail
+    await page.locator(`[data-rail="${ids[2]}"]`).click();
+    await on(ids[2]);
+
+    // the details: open on one, and they stay open as the highlight changes
+    const toggle = current.locator('[data-spotlight-details]');
+    await toggle.click();
+    await expect(toggle).toHaveAttribute('aria-expanded', 'true');
+    await expect(current.locator('.details')).toBeVisible();
+    await expect(current.locator('.details a').first()).toBeVisible();
+    for (const colorScheme of ['light', 'dark'] as const) {
+      await page.emulateMedia({ colorScheme });
+      await noSeriousViolations(page);
+    }
+    await current.locator('[data-step="next"]').click();
+    await on(ids[3]);
+    await expect(current.locator('[data-spotlight-details]')).toHaveAttribute('aria-expanded', 'true');
+    await expect(current.locator('.details')).toBeVisible();
+    await current.locator('[data-spotlight-details]').click();
+    await expect(current.locator('.details')).toBeHidden();
+
+    // Jump to: a strength's first highlight, then its next; the chip is marked
+    const chips = await page.locator('a[data-jump]').evaluateAll((els) => els.map((e) => ({ id: (e as HTMLElement).dataset.jump!, slides: ((e as HTMLElement).dataset.slides ?? '').split(' ').filter(Boolean) })));
+    const many = chips.find((c) => c.slides.length > 1) ?? chips.find((c) => c.slides.length > 0)!;
+    const chip = page.locator(`a[data-jump="${many.id}"]`);
+    await chip.click();
+    await on(many.slides[0]);
+    await expect(chip).toHaveAttribute('aria-current', 'true');
+    await expect(page.locator('a[data-jump][aria-current]')).toHaveCount(1);
+    await chip.click();
+    await on(many.slides[1 % many.slides.length]);
+
+    // an address names a highlight, on the page (a hash change) and on arrival; one it doesn't know changes nothing,
+    // and on arrival shows the first
+    await page.goto(`${SPOT}#h-${ids[2]}`);
+    await on(ids[2]);
+    await page.goto(`${SPOT}#h-no-such-highlight`);
+    await on(ids[2]);
+    await page.goto('about:blank');
+    await page.goto(`${SPOT}#h-${ids[4] ?? ids[1]}`);
+    await on(ids[4] ?? ids[1]);
+    await page.goto('about:blank');
+    await page.goto(`${SPOT}#h-no-such-highlight`);
+    await on(ids[0]);
+  });
+
+  test('spotlight: a change moves only as the site asks, and never for a visitor who asks for less motion', async ({ page }) => {
+    const moving = () => page.locator('[data-slide][data-current]').evaluate((e) => getComputedStyle(e).animationName);
+    await page.goto(SPOT);
+    await expect(page.locator('[data-spotlight]')).toHaveAttribute('data-ready', '');
+    // the first highlight's arrival isn't a change
+    expect(await moving()).toBe('none');
+    await page.locator('[data-slide][data-current] [data-step="next"]').click();
+    expect(await moving()).not.toBe('none');
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    await page.goto(SPOT);
+    await expect(page.locator('[data-spotlight]')).toHaveAttribute('data-ready', '');
+    await page.locator('[data-slide][data-current] [data-step="next"]').click();
+    await expect(page.locator('[data-slide][data-current]')).toBeVisible();
+    expect(await moving()).toBe('none');
+  });
+
   test('proof grid: one tab stop, arrows between the cells, a cell opens its kind and a name all of it, Esc and Close, #cap-', async ({ page }) => {
     await page.setViewportSize({ width: 1280, height: 800 });
     await page.goto(GRID);
@@ -253,7 +351,7 @@ test.describe('home views', () => {
   });
 
   test('a view the site doesn’t offer says so, isn’t indexed and leads home', async ({ page }) => {
-    const response = await page.goto('/views/spotlight/');
+    const response = await page.goto('/views/showreel/');
     expect(response?.status()).toBe(200);
     await expect(page.getByRole('heading', { level: 1 })).toHaveText(/This view isn.t offered/);
     await expect(page.locator('meta[name="robots"]')).toHaveAttribute('content', 'noindex');
@@ -335,6 +433,45 @@ test.describe('home views on a phone', () => {
       expect(await page.evaluate(() => document.documentElement.scrollWidth - innerWidth), `${size.width}, open`).toBe(0);
       expect(await smallTargets(page), `${size.width}, open`).toEqual([]);
     }
+  });
+
+  test('spotlight on a phone: no sideways scroll and 44 px targets from 320 px with the details open, and a swipe changes the highlight', async ({ page }) => {
+    for (const size of [
+      { width: 320, height: 640 },
+      { width: 360, height: 740 },
+      { width: 844, height: 390 },
+    ]) {
+      await page.setViewportSize(size);
+      await page.goto(SPOT);
+      await expect(page.locator('[data-spotlight]')).toHaveAttribute('data-ready', '');
+      expect(await page.evaluate(() => document.documentElement.scrollWidth - innerWidth), `${size.width}`).toBe(0);
+      expect(await smallTargets(page), `${size.width}`).toEqual([]);
+      await page.locator('[data-slide][data-current] [data-spotlight-details]').click();
+      await expect(page.locator('[data-slide][data-current] .details')).toBeVisible();
+      expect(await page.evaluate(() => document.documentElement.scrollWidth - innerWidth), `${size.width}, open`).toBe(0);
+      expect(await smallTargets(page), `${size.width}, open`).toEqual([]);
+    }
+    // a swipe to the left is Next, to the right Previous (real touch events)
+    await page.setViewportSize({ width: 360, height: 740 });
+    await page.goto(SPOT);
+    await expect(page.locator('[data-spotlight]')).toHaveAttribute('data-ready', '');
+    const ids = await page.locator('[data-slide]').evaluateAll((els) => els.map((e) => (e as HTMLElement).dataset.slide!));
+    const cdp = await page.context().newCDPSession(page);
+    const swipe = async (dx: number) => {
+      const picture = page.locator('[data-slide][data-current] .picture, [data-slide][data-current] .panel').first();
+      await picture.scrollIntoViewIfNeeded();
+      const b = (await picture.boundingBox())!;
+      const y = b.y + Math.min(b.height / 2, 60);
+      const x0 = b.x + b.width / 2 - dx / 2;
+      await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: x0, y }] });
+      for (let i = 1; i <= 6; i++) await cdp.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x: x0 + (dx * i) / 6, y }] });
+      await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+    };
+    await swipe(-160);
+    await expect(page.locator('[data-slide][data-current]')).toHaveAttribute('data-slide', ids[1]);
+    await swipe(160);
+    await expect(page.locator('[data-slide][data-current]')).toHaveAttribute('data-slide', ids[0]);
+    expect(await page.evaluate(() => document.documentElement.scrollWidth - innerWidth)).toBe(0);
   });
 
   test('proof grid on a phone: an accordion, the first row open on its kinds, a kind opens its evidence', async ({ page }) => {
@@ -499,6 +636,14 @@ test.describe('home views: change view', () => {
     await expect
       .poll(() => sent.filter((e) => e.event === 'capability_l3_open').map((e) => ({ id: e.properties.id, view: e.properties.view, kind: e.properties.kind })), { timeout: 15_000 })
       .toEqual([{ id, view: 'proof-grid', kind }]);
+    // a spotlight's change: the highlight and how it was reached
+    await page.goto(SPOT);
+    await expect(page.locator('[data-spotlight]')).toHaveAttribute('data-ready', '');
+    const next = await page.locator('[data-slide]').nth(1).getAttribute('data-slide');
+    await page.locator('[data-slide][data-current] [data-step="next"]').click();
+    await expect
+      .poll(() => sent.filter((e) => e.event === 'highlight_view').map((e) => ({ id: e.properties.id, how: e.properties.how })), { timeout: 15_000 })
+      .toEqual([{ id: next, how: 'next' }]);
   });
 });
 

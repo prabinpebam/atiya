@@ -1,6 +1,7 @@
 /**
- * The home views' addresses (tier 0, pure; docs: documentation/home-views/bento.md §5, proof-grid.md §5): which
- * strength, and which of its kinds of proof, a link opens. The views' scripts read them; unit-tested.
+ * The home views' addresses (tier 0, pure; docs: documentation/home-views/bento.md §5, proof-grid.md §5,
+ * spotlight.md §5): which strength, which of its kinds of proof or which highlight a link opens. The views'
+ * scripts read them; unit-tested.
  */
 
 const decoded = (hash: string) => {
@@ -36,4 +37,20 @@ export function gridTarget(hash: string, ids: readonly string[], kinds: readonly
     if (kinds.includes(kind)) return { id, kind };
   }
   return null;
+}
+
+/** The highlight an address names (`#h-<id>`) when the show has it, or null. */
+export function highlightFromHash(hash: string, ids: readonly string[]): string | null {
+  const id = /^#h-(.+)$/.exec(decoded(hash))?.[1];
+  return id && ids.includes(id) ? id : null;
+}
+
+/**
+ * Where a press on a strength in Spotlight's Jump to goes: its first highlight, or, when one of its own is on the
+ * stage, the one after it, round to the first (spotlight.md §5). Null when it has none.
+ */
+export function jumpTarget(own: readonly string[], current: string | null): string | null {
+  if (own.length === 0) return null;
+  const i = current ? own.indexOf(current) : -1;
+  return own[(i + 1) % own.length];
 }

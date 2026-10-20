@@ -8,6 +8,7 @@ Spotlight shows one highlight at a time on a large stage: the picture, what it w
 > - **Nothing moves until the visitor moves it:** Previous, Next, a swipe, the arrow keys, the rail or Jump to. There's no autoplay, because almost no one clicks a slide that rotates on its own.
 > - **On a phone:** the capability row, the picture, the panel and the rail scrolling sideways, all on the first screen.
 > - **It shares its eight highlights with the Showreel,** so it costs little once those exist. It's the weakest of the seven views at L1, so it's offered, not the default.
+> - **As built:** offered at `/views/spotlight/`; Jump to leads somewhere for every strength, even one with no highlight, and the details stay open as the highlight changes ([§13](#13-as-built-stage-5)).
 
 <figure class="slate-figure" data-diagram="home-spotlight">
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 700" role="img" aria-labelledby="hv-spotlight__title hv-spotlight__desc" preserveAspectRatio="xMidYMid meet" data-slate-svg-motion="viewport" data-slate-safe-margin="24">
@@ -260,3 +261,28 @@ Nothing advances on its own, so Spotlight needs no exception to [visual language
 | P2 | The first highlight | The owner's first; the lens's capability's first; the newest | The owner's first, and the lens's capability's first under a lens |
 | P3 | The rail | Titles; thumbnails | Titles with a capability tag: thumbnails make a second carousel |
 | P4 | Next at the end | Back to the first; stop | Back to the first, with "8 of 8" shown before it |
+
+## 13. As built (stage 5)
+
+Spotlight is built and offered at `/views/spotlight/`. The stage holds the site's highlights that are open pages, at most the person's count (4 to 8, 8 by default); Jump to names every strength the site shows, 3 to 6, so every strength is on the first screen even when a highlight is on stage. Under a role lens, or with Order set to Strongest first, the highlights are dealt a strength at a time in the strengths' order, so the lens's strength is first on the stage, in Jump to and on the rail.
+
+| Part | Where |
+|---|---|
+| The view | [`Spotlight.astro`](https://github.com/prabinpebam/atiya/blob/main/src/site/components/compounds/Spotlight.astro), with the lead and [`Voices.astro`](https://github.com/prabinpebam/atiya/blob/main/src/site/components/compounds/Voices.astro) in its slots; its story is in the design library |
+| From the spine to the show | [`spotlight.ts`](https://github.com/prabinpebam/atiya/blob/main/src/site/home/spotlight.ts) (pure, unit-tested in `homeSpotlight.test.ts`): the settings, the highlights' order and count, each one's details (its own page first, then up to four more pieces of its strength's evidence), and where each Jump to entry leads |
+| Its behaviour | [`scripts/spotlight.ts`](https://github.com/prabinpebam/atiya/blob/main/src/site/scripts/spotlight.ts): Previous and Next, Left and Right, a swipe, the rail and Jump to, the details, the status line and telemetry; the `#h-<id>` addresses and Jump to's next highlight are pure rules in [`homeAddress.ts`](https://github.com/prabinpebam/atiya/blob/main/src/site/scripts/homeAddress.ts) (`highlightFromHash`, `jumpTarget`) |
+| Its sizes | The `c.spotlight` tokens: the picture's width for its `sizes` (44 rem) and its height (20 rem), a rail item's least width when the rail scrolls (12 rem), and the container queries at which the picture goes over the words (48 rem) and Jump to shows short names (36 rem) |
+
+Where the build differs from the design above:
+
+- **Its own compound, not the Carousel.** A compound can't be made of another compound, and Spotlight's stage goes round from the last highlight to the first (P4), which the Carousel doesn't. It follows the same WAI-ARIA carousel pattern (§9).
+- **The lead is a strip,** as in the Proof grid, so Jump to and the stage start high on the page.
+- **Jump to leads somewhere for every strength.** A strength with highlights goes to its first, and pressed again to its next, round to its first. A strength with no highlight on stage leads to its first piece of evidence, and one with nothing to show is its name alone, drawn dashed. The current highlight's strength is marked.
+- **Previous and Next are links** to the next highlight's `#h-` address, so they work without a script; Next is the secondary button, since the lead's Read my résumé is the page's one primary action.
+- **The status line announces a change,** a polite live region in the stage ("2 of 8: Defining Microsoft Family"), rather than the slides' container, so a highlight's whole content isn't read out again.
+- **The details** are Cover's evidence list under the stage, three columns wide and one on a phone, rather than Bento's drawer; they stay open as the highlight changes, and the toggle says Show the details or Hide the details.
+- **The address:** a change replaces `#h-<id>` without a history entry, so Back leaves the page rather than stepping back through highlights. An address it doesn't know shows the first. Without a script, `:target` shows the highlight the address names.
+- **Motion:** Gentle fades the new highlight in, Lively slides it in from the side it came from (240 ms, `--duration-base`); Still swaps it. The first highlight's arrival isn't a change and doesn't move, and nothing moves for a visitor who asks for less motion.
+- **The rail is titles with their strength's short name;** the Thumbnails setting isn't built yet, and is read as Titles. On a phone the rail is one row that scrolls sideways under the stage, so it may be under the first screen; Jump to is on it.
+- **Telemetry:** `highlight_view` with the highlight's ID and `how` (`next` for Previous, Next, the keys and a swipe; `rail`, `jump` or `link`), and `capability_l3_open` with `view: 'spotlight'` when the details open.
+- **Print:** every highlight with its details, and no buttons or rail.
