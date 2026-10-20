@@ -370,10 +370,10 @@
     },
     {
       "path": "editor/timeline.md",
-      "title": "Timeline",
+      "title": "Timeline: plan",
       "order": 25.7,
       "icon": "history",
-      "status": "review",
+      "status": "planned",
       "updated": "2026-10-20",
       "group": "Content and publishing/Edit mode"
     },

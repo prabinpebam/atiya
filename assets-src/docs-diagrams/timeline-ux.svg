@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 470">
 <title>Timeline: the proposed view</title>
-<desc>Opening the timeline turns the article editor's canvas read-only: it shows the article as it was at the chosen version, with what changed since the previous one marked. Under it, a rail holds a tick for every version, with marks for named, published and AI versions; dragging it, or the arrow keys, steps through them. On the right, the inspector's History tab lists the versions by day with their messages, and the chosen one offers Restore this version, Compare and Copy blocks.</desc>
+<desc>Opening the timeline turns the article editor's canvas read-only: it shows the article as it was at the chosen version, with what changed since the previous one marked. Under it, a rail holds a tick for every version, with marks for named, published and AI versions; dragging it, or the arrow keys, steps through them. On the right, the inspector's History tab lists the versions by day with their messages, and the chosen one offers Restore this version, Copy blocks and Name this version.</desc>
 <g id="canvas">
 <rect class="src" x="40" y="40" width="600" height="290" rx="18" />
 <text class="name" x="60" y="72">The article, as it was</text>
@@ -34,8 +34,8 @@
 <text class="line" x="700" y="258">18:40 Saved to remote</text>
 <text class="line" x="700" y="286">09:12 Named: first draft</text>
 <text class="code" x="700" y="336">Restore this version</text>
-<text class="code" x="700" y="362">Compare</text>
-<text class="code" x="700" y="388">Copy blocks</text>
+<text class="code" x="700" y="362">Copy blocks</text>
+<text class="code" x="700" y="388">Name this version</text>
 </g>
 <text class="label" x="40" y="458">The rail and the list are the same versions: choosing in one moves the other.</text>
 </svg>
