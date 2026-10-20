@@ -311,7 +311,7 @@
       "order": 25,
       "icon": "edit_note",
       "status": "draft",
-      "updated": "2026-09-30",
+      "updated": "2026-10-20",
       "group": "Content and publishing/Edit mode"
     },
     {
@@ -369,6 +369,15 @@
       "group": "Content and publishing/Edit mode"
     },
     {
+      "path": "editor/drafts-and-publishing.md",
+      "title": "Drafts and publishing: plan",
+      "order": 25.65,
+      "icon": "publish",
+      "status": "planned",
+      "updated": "2026-10-20",
+      "group": "Content and publishing/Edit mode"
+    },
+    {
       "path": "editor/timeline.md",
       "title": "Timeline: plan",
       "order": 25.7,
@@ -392,7 +401,7 @@
       "order": 30,
       "icon": "lock",
       "status": "draft",
-      "updated": "2026-10-05",
+      "updated": "2026-10-20",
       "group": "Private pages and sharing"
     },
     {
@@ -419,7 +428,7 @@
       "order": 40,
       "icon": "desktop_windows",
       "status": "review",
-      "updated": "2026-10-14",
+      "updated": "2026-10-20",
       "group": "Atiya Studio"
     },
     {

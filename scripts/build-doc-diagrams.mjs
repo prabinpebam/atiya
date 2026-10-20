@@ -26,6 +26,7 @@ const DIAGRAMS = [
   { name: 'editor', page: 'documentation/editor/spec.md', prefix: 'ed-arch' },
   { name: 'ai-flow', page: 'documentation/editor/ai-editing.md', prefix: 'ed-ai-flow' },
   { name: 'ai-services', page: 'documentation/editor/ai-services.md', prefix: 'ed-ai-services' },
+  { name: 'publishing', page: 'documentation/editor/drafts-and-publishing.md', prefix: 'ed-publishing' },
   { name: 'timeline-storage', page: 'documentation/editor/timeline.md', prefix: 'ed-tl-storage' },
   { name: 'timeline-ux', page: 'documentation/editor/timeline.md', prefix: 'ed-tl-ux' },
   { name: 'access', page: 'documentation/access/spec.md', prefix: 'ac-arch' },

@@ -1,12 +1,12 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 600">
-<title>Timeline: versions kept in a history store of their own</title>
-<desc>Edit mode saves every edit to disk, as now. A checkpoint policy decides when a save becomes a version: after a quiet spell, when enough has changed in a long session, at least hourly while editing, and always at events such as an AI change, a restore or Save to remote. Each version goes into a history store on this computer: a git repository of its own, outside the site's folder, with one line of versions per article. The timeline reads only that store. Save to remote still commits and pushes your repositories exactly as now, so they hold only your own commits and nothing of the history store is ever pushed.</desc>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 480">
+<title>Timeline: every version is a commit in your private repository</title>
+<desc>Edit mode saves every edit into the working folder of your private repository, where your work lives. A checkpoint policy decides when a save becomes a version: after a quiet spell, when enough has changed in a long session, at least hourly while editing, and always at events such as an AI change, a restore or a publish. Each version is a commit on the private repository's main branch, pushed in the background to your private remote on GitHub, which is the backup. The timeline reads an article's commits by its ID. Nothing of it reaches the public repository.</desc>
 <g id="saves">
 <rect class="src" x="40" y="40" width="220" height="170" rx="18" />
 <text class="name" x="60" y="72">Edit mode saves</text>
 <text class="note" x="60" y="94">every edit, to disk</text>
-<text class="line" x="60" y="140">content/</text>
-<text class="line" x="60" y="168">private-pages/</text>
+<text class="line" x="60" y="140">In your private</text>
+<text class="line" x="60" y="168">repository's folder</text>
 </g>
 <g id="policy">
 <rect class="gate" x="340" y="40" width="240" height="170" rx="18" />
@@ -16,38 +16,31 @@
 <text class="line" x="360" y="160">One per 5 minutes at most</text>
 <text class="line" x="360" y="188">Always before AI, restore</text>
 </g>
-<g id="store">
-<rect class="box" x="660" y="40" width="300" height="170" rx="18" />
-<text class="name" x="680" y="72">History store</text>
-<text class="note" x="680" y="94">on this computer only</text>
-<text class="line" x="680" y="132">A git repository of its own</text>
-<text class="line" x="680" y="160">One line per article</text>
-<text class="line" x="680" y="188">Outside the site's folder</text>
+<g id="repo">
+<rect class="docs" x="660" y="40" width="300" height="170" rx="18" />
+<text class="name" x="680" y="72">Private repository</text>
+<text class="note" x="680" y="94">main: your work</text>
+<text class="line" x="680" y="132">One commit per version</text>
+<text class="line" x="680" y="160">Only the article it's about</text>
+<text class="line" x="680" y="188">Never public</text>
+</g>
+<g id="remote">
+<rect class="box" x="40" y="300" width="260" height="80" rx="16" />
+<text class="name" x="60" y="332">Your private remote</text>
+<text class="note" x="60" y="354">on GitHub: the backup</text>
 </g>
 <g id="timeline">
 <rect class="out" x="660" y="300" width="300" height="80" rx="16" />
 <text class="out-name" x="680" y="332">Timeline</text>
-<text class="out-note" x="680" y="354">an article's versions, by its ID</text>
-</g>
-<g id="remote">
-<rect class="box" x="40" y="300" width="220" height="80" rx="16" />
-<text class="name" x="60" y="332">Save to remote</text>
-<text class="note" x="60" y="354">when you choose, as now</text>
-<rect class="box" x="40" y="450" width="220" height="80" rx="16" />
-<text class="name" x="60" y="482">Your repositories</text>
-<text class="note" x="60" y="504">only your own commits</text>
+<text class="out-note" x="680" y="354">an article's commits, by its ID</text>
 </g>
 <text class="label" x="268" y="116">saves</text>
 <text class="label" x="590" y="116">version</text>
-<text class="label" x="820" y="262">reads</text>
-<text class="label" x="160" y="262">your choice</text>
-<text class="label" x="160" y="422">commit, push</text>
-<text class="label" x="280" y="330">also keeps a version</text>
-<text class="label" x="40" y="578">Nothing is added to your repositories, and nothing in the history store is ever pushed or built into the site.</text>
+<text class="label" x="870" y="262">reads</text>
+<text class="label" x="330" y="242">pushed in the background</text>
+<text class="label" x="40" y="450">Every version is private and backed up, and nothing of it is in your public repository.</text>
 <path class="arrow" d="M260 125 H337" />
 <path class="arrow" d="M580 125 H657" />
-<path class="arrow" d="M810 210 V297" />
-<path class="arrow" d="M150 210 V297" />
-<path class="arrow" d="M150 380 V447" />
-<path class="dashed" d="M260 340 H460 V213" />
+<path class="arrow" d="M860 210 V297" />
+<path class="arrow" d="M700 210 V250 H170 V297" />
 </svg>

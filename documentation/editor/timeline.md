@@ -1,26 +1,25 @@
 # Edit mode: Timeline (plan)
 
-The plan for an article's history in edit mode. Versions are kept automatically at moments that mean something, a timeline lets you scrub through them, and you can restore a whole version or copy blocks out of one. It's built on three principles: right-sized for a personal site's articles, private, and kept out of the site's repository, which holds only what you publish. Why each alternative was left out is in §4.4 and §9; what other products do is in [AI and history: research §4](ai-research.md#4-version-history).
+The plan for an article's history in edit mode. Versions are kept automatically at moments that mean something, a timeline lets you scrub through them, and you can restore a whole version or copy blocks out of one. It's built on three principles: right-sized for a personal site's articles, private, and kept out of the public repository. Versions are commits in your private repository, where your work lives ([Drafts and publishing](drafts-and-publishing.md)); what other products do is in [AI and history: research §4](ai-research.md#4-version-history).
 
 > **TL;DR.**
-> - **When:** a version when you stop for 10 minutes; in a long session, one when 20 minutes *and* a real change (about 100 words, or 2 blocks added, removed, moved or retyped) have passed; never more than an hour of editing without one; and always before an AI change, before a restore, at Save to remote and when an article is published. Never two automatic versions within 5 minutes, never one that changes nothing. A two-hour session gives about four to seven.
-> - **Where:** a history store on this computer: a small git repository of its own, outside the site's folder, with one line of versions per article. Your repositories get nothing: no commits, no refs, no hidden branches. Save to remote works exactly as now. Nothing in the store is ever pushed, built or sent anywhere.
-> - **The same for everyone:** a person who uses only Atiya Studio has no code in their repository, but it's public and a push publishes, so versions kept there would publish every draft step. That alone puts the store outside it. The owner, whose repository also holds the code, needs nothing more: one design, no separate mode for people who work on the code.
+> - **When:** a version when you stop for 10 minutes; in a long session, one when 20 minutes *and* a real change (about 100 words, or 2 blocks added, removed, moved or retyped) have passed; never more than an hour of editing without one; and always before an AI change, before a restore and at every Publish. Never two automatic versions within 5 minutes, never one that changes nothing. A two-hour session gives about four to seven.
+> - **Where:** commits in your private repository, where your work now lives ([Drafts and publishing](drafts-and-publishing.md)): one commit per version, holding only the article it's about. Private, backed up by the repository's background push, and never in the public repository, which receives only what you publish. It's the same for an app user and the owner: every site has a private repository, and it holds no code.
 > - **What a version holds:** the article and the pictures it uses, so an old version shows its own pictures. Git stores each picture once, however many versions use it.
 > - **How you see it:** a History button opens the timeline: the canvas shows the article as it was, with what changed since the version before marked; a rail under it scrubs through versions; the inspector's History tab lists them by day.
 > - **What you can do:** Restore this version (a new version, nothing lost), Copy blocks into today's article, Name this version. Compare with now and bringing back one block in place come later, with AI editing's review.
-> - **Left out on purpose:** backups, thinning, comparing two arbitrary versions, one block's own history, and importing the old git history. Each can be added later if it's missed.
+> - **Left out on purpose:** thinning, comparing two arbitrary versions, one block's own history, and importing the old git history. Each can be added later if it's missed.
 
 <figure class="slate-figure" data-diagram="timeline-storage">
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 600" role="img" aria-labelledby="ed-tl-storage__title ed-tl-storage__desc" preserveAspectRatio="xMidYMid meet" data-slate-svg-motion="viewport" data-slate-safe-margin="24">
-<title id="ed-tl-storage__title">Timeline: versions kept in a history store of their own</title>
-<desc id="ed-tl-storage__desc">Edit mode saves every edit to disk, as now. A checkpoint policy decides when a save becomes a version: after a quiet spell, when enough has changed in a long session, at least hourly while editing, and always at events such as an AI change, a restore or Save to remote. Each version goes into a history store on this computer: a git repository of its own, outside the site's folder, with one line of versions per article. The timeline reads only that store. Save to remote still commits and pushes your repositories exactly as now, so they hold only your own commits and nothing of the history store is ever pushed.</desc>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 480" role="img" aria-labelledby="ed-tl-storage__title ed-tl-storage__desc" preserveAspectRatio="xMidYMid meet" data-slate-svg-motion="viewport" data-slate-safe-margin="24">
+<title id="ed-tl-storage__title">Timeline: every version is a commit in your private repository</title>
+<desc id="ed-tl-storage__desc">Edit mode saves every edit into the working folder of your private repository, where your work lives. A checkpoint policy decides when a save becomes a version: after a quiet spell, when enough has changed in a long session, at least hourly while editing, and always at events such as an AI change, a restore or a publish. Each version is a commit on the private repository's main branch, pushed in the background to your private remote on GitHub, which is the backup. The timeline reads an article's commits by its ID. Nothing of it reaches the public repository.</desc>
 <g id="ed-tl-storage__saves" data-slate-svg-step="1" data-slate-svg-effect="fade-rise">
 <rect id="ed-tl-storage__body-1" x="40" y="40" width="220" height="170" rx="18" fill="var(--color-neutral-bg-1)" stroke="var(--color-neutral-stroke-1)" stroke-width="1.5" />
 <text x="60" y="72" text-anchor="start" font-family="Segoe UI, system-ui, -apple-system, sans-serif" fill="var(--color-neutral-fg-1)" font-size="17" font-weight="600" data-slate-fit-target="ed-tl-storage__body-1" data-slate-fit-padding="16">Edit mode saves</text>
 <text x="60" y="94" text-anchor="start" font-family="Segoe UI, system-ui, -apple-system, sans-serif" fill="var(--color-neutral-fg-2)" font-size="13" data-slate-fit-target="ed-tl-storage__body-1" data-slate-fit-padding="16">every edit, to disk</text>
-<text x="60" y="140" text-anchor="start" font-family="Segoe UI, system-ui, -apple-system, sans-serif" fill="var(--color-neutral-fg-1)" font-size="14" data-slate-fit-target="ed-tl-storage__body-1" data-slate-fit-padding="16">content/</text>
-<text x="60" y="168" text-anchor="start" font-family="Segoe UI, system-ui, -apple-system, sans-serif" fill="var(--color-neutral-fg-1)" font-size="14" data-slate-fit-target="ed-tl-storage__body-1" data-slate-fit-padding="16">private-pages/</text>
+<text x="60" y="140" text-anchor="start" font-family="Segoe UI, system-ui, -apple-system, sans-serif" fill="var(--color-neutral-fg-1)" font-size="14" data-slate-fit-target="ed-tl-storage__body-1" data-slate-fit-padding="16">In your private</text>
+<text x="60" y="168" text-anchor="start" font-family="Segoe UI, system-ui, -apple-system, sans-serif" fill="var(--color-neutral-fg-1)" font-size="14" data-slate-fit-target="ed-tl-storage__body-1" data-slate-fit-padding="16">repository's folder</text>
 </g>
 <g id="ed-tl-storage__policy" data-slate-svg-step="2" data-slate-svg-effect="fade-rise">
 <rect id="ed-tl-storage__body-2" x="340" y="40" width="240" height="170" rx="18" fill="var(--color-status-warning-bg)" stroke="var(--color-status-warning-stroke)" stroke-width="1.5" />
@@ -30,34 +29,29 @@ The plan for an article's history in edit mode. Versions are kept automatically 
 <text x="360" y="160" text-anchor="start" font-family="Segoe UI, system-ui, -apple-system, sans-serif" fill="var(--color-neutral-fg-1)" font-size="14" data-slate-fit-target="ed-tl-storage__body-2" data-slate-fit-padding="16">One per 5 minutes at most</text>
 <text x="360" y="188" text-anchor="start" font-family="Segoe UI, system-ui, -apple-system, sans-serif" fill="var(--color-neutral-fg-1)" font-size="14" data-slate-fit-target="ed-tl-storage__body-2" data-slate-fit-padding="16">Always before AI, restore</text>
 </g>
-<g id="ed-tl-storage__store" data-slate-svg-step="3" data-slate-svg-effect="fade-rise">
-<rect id="ed-tl-storage__body-3" x="660" y="40" width="300" height="170" rx="18" fill="var(--color-neutral-bg-2)" stroke="var(--color-neutral-stroke-2)" stroke-width="1.5" />
-<text x="680" y="72" text-anchor="start" font-family="Segoe UI, system-ui, -apple-system, sans-serif" fill="var(--color-neutral-fg-1)" font-size="17" font-weight="600" data-slate-fit-target="ed-tl-storage__body-3" data-slate-fit-padding="16">History store</text>
-<text x="680" y="94" text-anchor="start" font-family="Segoe UI, system-ui, -apple-system, sans-serif" fill="var(--color-neutral-fg-2)" font-size="13" data-slate-fit-target="ed-tl-storage__body-3" data-slate-fit-padding="16">on this computer only</text>
-<text x="680" y="132" text-anchor="start" font-family="Segoe UI, system-ui, -apple-system, sans-serif" fill="var(--color-neutral-fg-1)" font-size="14" data-slate-fit-target="ed-tl-storage__body-3" data-slate-fit-padding="16">A git repository of its own</text>
-<text x="680" y="160" text-anchor="start" font-family="Segoe UI, system-ui, -apple-system, sans-serif" fill="var(--color-neutral-fg-1)" font-size="14" data-slate-fit-target="ed-tl-storage__body-3" data-slate-fit-padding="16">One line per article</text>
-<text x="680" y="188" text-anchor="start" font-family="Segoe UI, system-ui, -apple-system, sans-serif" fill="var(--color-neutral-fg-1)" font-size="14" data-slate-fit-target="ed-tl-storage__body-3" data-slate-fit-padding="16">Outside the site's folder</text>
+<g id="ed-tl-storage__repo" data-slate-svg-step="3" data-slate-svg-effect="fade-rise">
+<rect id="ed-tl-storage__body-3" x="660" y="40" width="300" height="170" rx="18" fill="var(--color-status-warning-bg)" stroke="var(--color-status-warning-stroke)" stroke-width="1.5" />
+<text x="680" y="72" text-anchor="start" font-family="Segoe UI, system-ui, -apple-system, sans-serif" fill="var(--color-neutral-fg-1)" font-size="17" font-weight="600" data-slate-fit-target="ed-tl-storage__body-3" data-slate-fit-padding="16">Private repository</text>
+<text x="680" y="94" text-anchor="start" font-family="Segoe UI, system-ui, -apple-system, sans-serif" fill="var(--color-status-warning-fg)" font-size="13" data-slate-fit-target="ed-tl-storage__body-3" data-slate-fit-padding="16">main: your work</text>
+<text x="680" y="132" text-anchor="start" font-family="Segoe UI, system-ui, -apple-system, sans-serif" fill="var(--color-neutral-fg-1)" font-size="14" data-slate-fit-target="ed-tl-storage__body-3" data-slate-fit-padding="16">One commit per version</text>
+<text x="680" y="160" text-anchor="start" font-family="Segoe UI, system-ui, -apple-system, sans-serif" fill="var(--color-neutral-fg-1)" font-size="14" data-slate-fit-target="ed-tl-storage__body-3" data-slate-fit-padding="16">Only the article it's about</text>
+<text x="680" y="188" text-anchor="start" font-family="Segoe UI, system-ui, -apple-system, sans-serif" fill="var(--color-neutral-fg-1)" font-size="14" data-slate-fit-target="ed-tl-storage__body-3" data-slate-fit-padding="16">Never public</text>
 </g>
-<g id="ed-tl-storage__timeline" data-slate-svg-step="4" data-slate-svg-effect="fade-rise">
-<rect id="ed-tl-storage__body-4" x="660" y="300" width="300" height="80" rx="16" fill="var(--color-brand-bg)" />
-<text x="680" y="332" text-anchor="start" font-family="Segoe UI, system-ui, -apple-system, sans-serif" fill="var(--color-on-brand)" font-size="17" font-weight="600" data-slate-fit-target="ed-tl-storage__body-4" data-slate-fit-padding="16">Timeline</text>
-<text x="680" y="354" text-anchor="start" font-family="Segoe UI, system-ui, -apple-system, sans-serif" fill="var(--color-on-brand)" font-size="13" data-slate-fit-target="ed-tl-storage__body-4" data-slate-fit-padding="16">an article's versions, by its ID</text>
+<g id="ed-tl-storage__remote" data-slate-svg-step="4" data-slate-svg-effect="fade-rise">
+<rect id="ed-tl-storage__body-4" x="40" y="300" width="260" height="80" rx="16" fill="var(--color-neutral-bg-2)" stroke="var(--color-neutral-stroke-2)" stroke-width="1.5" />
+<text x="60" y="332" text-anchor="start" font-family="Segoe UI, system-ui, -apple-system, sans-serif" fill="var(--color-neutral-fg-1)" font-size="17" font-weight="600" data-slate-fit-target="ed-tl-storage__body-4" data-slate-fit-padding="16">Your private remote</text>
+<text x="60" y="354" text-anchor="start" font-family="Segoe UI, system-ui, -apple-system, sans-serif" fill="var(--color-neutral-fg-2)" font-size="13" data-slate-fit-target="ed-tl-storage__body-4" data-slate-fit-padding="16">on GitHub: the backup</text>
 </g>
-<g id="ed-tl-storage__remote" data-slate-svg-step="5" data-slate-svg-effect="fade-rise">
-<rect id="ed-tl-storage__body-5" x="40" y="300" width="220" height="80" rx="16" fill="var(--color-neutral-bg-2)" stroke="var(--color-neutral-stroke-2)" stroke-width="1.5" />
-<text x="60" y="332" text-anchor="start" font-family="Segoe UI, system-ui, -apple-system, sans-serif" fill="var(--color-neutral-fg-1)" font-size="17" font-weight="600" data-slate-fit-target="ed-tl-storage__body-5" data-slate-fit-padding="16">Save to remote</text>
-<text x="60" y="354" text-anchor="start" font-family="Segoe UI, system-ui, -apple-system, sans-serif" fill="var(--color-neutral-fg-2)" font-size="13" data-slate-fit-target="ed-tl-storage__body-5" data-slate-fit-padding="16">when you choose, as now</text>
-<rect id="ed-tl-storage__body-6" x="40" y="450" width="220" height="80" rx="16" fill="var(--color-neutral-bg-2)" stroke="var(--color-neutral-stroke-2)" stroke-width="1.5" />
-<text x="60" y="482" text-anchor="start" font-family="Segoe UI, system-ui, -apple-system, sans-serif" fill="var(--color-neutral-fg-1)" font-size="17" font-weight="600" data-slate-fit-target="ed-tl-storage__body-6" data-slate-fit-padding="16">Your repositories</text>
-<text x="60" y="504" text-anchor="start" font-family="Segoe UI, system-ui, -apple-system, sans-serif" fill="var(--color-neutral-fg-2)" font-size="13" data-slate-fit-target="ed-tl-storage__body-6" data-slate-fit-padding="16">only your own commits</text>
+<g id="ed-tl-storage__timeline" data-slate-svg-step="5" data-slate-svg-effect="fade-rise">
+<rect id="ed-tl-storage__body-5" x="660" y="300" width="300" height="80" rx="16" fill="var(--color-brand-bg)" />
+<text x="680" y="332" text-anchor="start" font-family="Segoe UI, system-ui, -apple-system, sans-serif" fill="var(--color-on-brand)" font-size="17" font-weight="600" data-slate-fit-target="ed-tl-storage__body-5" data-slate-fit-padding="16">Timeline</text>
+<text x="680" y="354" text-anchor="start" font-family="Segoe UI, system-ui, -apple-system, sans-serif" fill="var(--color-on-brand)" font-size="13" data-slate-fit-target="ed-tl-storage__body-5" data-slate-fit-padding="16">an article's commits, by its ID</text>
 </g>
 <text x="268" y="116" text-anchor="start" font-family="Segoe UI, system-ui, -apple-system, sans-serif" fill="var(--color-neutral-fg-2)" font-size="12">saves</text>
 <text x="590" y="116" text-anchor="start" font-family="Segoe UI, system-ui, -apple-system, sans-serif" fill="var(--color-neutral-fg-2)" font-size="12">version</text>
-<text x="820" y="262" text-anchor="start" font-family="Segoe UI, system-ui, -apple-system, sans-serif" fill="var(--color-neutral-fg-2)" font-size="12">reads</text>
-<text x="160" y="262" text-anchor="start" font-family="Segoe UI, system-ui, -apple-system, sans-serif" fill="var(--color-neutral-fg-2)" font-size="12">your choice</text>
-<text x="160" y="422" text-anchor="start" font-family="Segoe UI, system-ui, -apple-system, sans-serif" fill="var(--color-neutral-fg-2)" font-size="12">commit, push</text>
-<text x="280" y="330" text-anchor="start" font-family="Segoe UI, system-ui, -apple-system, sans-serif" fill="var(--color-neutral-fg-2)" font-size="12">also keeps a version</text>
-<text x="40" y="578" text-anchor="start" font-family="Segoe UI, system-ui, -apple-system, sans-serif" fill="var(--color-neutral-fg-2)" font-size="12">Nothing is added to your repositories, and nothing in the history store is ever pushed or built into the site.</text>
+<text x="870" y="262" text-anchor="start" font-family="Segoe UI, system-ui, -apple-system, sans-serif" fill="var(--color-neutral-fg-2)" font-size="12">reads</text>
+<text x="330" y="242" text-anchor="start" font-family="Segoe UI, system-ui, -apple-system, sans-serif" fill="var(--color-neutral-fg-2)" font-size="12">pushed in the background</text>
+<text x="40" y="450" text-anchor="start" font-family="Segoe UI, system-ui, -apple-system, sans-serif" fill="var(--color-neutral-fg-2)" font-size="12">Every version is private and backed up, and nothing of it is in your public repository.</text>
 <g id="ed-tl-storage__flow-1" data-slate-svg-step="6" data-slate-svg-effect="draw">
 <path d="M260 125 L330 125" fill="none" stroke="var(--color-neutral-fg-2)" stroke-width="2" />
 <polygon points="339,125 330,130 330,120" fill="var(--color-neutral-fg-2)" />
@@ -67,42 +61,34 @@ The plan for an article's history in edit mode. Versions are kept automatically 
 <polygon points="659,125 650,130 650,120" fill="var(--color-neutral-fg-2)" />
 </g>
 <g id="ed-tl-storage__flow-3" data-slate-svg-step="8" data-slate-svg-effect="draw">
-<path d="M810 210 L810 290" fill="none" stroke="var(--color-neutral-fg-2)" stroke-width="2" />
-<polygon points="810,299 815,290 805,290" fill="var(--color-neutral-fg-2)" />
+<path d="M860 210 L860 290" fill="none" stroke="var(--color-neutral-fg-2)" stroke-width="2" />
+<polygon points="860,299 865,290 855,290" fill="var(--color-neutral-fg-2)" />
 </g>
 <g id="ed-tl-storage__flow-4" data-slate-svg-step="9" data-slate-svg-effect="draw">
-<path d="M150 210 L150 290" fill="none" stroke="var(--color-neutral-fg-2)" stroke-width="2" />
-<polygon points="150,299 155,290 145,290" fill="var(--color-neutral-fg-2)" />
-</g>
-<g id="ed-tl-storage__flow-5" data-slate-svg-step="10" data-slate-svg-effect="draw">
-<path d="M150 380 L150 440" fill="none" stroke="var(--color-neutral-fg-2)" stroke-width="2" />
-<polygon points="150,449 155,440 145,440" fill="var(--color-neutral-fg-2)" />
-</g>
-<g id="ed-tl-storage__flow-6" data-slate-svg-step="11" data-slate-svg-effect="draw">
-<path d="M260 340 L460 340 L460 220" fill="none" stroke="var(--color-neutral-fg-2)" stroke-width="2" stroke-dasharray="6 5" />
-<polygon points="460,211 465,220 455,220" fill="var(--color-neutral-fg-2)" />
+<path d="M700 210 L700 250 L170 250 L170 290" fill="none" stroke="var(--color-neutral-fg-2)" stroke-width="2" />
+<polygon points="170,299 175,290 165,290" fill="var(--color-neutral-fg-2)" />
 </g>
 </svg>
-<figcaption>Saves go to disk as now; the policy turns some of them into versions in the history store; the timeline reads only the store, and your repositories hold only your own commits.</figcaption>
+<figcaption>Edits save into your private repository's folder; the policy turns some of them into commits there, pushed in the background; the timeline reads an article's commits.</figcaption>
 </figure>
 
 ## 1. Principles
 
 | Principle | What it decides |
 |---|---|
-| **Right-sized for a personal site** | One person, tens of articles, each a few thousand words. So: a few versions per session, not one per keystroke; keep everything rather than build thinning; a list and a rail, not three ways to browse; no sync, no backup service, no collaboration. |
-| **Private** | Drafts, deleted sentences and private pages stay on this computer. The store is never pushed, never inside the site's folder (so it can't be committed by accident), never in a build, and never sent to an AI service. You can forget an article's history, or all of it. |
-| **Kept out of the site's repository** | The repository holds what you publish, and only that. For a person who uses only Atiya Studio it has no code (`content/`, `atiya.json`, a short workflow and `AGENTS.md`: [desktop spec §6](../desktop/spec.md)), but it's public and a push to `main` publishes, so versions there would put every draft step and deleted sentence on GitHub for good. For the owner it also holds the site's code, so versions there would also crowd his code history. The same store answers both: there's no separate mode for people who work on the code. |
+| **Right-sized for a personal site** | One person, tens of articles, each a few thousand words. So: a few versions per session, not one per keystroke; keep everything rather than build thinning; a list and a rail, not three ways to browse; no sync service and no collaboration; the private repository's push is the backup. |
+| **Private** | Drafts, deleted sentences and private pages stay in your private repository: on your computer and your private remote. Nothing of the history reaches the public repository or a build, and none of it is sent to an AI service. |
+| **Kept out of the public repository** | The public repository receives only what you publish ([Drafts and publishing](drafts-and-publishing.md)). An app user's holds no code, but it's public and a push publishes; the owner's also holds the site's code. Versions in either would publish draft steps or crowd the code history. In the private repository they do neither, and there's no code there for them to mix with. |
 
 ## 2. Scope
 
 | | In this plan | Later, if missed | Not planned |
 |---|---|---|---|
 | Keeping versions | The policy (§3), Name this version, changes made outside edit mode | | A version per save |
-| Storing | The local history store (§4), forgetting history | Thinning, if the store grows past a size worth caring about | Backups, pushing history anywhere |
+| Storing | Commits in the private repository (§4), pushed as its backup | Thinning, if it ever grows past a size worth caring about | A store of its own |
 | Browsing | The History tab, the rail, an old version on the canvas with its changes marked | One block's history (needs block keys) | Comparing two arbitrary versions |
 | Restoring | Restore this version, Copy blocks | Compare with now (a partial restore), Bring back a block in place, Make a copy as a new draft | |
-| The past | Starts when phase 1 ships | Reading older versions from Save to remote commits | Importing them into the store |
+| The past | Starts when phase 1 ships | Reading older versions from the public repository's commits | Importing them |
 
 ## 3. When a version is kept
 
@@ -116,7 +102,7 @@ Per article, worked out by edit mode's server from what the store saves, so edit
 | **Long session** | Since the last version, at least this long *and* a significant change | 20 minutes |
 | **Ceiling** | Never more than this much editing without a version, if anything changed | 60 minutes |
 | **Significant change** | Words changed (added plus removed), or structural changes (a block added, removed, moved or retyped), or any change to the title, summary, lead picture or settings | 100 words, or 2 structural changes |
-| **Events** | Before an AI change is applied and after it; before a restore; at Save to remote; when the status changes (publishing); when its access, section or slug changes; when you name a version. Only if the article changed since its last version | Always |
+| **Events** | Before an AI change is applied and after it; before a restore; at every Publish, Publish changes and Unpublish; when its access, section or slug changes; when you name a version. Only if the article changed since its last version | Always |
 | **Floor** | No two automatic versions closer than this; events aren't held back by it | 5 minutes |
 | **Nothing for nothing** | No version when nothing meaningful changed: whitespace only, or only `updatedAt` | Always |
 
@@ -132,72 +118,51 @@ A pure function, `significance(before, after)`, compares two versions of an arti
 - **Structure:** blocks added, removed, moved or retyped.
 - **Settings:** the title, summary, lead picture, kind, and any field outside the blocks.
 
-It also writes the version's message, so every version says what it was without anyone typing one: *Edited "Approach": +84 −12 words; added a table*. An event adds its name: *Saved to remote*, *Published*, *Before AI: shorten the intro*, *Restored from Tuesday 14:32*. A named version shows your name for it.
+It also writes the version's message, so every version says what it was without anyone typing one: *Edited "Approach": +84 −12 words; added a table*. An event adds its name: *Published*, *Published changes*, *Before AI: shorten the intro*, *Restored from Tuesday 14:32*. A named version shows your name for it.
 
 ### 3.3 Changes made outside edit mode
 
-A `git pull`, a branch switch, a text editor or a sync tool can change an article while edit mode isn't watching. They're never lost and never pinned on the wrong edit:
+A pull of work done on another computer, a text editor or an agent working on the files can change an article while edit mode isn't watching. They're never lost and never pinned on the wrong edit:
 
 - **At start-up,** after the dev server is ready and in the background, each article's file is compared with its last version (by hash, so it's cheap); one that differs gets a version first, *Changed outside edit mode*.
 - **While it runs,** the same check happens before each version is written: a file that differs from what edit mode last saved gets that version first.
 
 ## 4. Where versions are kept
 
-### 4.1 The history store
+### 4.1 Commits in your private repository
 
-A bare git repository on this computer, created on first use, used only by edit mode:
+Your work lives in your private repository ([Drafts and publishing §2.1](drafts-and-publishing.md#21-your-work-the-private-repository)), so its history does too: each version is an ordinary commit on its `main` branch.
 
-| | |
-|---|---|
-| **Atiya Studio** | The app's data folder, beside the per-site cache it already keeps: `<app data>/history/<site>`, where `<site>` is the same hash of the site's folder its cache uses (`ATIYA_CACHE_DIR`), but never inside the cache, which can be cleared. Studio hands the path to its dev server (`ATIYA_HISTORY_DIR`). |
-| **Plain `npm run dev`** | `ATIYA_HISTORY_DIR` if set, else the user's data folder: `%LOCALAPPDATA%\Atiya\history\<site>` on Windows, `~/Library/Application Support/Atiya/history/<site>` on macOS, `~/.local/share/atiya/history/<site>` on Linux. |
-| **Tests** | Their own temporary folder (the editor's fixture server sets it), never the real one. |
-
-**Inside it,** each article has its own line of versions, `refs/articles/<article-id>`. Each version is a commit whose tree holds:
-
-- `article.json`: the article as it was;
-- `media/<media-id>/…`: every picture or video it uses (its own folder's and any it uses from the library): the master, its sidecar, and its dark mode version and poster if it has them. Generated sizes are left out, as in `content/`.
-
-The ID never changes, so a version line follows its article through a rename, a move to another section, and a change of access (public to private and back): the store doesn't care which folder the file is in.
+- **One article per commit:** a version commits only the article it's about and the media it uses that changed, so another article's unfinished edits wait for their own version.
+- **Read by ID:** an article's history is the log of its file: `content/articles/<id>.json` while it's public, `articles/<id>.json` while it's private. The ID never changes, so the history follows it through a rename, a move to another section and a change of access.
+- **Pictures:** an old version shows its own pictures, read from its commit (`git show <commit>:<path>`); git stores each file once, however many versions use it. Unlike text, a replaced picture adds its whole new file: that's the cost of old versions showing their own pictures, under the 100 MB limit per video.
+- **Other commits there** (a Publish, sharing, the site's settings) don't appear in an article's timeline unless they changed the article.
 
 ### 4.2 Writing a version
 
-No working tree, no index, and not your repository: only git's plumbing, against the store, with the same `git` helper edit mode uses for Save to remote (on a managed site, the bundled git).
+1. **Under the store's writer lock** (saves and Publish take it too), so a version never catches a half-written change.
+2. **If nothing meaningful changed** since the article's last commit, stop.
+3. **Commit the article's paths only** (`git add` and `git commit -- <paths>`), with the message from §3.2 and a trailer naming the trigger (`quiet`, `session`, `ceiling`, `before-ai`, `after-ai`, `before-restore`, `publish`, `named`, `outside`).
+4. **Push in the background** (§4.3).
 
-1. **Under the store's writer lock** (saves and Save to remote take it too), so a version never catches a half-written change.
-2. **`git hash-object -w --stdin-paths`** writes the article and its media files into the store in one call; git keeps a file it already has only once.
-3. **`git mktree`** builds the tree (the article, then a tree per media item).
-4. **If the tree is the same as the article's last version,** stop: nothing for nothing.
-5. **`git commit-tree -p <last>`** makes the commit, with the message from §3.2 and trailers: the trigger (`quiet`, `session`, `ceiling`, `before-ai`, `after-ai`, `before-restore`, `remote`, `publish`, `named`, `outside`) and the access.
-6. **`git update-ref refs/articles/<id> <new> <last>`** moves the line only if nothing else moved it meanwhile ([update-ref](https://git-scm.com/docs/git-update-ref)).
+It runs after the save has answered, in a queue, so saving stays as fast as it is today; a version that fails to write is logged and tried at the next trigger, and never fails a save. Git runs as Save to remote's does today: the same helper, prompts off, a time limit, and on a managed site the bundled git.
 
-It runs after the save has answered, in a queue, so saving stays as fast as it is today; a version that fails to write is logged and tried at the next trigger, and never fails a save.
+**Names** you give versions are git notes on their commits (`refs/notes/atiya-names`, pushed with the rest), so naming an old version never rewrites the history.
 
-Names you give versions are kept in one small file in the store (`names.json`: version to name), so naming an old version never rewrites the history.
+### 4.3 Private, backed up, and out of the way
 
-### 4.3 Privacy and size
+- **Backed up:** the private repository is pushed in the background a minute after a version (retried while offline), so versions are on your private remote too, and another computer gets them with a pull.
+- **Private:** it's your private repository on GitHub, where private pages already are. Nothing of it is in the public repository or a build, and none of it is sent to an AI service (an AI request carries only today's article: [AI editing §2](ai-editing.md#2-the-edit-request-one-contract-under-every-feature)).
+- **Out of the owner's way:** in his project the private repository is the `private-pages/` submodule, which his `git status` ignores (`ignore = all`), so versions never show among his code changes.
+- **Keep everything:** text is small and pictures are stored once, so nothing is thinned. If the size ever matters, thinning comes then (§2).
 
-- **Local only:** the store has no remote; a test holds that. It's outside the site's folder, so no `git add` can pick it up, and nothing of it is in a build (it's part of edit mode, which never reaches one).
-- **Private pages** are kept there as plainly as they already are in `private-pages/` on the same disk: no less private, and no more.
-- **AI never sees history:** an AI request carries only today's article ([AI editing §2](ai-editing.md#2-the-edit-request-one-contract-under-every-feature)).
-- **Forgetting:** Settings shows the store's size and how many articles it holds, with Forget an article's history and Clear all history (both then let git drop what nothing uses). Deleting an article asks whether to forget its history too (unticked: a deleted article can then be brought back).
-- **Keep everything:** articles are text and pictures are stored once, so a personal site's history stays small; nothing is thinned. If the size ever matters, thinning comes then (§2).
+### 4.4 Why not elsewhere
 
-### 4.4 Why not in your repository
-
-A site's repository is one of two kinds, and each alternative fails on at least one:
-
-- **An app user's site:** content only, public, created by Atiya Studio; a push to `main` publishes.
-- **The owner's site:** content and the site's code together, in this repository.
-
-| Alternative | An app user's site | The owner's site |
-|---|---|---|
-| Commits on the branch | Every draft step, and every sentence deleted before publishing, public on GitHub from the next push; Discard ("since Save to remote") loses its meaning | The same, and dozens of commits a day among his code commits |
-| Commits on the branch, squashed at Save to remote | Private, but the versions vanish at the push, so a store is needed anyway | The same, and it rewrites the branch he works on |
-| A hidden ref in the repository | Private while it stays local, but one `git push --mirror` or a backup tool publishes it, and a clone into a new folder loses it | The same, and it shows in `git log --all`, graph views and `gc` |
-| Plain copies of files (like VS Code's local history) | Works, but we'd write our own de-duplication of pictures, which git already does | The same |
-
-So the local store isn't extra machinery for developers: an app user's site needs it for privacy, and the owner's site then needs nothing different.
+| Alternative | Why not |
+|---|---|
+| Commits in the public repository | Every draft step public for good: an app user's repository is public, and the owner's also holds the code |
+| A store of its own on this computer (the previous plan) | Lost with the computer and invisible on another one. Now that your work lives in the private repository, its commits are private and backed up for free |
+| Plain copies of files (like VS Code's local history) | The same, and we'd write our own de-duplication of pictures, which git already does |
 
 ## 5. Browsing
 
@@ -247,7 +212,7 @@ So the local store isn't extra machinery for developers: an app user's site need
 </figure>
 
 - **Opening it:** a History button in the article editor's header (in Atiya Studio it appears in the app's title bar by itself, like every header tool), and Ctrl+Shift+H, checked against the browser and Studio before it's kept. The editor switches to the timeline: the canvas becomes read-only, the rail appears under it, and the inspector shows History. Esc or the button again returns to editing exactly where you were.
-- **The canvas** draws the article as it was, through the same page it draws today: for that request, edit mode's content reader takes the article from the store instead of the disk, and a picture no longer on disk is served from the store. What changed since the version before is marked: removed words struck, new ones highlighted, added and removed blocks outlined, and the same changes listed as text above the article, so nothing depends on colour.
+- **The canvas** draws the article as it was, through the same page it draws today: for that request, edit mode's content reader takes the article from that version's commit instead of the disk, and a picture no longer on disk is served from the commit. What changed since the version before is marked: removed words struck, new ones highlighted, added and removed blocks outlined, and the same changes listed as text above the article, so nothing depends on colour.
 - **An older format:** a version the content contract no longer accepts (a block type renamed since, say) is shown as its text and blocks, marked *older format*, rather than refused.
 - **The History tab** lists versions newest first, grouped by day, each with its time, message and kind (named, published, AI); a filter shows only named and published ones.
 - **The rail** has a tick per version, marks for named, published and AI ones, and day markers when ticks get dense. Dragging it moves the canvas; the article's text appears at once from the version's JSON and the drawn canvas replaces it when ready (the old view stays until then); neighbouring versions are fetched ahead.
@@ -264,7 +229,7 @@ WordPress's review of its own revisions slider found a missing `aria-valuetext`,
 
 ## 6. Restoring and copying
 
-- **Restore this version:** keeps a version of now (*Before restoring*), writes the old article through the store (so the content check and conflict detection apply, and a picture deleted since comes back from the store), and keeps a version, *Restored from Tuesday 14:32*. Later versions stay.
+- **Restore this version:** keeps a version of now (*Before restoring*), writes the old article through the store (so the content check and conflict detection apply, and a picture deleted since comes back from the version), and keeps a version, *Restored from Tuesday 14:32*. Later versions stay.
 - **Copy blocks:** select blocks in an old version and choose Copy to the article; they're inserted after the block selected in today's article (or at the end), with their pictures brought back if they were deleted. One step in undo.
 - **Name this version:** on any version, or on now (which keeps a version if anything changed).
 
@@ -272,23 +237,26 @@ WordPress's review of its own revisions slider found a missing `aria-valuetext`,
 
 | Phase | What | Useful because |
 |---|---|---|
-| 1 | The store, the policy, outside changes, Name this version, Forget and Clear in Settings | History starts building up before there's a screen, so the timeline has a past when it arrives |
+| 1 | The policy, versions as commits in the private repository, outside changes, Name this version | History starts building up before there's a screen, so the timeline has a past when it arrives |
 | 2 | The History tab, an old version on the canvas with its changes marked, Restore this version, Copy blocks | Everything needed to get something back |
 | 3 | The rail: scrubbing, keyboard, dense ticks | The "scrub through time" you asked for |
 | 4 | With AI editing: the before and after AI events, Compare with now (a partial restore through its review), Bring back a block in place (block keys) | Shares AI editing's review and keys instead of building them twice |
+
+Phase 1 needs [Drafts and publishing](drafts-and-publishing.md)'s phase 1: your work in the private repository.
 
 ## 8. Definition of Done
 
 **Phase 1: keeping versions**
 
 - [ ] `significance` and the policy are pure functions with unit tests for every row of §3.1, including the floor, events past the floor, nothing for nothing and the ceiling, on a fake clock.
-- [ ] The store writer, against a temporary site repository: a version is written and read back; the same content twice writes one version; and the site repository's `HEAD`, index, branches, refs (`git for-each-ref`), status and files are byte-for-byte unchanged after many versions.
-- [ ] The store has no remote, and its path is never inside the site's folder (both tested).
+- [ ] Writing a version, against a temporary private repository: a version commits only its article's paths; the same content twice writes one version; another article's unfinished edits stay uncommitted.
+- [ ] Nothing of the history reaches the public repository: the editor E2E edits, waits for versions, and finds the public repository's `git status`, branches and refs unchanged.
 - [ ] A private article's versions are written and read like a public one's, and follow it through a change of access.
 - [ ] Changes made outside edit mode are kept as their own version at start-up and before the next version (tested with a file changed behind the server's back).
 - [ ] Saving is no slower: `perf:bench`'s `editor/interaction/save-round-trip` and `type-to-saved` stay within their budgets (300 and 1,200 ms).
-- [ ] Atiya Studio sets `ATIYA_HISTORY_DIR` under its data folder, outside the cache; its E2E edits an article on the fake GitHub and finds versions in the store and no new commits or refs in the site's repository.
-- [ ] Forget an article's history and Clear all history remove it from the store (tested).
+- [ ] Versions are pushed in the background to the private remote (the fixture's bare remote); offline, they wait without holding up a save.
+- [ ] Atiya Studio's E2E edits an article on the fake GitHub and finds its versions on the private repository's remote.
+- [ ] Names are git notes: naming an old version changes no commit.
 - [ ] `verify:prod` passes: nothing of the history reaches a build.
 
 **Phase 2: getting something back**
@@ -313,9 +281,9 @@ WordPress's review of its own revisions slider found a missing `aria-valuetext`,
 | Question | Decision | Why |
 |---|---|---|
 | When | The policy in §3.1, with those numbers | Few versions, each meaningful; tunable later |
-| Where | A local history store of its own (§4) | An app user's public repository would publish every draft step; the owner's would also mix them with code. One store serves both |
-| Backup | None | Private; Save to remote already keeps what you publish |
-| How long | Everything, with Forget and Clear | Small at this scale; simpler than thinning |
+| Where | Commits in your private repository (§4) | Your work lives there: private, backed up, and nothing in the public repository, with no code to mix with |
+| Backup | The private repository's background push | Free once the work lives there |
+| How long | Everything | Small at this scale; simpler than thinning |
 | The view | The list and the rail together | What you asked for, without a third mode |
 | Compare | Each version against the one before; Compare with now in phase 4 | Covers "what changed" and "what's different from now" without two-handle comparing |
 | The old git history | Not imported | Not needed to start; reading it is a later option |

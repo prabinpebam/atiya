@@ -220,10 +220,10 @@ Several comments can sit on the same thing, each with replies.
 | Option | Where | Pros | Cons |
 |---|---|---|---|
 | A. In the article | A `comments` list in the article's JSON | Travels with the article; one file | The public repository is world-readable: notes like "this paragraph is weak" would be published on GitHub. A schema change the build must strip |
-| **B. Beside it, in the private repository** (recommended) | `private-pages/comments/<article-id>.json`, for every article, public or private | Private by default; versioned with the timeline (the private repository is already committed and pushed with Save to remote); never part of the build | Needs private pages set up (Atiya Studio's first-use setup); without it, falls back to C |
+| **B. Beside it, in the private repository** (recommended) | `private-pages/comments/<article-id>.json`, for every article, public or private | Private by default; versioned with the article, since the private repository's commits are the [timeline](timeline.md); never part of the build | Needs the private repository, which every site will have ([Drafts and publishing](drafts-and-publishing.md)); until then, falls back to C |
 | C. On this computer only | A gitignored folder or Studio's app data | Nothing leaves the machine | Lost with the machine; not in the timeline; not on another computer |
 
-Recommended: **B, falling back to C** until private pages are set up. The comments of a private article are already in that repository's privacy; a public article's comments stay out of the public one.
+Recommended: **B, falling back to C** until the site has its private repository. The comments of a private article are already in that repository's privacy; a public article's comments stay out of the public one.
 
 ### 7.3 The Comments tab
 

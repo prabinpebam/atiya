@@ -335,8 +335,8 @@ Beside it, setup writes a skill, `.github/skills/site-services/SKILL.md`: the co
 |---|---|
 | **Engine** | The site's code: layouts, the mode host and its built-in modes, edit mode, the content contract, the sealer, the build. Versioned and released from this repository |
 | **Engine release** | An immutable archive of the engine at one version, without anyone's content, with its lockfile, generated assets and a checksum (§10.1) |
-| **Site repository** | The person's public repository: `content/`, `atiya.json`, a short workflow, `AGENTS.md`. No code |
-| **Private repository** | Made on first use (F8): private pages, their media and the grants, kept in the site repository as the `private-pages/` submodule |
+| **Site repository** | The person's public repository: `content/`, `atiya.json`, a short workflow, `AGENTS.md`. No code. Planned: only published pages reach it, and later no `content/` at all ([Drafts and publishing](../editor/drafts-and-publishing.md)) |
+| **Private repository** | Made on first use (F8): private pages, their media and the grants, kept in the site repository as the `private-pages/` submodule. Planned: made with every site, and holding every page's working copy and its versions ([Drafts and publishing](../editor/drafts-and-publishing.md)) |
 | **Workspace** | The site repository cloned on a computer (`<home>/Atiya/<address>/`) |
 | **Managed site** | A site the app runs with its own engine (everyone but the owner) |
 | **Developer workspace** | A source checkout the app runs with its own code (the owner) |
