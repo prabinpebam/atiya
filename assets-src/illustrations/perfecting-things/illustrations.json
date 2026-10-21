@@ -6,6 +6,13 @@
   "castAnchor": "the-underside",
   "images": [
     {
+      "name": "the-inside",
+      "use": "hero",
+      "format": "hero",
+      "subject": "In the cabinetmaker's workshop stands one simple, solid, rectangular wooden wardrobe, seen straight from the front. Its two front doors are hinged on its outer left and right edges and swung fully open, one to each side, so we look straight into it. The inside is one plain, empty space: a back panel, two side walls, a floor and a ceiling, with nothing else in it (no drawers, no shelves, no inner doors). Inside, the tiny cabinetmaker stands on a little stool with a lantern hanging from a hook, carefully sanding the inside of the back panel to a soft sheen, tongue poking out in concentration; in the panel's top corner he has carved one small, neat flower that nobody will ever see once clothes hang there. Outside, to the left, three customers argue about it: one peers in through a magnifying glass, starry-eyed with admiration; one taps an alarm clock and rolls their eyes at the wasted time; one shrugs, holding a plain, rough wooden crate that holds things just as well. To the right, the old master leans on his mallet, smiling quietly.",
+      "alt": "A small carpenter stands inside an open wardrobe, sanding its plain back panel by lantern light beside a tiny carved flower, while customers outside argue: one admires through a magnifying glass, one taps a clock."
+    },
+    {
       "name": "the-underside",
       "use": "figure",
       "format": "figure",

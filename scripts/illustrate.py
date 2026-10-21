@@ -199,7 +199,9 @@ def cmd_place(a):
     path = ROOT / 'content/articles' / f"{m['article']}.json"
     art = json.loads(path.read_text(encoding='utf-8'))
     prefix = f"articles/{m['article']}/"
-    body = [b for b in art['body'] if not (b['type'] == 'figure' and str(b.get('media', '')).startswith(prefix))]
+    # Only this set's own figures are replaced: other pictures in the article's folder (a photo) stay put.
+    ours = {prefix + img['name'] for img in m['images']}
+    body = [b for b in art['body'] if not (b['type'] == 'figure' and b.get('media') in ours)]
     for img in m['images']:
         media = prefix + img['name']
         if img.get('use') == 'hero':

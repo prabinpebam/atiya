@@ -11,7 +11,7 @@
   "updatedAt": "2026-10-21",
   "locale": "en",
   "hero": {
-    "media": "articles/perfecting-things-nobody-will-see/two-phones-inside",
+    "media": "articles/perfecting-things-nobody-will-see/the-inside",
     "display": "fit",
     "background": false,
     "rounded": false,
@@ -22,6 +22,17 @@
       "type": "text",
       "markdown": "The debate over Apple's obsession with craftsmanship is hardly new. Every time a teardown reveals meticulously arranged internals, the same arguments resurface. Some see evidence of engineering excellence and an uncompromising attention to detail. Others see wasted effort: time and resources spent perfecting something the customer will never see, at the expense of things that actually matter.",
       "key": "4bed07"
+    },
+    {
+      "type": "figure",
+      "media": "articles/perfecting-things-nobody-will-see/two-phones-inside",
+      "width": "wide",
+      "lightbox": true,
+      "display": "fit",
+      "background": false,
+      "rounded": false,
+      "showCaption": false,
+      "key": "ph0tos"
     },
     {
       "type": "text",
