@@ -422,7 +422,7 @@ Every step stays on Actions' free minutes for public repositories.
    - its ID, slug and token, and every grant's ID, code name, recipient and purpose;
    - the SHA-256 of every private master and of every file the sealer removed.
 
-   Words the public repository's own sources already hold (`content/`, `documentation/`, `src/`) aren't counted: the open site says them anyway, so the build repeating them leaks nothing (a private article about a product the open résumé names, a common heading another open page also uses). The check says how many it let off, by category only. A page's token and a grant's ID are random, so they always count. (Added 6 October 2026, after the first deploy with a real private article failed on five such words, none of them private.)
+   Words the public repository's own sources already hold (`content/`, `documentation/`, `src/`) aren't counted: the open site says them anyway, so the build repeating them leaks nothing (a private article about a product the open résumé names, a common heading another open page also uses). The check says how many it let off, by category only. A page's token and a grant's ID are random, so they always count. (Added 6 October 2026, after the first deploy with a real private article failed on five such words, none of them private.) Nor is a word with fewer than three letters looked for, since it's a figure or a count ("3 of 4", "2019–2021") that any page can print on its own; tokens and grant IDs still are. (Added 21 October 2026, after a private page's figure matched the design library's carousel counter, "3 of 4", and failed every engine build.)
 
 It runs in the deploy, in `npm run verify:prod`, and on the E2E build, and its own unit tests plant every kind of leak (a short title, an attribute, an encoded word, JSON, a picture size, a dark version, a poster, a video, an orphan file) and expect each to fail. It's the gate that makes the pipeline fail closed.
 
@@ -842,7 +842,7 @@ Built 5 to 6 October 2026, phase by phase as the [plan](plan.md) sets out, and c
 
 | Benchmark | Result |
 |---|---|
-| QB1, QB1a, QB1b | `verify:sealed` passes on the test and production builds; `tests/unit/sealed.test.ts` (23 tests) plants the leak kinds, lets off words the public sources already hold (never a token or a grant ID) and captures the tools' output |
+| QB1, QB1a, QB1b | `verify:sealed` passes on the test and production builds; `tests/unit/sealed.test.ts` (26 tests) plants the leak kinds, lets off words the public sources already hold (never a token or a grant ID), never looks for a figure or a count and captures the tools' output |
 | QB2, QB2a, QB2b | `tests/unit/access.test.ts` (14): the RFC 7914, RFC 5869 and GCM test-case-16 vectors, the refusals, the round trips and 100,000 IVs |
 | QB3 | E2E "protected content": the scope matrix (every fixture grant), private cards in their source order, and a late-decrypted card's picture following an explicit theme |
 | QB4, QB5 | `tests/unit/accessSession.test.ts` (9); E2E: a stale build reloads once, sign-out in every tab and from Back |

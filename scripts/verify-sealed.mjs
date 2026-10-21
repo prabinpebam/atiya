@@ -35,6 +35,11 @@ const SOURCE = /\.(json|md|html?|astro|ts|tsx|mjs|js|css|txt)$/i;
 /** Random secrets: never public by chance, so never let off because a public file happens to hold one. */
 const SECRET = new Set(['a token', "a grant's ID"]);
 const MIN_RUN = 12;
+/**
+ * Letters a protected word needs to name anything: fewer, and it's a figure or a count ("3 of 4", "2019–2021"),
+ * which any page can print on its own (a carousel's "3 of 4"). Secrets are looked for whatever they hold.
+ */
+const MIN_LETTERS = 3;
 
 /** @param {string} dir @returns {string[]} */
 function walk(dir) {
@@ -88,7 +93,9 @@ export function protectedTerms(privateRoot) {
   const add = (/** @type {string} */ category, /** @type {unknown} */ value, min = 1) => {
     if (typeof value !== 'string') return;
     const f = fold(value).trim();
-    if (f.length >= min) terms.set(f, category);
+    if (f.length < min) return;
+    if (!SECRET.has(category) && (f.match(/\p{L}/gu)?.length ?? 0) < MIN_LETTERS) return;
+    terms.set(f, category);
   };
   const runs = (/** @type {string} */ category, /** @type {string} */ text) => {
     add(category, text, MIN_RUN);

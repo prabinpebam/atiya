@@ -194,6 +194,17 @@ describe('the leak check', () => {
     expect(wordsToCheck(protectedTerms(FIXTURES), SOURCES()).public.size).toBe(0);
   });
 
+  it('never looks for a figure or a count, which any page can print on its own (a carousel\'s "3 of 4")', () => {
+    const r = mkdtempSync(join(root, 'figures-'));
+    mkdirSync(join(r, 'articles'), { recursive: true });
+    const items = [{ heading: '3 of 4', subtext: 'fixture figure lantern' }, { heading: '2019 – 2021' }, { heading: '40M+ fixture' }];
+    writeFileSync(join(r, 'articles', 'fx-figures.json'), JSON.stringify({ id: 'fx-figures', body: [{ type: 'collection', layout: 'stats', items }] }));
+    const terms = [...protectedTerms(r).keys()];
+    expect(terms).not.toContain('3 of 4');
+    expect(terms).not.toContain('2019 – 2021');
+    expect(terms).toEqual(expect.arrayContaining([fold('fixture figure lantern').trim(), fold('40M+ fixture').trim()]));
+  });
+
   it("counts the npm code a build bundled as public, but never a build's own cache (desktop plan stage 10)", () => {
     const r = mkdtempSync(join(root, 'bundled-'));
     const put = (rel: string, text: string) => (mkdirSync(join(r, rel, '..'), { recursive: true }), writeFileSync(join(r, rel), text), join(r, rel));
