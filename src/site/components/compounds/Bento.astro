@@ -164,8 +164,7 @@ const shows = (t: Props['tiles'][number]) => bentoPictures(t.role, t.pictures, c
     grid-area: 1 / 2;
   }
 
-  .lead,
-  .voices {
+  .lead, .voices {
     display: grid;
   }
 
@@ -219,7 +218,9 @@ const shows = (t: Props['tiles'][number]) => bentoPictures(t.role, t.pictures, c
     background: var(--color-bg-raised);
     isolation: isolate;
     scroll-margin-block-start: calc(var(--size-chrome-block) + var(--space-8));
-    /* a risen tile stays over its neighbours until it has settled back */
+    /* edges move the same distance as any tile's (scripts/bento.ts makes it its scale); risen, it stays on top till settled */
+    --bento-lift-by: var(--c-bento-lift);
+    --bento-press-by: var(--c-bento-press);
     transition:
       scale var(--duration-fast) var(--ease-standard),
       box-shadow var(--duration-fast) var(--ease-standard),
@@ -334,20 +335,20 @@ const shows = (t: Props['tiles'][number]) => bentoPictures(t.role, t.pictures, c
     border-color: var(--color-accent);
   }
 
-  /* the lift: only for those who don't ask for less motion (they see the shadow) */
+  /* the lift: only for those who don't ask for less motion (they see the shadow); each tile's own scale (scripts/bento.ts) */
   @media (prefers-reduced-motion: no-preference) {
     @media (hover: hover) {
       .tile:hover {
-        scale: var(--scale-lift);
+        scale: var(--bento-lift, var(--scale-lift));
       }
     }
 
     .tile:has(.toggle:focus-visible) {
-      scale: var(--scale-lift);
+      scale: var(--bento-lift, var(--scale-lift));
     }
 
     .tile:has(.toggle:active) {
-      scale: var(--scale-press-large);
+      scale: var(--bento-press, var(--scale-press-large));
     }
   }
 

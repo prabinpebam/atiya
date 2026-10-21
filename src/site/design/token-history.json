@@ -14,9 +14,11 @@
     "breakpoint.short": {"v":"30rem"},
     "breakpoint.sm": {"v":"40rem"},
     "c.bento.evidence": {"v":"15rem"},
+    "c.bento.lift": {"v":"var(--space-2)"},
     "c.bento.picture": {"v":"20rem","d":"Bento's pictures now take their tile's width, shown whole: no replacement"},
     "c.bento.picture-band": {"v":"5.5rem","d":"Bento's pictures now take their tile's width, shown whole: no replacement"},
     "c.bento.picture-side": {"v":"6rem","d":"Bento's pictures now take their tile's width, shown whole: no replacement"},
+    "c.bento.press": {"v":"var(--space-1)"},
     "c.bento.query-one": {"v":"36rem"},
     "c.bento.query-two": {"v":"64rem"},
     "c.bento.wrap-band": {"v":"4rem"},
@@ -446,6 +448,12 @@
     {
       "date": "2026-10-21",
       "changes": {
+        "c.bento.lift": [
+          null,
+          {
+            "v": "var(--space-2)"
+          }
+        ],
         "c.bento.picture": [
           {
             "v": "12rem"
@@ -471,6 +479,12 @@
           {
             "v": "6rem",
             "d": "Bento's pictures now take their tile's width, shown whole: no replacement"
+          }
+        ],
+        "c.bento.press": [
+          null,
+          {
+            "v": "var(--space-1)"
           }
         ],
         "c.bento.query-two": [

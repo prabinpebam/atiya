@@ -250,7 +250,7 @@ The first screen, about 740 px tall, shows the lead and the index, so all six na
 
 | Motion | When | Duration | Reduced motion |
 |---|---|---|---|
-| Tile lift (`--scale-lift`) | Hover or focus | The site's short duration | No lift; the border darkens instead |
+| Tile lift (`c.bento.lift`, pressed `c.bento.press`): every edge moves the same distance whatever the tile's size, through a scale worked out per tile (`scripts/liftRules.ts`); the risen tile paints over its neighbours until it has settled | Hover or focus | The site's short duration | No lift; the border darkens instead |
 | Ink sketch draws its strokes | First hover or focus of a tile, once per visit | About 600 ms | The finished sketch, no drawing |
 | Drawer opens (height and fade) | Pressing a tile | About 250 ms | Instant |
 | Capability morph to another view | Change view | About 300 ms | Instant |

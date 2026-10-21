@@ -6,9 +6,36 @@
  * Opening a drawer tells telemetry (`capability_l3_open`, kind `all`).
  */
 import { capabilityFromHash } from './homeAddress';
+import { edgeScale, lengthPx } from './liftRules';
 import { track } from './telemetry';
 
+/**
+ * Each tile's rise and press as its own scale (scripts/liftRules.ts), kept up to date as it changes size, so
+ * every tile's edges move by `c.bento.lift` (and in by `c.bento.press`, both handed over by the stylesheet as
+ * `--bento-lift-by` and `--bento-press-by`) whatever its size; the stylesheet falls back to the shared scale
+ * tokens until this has run.
+ */
+function liftTiles(root: HTMLElement, signal: AbortSignal): void {
+  const measure = (tile: HTMLElement) => {
+    const rootPx = parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
+    const style = getComputedStyle(tile);
+    const lift = lengthPx(style.getPropertyValue('--bento-lift-by'), rootPx);
+    const press = lengthPx(style.getPropertyValue('--bento-press-by'), rootPx);
+    const rise = lift === null ? null : edgeScale(tile.offsetWidth, tile.offsetHeight, lift);
+    const sink = press === null ? null : edgeScale(tile.offsetWidth, tile.offsetHeight, -press);
+    if (rise) tile.style.setProperty('--bento-lift', rise);
+    else tile.style.removeProperty('--bento-lift');
+    if (sink) tile.style.setProperty('--bento-press', sink);
+    else tile.style.removeProperty('--bento-press');
+  };
+  const tiles = root.querySelectorAll<HTMLElement>('article[data-capability]');
+  const sizes = new ResizeObserver((entries) => entries.forEach((e) => measure(e.target as HTMLElement)));
+  tiles.forEach((t) => sizes.observe(t));
+  signal.addEventListener('abort', () => sizes.disconnect(), { once: true });
+}
+
 export function setupBento(root: HTMLElement, signal: AbortSignal): void {
+  liftTiles(root, signal);
   const toggles = [...root.querySelectorAll<HTMLButtonElement>('[data-bento-toggle]')];
   const drawerOf = (id: string) => root.querySelector<HTMLElement>(`[data-bento-drawer="${CSS.escape(id)}"]`);
   const tileOf = (id: string) => root.querySelector<HTMLElement>(`#cap-${CSS.escape(id)}`);

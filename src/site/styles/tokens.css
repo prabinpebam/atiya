@@ -364,6 +364,8 @@
   --c-bento-wrap-gap: var(--space-4);
   --c-bento-wrap-measure: 9rem;
   --c-bento-wrap-band: 4rem;
+  --c-bento-lift: var(--space-2);
+  --c-bento-press: var(--space-1);
   --c-bento-query-two: 64rem;
   --c-bento-query-one: 36rem;
   --c-cover-picture: 44rem;
