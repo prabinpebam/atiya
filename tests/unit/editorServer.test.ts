@@ -666,11 +666,11 @@ describe('choosing what a save takes (documentation/editor/spec.md §7.1)', () =
     expect(privateNote(['/private/b.json', '/content/a.json'])).toMatch(/Private pages changed too/);
   });
   it('names the button by how many go, and offers a message for the ticked rows', () => {
-    expect(saveLabel(3, 3, false)).toBe('Save to remote');
-    expect(saveLabel(0, 3, true)).toBe('Publish and save to remote');
-    expect(saveLabel(1, 3, false)).toBe('Save 1 of 3 to remote');
-    expect(saveLabel(2, 3, true)).toBe('Publish and save 2 of 3 to remote');
-    expect(messageFor([])).toBe('Publish pages');
+    expect(saveLabel(3, 3)).toBe('Save to remote');
+    expect(saveLabel(0, 3)).toBe('Save to remote');
+    expect(saveLabel(1, 3)).toBe('Save 1 of 3 to remote');
+    expect(saveLabel(2, 3)).not.toMatch(/publish/i);
+    expect(messageFor([])).toBe('');
     expect(messageFor([{ name: 'My article', keys: ['/content/articles/a.json'] }])).toMatch(/My article/);
   });
   it("ticks a page's own changes when opened from its editor: its file in either folder and its media", () => {

@@ -170,9 +170,8 @@ export function initPublish(root: HTMLElement, signal: AbortSignal) {
   }
   for (const p of picks()) if (leftOut.has(p.input.value)) p.input.checked = false;
   const picked = () => picks().filter((p) => p.input.checked);
-  // ticking a draft makes this a publish too, and unticking a change leaves it for later: the button says so
+  // unticking a change leaves it for later: the button says so
   const label = () => {
-    const checked = !!form?.querySelector('input[name="publish"]:checked');
     const rows = picks();
     const chosen = rows.filter((p) => p.input.checked);
     const box = all();
@@ -181,10 +180,10 @@ export function initPublish(root: HTMLElement, signal: AbortSignal) {
       box.indeterminate = chosen.length > 0 && chosen.length < rows.length;
     }
     const words = form?.querySelector('button[type="submit"] .label');
-    if (words) words.textContent = saveLabel(chosen.length, rows.length, checked);
+    if (words) words.textContent = saveLabel(chosen.length, rows.length);
     // a change that can't be unticked (a private save not yet linked) always goes
     const anyChange = root.hasAttribute('data-publish-has-changes') && (chosen.length > 0 || rows.length === 0 || root.querySelectorAll('[data-change-list] > li').length > rows.length);
-    const canSave = !root.hasAttribute('data-publish-blocked') && (anyChange || checked);
+    const canSave = !root.hasAttribute('data-publish-blocked') && anyChange;
     const message = form?.querySelector<HTMLInputElement>('input[name="message"]');
     const submit = form?.querySelector<HTMLButtonElement>('button[type="submit"]');
     const reason = form?.querySelector<HTMLElement>('[data-publish-reason]');
@@ -240,7 +239,6 @@ export function initPublish(root: HTMLElement, signal: AbortSignal) {
       const issue = form.querySelector('[data-editor-form-issue]');
       const f = new FormData(form);
       const message = String(f.get('message') ?? '').trim();
-      const publish = f.getAll('publish').map(String);
       if (!message) return say(issue, 'Say what this save changes: it becomes the commit message.');
       say(issue, '');
       // only some ticked: just their files go (every change, when all are)
@@ -251,7 +249,7 @@ export function initPublish(root: HTMLElement, signal: AbortSignal) {
       if (button) button.disabled = true;
       if (inArticleDialog) remoteSaveStatus.saving();
       else announce('Saving to remote\u2026');
-      const r = await api<PublishReply>('POST', 'publish', { message, publish, ...(keys ? { keys } : {}) });
+      const r = await api<PublishReply>('POST', 'publish', { message, ...(keys ? { keys } : {}) });
       if (button) button.disabled = false;
       if (!r.ok || !r.data.commit) {
         const why = [r.data.reason, ...(r.data.issues ?? []).map(describeIssue)].filter(Boolean).join(' ') || "It wasn't saved to remote.";

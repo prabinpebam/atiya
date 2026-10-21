@@ -24,7 +24,6 @@ import Panel from '../kit/Panel.astro';
 import PlainList from '../kit/PlainList.astro';
 import IssueNote from '../kit/IssueNote.astro';
 import StatusNote from '../kit/StatusNote.astro';
-import Fieldset from '../kit/Fieldset.astro';
 import { withBase } from '../../design/meta';
 import type { IconName } from '../../design/icons';
 
@@ -57,8 +56,6 @@ interface Props {
   actions: string | null;
   /** The commit just published (from the address), when it's the branch's last. */
   published: string | null;
-  /** Pages placed on the site that aren't Published yet: each can go on the site with this publish (its Status becomes Published). */
-  drafts?: { id: string; title: string; access: 'open' | 'private'; checked: boolean }[];
   /** Fill the available width when the change list is shown inside the article editor's modal. */
   wide?: boolean;
   /** Not read from git yet: the list says it's checking, and Save to remote waits (the dialog reads it as it opens). */
@@ -67,11 +64,11 @@ interface Props {
   scope?: string[];
 }
 
-const { changes, ahead, blocked, message, privateNote, actions, published, drafts = [], wide = false, checking = false, scope } = Astro.props;
+const { changes, ahead, blocked, message, privateNote, actions, published, wide = false, checking = false, scope } = Astro.props;
 const ICON: Record<string, IconName> = { Article: 'article', 'Private page': 'article', Media: 'image', 'Private media': 'image', Sections: 'sections', Settings: 'settings', Person: 'user' };
 const STATUS = { added: { label: 'New', tone: 'positive' }, changed: { label: 'Changed', tone: 'accent' }, deleted: { label: 'Deleted', tone: 'negative' } } as const;
 const pickable = changes.filter((c) => c.keys.length > 0).length;
-const reason = checking ? null : blocked ?? (changes.length || drafts.some((draft) => draft.checked) ? null : 'Nothing to save: content/ and private-pages/ are as they were last saved to remote.');
+const reason = checking ? null : blocked ?? (changes.length ? null : 'Nothing to save: content/ and private-pages/ are as they were last saved to remote.');
 ---
 
 <div class="publish" data-region="publish" data-editor-publish data-width={wide ? 'wide' : undefined} data-publish-has-changes={changes.length ? '' : undefined} data-publish-blocked={blocked ? '' : undefined} data-published={published ?? undefined} data-checking={checking ? '' : undefined} data-publish-scope={scope?.length ? JSON.stringify(scope) : undefined} aria-busy={checking ? 'true' : undefined}>
@@ -156,20 +153,8 @@ const reason = checking ? null : blocked ?? (changes.length || drafts.some((draf
     <Text variant="ui" tone="muted">Commits the ticked changes in content/ and private-pages/ (and nothing else), private pages first, then pushes them to GitHub, which deploys the site. What you untick stays here for a later save.</Text>
     <TextField label="Message" name="message" value={message} required disabled={checking || !!reason} />
     <div data-publish-private-note="" hidden={!privateNote}><Text variant="small" tone="muted">{privateNote}</Text></div>
-    {
-      drafts.length > 0 && (
-        <Fieldset legend="Publish pages" data-publish-drafts="">
-          <Text variant="small" tone="muted">
-            These pages are in a section but still drafts, so readers don't see them. Tick one to publish it: its Status becomes Published, and it goes on the site with this save.
-          </Text>
-          {drafts.map((d) => (
-            <Checkbox name="publish" value={d.id} id={`publish-draft-${d.id}`} checked={d.checked} disabled={!!blocked} label={d.title} hint={d.access === 'private' ? 'Private page: for the readers you share it with' : 'For everyone'} />
-          ))}
-        </Fieldset>
-      )
-    }
     {reason && <Text variant="small" tone={blocked ? 'negative' : 'muted'} data-publish-reason="">{reason}</Text>}
-    <div data-publish-none="" hidden><Text variant="small" tone="muted">Nothing ticked: tick the changes to save, or a draft to publish.</Text></div>
+    <div data-publish-none="" hidden><Text variant="small" tone="muted">Nothing ticked: tick the changes to save.</Text></div>
     <IssueNote data-editor-form-issue="" />
     <ActionBar align="end">
       <Button variant="primary" type="submit" icon="upload" disabled={checking || !!reason}>Save to remote</Button>

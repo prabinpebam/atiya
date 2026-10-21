@@ -295,7 +295,7 @@ test.describe('editor: private pages', () => {
     await expect(page.locator('tr', { hasText: 'A private case study' })).toContainText('Private');
   });
 
-  test('a private draft is published from the Save to remote screen: ticked, the button says Publish, and its Status becomes Published', async ({ page }) => {
+  test('Save to remote never publishes: a changed draft is saved as a draft, and no page is offered for publishing', async ({ page }) => {
     const file = join(PRIVATE, 'articles/fx-private-alpha.json');
     const draft = { ...JSON.parse(readFileSync(file, 'utf8')), status: 'draft' };
     writeFileSync(file, `${JSON.stringify(draft, null, 2)}\n`);
@@ -303,21 +303,16 @@ test.describe('editor: private pages', () => {
     execFileSync('git', ['-c', 'user.name=T', '-c', 'user.email=t@localhost', 'commit', '-q', '-am', 'a draft'], { cwd: PRIVATE });
     writeFileSync(file, `${JSON.stringify({ ...draft, summary: `${draft.summary} Now ready.` }, null, 2)}\n`);
     await page.goto('/_edit/publish/');
-    const drafts = page.locator('[data-publish-drafts]');
-    await expect(drafts.getByText('Publish pages')).toBeVisible();
-    const box = drafts.getByRole('checkbox', { name: /Fixture private alpha/ });
-    // a changed private draft is ticked, and the button says what it does
-    await expect(box).toBeChecked();
+    await expect(page.getByText('Publish pages')).toHaveCount(0);
+    await expect(page.locator('[data-publish-form] input[name="publish"]')).toHaveCount(0);
     const submit = page.locator('[data-publish-form] button[type="submit"]');
-    await expect(submit).toHaveText('Publish and save to remote');
-    await drafts.locator('label', { hasText: 'Fixture private alpha' }).click();
     await expect(submit).toHaveText('Save to remote');
-    await drafts.locator('label', { hasText: 'Fixture private alpha' }).click();
     await submit.click();
     await expect(page.getByRole('heading', { name: 'Saved to remote' })).toBeVisible({ timeout: 30_000 });
-    expect(JSON.parse(readFileSync(file, 'utf8')).status).toBe('published');
-    // published, it's no longer offered (other drafts the content holds still can be)
-    await expect(page.locator('[data-publish-drafts]').getByRole('checkbox', { name: /Fixture private alpha/ })).toHaveCount(0);
+    // the change went, and the page is still a draft
+    const saved = JSON.parse(readFileSync(file, 'utf8'));
+    expect(saved.summary).toMatch(/Now ready\.$/);
+    expect(saved.status).toBe('draft');
   });
 
   test('on localhost every placed page previews at its address without signing in: a private draft and an open one, tagged in their opening', async ({ page }) => {

@@ -47,15 +47,17 @@ export function titlesOf(rows: readonly PickedRow[]): Titles {
   };
 }
 
-/** The message offered for the ticked rows ("Publish pages" when only drafts go). */
+/** The message offered for the ticked rows (none: nothing to offer). */
 export function messageFor(rows: readonly PickedRow[]): string {
   const keys = rows.flatMap((r) => r.keys);
-  return keys.length ? suggestMessage(keys.map((key) => ({ key })), titlesOf(rows)) : 'Publish pages';
+  return keys.length ? suggestMessage(keys.map((key) => ({ key })), titlesOf(rows)) : '';
 }
 
-/** The submit button's words: Save to remote for everything (or none: drafts alone), and the count when only some are ticked. */
-export function saveLabel(picked: number, total: number, publishing: boolean): string {
-  if (picked >= total || picked === 0) return publishing ? 'Publish and save to remote' : 'Save to remote';
-  const some = `${picked} of ${total}`;
-  return publishing ? `Publish and save ${some} to remote` : `Save ${some} to remote`;
+/**
+ * The submit button's words: Save to remote for everything (or none), and the count when only some are
+ * ticked. A save never publishes a page: that's the page's own Publish (its Status).
+ */
+export function saveLabel(picked: number, total: number): string {
+  if (picked >= total || picked === 0) return 'Save to remote';
+  return `Save ${picked} of ${total} to remote`;
 }

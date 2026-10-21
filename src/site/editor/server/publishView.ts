@@ -70,21 +70,6 @@ export async function publishView(url: URL) {
   const published = asked && /^[0-9a-f]{4,}$/.test(asked) && head.startsWith(asked) && ahead === 0 ? asked : null;
   const privateNote = privateNoteFor(state.files.map((file) => file.key));
   const remote = await remoteUrl(state.upstream);
-  const changed = new Set(state.files.map((file) => file.key));
-  const drafts = loaded.ok
-    ? loaded.index.routes.flatMap((route) => {
-        if (route.published || route.node.kind !== 'item') return [];
-        const article = loaded.index.articles.get(route.node.item.id);
-        if (!article) return [];
-        const key = `/${route.access === 'private' ? 'private' : 'content'}/articles/${article.id}.json`;
-        return [{
-          id: article.id,
-          title: article.title,
-          access: route.access === 'private' ? ('private' as const) : ('open' as const),
-          checked: route.access === 'private' && changed.has(key),
-        }];
-      })
-    : [];
 
   // opened from a page's editor: that page's changes are the ones ticked to begin with
   const pageId = pageOf(url.pathname);
@@ -95,11 +80,10 @@ export async function publishView(url: URL) {
       changes: rows,
       ahead,
       blocked,
-      message: suggestMessage(state.files, titles) || (drafts.length ? 'Publish pages' : ''),
+      message: suggestMessage(state.files, titles),
       privateNote,
       actions: remote ? actionsUrl(remote) : null,
       published,
-      drafts,
       scope: pageId ? pageScope(rows.map((row) => row.resource), pageId) : undefined,
     },
   };

@@ -6,11 +6,11 @@
 import type { APIRoute } from 'astro';
 import type { Article, ImageMedia, SiteSettings, Person, PlanetStructure, SiteStructure, ThemeFile, VideoMedia } from '../../content/schema';
 import { asTab, commit, jsonBytes, readDoc, type Result } from '../server/store';
-import { articleKey, createArticle, deleteArticle, duplicateArticle, saveArticle, PLANET, STRUCTURE, planetKey } from '../server/articles';
+import { createArticle, deleteArticle, duplicateArticle, saveArticle, PLANET, STRUCTURE, planetKey } from '../server/articles';
 import { cropMedia, cropSource, deleteMedia, parseUploadCrop, removeDark, replaceMaster, saveSidecar, setDark, upload, uploadVideo } from '../server/media';
 import { isVideoFile } from '../model/upload';
 import { measureVideo } from '../server/videoShape';
-import { changes, discard, git, publish, push } from '../server/git';
+import { changes, discard, publish, push } from '../server/git';
 import { changeAddress, createGrant, deleteGrant, extendGrant, moveSectionPages, rescopeGrant, setPageAccess, setSectionOrder, shareMessage, sharingView, updateGrant, withdrawGrant, type GrantEdit, type NewGrant, type PageAccess } from '../server/access';
 import { content } from '../../content/repository';
 import type { Ways } from '../../modes/contract';
@@ -424,25 +424,11 @@ const handle: APIRoute = async ({ request, params, url }) => {
         article: (id: string) => (readDoc<Article>(`/content/articles/${id}.json`) ?? readDoc<Article>(`/private/articles/${id}.json`))?.value.title,
         person: (id: string) => readDoc<Person>(`/content/people/${id}.json`)?.value.name,
       };
-      const b = await body<{ message: string; publish?: string[]; keys?: string[] }>(request);
+      // a save to remote saves what's changed, and never changes a page's Status (that's the page's own Publish)
+      const b = await body<{ message: string; keys?: string[] }>(request);
       // only the changes ticked (each resource's files), or every change when none are named
       const keys = Array.isArray(b.keys) ? b.keys.filter((k): k is string => typeof k === 'string' && /^\/(content|private)\/[a-z0-9/._-]+$/i.test(k) && !k.includes('..')) : undefined;
-      // drafts chosen on the Publish screen go on the site with this publish: their Status becomes Published first
-      const published: string[] = [];
-      for (const pid of (Array.isArray(b.publish) ? b.publish : []).filter((x) => typeof x === 'string' && ID.test(x))) {
-        const key = articleKey(pid);
-        const doc = readDoc<Article>(key);
-        if (!doc) return json({ ok: false, issues: [{ file: key.slice(1), message: "doesn't exist" }] }, 422);
-        if (doc.value.status === 'published') continue;
-        const r = await saveArticle({ id: pid, article: { ...doc.value, status: 'published' }, ifMatch: { [key]: doc.version } });
-        if (!r.ok) return result(r);
-        published.push(pid);
-      }
-      // a draft published now goes with the changes chosen
-      if (keys) for (const pid of (Array.isArray(b.publish) ? b.publish : []).filter((x) => typeof x === 'string' && ID.test(x))) keys.push(articleKey(pid));
       const r = await publish(b.message ?? '', titles, { keys });
-      // published back to what the remote already has: nothing new to send, and that's done
-      if (!r.ok && published.length && (await changes({ fresh: true })).files.length === 0) return json({ ok: true, commit: (await git(['rev-parse', '--short', 'HEAD'])).stdout.trim(), pushed: true });
       return json(r, r.ok ? 200 : 422);
     }
     if (method === 'POST' && path === 'push') {
