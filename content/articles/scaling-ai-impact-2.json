@@ -1,0 +1,141 @@
+{
+  "id": "scaling-ai-impact-2",
+  "type": "article",
+  "kind": "note",
+  "slug": "scaling-ai-impact-2",
+  "title": "Scaling AI impact",
+  "summary": "Scaling AI impact",
+  "status": "draft",
+  "visibility": "public",
+  "updatedAt": "2026-10-21",
+  "locale": "en",
+  "body": [
+    {
+      "type": "heading",
+      "level": 2,
+      "text": "How I scale impact",
+      "key": "gd9p41"
+    },
+    {
+      "type": "text",
+      "dropcap": false,
+      "markdown": "My instinct is to learn by doing. But individual expertise has limited impact if it remains confined to one person. The real opportunity comes when you translate what you've learned into a capability that others can use, and build the conditions for that capability to spread. That means moving from personal proficiency to shared understanding, where the benefit of hard-won experience isn't lost when the person who gained it is absent.",
+      "key": "c18azi"
+    },
+    {
+      "type": "text",
+      "markdown": "AI became an opportunity to put this into practice at scale.",
+      "key": "iq3zem"
+    },
+    {
+      "type": "heading",
+      "level": 2,
+      "text": "Start by doing the work",
+      "key": "4pf1hy"
+    },
+    {
+      "type": "text",
+      "markdown": "My exploration of AI started with the possibilities it unlocked for making things. I was building Figma plugins with AI in early 2023, experimenting with image generation through Automatic1111 Stable Diffusion WebUI, building workflows and custom nodes in ComfyUI, training LoRAs, and creating agentic clients for LLMs.",
+      "key": "fqgq11"
+    },
+    {
+      "type": "text",
+      "markdown": "I wasn't approaching AI purely as a subject to study. I was figuring out how to apply it, where it worked, where it failed, and what it could make possible that wasn't practical before.",
+      "key": "nwbw6f"
+    },
+    {
+      "type": "text",
+      "markdown": "That hands-on experience gave me something more useful than familiarity with the technology: a practical understanding of its capabilities, limitations, and implications for design work.",
+      "key": "w88mhw"
+    },
+    {
+      "type": "heading",
+      "level": 2,
+      "text": "Turn expertise into organizational change",
+      "key": "9ea0fg"
+    },
+    {
+      "type": "text",
+      "markdown": "I wanted to translate that understanding into a broader shift in how our Design organization worked.",
+      "key": "98wg8p"
+    },
+    {
+      "type": "text",
+      "markdown": "I became a practitioner, coach, and champion of AI adoption, extending the effort from my immediate team to Microsoft Design in India and the Windows Design team in Seattle.",
+      "key": "al5egg"
+    },
+    {
+      "type": "text",
+      "markdown": "The approach combined multiple mechanisms: learning sessions, workshops, hands-on demonstrations, recorded tutorials, whitepapers, and leadership pitches. Each served a different purpose, from building practical skills to establishing strategic conviction and securing organizational support.",
+      "key": "3m3psr"
+    },
+    {
+      "type": "text",
+      "markdown": "The goal wasn't simply to introduce people to new tools. It was to help designers understand how AI could change their workflows and expand what they could accomplish.",
+      "key": "igr78f"
+    },
+    {
+      "type": "heading",
+      "level": 2,
+      "text": "Build a system that scales",
+      "key": "u3else"
+    },
+    {
+      "type": "text",
+      "markdown": "A transformation that depends on one person to teach, encourage, and troubleshoot will eventually hit a ceiling.",
+      "key": "8h9toq"
+    },
+    {
+      "type": "text",
+      "markdown": "To scale adoption, we identified and empowered champions within individual teams. These champions could carry the learning forward, help colleagues apply it to their work, and build momentum within their own circles.",
+      "key": "at5f11"
+    },
+    {
+      "type": "text",
+      "markdown": "This shifted the model from centrally driven enablement to a distributed network of practitioners and advocates. Instead of trying to reach every individual directly, we created the conditions for knowledge and adoption to spread through the organization.",
+      "key": "otp60c"
+    },
+    {
+      "type": "heading",
+      "level": 2,
+      "text": "Measure what matters",
+      "key": "walnm2"
+    },
+    {
+      "type": "text",
+      "markdown": "Adoption is a useful starting point, but it isn't the outcome.",
+      "key": "5lo1he"
+    },
+    {
+      "type": "text",
+      "markdown": "Knowing how many people use AI tells us something about reach. It doesn't tell us whether the work is better, whether teams are more productive, or whether the organization is delivering greater value.",
+      "key": "9at4ff"
+    },
+    {
+      "type": "text",
+      "markdown": "We've begun moving beyond adoption metrics towards measuring throughput, quality of output, and the broader impact AI enables across the team.",
+      "key": "suxjr1"
+    },
+    {
+      "type": "text",
+      "markdown": "That shift matters because technology adoption isn't the objective. Better outcomes are.",
+      "key": "1d4pup"
+    },
+    {
+      "type": "heading",
+      "level": 2,
+      "text": "From individual capability to collective impact",
+      "key": "6ph4lk"
+    },
+    {
+      "type": "text",
+      "markdown": "My approach is to go deep enough to understand a new capability firsthand, translate that understanding into practical applications, and then build the mechanisms that allow others to benefit from it.",
+      "key": "4246vs"
+    },
+    {
+      "type": "text",
+      "markdown": "The same principle applies beyond AI. Discovering what's possible is only the beginning. The larger challenge is turning that discovery into a repeatable organizational capability—and ultimately into measurable impact.",
+      "key": "g6tsep"
+    }
+  ]
+}

@@ -48,6 +48,14 @@
               "type": "article",
               "id": "my-journey-with-designup"
             }
+          },
+          {
+            "id": "scaling-ai-impact-2",
+            "kind": "item",
+            "item": {
+              "type": "article",
+              "id": "scaling-ai-impact-2"
+            }
           }
         ],
         "recommendations": {
