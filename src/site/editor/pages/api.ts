@@ -424,7 +424,9 @@ const handle: APIRoute = async ({ request, params, url }) => {
         article: (id: string) => (readDoc<Article>(`/content/articles/${id}.json`) ?? readDoc<Article>(`/private/articles/${id}.json`))?.value.title,
         person: (id: string) => readDoc<Person>(`/content/people/${id}.json`)?.value.name,
       };
-      const b = await body<{ message: string; publish?: string[] }>(request);
+      const b = await body<{ message: string; publish?: string[]; keys?: string[] }>(request);
+      // only the changes ticked (each resource's files), or every change when none are named
+      const keys = Array.isArray(b.keys) ? b.keys.filter((k): k is string => typeof k === 'string' && /^\/(content|private)\/[a-z0-9/._-]+$/i.test(k) && !k.includes('..')) : undefined;
       // drafts chosen on the Publish screen go on the site with this publish: their Status becomes Published first
       const published: string[] = [];
       for (const pid of (Array.isArray(b.publish) ? b.publish : []).filter((x) => typeof x === 'string' && ID.test(x))) {
@@ -436,7 +438,9 @@ const handle: APIRoute = async ({ request, params, url }) => {
         if (!r.ok) return result(r);
         published.push(pid);
       }
-      const r = await publish(b.message ?? '', titles);
+      // a draft published now goes with the changes chosen
+      if (keys) for (const pid of (Array.isArray(b.publish) ? b.publish : []).filter((x) => typeof x === 'string' && ID.test(x))) keys.push(articleKey(pid));
+      const r = await publish(b.message ?? '', titles, { keys });
       // published back to what the remote already has: nothing new to send, and that's done
       if (!r.ok && published.length && (await changes({ fresh: true })).files.length === 0) return json({ ok: true, commit: (await git(['rev-parse', '--short', 'HEAD'])).stdout.trim(), pushed: true });
       return json(r, r.ok ? 200 : 422);

@@ -4,6 +4,10 @@
  * address, which shows its result and the link to its deploy; a push that failed says why.
  */
 import { api, announce, describeIssue, remoteSaveStatus, swapRegions } from './client';
+import { messageFor, privateNote, saveLabel } from '../model/selection';
+
+// the changes unticked (by resource), kept while the list is drawn again; a save clears them
+const leftOut = new Set<string>();
 
 const WHAT: Record<string, string> = {
   added: "is new since the last save to remote, so it's deleted. This can't be undone.",
@@ -144,21 +148,77 @@ export function initPublish(root: HTMLElement, signal: AbortSignal) {
   );
 
   const form = root.querySelector<HTMLFormElement>('[data-publish-form]');
-  // ticking a draft makes this a publish too: the button says so
+  // each change's tick (and its files); the ones unticked are kept across the list being drawn again
+  const picks = () =>
+    [...root.querySelectorAll<HTMLElement>('[data-publish-pick]')].flatMap((el) => {
+      const input = el.querySelector<HTMLInputElement>('input[type="checkbox"]');
+      return input ? [{ input, name: el.dataset.name ?? '', keys: JSON.parse(el.dataset.publishPick!) as string[] }] : [];
+    });
+  const all = () => root.querySelector<HTMLInputElement>('[data-publish-pick-all] input[type="checkbox"]');
+  for (const p of picks()) if (leftOut.has(p.input.value)) p.input.checked = false;
+  const picked = () => picks().filter((p) => p.input.checked);
+  // ticking a draft makes this a publish too, and unticking a change leaves it for later: the button says so
   const label = () => {
     const checked = !!form?.querySelector('input[name="publish"]:checked');
+    const rows = picks();
+    const chosen = rows.filter((p) => p.input.checked);
+    const box = all();
+    if (box) {
+      box.checked = chosen.length === rows.length;
+      box.indeterminate = chosen.length > 0 && chosen.length < rows.length;
+    }
     const words = form?.querySelector('button[type="submit"] .label');
-    if (words) words.textContent = checked ? 'Publish and save to remote' : 'Save to remote';
-    const canSave = !root.hasAttribute('data-publish-blocked') && (root.hasAttribute('data-publish-has-changes') || checked);
+    if (words) words.textContent = saveLabel(chosen.length, rows.length, checked);
+    // a change that can't be unticked (a private save not yet linked) always goes
+    const anyChange = root.hasAttribute('data-publish-has-changes') && (chosen.length > 0 || rows.length === 0 || root.querySelectorAll('[data-change-list] > li').length > rows.length);
+    const canSave = !root.hasAttribute('data-publish-blocked') && (anyChange || checked);
     const message = form?.querySelector<HTMLInputElement>('input[name="message"]');
     const submit = form?.querySelector<HTMLButtonElement>('button[type="submit"]');
     const reason = form?.querySelector<HTMLElement>('[data-publish-reason]');
     if (message) message.disabled = !canSave;
     if (submit) submit.disabled = !canSave;
     if (reason && !root.hasAttribute('data-publish-blocked')) reason.hidden = canSave;
+    const none = form?.querySelector<HTMLElement>('[data-publish-none]');
+    if (none) none.hidden = canSave || !!reason || rows.length === 0;
+    const note = form?.querySelector<HTMLElement>('[data-publish-private-note]');
+    const text = privateNote(chosen.flatMap((p) => p.keys));
+    if (note) {
+      note.hidden = !text;
+      const p = note.querySelector('p');
+      if (p && text) p.textContent = text;
+    }
   };
+  // a choice changed: what's left out is remembered, and the message offered follows (unless you wrote your own)
+  const chose = () => {
+    for (const p of picks()) {
+      if (p.input.checked) leftOut.delete(p.input.value);
+      else leftOut.add(p.input.value);
+    }
+    const m = message();
+    if (m && m.value === m.defaultValue) {
+      const rows = picks();
+      const chosen = rows.filter((p) => p.input.checked);
+      const next = messageFor(chosen.length ? chosen : rows);
+      m.value = next;
+      m.defaultValue = next;
+    }
+    label();
+  };
+  root.addEventListener(
+    'change',
+    (e) => {
+      const t = e.target as Element;
+      if (t.closest('[data-publish-pick-all]')) {
+        const on = (t as HTMLInputElement).checked;
+        for (const p of picks()) p.input.checked = on;
+        chose();
+      } else if (t.closest('[data-publish-pick]')) chose();
+    },
+    { signal },
+  );
   form?.addEventListener('change', label, { signal });
-  label();
+  if (picks().some((p) => !p.input.checked)) chose();
+  else label();
   form?.addEventListener(
     'submit',
     async (e) => {
@@ -169,11 +229,15 @@ export function initPublish(root: HTMLElement, signal: AbortSignal) {
       const publish = f.getAll('publish').map(String);
       if (!message) return say(issue, 'Say what this save changes: it becomes the commit message.');
       say(issue, '');
+      // only some ticked: just their files go (every change, when all are)
+      const rows = picks();
+      const chosen = picked();
+      const keys = chosen.length < rows.length ? chosen.flatMap((p) => p.keys) : undefined;
       const button = form.querySelector<HTMLButtonElement>('button[type="submit"]');
       if (button) button.disabled = true;
       if (inArticleDialog) remoteSaveStatus.saving();
       else announce('Saving to remote\u2026');
-      const r = await api<PublishReply>('POST', 'publish', { message, publish });
+      const r = await api<PublishReply>('POST', 'publish', { message, publish, ...(keys ? { keys } : {}) });
       if (button) button.disabled = false;
       if (!r.ok || !r.data.commit) {
         const why = [r.data.reason, ...(r.data.issues ?? []).map(describeIssue)].filter(Boolean).join(' ') || "It wasn't saved to remote.";
@@ -183,6 +247,7 @@ export function initPublish(root: HTMLElement, signal: AbortSignal) {
         return;
       }
       // committed: pushed (the site deploys) or left here with Push again (the screen says why)
+      leftOut.clear();
       if (!r.data.pushed) sessionStorage.setItem('editor.publish.pushError', r.data.pushError ?? '');
       if (inArticleDialog) {
         // the result is the list's at once: a check started before its refresh lands carries it too

@@ -17,7 +17,8 @@ import { createArticle, deleteArticle, saveArticle } from '../../src/site/editor
 import { cropMedia, cropSource, deleteMedia, MAX_BYTES, MAX_SIDE, MAX_UPLOAD, parseUploadCrop, removeDark, replaceMaster, saveSidecar, setDark, upload, uploadVideo } from '../../src/site/editor/server/media';
 import { MAX_GIF_BYTES, MAX_VIDEO_BYTES } from '../../src/site/editor/model/upload';
 import { byteRange } from '../../integrations/content-files.mjs';
-import { changes, discard, pendingCount, publish, push } from '../../src/site/editor/server/git';
+import { asCommitted, changes, discard, pendingCount, publish, push } from '../../src/site/editor/server/git';
+import { chosenFiles, messageFor, privateNote, saveLabel } from '../../src/site/editor/model/selection';
 import editor from '../../integrations/editor.mjs';
 
 const ROOT = join(__dirname, '../..');
@@ -571,6 +572,96 @@ describe('publishing with git', { timeout: 60_000 }, () => {
     put('/content/articles/a.json', article({ hero: { media: pic.id } }));
     expect(await discard([`/content/media/${pic.id}.webp`, `/content/media/${pic.id}.json`])).toMatchObject({ ok: false, status: 422 });
     expect(existsSync(join(content, 'media/shared/used.webp'))).toBe(true);
+  });
+
+  it('saves only the changes chosen: the rest stay waiting, and a later save takes them', async () => {
+    setupRepo();
+    put('/content/site.json', { name: 'New name', description: 'D', owner: 'p', locale: 'en' });
+    put('/content/people/q.json', { id: 'q', name: 'Q' });
+    put('/content/articles/a.json', article({ title: 'Changed' }));
+    // a staged change left out stays staged, uncommitted
+    run(dir, 'add', 'content/articles/a.json');
+    const r = await publish('Content: the site settings', undefined, { keys: ['/content/site.json'] });
+    expect(r).toMatchObject({ ok: true, pushed: true, files: 1 });
+    expect(run(dir, 'show', '--name-only', '--format=%s', 'HEAD').split('\n')).toEqual(['Content: the site settings', '', 'content/site.json']);
+    expect(run(dir, `--git-dir=${remote}`, 'log', '-1', '--format=%s', 'main')).toBe('Content: the site settings');
+    expect((await changes()).files).toEqual([
+      { key: '/content/articles/a.json', status: 'changed' },
+      { key: '/content/people/q.json', status: 'added' },
+    ]);
+    expect(readDoc('/content/articles/a.json')?.value).toMatchObject({ title: 'Changed' });
+    expect(await publish('The rest')).toMatchObject({ ok: true, files: 2 });
+    expect((await changes()).files).toEqual([]);
+  });
+
+  it('saves a chosen deletion alone, and refuses a choice nothing waits for', async () => {
+    setupRepo();
+    put('/content/people/q.json', { id: 'q', name: 'Q' });
+    run(dir, 'add', '-A');
+    run(dir, 'commit', '-q', '-m', 'q');
+    run(dir, 'push', '-q');
+    rmSync(join(content, 'people/q.json'));
+    put('/content/site.json', { name: 'New name', description: 'D', owner: 'p', locale: 'en' });
+    expect(await publish('Gone', undefined, { keys: ['/content/people/zz.json'] })).toMatchObject({ ok: false, reason: expect.stringMatching(/none of the changes you chose/) });
+    expect(await publish('People: Q goes', undefined, { keys: ['/content/people/q.json'] })).toMatchObject({ ok: true, files: 1 });
+    expect(run(dir, 'show', '--name-status', '--format=%s', 'HEAD').split('\n')).toEqual(['People: Q goes', '', 'D\tcontent/people/q.json']);
+    expect((await changes()).files).toEqual([{ key: '/content/site.json', status: 'changed' }]);
+  });
+
+  it("refuses a choice that needs a change left out (an article's new picture), and commits nothing", async () => {
+    setupRepo();
+    const pic = (await upload({ file: { name: 'new.png', bytes: await png(100, 100) }, owner: 'shared', alt: 'New' })) as { id: string };
+    put('/content/articles/a.json', article({ hero: { media: pic.id } }));
+    const r = await publish('Just the article', undefined, { keys: ['/content/articles/a.json'] });
+    expect(r).toMatchObject({ ok: false, reason: expect.stringMatching(/don't stand on their own/) });
+    expect(r.ok === false && r.issues?.length).toBeGreaterThan(0);
+    expect(run(dir, 'log', '--format=%s')).toBe('first');
+    expect(run(dir, 'diff', '--cached', '--name-only')).toBe('');
+    // with its picture, it goes
+    expect(await publish('The article and its picture', undefined, { keys: ['/content/articles/a.json', `/content/media/${pic.id}.webp`, `/content/media/${pic.id}.json`] })).toMatchObject({ ok: true, files: 3 });
+  });
+});
+
+describe('the content a partial save commits', () => {
+  it('puts back what is left out as last committed, and leaves out what is new', () => {
+    const snap = {
+      docs: { '/content/a.json': { v: 2 }, '/content/new.json': { v: 1 }, '/content/keep.json': { v: 1 } },
+      masters: new Set(['/content/media/x/new.webp', '/content/media/x/old.webp']),
+      errors: ['content/broken.json: not valid JSON (x)', 'content/keep.json: fine'],
+    };
+    const enc = (s: string) => new TextEncoder().encode(s);
+    const out = asCommitted(snap, [
+      { key: '/content/a.json', bytes: enc('\uFEFF{"v":1}') },
+      { key: '/content/new.json', bytes: null },
+      { key: '/content/media/x/new.webp', bytes: null },
+      { key: '/content/broken.json', bytes: enc('{"v":0}') },
+    ]);
+    expect(out.docs).toEqual({ '/content/a.json': { v: 1 }, '/content/keep.json': { v: 1 }, '/content/broken.json': { v: 0 } });
+    expect([...out.masters]).toEqual(['/content/media/x/old.webp']);
+    expect(out.errors).toEqual(['content/keep.json: fine']);
+    expect(snap.docs['/content/a.json']).toEqual({ v: 2 });
+  });
+});
+
+describe('choosing what a save takes (documentation/editor/spec.md §7.1)', () => {
+  const files = [{ key: '/content/a.json' }, { key: '/private/b.json' }];
+  it('takes every change unless some are named, and only the named ones still waiting', () => {
+    expect(chosenFiles(files)).toBe(files);
+    expect(chosenFiles(files, ['/private/b.json', '/content/gone.json'])).toEqual([{ key: '/private/b.json' }]);
+    expect(chosenFiles(files, [])).toEqual([]);
+  });
+  it('says what happens to the message when private pages go, from the ticked changes alone', () => {
+    expect(privateNote(['/content/a.json'])).toBeNull();
+    expect(privateNote(['/private/b.json'])).toMatch(/Only private pages changed/);
+    expect(privateNote(['/private/b.json', '/content/a.json'])).toMatch(/Private pages changed too/);
+  });
+  it('names the button by how many go, and offers a message for the ticked rows', () => {
+    expect(saveLabel(3, 3, false)).toBe('Save to remote');
+    expect(saveLabel(0, 3, true)).toBe('Publish and save to remote');
+    expect(saveLabel(1, 3, false)).toBe('Save 1 of 3 to remote');
+    expect(saveLabel(2, 3, true)).toBe('Publish and save 2 of 3 to remote');
+    expect(messageFor([])).toBe('Publish pages');
+    expect(messageFor([{ name: 'My article', keys: ['/content/articles/a.json'] }])).toMatch(/My article/);
   });
 });
 

@@ -18,7 +18,7 @@ A content editor that runs only on your machine, inside the Astro dev server, an
 > - **Optimistic edits** (§3.6, built 13 October 2026): a move, a removal, a copy or a new block shows in the outline, the inspector and the canvas at once, the server's redraw only confirming it; a refused change is put back with the reason.
 > - **Never a silent wait** (§2.2, built 13 October 2026): every wait shows a sign where it happens (a busy button, a pending row, a region or the canvas updating, the picker filling, a screen opening) as well as in the status line, through one task tracker.
 > - **Pages move freely:** a page's slug, section and status can change at any time, published or not. Its address follows, and the old one simply goes, with no redirect (the owner's call). Only a draft can be deleted.
-> - **Publishing:** Save to remote lists what changed in `content/`, checks it all, commits just those files and pushes. From a page editor it opens as a dismissible modal and keeps running after the modal closes; the top bar keeps showing its progress and result. Discard puts a file back as it was last saved to remote.
+> - **Publishing:** Save to remote lists what changed in `content/`, checks it all, commits just those files (or only the ones you tick) and pushes. From a page editor it opens as a dismissible modal and keeps running after the modal closes; the top bar keeps showing its progress and result. Discard puts a file back as it was last saved to remote.
 > - **Built from the design system:** the editor's screens are Astro pages made of the site's own tokens, fundamentals and compounds, with two new generic compounds (Dialog, Tabs). Client scripts only coordinate; the page and every form are rendered by the server.
 
 <figure class="slate-figure" data-diagram="editor">
@@ -516,7 +516,7 @@ A picture can have a dark mode version, shown on the site instead of it whenever
 
 **Two words, two actions** (6 October 2026). **Save to remote** sends your changes to GitHub (a commit and a push), which redeploys the site. **Publish** puts a page on the site: its Status becomes Published. A page only reaches readers when both have happened, so the Save to remote screen offers to publish the drafts it would otherwise leave behind. (Until then the screen and its button were called Publish, and a private page saved with it stayed a draft, which read as a failed publish.)
 
-- **The Save to remote screen** (`/_edit/publish/`, "Save to remote" in the top bar and the navigation) lists every file in `content/` that differs from the last commit, as git sees it: added, changed or deleted. Each is named as its resource ("Article: Do what makes you proud", "Media: articles/…/tshirt"), with Discard, which puts it back as last committed and deletes a new file.
+- **The Save to remote screen** (`/_edit/publish/`, "Save to remote" in the top bar and the navigation) lists every file in `content/` that differs from the last commit, as git sees it: added, changed or deleted. Each is named as its resource ("Article: Do what makes you proud", "Media: articles/…/tshirt"), with a checkbox to choose whether it goes with this save (§7.1), and Discard, which puts it back as last committed and deletes a new file.
 - **From a page editor, Save to remote stays with the page.** Its top-bar button opens the same change list and form in a modal instead of navigating to the standalone screen. The change list and form fill the modal's usable width rather than keeping the standalone screen's reading-column cap. The modal can be closed at any time, including while a commit or push is running; closing it returns to the editor without cancelling the operation. A separate status in the top bar says **Saving to remote…**, **Saved to remote** or that the save/push failed, independently of the page's own autosave status. On completion the hidden or open modal and the pending-change count refresh in place. Other editor screens keep using `/_edit/publish/`.
 - **Always what git says now** (11 October 2026). The list and the counts are drawn with their page, and the content and git move on after that: a page saves as you type, and a commit or push can happen in a terminal. So:
   - opening the modal reads git again: the list steps back under **Checking what changed…**, with Save to remote and Push again disabled until the fresh list is in (the last save's result stays while its commit is still the latest);
@@ -539,6 +539,21 @@ A picture can have a dark mode version, shown on the site instead of it whenever
 - **git never waits for you.** It runs as a child process with its arguments as a list (never through a shell), in the repository that holds `content/`, with prompts off (`GIT_TERMINAL_PROMPT=0`, the credential manager non-interactive, SSH in batch mode) and a time limit, after which it's stopped and the reason shown.
 - **Discard** restores a tracked file in the index and the working tree (`git restore --source=HEAD --staged --worktree`) and deletes an untracked one.
 - **Line endings:** `.gitattributes` keeps content JSON at LF (`content/**/*.json text eol=lf`), so the files the editor writes, the ones git checks out and the ones publish compares are the same bytes.
+
+### 7.1 Saving some changes, or all of them
+
+You can save every change at once, or only the ones you choose and leave the rest for a later save (21 October 2026).
+
+- **Every change has a checkbox,** ticked to begin with, named by the change, with its kind as the hint, and **Open** (its screen) and **Discard** beside it. Above them, **All changes** ticks or unticks them together, and shows a mixed state when only some are ticked. **Private pages: Saved privately, not yet linked from the site** has no checkbox, because it goes with any save.
+- **The button counts.** It says **Save to remote** when every change is ticked, and **Save 1 of 3 to remote** when only some are (**Publish and save … to remote** with a draft ticked). With nothing ticked and no draft to publish, it's disabled and the form says to tick something. The message offered follows what's ticked until you write your own, and so does the note about private pages.
+- **What you untick stays unticked** while the list is drawn again (after a Discard, or when the window comes back), until a save succeeds.
+- **The server takes the same choice.** The form sends the ticked changes' files (`keys`) only when some are left out; a draft ticked to publish adds its own file. `publish(message, titles, { keys })` in `server/git.ts` then:
+  1. refuses if none of the chosen files is still changed ("check the list again");
+  2. checks the content **as the commit will hold it** (`asCommitted`): every change left out as last committed, from `HEAD`, and a new file left out as absent. A choice that needs a change left out (an article without its new picture) is refused with the issues: "the changes you chose don't stand on their own…";
+  3. stages, confirms and commits only the chosen paths in each repository (`git commit -- <paths>`), private first as before; a change left out, even if it was staged, stays uncommitted;
+  4. pushes as before. The private-pages pointer goes with the public commit when a private commit was made or it had already moved.
+- The pure rules (which files, the button's words, the message and the private note) are `model/selection.ts`, shared by the screen's script and the server.
+- **Evidence:** the unit tests "saves only the changes chosen…", "saves a chosen deletion alone…", "refuses a choice that needs a change left out…" and "the content a partial save commits" (`tests/unit/editorServer.test.ts`), and the editor E2E "publish: only the ticked changes are saved, the one left out stays for a later save".
 
 ## 8. Architecture
 

@@ -1732,6 +1732,35 @@ test.describe('editor', () => {
     await expect(page.getByRole('button', { name: 'Save to remote', exact: true }).last()).toBeDisabled();
   });
 
+  test('publish: only the ticked changes are saved, the one left out stays for a later save', async ({ page }) => {
+    const site = readJson(join(FIXTURE, 'content/site.json'));
+    writeFileSync(join(FIXTURE, 'content/site.json'), `${JSON.stringify({ ...site, positioning: 'Saved alone.' }, null, 2)}\n`);
+    const person = readJson(join(FIXTURE, 'content/people/prabin.json'));
+    writeFileSync(join(FIXTURE, 'content/people/prabin.json'), `${JSON.stringify({ ...person, role: 'Left for later' }, null, 2)}\n`);
+    await page.goto('/_edit/publish/');
+    await expect(page.getByRole('heading', { name: '2 changes to save' })).toBeVisible();
+    const all = page.getByRole('checkbox', { name: /All changes/ });
+    await expect(all).toBeChecked();
+
+    const personRow = page.locator('li', { has: page.locator('[data-publish-discard][data-name^="Person"]') }).getByRole('checkbox');
+    await personRow.uncheck();
+    expect(await all.evaluate((el: HTMLInputElement) => el.indeterminate)).toBe(true);
+    await expect(page.getByLabel('Message')).toHaveValue('Content: the site settings');
+    // none ticked: nothing to save, and it says why
+    await page.locator('li', { has: page.locator('[data-publish-discard][data-name^="Settings"]') }).getByRole('checkbox').uncheck();
+    await expect(page.locator('[data-publish-form] button[type="submit"]')).toBeDisabled();
+    await expect(page.locator('[data-publish-none]')).toBeVisible();
+    await page.locator('li', { has: page.locator('[data-publish-discard][data-name^="Settings"]') }).getByRole('checkbox').check();
+
+    await page.getByRole('button', { name: 'Save 1 of 2 to remote' }).click();
+    await expect(page.getByRole('heading', { name: 'Saved to remote' })).toBeVisible({ timeout: 30_000 });
+    expect(git('show', '--name-only', '--format=%s', 'HEAD').split('\n')).toEqual(['Content: the site settings', '', 'content/site.json']);
+    expect(execFileSync('git', [`--git-dir=${REMOTE}`, 'log', '-1', '--format=%s', 'main'], { encoding: 'utf8' }).trim()).toBe('Content: the site settings');
+    await expect(page.getByRole('heading', { name: '1 change to save' })).toBeVisible();
+    expect(readJson(join(FIXTURE, 'content/people/prabin.json')).role).toBe('Left for later');
+    await expect(page.getByRole('button', { name: 'Save to remote', exact: true }).last()).toBeEnabled();
+  });
+
   test('a push the remote refuses keeps the commit, says why, and Push again sends it once the branch is up to date', async ({ page }) => {
     // someone else pushed first: the remote is ahead
     const other = join(tmpdir(), `editor-e2e-other-${Date.now()}`);

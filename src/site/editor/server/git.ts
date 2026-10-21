@@ -6,15 +6,18 @@
  * public repository: content/ and the submodule's moved pointer, confirmed the same way, committed (those
  * paths only, whatever else is staged stays staged) and pushed, which deploys. Your message goes on the
  * public commit only when nothing private changed. A failed push leaves its commit local, with Push again.
+ * A save can take only the changes ticked: then each repository commits just their files, after the check
+ * has passed the content as those commits will hold it (every change left out as last committed).
  */
 import { execFile } from 'node:child_process';
 import { existsSync, readFileSync, statSync } from 'node:fs';
 import { dirname, join, relative, resolve } from 'node:path';
-import { contentRoot, generation as contentGeneration, hasPrivate, privateRoot, readSnapshot } from '../../content/source';
+import { contentRoot, generation as contentGeneration, hasPrivate, MASTER_FILE, privateRoot, readSnapshot, type Snapshot } from '../../content/source';
 import { ContentError, loadContent, type Issue } from '../../content/load';
 import { timedAsync } from '../../content/timing';
 import { commit, readFile, versionOf, withWriterLock, type Result } from './store';
 import { suggestMessage, type Titles } from '../model/names';
+import { chosenFiles } from '../model/selection';
 
 export interface GitResult {
   code: number;
@@ -404,11 +407,39 @@ export function publicMessage(mine: string, files: ChangedFile[], titles: Titles
   return pub.length ? `${suggestMessage(pub, titles)}; Private pages: update` : 'Private pages: update';
 }
 
-export function publish(message: string, titles: Titles = { article: () => undefined, person: () => undefined }): Promise<PublishResult> {
-  return withWriterLock(() => publishLocked(message, titles)).finally(forgetChanges);
+/**
+ * The content as a commit of only the chosen changes would hold it: every change left out is as last
+ * committed (its bytes from HEAD; null where the file is new, so it's absent). Pure: the check runs on it.
+ */
+export function asCommitted(snap: Pick<Snapshot, 'docs' | 'masters' | 'errors'>, left: { key: string; bytes: Uint8Array | null }[]): Pick<Snapshot, 'docs' | 'masters' | 'errors'> {
+  const docs = { ...snap.docs };
+  const masters = new Set(snap.masters);
+  const out = new Set(left.map((l) => l.key));
+  const errors = snap.errors.filter((e) => !out.has(`/${e.slice(0, e.indexOf(': '))}`));
+  for (const { key, bytes } of left) {
+    delete docs[key];
+    masters.delete(key);
+    if (!bytes) continue;
+    if (key.endsWith('.json')) {
+      try {
+        docs[key] = JSON.parse(Buffer.from(bytes).toString('utf8').replace(/^\uFEFF/, ''));
+      } catch (e) {
+        errors.push(`${key.slice(1)}: not valid JSON (${(e as Error).message})`);
+      }
+    } else if (MASTER_FILE.test(key)) masters.add(key);
+  }
+  return { docs, masters, errors };
 }
 
-async function publishLocked(message: string, titles: Titles): Promise<PublishResult> {
+/**
+ * Saves to remote. `keys` chooses which changed files go (each resource's files together); left out, it's
+ * every change. The rest stay changed, here, for a later save.
+ */
+export function publish(message: string, titles: Titles = { article: () => undefined, person: () => undefined }, opts: { keys?: string[] } = {}): Promise<PublishResult> {
+  return withWriterLock(() => publishLocked(message, titles, opts.keys)).finally(forgetChanges);
+}
+
+async function publishLocked(message: string, titles: Titles, keys?: string[]): Promise<PublishResult> {
   {
     const where = await repo();
     if (!where) return { ok: false, reason: 'the content folder is not in a git repository' };
@@ -416,8 +447,13 @@ async function publishLocked(message: string, titles: Titles): Promise<PublishRe
     if (state.error) return { ok: false, reason: `${state.error}: try again` };
     if (!state.branch) return { ok: false, reason: 'git is not on a branch (a detached HEAD): check out a branch, then save to remote' };
     if (!state.upstream) return { ok: false, reason: `the branch ${state.branch} has no upstream to push to: set one (git push -u), then save to remote` };
-    const priv = state.files.filter((f) => f.key.startsWith('/private/'));
-    const pub = state.files.filter((f) => f.key.startsWith('/content/'));
+    const chosen = chosenFiles(state.files, keys);
+    if (keys && !chosen.length && !state.pointer?.moved) return { ok: false, reason: 'none of the changes you chose is waiting any more: check the list again' };
+    // only some: each path named (a folder would take the changes left out too)
+    const partial = chosen.length < state.files.length;
+    const left = state.files.filter((f) => !chosen.includes(f));
+    const priv = chosen.filter((f) => f.key.startsWith('/private/'));
+    const pub = chosen.filter((f) => f.key.startsWith('/content/'));
     if (!state.files.length && !state.pointer?.moved) return { ok: false, reason: 'there is nothing to save' };
     const msg = message.trim();
     if (!msg) return { ok: false, reason: 'a save needs a message' };
@@ -427,26 +463,33 @@ async function publishLocked(message: string, titles: Titles): Promise<PublishRe
       if (state.private.branch !== 'main') return { ok: false, reason: 'private-pages/ is not on its main branch (a submodule starts on a detached commit): run scripts/setup-private-pages.ps1, then save to remote' };
       if (!state.private.upstream) return { ok: false, reason: 'private-pages/ has no upstream to push to: run scripts/setup-private-pages.ps1, then save to remote' };
     }
-    // 1. both folders, checked as the build will check them
+    // 1. both folders, checked as the build will check them: as the commits will hold them, with what's left out as last saved
     const snap = readSnapshot();
     try {
-      loadContent(snap.docs, snap.masters, snap.errors);
+      if (left.length) {
+        const committed = asCommitted(snap, await Promise.all(left.map(async (f) => {
+          const at = await locate(f.key);
+          return { key: f.key, bytes: at ? await showBinary(at.top, at.path) : null };
+        })));
+        loadContent(committed.docs, committed.masters, committed.errors);
+      } else loadContent(snap.docs, snap.masters, snap.errors);
     } catch (e) {
-      if (e instanceof ContentError) return { ok: false, reason: 'the content has problems: fix them, then save to remote', issues: e.issues };
+      if (e instanceof ContentError) return { ok: false, reason: left.length ? "the changes you chose don't stand on their own (they need one you left out): choose it too, or save every change" : 'the content has problems: fix them, then save to remote', issues: e.issues };
       throw e;
     }
     // 2. the private repository first: staged, exactly what was checked, committed on main, pushed
     let privateCommit: string | undefined;
     if (priv.length && privTop) {
-      const add = await git(['add', '-A', '--', '.'], { cwd: privTop });
+      const privPaths = partial ? priv.map((f) => f.key.slice('/private/'.length)) : ['.'];
+      const add = await git(['add', '-A', '--', ...privPaths], { cwd: privTop });
       if (add.code) return { ok: false, reason: `git couldn't stage the private pages: ${add.stderr.trim()}` };
-      const checked = await stagedAsChecked(privTop, ['.']);
+      const checked = await stagedAsChecked(privTop, privPaths);
       if (!checked.ok) {
-        await git(['restore', '--staged', '--', '.'], { cwd: privTop });
+        await git(['restore', '--staged', '--', ...privPaths], { cwd: privTop });
         return { ok: false, reason: `private-pages/${checked.path} changed while saving: save again` };
       }
       const list = priv.map((f) => `- ${f.status} ${f.key.slice('/private/'.length)}`).join('\n');
-      const c = await git(['commit', '-m', msg, '-m', list], { cwd: privTop, timeout: 60_000 });
+      const c = await git(['commit', '-m', msg, '-m', list, ...(partial ? ['--', ...privPaths] : [])], { cwd: privTop, timeout: 60_000 });
       if (c.code) return { ok: false, reason: `git couldn't commit the private pages: ${(c.stderr || c.stdout).trim()}` };
       privateCommit = (await git(['rev-parse', '--short', 'HEAD'], { cwd: privTop })).stdout.trim();
     }
@@ -456,8 +499,14 @@ async function publishLocked(message: string, titles: Titles): Promise<PublishRe
       const p = await pushIn(privTop);
       if (!p.ok) privatePushError = `the private pages: ${p.reason}`;
     }
-    // 3. the public repository: content/ and the moved pointer, exactly what was checked, then pushed (the deploy)
-    const paths = [...(pub.length ? [where.path] : []), ...(state.pointer && (privateCommit || state.pointer.moved) ? [state.pointer.path] : [])];
+    // 3. the public repository: content/ (or the chosen files in it) and the moved pointer, exactly what was checked, then pushed (the deploy)
+    const pubPaths = partial ? (await Promise.all(pub.map((f) => locate(f.key)))).map((at) => at!.path) : pub.length ? [where.path] : [];
+    const paths = [...pubPaths, ...(state.pointer && (privateCommit || state.pointer.moved) ? [state.pointer.path] : [])];
+    // nothing public to commit (private pages outside the public repository): never `git add -A` with no path, which takes everything
+    if (!paths.length) {
+      if (!privateCommit) return { ok: false, reason: 'there is nothing to save' };
+      return { ok: true, commit: privateCommit, privateCommit, pushed: !privatePushError, ...(privatePushError ? { pushError: privatePushError } : {}), files: priv.length, message: msg };
+    }
     const add = await git(['add', '-A', '--', ...paths], { cwd: where.top });
     if (add.code) return { ok: false, reason: `git couldn't stage the content: ${add.stderr.trim()}` };
     const checked = await stagedAsChecked(where.top, paths);
@@ -469,7 +518,7 @@ async function publishLocked(message: string, titles: Titles): Promise<PublishRe
       await git(['restore', '--staged', '--', ...paths], { cwd: where.top });
       return { ok: false, reason: 'the content changed while saving: save again' };
     }
-    const publicMsg = publicMessage(msg, state.files, titles);
+    const publicMsg = publicMessage(msg, chosen, titles);
     const c = await git(['commit', '-m', publicMsg, '--', ...paths], { cwd: where.top, timeout: 60_000 });
     if (c.code) return { ok: false, reason: `git couldn't commit: ${(c.stderr || c.stdout).trim()}` };
     const sha = (await git(['rev-parse', '--short', 'HEAD'], { cwd: where.top })).stdout.trim();

@@ -1,0 +1,48 @@
+/**
+ * Which changes a save to remote takes (documentation/editor/spec.md §7.1): every change waiting, or only
+ * the ones ticked. Pure, for the Save to remote screen's script and the server.
+ */
+import { suggestMessage, type Titles } from './names';
+
+/** A changed resource on the screen: its name in words and its files. */
+export interface PickedRow {
+  name: string;
+  keys: string[];
+}
+
+/** The files a save takes: every one when nothing was chosen, else those the chosen keys name (a key no longer changed is left out). */
+export function chosenFiles<T extends { key: string }>(files: T[], keys?: readonly string[] | null): T[] {
+  if (!keys) return files;
+  const wanted = new Set(keys);
+  return files.filter((f) => wanted.has(f.key));
+}
+
+/** What happens to the message when private pages are in the save (documentation/access/spec.md §8.3), or null. */
+export function privateNote(keys: readonly string[]): string | null {
+  if (!keys.some((k) => k.startsWith('/private/'))) return null;
+  return keys.some((k) => k.startsWith('/content/'))
+    ? 'Private pages changed too: this message goes on the private commit only. The public commit gets one made from the public changes.'
+    : 'Only private pages changed: this message goes on the private commit only. The public commit is "Private pages: update".';
+}
+
+/** Titles read from the rows themselves: an article's and a person's row are named by their title. */
+export function titlesOf(rows: readonly PickedRow[]): Titles {
+  const named = (key: string) => rows.find((r) => r.keys.includes(key))?.name;
+  return {
+    article: (id) => named(`/content/articles/${id}.json`) ?? named(`/private/articles/${id}.json`),
+    person: (id) => named(`/content/people/${id}.json`),
+  };
+}
+
+/** The message offered for the ticked rows ("Publish pages" when only drafts go). */
+export function messageFor(rows: readonly PickedRow[]): string {
+  const keys = rows.flatMap((r) => r.keys);
+  return keys.length ? suggestMessage(keys.map((key) => ({ key })), titlesOf(rows)) : 'Publish pages';
+}
+
+/** The submit button's words: Save to remote for everything (or none: drafts alone), and the count when only some are ticked. */
+export function saveLabel(picked: number, total: number, publishing: boolean): string {
+  if (picked >= total || picked === 0) return publishing ? 'Publish and save to remote' : 'Save to remote';
+  const some = `${picked} of ${total}`;
+  return publishing ? `Publish and save ${some} to remote` : `Save ${some} to remote`;
+}

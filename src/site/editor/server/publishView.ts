@@ -1,6 +1,7 @@
 import type { Article, Person } from '../../content/schema';
 import type { ChangeRow } from '../components/ChangeList.astro';
 import { actionsUrl, groupChanges, suggestMessage, type Titles } from '../model/names';
+import { privateNote as privateNoteFor } from '../model/selection';
 import { readDoc } from './store';
 import { load } from './screens';
 import { changes, git, remoteUrl, repo } from './git';
@@ -46,12 +47,7 @@ export async function publishView(url: URL) {
   const asked = url.searchParams.get('published') ?? (url.searchParams.get('pushed') ? head.slice(0, 7) : null);
   const ahead = state.ahead + (state.private?.ahead ?? 0);
   const published = asked && /^[0-9a-f]{4,}$/.test(asked) && head.startsWith(asked) && ahead === 0 ? asked : null;
-  const anyPrivate = state.files.some((file) => file.key.startsWith('/private/'));
-  const privateNote = anyPrivate
-    ? state.files.some((file) => file.key.startsWith('/content/'))
-      ? 'Private pages changed too: this message goes on the private commit only. The public commit gets one made from the public changes.'
-      : 'Only private pages changed: this message goes on the private commit only. The public commit is "Private pages: update".'
-    : null;
+  const privateNote = privateNoteFor(state.files.map((file) => file.key));
   const remote = await remoteUrl(state.upstream);
   const changed = new Set(state.files.map((file) => file.key));
   const drafts = loaded.ok
