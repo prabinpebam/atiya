@@ -515,5 +515,9 @@
       "text": "How do I make a product that has a good story to tell?",
       "key": "2xogfv"
     }
-  ]
+  ],
+  "thumbnail": "articles/you-dont-have-a-storytelling-problem/the-storyteller-thumbnail",
+  "thumbnails": {
+    "square": "articles/you-dont-have-a-storytelling-problem/the-storyteller-square"
+  }
 }

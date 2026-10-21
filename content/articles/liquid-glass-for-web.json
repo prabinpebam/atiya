@@ -11,7 +11,11 @@
   "publishedAt": "2026-10-01",
   "updatedAt": "2026-10-13",
   "locale": "en",
-  "thumbnail": "articles/liquid-glass-for-web/pasted-picture-2026-10-13-2",
+  "thumbnail": "articles/liquid-glass-for-web/pasted-picture-2026-10-13-2-3x2",
+  "thumbnails": {
+    "wide": "articles/liquid-glass-for-web/pasted-picture-2026-10-13-2-21x9",
+    "square": "articles/liquid-glass-for-web/pasted-picture-2026-10-13-2-1x1"
+  },
   "body": [
     {
       "type": "text",

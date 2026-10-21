@@ -1,0 +1,20 @@
+{
+  "kind": "image",
+  "alt": "My little planet",
+  "caption": "My little planet",
+  "visibility": "public",
+  "file": "pasted-picture-2026-10-02-1x1.webp",
+  "crop": {
+    "from": "articles/atiya/pasted-picture-2026-10-02",
+    "x": 24,
+    "y": 0,
+    "width": 1230,
+    "height": 1230
+  },
+  "facts": {
+    "width": 1230,
+    "height": 1230,
+    "bg": "rgb(89 111 58)",
+    "bytes": 609842
+  }
+}

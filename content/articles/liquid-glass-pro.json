@@ -11,7 +11,11 @@
   "publishedAt": "2026-10-01",
   "updatedAt": "2026-10-13",
   "locale": "en",
-  "thumbnail": "articles/liquid-glass-pro/liquid-glass-examples",
+  "thumbnail": "articles/liquid-glass-pro/liquid-glass-examples-3x2",
+  "thumbnails": {
+    "wide": "articles/liquid-glass-pro/liquid-glass-examples-21x9",
+    "square": "articles/liquid-glass-pro/liquid-glass-examples-1x1"
+  },
   "body": [
     {
       "type": "text",

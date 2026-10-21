@@ -1,0 +1,3 @@
+Outpainting: the transparent areas of the mask are NEW canvas beside an existing picture. Continue the picture seamlessly into them with the same lighting, palette, texture, perspective and level of detail, so no seam shows. Never change, redraw or move anything in the existing picture. No text, logos, watermarks, borders or frames.
+
+SCENE: Black-and-white print studies in square tiles separated by thin black gutters: add one more column of tiles on each side, each tile an abstract halftone dot gradient, line-screen or stipple texture in the same grain and contrast. Every new tile is pure texture. No faces, no people, no portraits, no text.

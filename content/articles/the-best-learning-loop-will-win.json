@@ -383,5 +383,9 @@
       "type": "divider",
       "key": "z59446"
     }
-  ]
+  ],
+  "thumbnail": "articles/the-best-learning-loop-will-win/the-two-gardens-thumbnail",
+  "thumbnails": {
+    "square": "articles/the-best-learning-loop-will-win/the-two-gardens-square"
+  }
 }

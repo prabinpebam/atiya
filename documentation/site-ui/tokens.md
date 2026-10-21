@@ -808,8 +808,8 @@ Change view's choices (documentation/home-views/switcher.md §1): a card per vie
 
 | Token | Value | Resolves to | Use |
 |---|---|---|---|
-| `--c-story-card-row-picture` | `11rem` |  | The picture at the end of a row card (a section's list view) |
-| `--c-story-card-row-picture-compact` | `6rem` |  | The row card's picture on a phone, so the title keeps most of the width |
+| `--c-story-card-row-picture` | `8rem` |  | The square picture at the end of a row card (a section's list view): about the height of its title, line and date |
+| `--c-story-card-row-picture-compact` | `6rem` |  | The row card's square picture on a phone, so the title keeps most of the width |
 | `--c-story-card-query-feature` | `49.5rem` |  | A container query (@container only): narrower than this, a feature card's picture goes over its words. The index's column at an 863 px window, just under md (896 px), where the screen query switched, so a section lays out as it did (a wider threshold would also switch the design library's 798 px examples) |
 | `--c-story-card-query-row` | `36.45rem` |  | A container query (@container only): narrower than this, a row card's picture shrinks. The list's column at a 640 px window (sm), so a section lays out as the screen query did |
 

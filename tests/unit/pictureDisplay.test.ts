@@ -7,7 +7,8 @@
 import { describe, expect, it } from 'vitest';
 import { article, block, PICTURE_DISPLAYS } from '../../src/site/content/schema';
 import { edgeAverage } from '../../src/site/content/edgeColour';
-import { fittedSizes, fittedWidth, ratioValue } from '../../src/site/design/pictures';
+import { fittedSizes, fittedWidth, PICTURE_SPECS, ratioValue, thumbnailFor } from '../../src/site/design/pictures';
+import { mediaUsed } from '../../src/site/content/load';
 import { sizes } from '../../src/site/design/responsive';
 
 const base = { id: 'x', type: 'article', kind: 'note', slug: 'x', title: 'X', summary: 'X.', status: 'draft', visibility: 'public', updatedAt: '2026-10-06', locale: 'en', body: [] };
@@ -96,5 +97,33 @@ describe('the automatic background: the colour of a picture\u2019s edges', () =>
 
   it('says nothing for transparent edges (the dominant colour is used instead)', () => {
     expect(edgeAverage(square(8, [255, 255, 255, 0], [10, 20, 30, 255]), 8)).toBeNull();
+  });
+});
+
+describe('a card picture comes in three shapes, one picture serving them all until a shape has its own (media.md §9.4)', () => {
+  const hero = { media: 'lead' };
+  it('the specs are 3:2, 21:9 and 1:1', () => {
+    expect([PICTURE_SPECS.thumbnail.ratio, PICTURE_SPECS.wide.ratio, PICTURE_SPECS.square.ratio]).toEqual(['3/2', '21/9', '1/1']);
+  });
+  it('one picture is every shape', () => {
+    for (const shape of ['thumbnail', 'wide', 'square'] as const) {
+      expect(thumbnailFor({ thumbnail: 'one' }, shape)).toBe('one');
+      expect(thumbnailFor({ hero }, shape)).toBe('lead');
+      expect(thumbnailFor({}, shape)).toBeUndefined();
+    }
+  });
+  it('wide prefers the lead picture, square the thumbnail', () => {
+    expect(thumbnailFor({ thumbnail: 'card', hero }, 'wide')).toBe('lead');
+    expect(thumbnailFor({ thumbnail: 'card', hero }, 'square')).toBe('card');
+    expect(thumbnailFor({ thumbnail: 'card', hero }, 'thumbnail')).toBe('card');
+  });
+  it('a shape’s own picture wins, and only for that shape', () => {
+    const a = { thumbnail: 'card', hero, thumbnails: { wide: 'w', square: 's' } };
+    expect([thumbnailFor(a, 'thumbnail'), thumbnailFor(a, 'wide'), thumbnailFor(a, 'square')]).toEqual(['card', 'w', 's']);
+  });
+  it('the contract takes them, and the content check sees them used', () => {
+    const a = article.parse({ ...base, thumbnail: 'articles/x/card', thumbnails: { wide: 'articles/x/wide', square: 'articles/x/square' } });
+    expect(mediaUsed(a)).toEqual(expect.arrayContaining(['articles/x/card', 'articles/x/wide', 'articles/x/square']));
+    expect(article.safeParse({ ...base, thumbnails: { tall: 'articles/x/tall' } }).success).toBe(false);
   });
 });

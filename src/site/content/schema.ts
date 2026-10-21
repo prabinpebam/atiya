@@ -338,6 +338,12 @@ export const article = z.strictObject({
   hero: z.strictObject({ media: mediaId, caption: z.string().optional(), credit: z.string().optional(), showCaption: z.boolean().optional(), display: display.optional(), background: background.optional(), rounded: rounded.optional(), shadow: shadow.optional() }).optional(),
   /** The picture on its cards (shown whole); the lead picture when left out. */
   thumbnail: mediaId.optional(),
+  /**
+   * The card picture redrawn in the other shapes the site frames it in (documentation/content/media.md §9.4): wide
+   * (21:9) for the home page's views, square (1:1) for a list's rows. Each left out: wide uses the lead picture,
+   * then the thumbnail; square the thumbnail, then the lead picture.
+   */
+  thumbnails: z.strictObject({ wide: mediaId.optional(), square: mediaId.optional() }).optional(),
   /** How the picture on its cards is shown in their 3:2 frame: left out, fit (whole), no background, rounded. */
   thumbnailStyle: pictureStyle.optional(),
   /** A picture of the person the page is about (a résumé, About), shown whole beside its title. */

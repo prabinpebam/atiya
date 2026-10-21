@@ -131,11 +131,28 @@
       "darkPrompt": "the-map.dark.prompt.txt",
       "inkSource": "the-map.ink.png",
       "darkInkSource": "the-map.dark.ink.png"
+    },
+    {
+      "name": "the-storyteller-thumbnail",
+      "use": "thumbnail",
+      "format": "thumbnail",
+      "basis": "the-storyteller",
+      "subject": "The explorer on his small wooden stage reads from the huge, mud-stained, overstuffed field journal, pressed leaves, a torn map and a feather spilling out, to two or three rapt listeners leaning in. Beside him, the rival with the gleaming empty book and megaphone, his one listener fast asleep. Fewer listeners than the lead picture, everyone large.",
+      "alt": "An explorer reads from a battered, overflowing journal to listeners leaning in, while a rival with a gleaming, empty book and a megaphone has put his listener to sleep."
+    },
+    {
+      "name": "the-storyteller-square",
+      "use": "square",
+      "format": "square",
+      "basis": "the-storyteller",
+      "subject": "The explorer, large and centred, reads aloud from the huge, mud-stained, overstuffed field journal held open in both hands, pressed leaves, a torn map, a feather and a ticket stub spilling out of it, eyes bright. Nothing else; leave out the rival and the audience.",
+      "alt": "An explorer reads aloud from a huge, battered field journal overflowing with leaves, a map, a feather and a ticket stub."
     }
   ],
   "inkExtraction": {
     "light": "Black RGB; alpha=max(0,round(255*(248-luminance)/248)).",
     "dark": "White RGB; alpha=max(0,round(255*(luminance-36)/219)).",
     "content": "Lossless alpha WebP, at most 2560 pixels wide; same dimensions within each light/dark pair."
-  }
+  },
+  "cast": "THE EXPLORER and THE RIVAL STORYTELLER, exactly as drawn in this article's lead picture (the first and second references): the explorer with his huge, mud-stained, overflowing field journal; the rival with his gleaming, empty, gold-edged book and megaphone; their listeners are quirky creatures in the same style."
 }

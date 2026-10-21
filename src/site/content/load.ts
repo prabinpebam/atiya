@@ -125,6 +125,8 @@ export const isPublished = (a: { status: string; visibility: string }) => PUBLIS
 export function mediaUsed(a: Article): string[] {
   const ids = a.hero ? [a.hero.media] : [];
   if (a.thumbnail) ids.push(a.thumbnail);
+  if (a.thumbnails?.wide) ids.push(a.thumbnails.wide);
+  if (a.thumbnails?.square) ids.push(a.thumbnails.square);
   if (a.portrait) ids.push(a.portrait);
   for (const b of a.body) {
     if (b.type === 'figure') ids.push(b.media);

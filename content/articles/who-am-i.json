@@ -99,5 +99,9 @@
     "background": false,
     "rounded": false,
     "showCaption": false
+  },
+  "thumbnail": "articles/who-am-i/the-pancake-machine-thumbnail",
+  "thumbnails": {
+    "square": "articles/who-am-i/the-pancake-machine-square"
   }
 }

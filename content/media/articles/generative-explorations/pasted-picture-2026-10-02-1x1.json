@@ -1,0 +1,20 @@
+{
+  "kind": "image",
+  "alt": "Stipple art demo",
+  "caption": "Stipple art demo",
+  "visibility": "public",
+  "file": "pasted-picture-2026-10-02-1x1.webp",
+  "crop": {
+    "from": "articles/generative-explorations/pasted-picture-2026-10-02",
+    "x": 0,
+    "y": 32,
+    "width": 2496,
+    "height": 2496
+  },
+  "facts": {
+    "width": 2496,
+    "height": 2496,
+    "bg": "rgb(88 88 88)",
+    "bytes": 1461976
+  }
+}

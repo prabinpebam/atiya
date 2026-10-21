@@ -8,6 +8,7 @@ import { plainText } from '../content/markdown';
 import type { Recommendation } from '../content/recommendations';
 import type { Article, Contribution, PageKind } from '../content/schema';
 import { toRef } from './schema';
+import { thumbnailFor } from '../design/pictures';
 
 /** One page that may prove a strength. */
 export interface Evidence {
@@ -29,7 +30,7 @@ export interface Evidence {
   numbers: number;
   /** 0 to 1: about 1,500 words, or 6 figures and numbers, is 1. */
   depth: number;
-  /** Its lead picture (a media ID), else its card's. */
+  /** Its wide card picture (a media ID; media.md §9.4): its own, else its lead picture, else its thumbnail. */
   picture?: string;
   /** How many other open pages point at it. */
   linksIn: number;
@@ -162,7 +163,7 @@ export function buildEvidence(index: Pick<ContentIndex, 'articles' | 'origins' |
       figures,
       numbers,
       depth: Math.min(1, Math.max(words / 1500, (figures + numbers) / 6)),
-      picture: a.hero?.media ?? a.thumbnail,
+      picture: thumbnailFor(a, 'wide'),
       linksIn: linkedBy.get(id)?.size ?? 0,
       stale: a.status === 'stale',
       text: { title: normalise(a.title), summary: normalise(a.summary), headings: headings.map(normalise), body: normalise(body.join(' ')) },

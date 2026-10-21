@@ -16,6 +16,10 @@
     "display": "fit"
   },
   "thumbnail": "articles/atiya/whole-planet",
+  "thumbnails": {
+    "wide": "articles/atiya/whole-planet-wide",
+    "square": "articles/atiya/pasted-picture-2026-10-02-1x1"
+  },
   "body": [
     {
       "type": "text",

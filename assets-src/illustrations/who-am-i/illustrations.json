@@ -38,6 +38,22 @@
       "after": "For me, these aren't separate ways of thinking.",
       "subject": "PANEL 1: deep in the cramped engine room of a little steam ship, among tangled pipes and overgrown weeds, the maker crouches with his loupe and finds one cracked cog among many. PANEL 2: the maker has climbed to the top of the ship's mast with his spyglass and sees that the ship is heading straight for a gloomy, rocky island; he points urgently the other way, towards a bright island with a lighthouse. PANEL 3: back in the engine room, the maker ignores a heap of shiny but useless parts and replaces just that one cracked cog; through the porthole behind him, the ship has turned and is now sailing towards the bright island.",
       "alt": "A three-panel comic: in a ship's engine room a maker finds one cracked cog; from the mast he sees the ship heading for the wrong island; back below he fixes only that cog and the ship turns for the right one."
+    },
+    {
+      "name": "the-pancake-machine-thumbnail",
+      "use": "thumbnail",
+      "format": "thumbnail",
+      "basis": "the-pancake-machine",
+      "subject": "The maker pedals the little bicycle bolted to his homemade pancake-flipping machine: chain, big gear, and a spring-loaded arm with a spatula flinging a pancake high out of a frying pan on a camping stove. On the right the tin-can robot holds out a plate with a stack of pancakes to catch it. Only these elements, large in the frame.",
+      "alt": "A grinning fuzzy maker pedals a homemade machine that flips a pancake high from a frying pan, while a tin-can robot holds out a plate to catch it."
+    },
+    {
+      "name": "the-pancake-machine-square",
+      "use": "square",
+      "format": "square",
+      "basis": "the-pancake-machine",
+      "subject": "The maker, large and centred, grinning with delight as he pedals his homemade pancake-flipping machine; its spring-loaded arm has just flung a pancake high above him, flipping mid-air with motion lines and a puff of steam. Nothing else; leave out the robot.",
+      "alt": "A grinning fuzzy maker pedals a homemade machine that flings a pancake high into the air."
     }
   ]
 }

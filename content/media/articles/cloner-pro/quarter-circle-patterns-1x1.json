@@ -1,0 +1,20 @@
+{
+  "kind": "image",
+  "alt": "Two posters made of cloned quarter circles in ochre, sand and olive: one dense with a ring cut out of the middle, one fading from small to large shapes behind the word S+91.",
+  "caption": "Quarter circles cloned over a luma map: the shapes and colours below are the sources.",
+  "visibility": "public",
+  "file": "quarter-circle-patterns-1x1.webp",
+  "crop": {
+    "from": "articles/cloner-pro/quarter-circle-patterns",
+    "x": 70,
+    "y": 200,
+    "width": 940,
+    "height": 940
+  },
+  "facts": {
+    "width": 940,
+    "height": 940,
+    "bg": "rgb(212 200 182)",
+    "bytes": 264780
+  }
+}

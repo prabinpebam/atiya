@@ -8,7 +8,7 @@ export interface PictureSpec {
   /** The field's name in edit mode. */
   label: string;
   /** Its ratio, as the Image fundamental takes it. */
-  ratio: '3/2' | '21/9';
+  ratio: '3/2' | '21/9' | '1/1';
   /** crop: by default the design crops a picture of another shape to it (around its focus point); whole: by default it shows it whole in a frame of it. A page can choose otherwise (its display). */
   fit: 'crop' | 'whole';
   /** The widest it's shown (px): a picture at least this wide stays sharp. */
@@ -19,8 +19,32 @@ export interface PictureSpec {
 
 export const PICTURE_SPECS = {
   lead: { label: 'Lead picture', ratio: '21/9', fit: 'crop', width: 2400, shown: 'across the top of its page in a 21:9 frame, filling it (cropped around its focus point) unless it’s set to fit, actual size or tile' },
-  thumbnail: { label: 'Thumbnail', ratio: '3/2', fit: 'whole', width: 960, shown: 'on cards (a section’s list, the home page, the planet) in a 3:2 frame, whole unless it’s set to fill, actual size or tile' },
+  thumbnail: { label: 'Thumbnail', ratio: '3/2', fit: 'whole', width: 960, shown: 'on cards (a section’s list, related stories, the planet) in a 3:2 frame, whole unless it’s set to fill, actual size or tile' },
+  wide: { label: 'Wide thumbnail', ratio: '21/9', fit: 'whole', width: 1440, shown: 'on the home page’s views (Bento, Cover, Spotlight) in wide frames, whole' },
+  square: { label: 'Square thumbnail', ratio: '1/1', fit: 'crop', width: 480, shown: 'small, in a list’s rows, filling a square frame' },
 } as const satisfies Record<string, PictureSpec>;
+
+/**
+ * The shapes a page's card picture comes in (media.md §9.4), each with the fields it's taken from, in order: its
+ * own, then the ones it falls back to. One picture (the thumbnail, or the lead) serves every shape until a shape
+ * has its own.
+ */
+export const THUMBNAIL_SHAPES = {
+  thumbnail: ['thumbnail', 'hero'],
+  wide: ['thumbnails.wide', 'hero', 'thumbnail'],
+  square: ['thumbnails.square', 'thumbnail', 'hero'],
+} as const;
+
+export type ThumbnailShape = keyof typeof THUMBNAIL_SHAPES;
+
+/** The media ID a page shows in a shape: its own picture for it, else the first it falls back to. */
+export function thumbnailFor(a: { thumbnail?: string; thumbnails?: { wide?: string; square?: string }; hero?: { media: string } }, shape: ThumbnailShape): string | undefined {
+  for (const from of THUMBNAIL_SHAPES[shape]) {
+    const id = from === 'thumbnail' ? a.thumbnail : from === 'hero' ? a.hero?.media : from === 'thumbnails.wide' ? a.thumbnails?.wide : a.thumbnails?.square;
+    if (id) return id;
+  }
+  return undefined;
+}
 
 export type PictureUse = keyof typeof PICTURE_SPECS;
 
@@ -55,6 +79,8 @@ export interface CardPicture extends PictureSource {
   shadow?: boolean;
   /** Its dark mode version. */
   dark?: PictureSource;
+  /** The page's own square picture (media.md §9.4), filling a list row's square frame, with its dark mode version. */
+  square?: PictureSource & { alt: string; dark?: PictureSource };
 }
 
 /** A ratio such as "21/9" as a number (width over height). */

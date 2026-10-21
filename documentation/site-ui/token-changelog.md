@@ -19,6 +19,10 @@ None.
 - `--c-questions-strength`: `12rem`
 - `--c-view-choices-still`: `6.5rem`
 
+**Changed in value** (1)
+
+- `--c-story-card-row-picture`: `11rem` → `8rem`
+
 ## 20 October 2026
 
 **Added** (25)

@@ -11,7 +11,11 @@
   "publishedAt": "2026-10-01",
   "updatedAt": "2026-10-02",
   "locale": "en",
-  "thumbnail": "articles/generative-explorations/pasted-picture-2026-10-02",
+  "thumbnail": "articles/generative-explorations/halftones-3x2",
+  "thumbnails": {
+    "wide": "articles/generative-explorations/halftones-wide",
+    "square": "articles/generative-explorations/pasted-picture-2026-10-02-1x1"
+  },
   "body": [
     {
       "type": "text",

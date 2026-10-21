@@ -26,7 +26,7 @@ import { openCrop } from './crop';
 import { initAi } from './ai';
 import { initReview, reviewMarks } from './aiReview';
 import type { AiDo } from './aiPrompt';
-import { PICTURE_SPECS } from '../../design/pictures';
+import { PICTURE_SPECS, thumbnailFor } from '../../design/pictures';
 import { plainText } from '../../content/markdown';
 import type { Article, Block } from '../../content/schema';
 
@@ -1131,12 +1131,13 @@ export function initEditor(root: HTMLElement, signal: AbortSignal) {
       });
     }
     if (d.editorCrop) {
-      // a field's picture, cropped for its use; the thumbnail left empty crops the lead picture into one
+      // a field's picture, cropped for its use; a thumbnail shape left empty crops the picture it falls back to into one
       const path = d.editorCrop;
       const own = ops.getPath(doc, path) as string | undefined;
-      const id = own ?? (path === 'thumbnail' ? doc.hero?.media : undefined);
+      const shape = path === 'thumbnail' ? 'thumbnail' : path === 'thumbnails.wide' ? 'wide' : path === 'thumbnails.square' ? 'square' : undefined;
+      const id = own ?? (shape ? thumbnailFor(doc, shape) : undefined);
       if (!id) return;
-      const use = path === 'hero.media' ? PICTURE_SPECS.lead : path === 'thumbnail' ? PICTURE_SPECS.thumbnail : undefined;
+      const use = path === 'hero.media' ? PICTURE_SPECS.lead : shape ? PICTURE_SPECS[shape] : undefined;
       return openCrop({
         id,
         use,
@@ -1156,6 +1157,11 @@ export function initEditor(root: HTMLElement, signal: AbortSignal) {
     if (d.editorClear === 'thumbnail') {
       const { thumbnail: _t, ...rest } = doc;
       return change(rest as Article, ALL);
+    }
+    if (d.editorClear === 'thumbnails.wide' || d.editorClear === 'thumbnails.square') {
+      const { thumbnails, ...rest } = doc;
+      const { [d.editorClear === 'thumbnails.wide' ? 'wide' : 'square']: _s, ...left } = thumbnails ?? {};
+      return change((Object.keys(left).length ? { ...rest, thumbnails: left } : rest) as Article, ALL);
     }
     if (d.editorClear === 'portrait') {
       const { portrait: _p, ...rest } = doc;

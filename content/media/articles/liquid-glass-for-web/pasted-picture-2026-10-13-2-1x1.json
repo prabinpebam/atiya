@@ -1,0 +1,20 @@
+{
+  "kind": "image",
+  "alt": "Liquid glass for web - slider",
+  "caption": "Liquid glass for web - slider",
+  "visibility": "public",
+  "file": "pasted-picture-2026-10-13-2-1x1.webp",
+  "crop": {
+    "from": "articles/liquid-glass-for-web/pasted-picture-2026-10-13-2",
+    "x": 499,
+    "y": 0,
+    "width": 1562,
+    "height": 1562
+  },
+  "facts": {
+    "width": 1562,
+    "height": 1562,
+    "bg": "rgb(232 236 241)",
+    "bytes": 125418
+  }
+}

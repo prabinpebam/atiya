@@ -1,0 +1,12 @@
+{
+  "kind": "image",
+  "file": "whole-planet-wide.webp",
+  "alt": "The little planet seen whole from above, the plaza and its compass rose in the middle, paths out to the buildings and a lighthouse on the edge, against a wide blue sky.",
+  "facts": {
+    "width": 2016,
+    "height": 864,
+    "bg": "rgb(147 196 244)",
+    "bytes": 153650
+  },
+  "visibility": "public"
+}

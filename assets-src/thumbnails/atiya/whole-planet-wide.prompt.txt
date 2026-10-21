@@ -1,0 +1,1 @@
+No generation: widened by carrying each row's edge colour of the sky outwards (the sky is a vertical gradient). Source: content/media/articles/atiya/whole-planet.webp, cropped 0,64,1440,896 to drop the interface.

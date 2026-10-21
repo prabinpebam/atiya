@@ -217,7 +217,7 @@
     "c.spotlight.rail-item": {"v":"12rem"},
     "c.story-card.query-feature": {"v":"49.5rem"},
     "c.story-card.query-row": {"v":"36.45rem"},
-    "c.story-card.row-picture": {"v":"11rem"},
+    "c.story-card.row-picture": {"v":"8rem"},
     "c.story-card.row-picture-compact": {"v":"6rem"},
     "c.switch.height": {"v":"1.75rem"},
     "c.switch.thumb": {"v":"1.25rem"},
@@ -459,6 +459,14 @@
           null,
           {
             "v": "12rem"
+          }
+        ],
+        "c.story-card.row-picture": [
+          {
+            "v": "11rem"
+          },
+          {
+            "v": "8rem"
           }
         ],
         "c.view-choices.still": [

@@ -31,7 +31,7 @@ export function listOf(names: string[]): string {
 }
 
 const FIELD: Record<string, string> = {
-  slug: 'address', hero: 'lead picture', thumbnailStyle: 'thumbnail style', navLabel: 'menu label', seo: 'search settings',
+  slug: 'address', hero: 'lead picture', thumbnailStyle: 'thumbnail style', thumbnails: 'thumbnail shapes', navLabel: 'menu label', seo: 'search settings',
   related: 'related pages', alt: 'alt text', focus: 'focus point', source: 'source link', socialImage: 'social picture',
 };
 const label = (field: string) => FIELD[field] ?? humanise(field);

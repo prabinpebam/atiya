@@ -6,7 +6,10 @@ One manifest per article (assets-src/illustrations/<folder>/illustrations.json) 
     python scripts/illustrate.py ink     <manifest> [--only a,b]   # transparent ink from the paper sources
     python scripts/illustrate.py preview <manifest> [--only a,b]   # ink over the site's pages, for review
     python scripts/illustrate.py publish <manifest> [--only a,b]   # alpha WebP pairs + sidecars in content/media
-    python scripts/illustrate.py place   <manifest>                # the hero and figures in the article's JSON
+    python scripts/illustrate.py place   <manifest>                # the hero, thumbnails and figures in the article's JSON
+
+An image's `use` is `hero`, `figure`, or a thumbnail shape (`thumbnail`, `square`, `wide`); a thumbnail's
+`basis` names the picture whose idea it redraws for its shape (usually the hero).
 
 The style (prompts, anchors, sizes, paper, extraction) lives in assets-src/illustrations/styles/<style>/style.json.
 Generation goes through the gpt-image-2-5 skill's CLI (GPT_IMAGE_CLI overrides its path); the key never
@@ -55,8 +58,16 @@ def refs(style):
 
 def light_prompt(img, m, style, with_cast_anchor):
     fmt = style['formats'][img.get('format', 'figure')]
-    cast_ref = ("The SECOND reference is this article's own approved picture: draw its recurring characters exactly "
-                "as they appear there (same faces, proportions, clothes and props), but never repeat its scene. ") if with_cast_anchor else ''
+    if with_cast_anchor and img.get('basis'):
+        # a thumbnail shape of another picture: the same idea, recomposed for its shape and size
+        cast_ref = ("The SECOND reference is this article's own lead picture: redraw ITS idea, characters and key props "
+                    "(same faces, proportions, clothes and props), recomposed and simplified for the format below; "
+                    "never a new scene. ")
+    elif with_cast_anchor:
+        cast_ref = ("The SECOND reference is this article's own approved picture: draw its recurring characters exactly "
+                    "as they appear there (same faces, proportions, clothes and props), but never repeat its scene. ")
+    else:
+        cast_ref = ''
     text = '\n\n'.join(style['prompts']['light'])
     return (text.replace('{castReference}', cast_ref).replace('{cast}', m.get('cast', 'original quirky creatures'))
             .replace('{subject}', img['subject']).replace('{format}', fmt))
@@ -77,7 +88,7 @@ def run(args: list[str], timeout: int) -> str:
 
 def gen_one(folder, img, m, style, mode, force):
     name, size, timeout = img['name'], size_of(img, style), style['model']['timeoutSeconds']
-    anchor = m.get('castAnchor')
+    anchor = img.get('basis') or m.get('castAnchor')
     out = []
     light = folder / f'{name}.light.png'
     if mode in ('light', 'both') and (force or not light.exists()):
@@ -206,6 +217,12 @@ def cmd_place(a):
         media = prefix + img['name']
         if img.get('use') == 'hero':
             art['hero'] = {'media': media, **pub['hero']}
+            continue
+        if img.get('use') == 'thumbnail':
+            art['thumbnail'] = media
+            continue
+        if img.get('use') in ('wide', 'square'):  # the other thumbnail shapes (media.md §9.4)
+            art.setdefault('thumbnails', {})[img['use']] = media
             continue
         hits = [i for i, b in enumerate(body) if block_text(b).startswith(img['after']) or
                 (b['type'] == 'heading' and ('## ' + block_text(b)).startswith(img['after']))]

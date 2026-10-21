@@ -27,7 +27,7 @@ import FormFoot from '../kit/FormFoot.astro';
 import IssueNote from '../kit/IssueNote.astro';
 import type { Article } from '../../content/schema';
 import { pictureNote } from '../model/crop';
-import { PICTURE_SPECS, specTip } from '../../design/pictures';
+import { PICTURE_SPECS, specTip, thumbnailFor } from '../../design/pictures';
 import { ACCESS, DISPLAYS, PAGE_KINDS, SECTION_HINT, onPlanet, statusChoices, type Choice, type Thumb } from '../model/inspectorFields';
 
 interface Props {
@@ -63,6 +63,13 @@ const thumbOf = (m?: string) => (m ? media[m] : undefined);
 // the lead picture, and what cards show (the thumbnail, or else the lead picture)
 const lead = thumbOf(article.hero?.media);
 const card = thumbOf(article.thumbnail ?? article.hero?.media);
+// the other shapes (media.md §9.4): each its own picture, else the one it falls back to
+const wide = thumbOf(thumbnailFor(article, 'wide'));
+const square = thumbOf(thumbnailFor(article, 'square'));
+const usesFor = (shape: 'wide' | 'square') => {
+  const id = thumbnailFor(article, shape);
+  return !id ? 'None' : id === article.hero?.media && id !== article.thumbnail ? 'Uses the lead picture' : 'Uses the thumbnail';
+};
 const face = thumbOf(article.portrait);
 const STATUS = statusChoices(article.status);
 const KINDS: Choice[] = article.kind === 'talk' ? [{ value: 'talk', label: 'Talk' }] : PAGE_KINDS;
@@ -79,6 +86,8 @@ const VISIBILITY: Choice[] = [{ value: 'public', label: 'Public' }, { value: 'pu
       <NavGroup label="Pictures">
         <NavRow pick="lead" detail={article.hero ? lead?.alt || 'Chosen' : 'None'}>Lead picture</NavRow>
         <NavRow pick="thumbnail" detail={article.thumbnail ? card?.alt || 'Chosen' : article.hero ? 'The lead picture' : 'None'}>Thumbnail</NavRow>
+        <NavRow pick="thumbnail-wide" detail={article.thumbnails?.wide ? wide?.alt || 'Chosen' : usesFor('wide')}>Wide thumbnail</NavRow>
+        <NavRow pick="thumbnail-square" detail={article.thumbnails?.square ? square?.alt || 'Chosen' : usesFor('square')}>Square thumbnail</NavRow>
         <NavRow pick="portrait" detail={article.portrait ? face?.alt || 'Chosen' : 'None'}>Portrait</NavRow>
       </NavGroup>
       <NavGroup label="More">
@@ -141,7 +150,7 @@ const VISIBILITY: Choice[] = [{ value: 'public', label: 'Public' }, { value: 'pu
     </Pane>
 
     <Pane name="thumbnail" title="Thumbnail" titleId="page-s-thumbnail">
-      <PictureField thumb={card} ratio="3/2" words={article.thumbnail ? card?.alt || 'No alt text' : article.hero ? 'The lead picture' : 'None'} note={`${specTip(PICTURE_SPECS.thumbnail)} Left empty, the lead picture is used.`} fit={card ? pictureNote(PICTURE_SPECS.thumbnail, card.width, card.height) : undefined} data-editor-picture="thumbnail">
+      <PictureField thumb={card} ratio="3/2" words={article.thumbnail ? card?.alt || 'No alt text' : article.hero ? 'The lead picture' : 'None'} note={`${specTip(PICTURE_SPECS.thumbnail)} Left empty, the lead picture is used. It also stands in for the wide and square shapes until they have their own.`} fit={card ? pictureNote(PICTURE_SPECS.thumbnail, card.width, card.height) : undefined} data-editor-picture="thumbnail">
         <Button variant="secondary" size="sm" icon="image" data-editor-pick="thumbnail" data-pick-mode="single">{article.thumbnail ? 'Replace' : 'Choose'}</Button>
         {card && <Button variant="secondary" size="sm" icon="crop" data-editor-crop="thumbnail">Crop</Button>}
         {article.thumbnail && <Button variant="quiet" size="sm" data-editor-clear="thumbnail">Remove</Button>}
@@ -150,6 +159,22 @@ const VISIBILITY: Choice[] = [{ value: 'public', label: 'Public' }, { value: 'pu
       {card && <Switch label="Colour behind the thumbnail" name="thumbnailStyle.background" id="page-thumbnail-background" checked={!!article.thumbnailStyle?.background} data-type="bool" />}
       {card && <Switch label="Thumbnail's rounded corners" name="thumbnailStyle.rounded" id="page-thumbnail-rounded" checked={article.thumbnailStyle?.rounded !== false} data-type="bool-default-true" />}
       {card && <Switch label="Thumbnail's drop shadow" name="thumbnailStyle.shadow" id="page-thumbnail-shadow" checked={!!article.thumbnailStyle?.shadow} data-type="bool" />}
+    </Pane>
+
+    <Pane name="thumbnail-wide" title="Wide thumbnail" titleId="page-s-thumbnail-wide">
+      <PictureField thumb={wide} ratio="21/9" words={article.thumbnails?.wide ? wide?.alt || 'No alt text' : usesFor('wide')} note={`${specTip(PICTURE_SPECS.wide)} Left empty, the lead picture is used, else the thumbnail.`} fit={wide ? pictureNote(PICTURE_SPECS.wide, wide.width, wide.height) : undefined} data-editor-picture="thumbnails.wide">
+        <Button variant="secondary" size="sm" icon="image" data-editor-pick="thumbnails.wide" data-pick-mode="single">{article.thumbnails?.wide ? 'Replace' : 'Choose'}</Button>
+        {wide && <Button variant="secondary" size="sm" icon="crop" data-editor-crop="thumbnails.wide">Crop</Button>}
+        {article.thumbnails?.wide && <Button variant="quiet" size="sm" data-editor-clear="thumbnails.wide">Remove</Button>}
+      </PictureField>
+    </Pane>
+
+    <Pane name="thumbnail-square" title="Square thumbnail" titleId="page-s-thumbnail-square">
+      <PictureField thumb={square} ratio="1/1" words={article.thumbnails?.square ? square?.alt || 'No alt text' : usesFor('square')} note={`${specTip(PICTURE_SPECS.square)} Left empty, the thumbnail is used, else the lead picture. Draw it bolder than the thumbnail: it's shown small.`} fit={square ? pictureNote(PICTURE_SPECS.square, square.width, square.height) : undefined} data-editor-picture="thumbnails.square">
+        <Button variant="secondary" size="sm" icon="image" data-editor-pick="thumbnails.square" data-pick-mode="single">{article.thumbnails?.square ? 'Replace' : 'Choose'}</Button>
+        {square && <Button variant="secondary" size="sm" icon="crop" data-editor-crop="thumbnails.square">Crop</Button>}
+        {article.thumbnails?.square && <Button variant="quiet" size="sm" data-editor-clear="thumbnails.square">Remove</Button>}
+      </PictureField>
     </Pane>
 
     <Pane name="portrait" title="Portrait" titleId="page-s-portrait">

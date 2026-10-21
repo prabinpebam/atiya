@@ -33,7 +33,7 @@ export const PICTURE_WIDTHS = {
   'cover-picture': 44,
   'cover-feature-picture': 34,
   'spotlight-picture': 44,
-  'story-card-row-picture': 11,
+  'story-card-row-picture': 8,
   'story-card-row-picture-compact': 6,
 } as const;
 

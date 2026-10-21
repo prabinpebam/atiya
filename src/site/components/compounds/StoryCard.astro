@@ -5,7 +5,8 @@
  * finger. Feature spreads the picture beside the words for the lead story; row sets the words first
  * with a small picture at the end, a line of a section's list; compact leaves the picture out. The
  * picture is in a 3:2 frame, shown whole by default (a thumbnail made 3:2 fills the frame); a page can ask
- * for it filled, at its actual size or tiled. Rounded corners hug the image itself, not the 3:2 layout
+ * for it filled, at its actual size or tiled. A row's frame is square, filled by the page's square picture
+ * (documentation/content/media.md §9.4). Rounded corners hug the image itself, not the layout
  * frame or the empty room around a fitted thumbnail.
  * @tier compound
  * @a11y One link per card, on the title; the rest of the card is clickable through it (a stretched link), so a screen reader hears the title, not the whole card.
@@ -29,7 +30,7 @@ interface Props {
   topic?: string;
   /** When, or how long it takes to read. */
   meta?: string;
-  /** The story’s picture in a 3:2 frame, shown whole unless display says otherwise (fill, actual size, tile), and its dark mode version if it has one. */
+  /** The story’s picture in a 3:2 frame, shown whole unless display says otherwise (fill, actual size, tile), and its dark mode version if it has one; a row frames it square, filled by its square version when it has one. */
   picture?: CardPicture;
   /** standard: picture above; feature: picture beside, larger type; row: words first, a small picture at the end (a list); compact: no picture. */
   variant?: 'standard' | 'feature' | 'row' | 'compact';
@@ -42,6 +43,9 @@ interface Props {
 }
 
 const { href, title, dek, topic, meta, picture, variant = picture ? 'standard' : 'compact', headingLevel = 2, shared, columns = 3 } = Astro.props;
+// a list's row frames its picture square: the page's own square picture fills it; without one, its card picture shows as it asks
+const row = variant === 'row';
+const shown = row && picture?.square ? { ...picture.square, display: 'fill' as const } : picture;
 // the width the picture's frame shows at (Image narrows it for a picture shown whole in it); past the wide
 // measure, the index stops growing, so a share of it
 const pictureSizes =
@@ -57,21 +61,21 @@ const pictureSizes =
 <article class="card" data-variant={variant} data-card>
   <div class="layout">
     {
-      picture && variant !== 'compact' && (
+      picture && shown && variant !== 'compact' && (
         <div class="picture" data-shadow={picture.shadow ? '' : undefined}>
           <div class="zoom">
             <Image
-              src={picture.src}
-              srcset={picture.srcset}
+              src={shown.src}
+              srcset={shown.srcset}
               sizes={pictureSizes}
-              alt={picture.alt}
-              width={picture.width}
-              height={picture.height}
-              ratio={PICTURE_SPECS.thumbnail.ratio}
-              display={picture.display ?? 'fit'}
+              alt={shown.alt}
+              width={shown.width}
+              height={shown.height}
+              ratio={row ? PICTURE_SPECS.square.ratio : PICTURE_SPECS.thumbnail.ratio}
+              display={'display' in shown && shown.display ? shown.display : 'fit'}
               rounded={picture.rounded !== false}
-              bg={picture.background && picture.bg ? { light: picture.bg, dark: picture.dark?.bg } : undefined}
-              dark={picture.dark}
+              bg={picture.background && shown.bg ? { light: shown.bg, dark: shown.dark?.bg } : undefined}
+              dark={shown.dark}
             />
           </div>
         </div>

@@ -10,18 +10,23 @@ import { pageMeasure } from './reading';
 import { rankRelated } from '../scripts/related';
 import type { Article, PictureDisplay } from './schema';
 import type { PictureSource } from '../design/pictures';
+import { thumbnailFor } from '../design/pictures';
 
 /** A picture's dark mode version, as the components take it. */
 const darkOf = (p: { dark?: { src: string; srcset: string; width: number; height: number; thumb: string; bg: string } }) => (p.dark ? { src: p.dark.src, srcset: p.dark.srcset, width: p.dark.width, height: p.dark.height, bg: p.dark.bg } : undefined);
 
-/** A page's picture on cards: its thumbnail, or else its lead picture, shown as the page asks (whole by default; documentation/content/media.md §9). */
+/** A page's picture on cards: its thumbnail, or else its lead picture, shown as the page asks (whole by default; documentation/content/media.md §9), with its own square for a list's rows when it has one (§9.4). */
 export async function cardPicture(a: Article) {
-  const id = a.thumbnail ?? a.hero?.media;
+  const id = thumbnailFor(a, 'thumbnail');
   if (!id) return undefined;
   const p = await picture(id, 'card');
   const dark = darkOf(p);
   const s = a.thumbnailStyle ?? {};
-  return { src: p.src, srcset: p.srcset, alt: p.alt, width: p.width, height: p.height, bg: p.bg, display: s.display ?? 'fit', background: !!s.background, rounded: s.rounded !== false, shadow: !!s.shadow, ...(dark ? { dark } : {}) };
+  const squareId = a.thumbnails?.square;
+  const sq = squareId ? await picture(squareId, 'card') : undefined;
+  const sqDark = sq && darkOf(sq);
+  const square = sq && { src: sq.src, srcset: sq.srcset, alt: sq.alt, width: sq.width, height: sq.height, bg: sq.bg, ...(sqDark ? { dark: sqDark } : {}) };
+  return { src: p.src, srcset: p.srcset, alt: p.alt, width: p.width, height: p.height, bg: p.bg, display: s.display ?? 'fit', background: !!s.background, rounded: s.rounded !== false, shadow: !!s.shadow, ...(dark ? { dark } : {}), ...(square ? { square } : {}) };
 }
 
 export interface Opening {

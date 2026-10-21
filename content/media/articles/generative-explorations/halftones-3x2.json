@@ -1,0 +1,13 @@
+{
+  "kind": "image",
+  "file": "halftones-3x2.webp",
+  "alt": "Stipple and halftone portraits in a grid of tiles, between abstract dot-gradient and line-screen studies.",
+  "credit": "Prabin Pebam's stipple studies, widened with GPT Image 2.5",
+  "facts": {
+    "width": 1536,
+    "height": 1024,
+    "bg": "rgb(94 94 94)",
+    "bytes": 753360
+  },
+  "visibility": "public"
+}

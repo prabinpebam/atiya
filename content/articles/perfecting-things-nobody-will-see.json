@@ -473,5 +473,9 @@
       "variant": "pull",
       "key": "dc8972"
     }
-  ]
+  ],
+  "thumbnail": "articles/perfecting-things-nobody-will-see/the-inside-thumbnail",
+  "thumbnails": {
+    "square": "articles/perfecting-things-nobody-will-see/the-inside-square"
+  }
 }

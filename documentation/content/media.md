@@ -242,8 +242,10 @@ A picture is never cropped blindly. By default it's shown in one of two ways (§
 |---|---|---|---|---|
 | Lead picture | `hero.media` | 21:9 | Across the top of its page, filling it, cropped around its focus point | 2400 × 1029 px |
 | Thumbnail | `thumbnail` (else the lead picture) | 3:2 | Whole on cards | 960 × 640 px |
+| Wide thumbnail | `thumbnails.wide` (else the lead picture, else the thumbnail) | 21:9 | Whole on the home views | 1440 × 617 px |
+| Square thumbnail | `thumbnails.square` (else the thumbnail as above) | 1:1 | Filling a list's rows | 480 × 480 px |
 
-**A page can have its own thumbnail** (`thumbnail`, a media ID): the picture on its cards. Left out, cards use the lead picture. So one wide lead picture can have a 3:2 thumbnail cut from it.
+**A page can have its own thumbnail** (`thumbnail`, a media ID): the picture on its cards. Left out, cards use the lead picture. So one wide lead picture can have a 3:2 thumbnail cut from it. It can also have one for each of the other two shapes the site frames it in ([§9.4](#94-thumbnail-shapes)).
 
 **Crops are copies.** Cropping (edit mode, [§6.1 of its spec](../editor/spec.md#61-the-crop)) never changes a picture:
 - cropping an original makes a new picture beside it, named after its shape (`mark-21x9`), with the original's details and a `crop` record of where it was cut;
@@ -300,6 +302,22 @@ A picture's size and its automatic background ([§9.1](#91-how-a-picture-is-show
 - **In the sidecar:** edit mode measures every master it saves (an upload, Replace, a dark version, a crop) into `facts`: `{ "width", "height", "bg": "rgb(r g b)", "bytes" }`, and a dark version's into `dark.facts`. It's optional: a sidecar without it is valid, and its facts are measured when the picture is first shown. `bytes` is the master's file size when it was measured: when the master's size isn't that any more (it was changed outside edit mode), the facts are ignored and measured afresh. The details form never changes them. `scripts/fill-picture-facts.mjs` fills them in for existing sidecars, once.
 - **On disk, in dev:** anything measured is kept in `node_modules/.cache/site-picture-facts.json`, by the master's path, size and time, and filled in the background at a dev server's first start (`warmPictureFacts` in `src/site/content/pictureFacts.ts`). A build doesn't use it.
 - **In memory:** each picture as the page shows it (its URLs at a slot's widths) is kept by its master's and poster's path, size and time and the slot, so drawing the same picture again costs nothing; replacing a master works it out again.
+
+### 9.4 Thumbnail shapes
+
+Resolution was already handled: every slot serves the picture at several widths (a card's at 240, 480 and 960 px) and the browser picks one for the screen. What a big picture can't do by scaling down is change its **shape**: a 21:9 drawing fitted into a 3:2 card is a thin strip, and a busy screenshot in a list's small row is unreadable. So a page's card picture comes in three shapes, the fewest that cover every template (20 October 2026):
+
+| Shape | Field | Ratio | Where it's framed | Shown |
+|---|---|---|---|---|
+| Default | `thumbnail` | 3:2 | Section cards (standard and feature), Keep exploring, the planet's lists | Whole |
+| Wide | `thumbnails.wide` | 21:9 | The home views (Bento, Cover, Spotlight), through `evidence.ts` | Whole |
+| Square | `thumbnails.square` | 1:1 | A section's list rows (StoryCard `row`) | Filling its square |
+
+- **One picture serves them all.** A shape left out uses the next picture that has a picture: the default is the thumbnail, else the lead picture; wide is its own, else the lead picture (already 21:9), else the thumbnail; square is its own, else the default. So a page with one picture shows it everywhere, as before, and adds a shape only where that picture doesn't work in it. `thumbnailFor(article, shape)` in `src/site/design/pictures.ts` is the one rule; `THUMBNAIL_SHAPES` holds each shape's fields in order.
+- **Templates were fitted to the shapes, not the other way round.** The list row's frame became square (`c.story-card.row-picture`, 8 rem), so one square serves every row; the home views' boxes take the wide shape; everything else already framed 3:2. No template has a shape of its own.
+- **When a shape needs one:** a picture with a plain or transparent edge needs none, since the shape's frame shows it whole on a colour taken from its edge (§9.1). A wide drawing needs a 3:2 and a square of its own; a busy screenshot needs a square crop of the part that reads small.
+- **How they're made:** a crop of the picture where the shape is inside it (a copy with its `crop` record, as above), a redrawing for an illustration (the ink sketches' `thumbnail` and `square` uses, recomposed from the lead picture by `scripts/illustrate.py`), or the picture widened into new margins by `scripts/outpaint-thumbnail.py`, which pastes the original pixels back exactly so nothing it shows is redrawn. Widen only an opaque picture whose edges hold loose texture: a plain gradient is carried outwards by its edge colours instead (no generation), a regular pattern (stripes) is cropped, since generated margins never line up with it, and a transparent picture needs nothing (above).
+- **Edit mode** gives each shape its row under Thumbnail in a page's settings (Wide thumbnail, Square thumbnail), with Choose, Crop to the shape and Remove, and says what it uses while it has none ([spec §6.1](../editor/spec.md#61-the-crop)).
 
 ## 10. Dark mode versions
 

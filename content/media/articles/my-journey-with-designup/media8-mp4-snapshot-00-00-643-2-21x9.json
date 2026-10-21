@@ -1,0 +1,20 @@
+{
+  "kind": "image",
+  "alt": "DesignUp 2019 fallback background",
+  "caption": "DesignUp 2019 fallback background",
+  "visibility": "public",
+  "file": "media8-mp4-snapshot-00-00-643-2-21x9.webp",
+  "crop": {
+    "from": "articles/my-journey-with-designup/media8-mp4-snapshot-00-00-643-2",
+    "x": 128,
+    "y": 0,
+    "width": 1792,
+    "height": 768
+  },
+  "facts": {
+    "width": 1792,
+    "height": 768,
+    "bg": "rgb(81 73 61)",
+    "bytes": 182038
+  }
+}

@@ -110,6 +110,22 @@
       "after": "Fast following works for features",
       "subject": "LEFT: a planner-like rival in a tie has built an exact, shiny replica of the playground roundabout, polished to a gleam, behind a velvet rope and a cut ribbon, with a magnifying glass and a photo of the original in hand. It stands completely still and nobody is on it. RIGHT, over a low fence: the original scruffy roundabout spins full of laughing riders pushed by tinkerers, and it has already grown new things the copy lacks: a little canopy, a second ring of seats, a bell and a flag. The keeper rides along on it, clipboard out. The copier looks from the photo to the original, baffled.",
       "alt": "A rival has built a gleaming, perfect copy of the playground roundabout that stands still and empty, while over the fence the original spins full of riders and has already grown a canopy and new seats."
+    },
+    {
+      "name": "the-two-gardens-thumbnail",
+      "use": "thumbnail",
+      "format": "thumbnail",
+      "basis": "the-two-gardens",
+      "subject": "The two allotment gardens split by the low picket fence. LEFT: the planner on his stepladder polishes the colossal prize watering can over a perfectly empty bed with one drooping sprout. RIGHT: the keeper, with his small dented watering can and clipboard, walks a clear loop of footprints round a small bed bursting with odd, wonderful plants. Only these two characters.",
+      "alt": "A planner polishes a giant prize watering can over an empty bed, while next door a keeper with a small dented can walks a worn loop round a bed bursting with plants."
+    },
+    {
+      "name": "the-two-gardens-square",
+      "use": "square",
+      "format": "square",
+      "basis": "the-two-gardens",
+      "subject": "The keeper, large and centred, walks a clear circular loop of footprints round a small bed bursting with odd, wonderful mismatched plants, carrying his small dented watering can and ticking his clipboard as a sprout opens beside him. Nothing else.",
+      "alt": "A keeper with a small dented watering can and a clipboard walks a worn loop of footprints round a bed bursting with plants."
     }
   ]
 }

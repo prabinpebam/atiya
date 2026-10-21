@@ -74,6 +74,22 @@
       "after": "The same action, producing the same immediate result",
       "subject": "Two workshops side by side, each finishing an identical cabinet. On the left, the robot glides along a spotless line of perfectly identical cabinets stretching back into the distance, each exactly the same, and the robot itself is unchanged, calm and gleaming. On the right, the cabinetmaker steps back from his finished cabinet; behind him a trail of his earlier cabinets stretches back into the distance, from a wobbly, lopsided first attempt to ever better ones, and along that trail stand earlier versions of the cabinetmaker himself, from a clumsy little apprentice with bandaged fingers to the confident craftsman at the front.",
       "alt": "Two workshops finish the same cabinet: a robot beside a line of identical cabinets, unchanged; a carpenter in front of a trail of ever-better cabinets and earlier, clumsier versions of himself."
+    },
+    {
+      "name": "the-inside-thumbnail",
+      "use": "thumbnail",
+      "format": "thumbnail",
+      "basis": "the-inside",
+      "subject": "The open wardrobe from the lead picture, seen straight from the front, doors swung wide, filling most of the frame. Inside, the tiny cabinetmaker on his stool sands the plain back panel by the light of a hanging lantern, tongue out in concentration, the small carved flower in the panel's top corner. Outside on the left, one customer peers in through a magnifying glass, starry-eyed. Nothing else.",
+      "alt": "A small carpenter inside an open wardrobe sands its plain back panel by lantern light, beside a tiny carved flower, while a customer peers in through a magnifying glass."
+    },
+    {
+      "name": "the-inside-square",
+      "use": "square",
+      "format": "square",
+      "basis": "the-inside",
+      "subject": "Close up: the tiny cabinetmaker inside the wardrobe, on his stool under the hanging lantern, sanding the plain back panel, tongue out in concentration, the small carved flower beside him in the panel's corner. The open wardrobe's edges and doors frame him. Nothing else.",
+      "alt": "A small carpenter inside a wardrobe sands its plain back panel by lantern light, beside a tiny carved flower."
     }
   ]
 }

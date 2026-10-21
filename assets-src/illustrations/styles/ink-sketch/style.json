@@ -16,7 +16,9 @@
     "hero": "2688x1152",
     "figure": "1536x1024",
     "strip": "3072x1024",
-    "comic": "3072x1024"
+    "comic": "3072x1024",
+    "thumbnail": "1536x1024",
+    "square": "1024x1024"
   },
   "model": {
     "quality": "high",
@@ -42,8 +44,10 @@
     "hero": "a wide 21:9 landscape lead picture, one coherent scene, no panels",
     "figure": "a 3:2 landscape, one coherent scene, no panels",
     "strip": "a long 3:1 landscape, one coherent scene read left to right, no panels",
-    "comic": "a comic strip of exactly THREE equal panels in ONE horizontal row, separated by loose hand-drawn ink panel borders with narrow white gutters; the same characters recognisable in every panel"
-  },
+    "comic": "a comic strip of exactly THREE equal panels in ONE horizontal row, separated by loose hand-drawn ink panel borders with narrow white gutters;     the same characters recognisable in every panel",
+        "thumbnail": "a 3:2 landscape THUMBNAIL that must read at 240 pixels wide: one bold, simple scene, the main characters large and close, only the props the idea needs, fewer and bolder strokes, less fine hatching, no panels",
+        "square": "a 1:1 square THUMBNAIL that must read at 128 pixels wide: ONE bold, simple moment, the hero large and centred filling most of the square, at most one other character and one key prop, few small details, bolder strokes and little fine hatching, no panels"
+      },
   "paper": {
     "light": "#FFFFFF",
     "dark": "#191714"

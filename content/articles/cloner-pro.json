@@ -12,6 +12,9 @@
   "updatedAt": "2026-10-13",
   "locale": "en",
   "thumbnail": "articles/cloner-pro/quarter-circle-patterns",
+  "thumbnails": {
+    "square": "articles/cloner-pro/quarter-circle-patterns-1x1"
+  },
   "body": [
     {
       "type": "text",
