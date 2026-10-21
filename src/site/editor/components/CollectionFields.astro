@@ -26,7 +26,7 @@ import Grip from '../kit/Grip.astro';
 import RichField from '../kit/RichField.astro';
 import ActionBar from '../../components/compounds/ActionBar.astro';
 import { COLLECTION_MAX, type Block } from '../../content/schema';
-import { HEADING_CHOICES, LAYOUT_CHOICES, TAKES_COLUMNS, TAKES_LABEL, TIMELINES, itemName } from '../model/collection';
+import { HEADING_CHOICES, LAYOUT_CHOICES, TAKES_COLUMNS, TAKES_LABEL, TAKES_PROMINENT, TIMELINES, itemName } from '../model/collection';
 import { itemKey } from '../model/inspector';
 
 import { DISPLAYS, SHAPES, WIDTHS, fieldId as id, type Thumb } from '../model/inspectorFields';
@@ -86,6 +86,18 @@ const full = b.items.length >= COLLECTION_MAX;
             {it.media && <Button variant="secondary" size="sm" icon="crop" data-editor-crop={`body.${i}.items.${n}.media`}>Crop</Button>}
             {it.media && <Button variant="quiet" size="sm" icon="delete" data-editor-unset={`body.${i}.items.${n}.media`}>Remove picture</Button>}
           </PictureField>
+          {!it.media && (
+            <TextField
+              label={`Item ${n + 1}: illustration (SVG)`}
+              name={`body.${i}.items.${n}.svg`}
+              id={id(i, `cv-${n}`)}
+              value={it.svg ?? ''}
+              multiline
+              rows={it.svg ? 6 : 2}
+              optional
+              hint={n === 0 ? 'Drawn in a picture’s place: an SVG coloured by role (data-ink, data-line), so it follows light and dark, and named by its title. It can move once as it comes into view (data-motion).' : undefined}
+            />
+          )}
           <TextField label={`Item ${n + 1}: when`} name={`body.${i}.items.${n}.when`} id={id(i, `cw-${n}`)} value={it.when ?? ''} optional hint={n === 0 ? (TIMELINES.has(b.layout) ? 'Its time, in words (2016, July 2019 to now), set by its mark.' : 'Its time, in words: shown over its heading, and by its mark in a timeline.') : undefined} />
           <TextField label={`Item ${n + 1}: heading`} name={`body.${i}.items.${n}.heading`} id={id(i, `ch-${n}`)} value={it.heading ?? ''} optional hint={n === 0 ? 'A word or a few (80 characters at most).' : undefined} />
           <TextField label={`Item ${n + 1}: subtext`} name={`body.${i}.items.${n}.subtext`} id={id(i, `cs-${n}`)} value={it.subtext ?? ''} optional hint={n === 0 ? 'A short line under the heading (a value, a date, a role).' : undefined} />
@@ -110,7 +122,7 @@ const full = b.items.length >= COLLECTION_MAX;
     <Select label="Layout" name={`body.${i}.layout`} id={id(i, 'layout')} value={b.layout} options={LAYOUT_CHOICES} hint="The same items, laid out another way: change it any time." data-refresh="" />
     {TAKES_COLUMNS.has(b.layout) && <Select label="Columns" name={`body.${i}.columns`} id={id(i, 'columns')} value={b.columns ? String(b.columns) : ''} data-type="number" options={COLUMNS} hint="On a wide screen; fewer on a tablet, one on a phone." />}
     {TAKES_LABEL.has(b.layout) && <TextField label="Label" name={`body.${i}.label`} id={id(i, 'label')} value={b.label ?? ''} optional hint={`Names the strip for assistive tech. Left empty, “${b.layout === 'carousel' ? 'Carousel' : 'Timeline'}”.`} />}
-    {b.layout === 'tiles' && <Switch label="Prominent tiles" name={`body.${i}.prominent`} id={id(i, 'prominent')} checked={!!b.prominent} data-type="bool" />}
+    {TAKES_PROMINENT.has(b.layout) && <Switch label="Prominent tiles" name={`body.${i}.prominent`} id={id(i, 'prominent')} checked={!!b.prominent} data-type="bool" />}
     <Select label="Headings" name={`body.${i}.headings`} id={id(i, 'headings')} value={b.headings ?? 'label'} options={HEADING_CHOICES} />
     <Select label="Width" name={`body.${i}.width`} id={id(i, 'width')} value={b.width === 'full' && !TAKES_LABEL.has(b.layout) ? 'wide' : (b.width ?? 'content')} options={TAKES_LABEL.has(b.layout) ? WIDTHS : WIDTHS.filter((w) => w.value !== 'full')} hint={TAKES_LABEL.has(b.layout) ? 'Full bleed spans the window, centred on the page.' : undefined} data-refresh="" />
     {TAKES_LABEL.has(b.layout) && b.width !== 'full' && <Switch label="Peek beside the column" name={`body.${i}.peek`} id={id(i, 'peek')} checked={!!b.peek} data-type="bool" />}

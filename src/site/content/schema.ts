@@ -6,6 +6,7 @@
  */
 import { z } from 'astro/zod';
 import { paragraphsOf, plainText } from './markdown';
+import { illustrationProblems } from '../scripts/illustration';
 import { SEARCH_DESCRIPTION_MAX, SUMMARY_MAX } from './limits';
 import { SHAPES, embedHost } from '../services/services';
 import { COLOR_ROLES, CORNERS, FONT_REF, NEUTRALS, SPACINGS, TYPE_RANGE, type Corners, type Neutral, type Spacing } from '../theme/model';
@@ -145,7 +146,7 @@ const itemWords = z
  * whatever the layout, so a collection can change layout at any time; a new layout is a new value here and
  * its styles in the Collection compound.
  */
-export const COLLECTION_LAYOUTS = ['rows', 'columns', 'tiles', 'masonry', 'carousel', 'timeline', 'timeline-scroll'] as const;
+export const COLLECTION_LAYOUTS = ['rows', 'columns', 'tiles', 'masonry', 'carousel', 'timeline', 'timeline-scroll', 'stats'] as const;
 export type CollectionLayout = (typeof COLLECTION_LAYOUTS)[number];
 export const COLLECTION_HEADINGS = ['label', 'title'] as const;
 export const COLLECTION_MAX = 24;
@@ -167,9 +168,10 @@ const tableHeading = z
 export const COLLECTION_WHEN_MAX = 40;
 
 /**
- * One item of a collection: when it was (for a timeline), a heading, a picture, a subtext (a short line
- * under the heading) and its words (paragraphs and lists of Markdown). Each is optional, and an item has at least
- * one of a heading, a picture, a subtext or its words.
+ * One item of a collection: when it was (for a timeline), a heading, a picture or an illustration, a subtext
+ * (a short line under the heading) and its words (paragraphs and lists of Markdown). Each is optional, and an
+ * item has at least one of a heading, a picture, an illustration, a subtext or its words. In the figures
+ * layout (`stats`) the heading is the figure itself ("130M+") and the subtext what it counts.
  */
 export const collectionItem = z
   .strictObject({
@@ -177,10 +179,20 @@ export const collectionItem = z
     when: z.string().trim().min(1).max(COLLECTION_WHEN_MAX).optional(),
     heading: z.string().min(1).max(80).optional(),
     media: mediaId.optional(),
+    /** An SVG drawn inline in the picture's place, its colours the site's roles, so it follows light and dark (scripts/illustration.ts). */
+    svg: z
+      .string()
+      .trim()
+      .min(1)
+      .superRefine((svg, ctx) => {
+        for (const message of illustrationProblems(svg)) ctx.addIssue({ code: 'custom', message });
+      })
+      .optional(),
     subtext: z.string().min(1).max(160).optional(),
     text: itemWords.optional(),
   })
-  .refine((i) => i.heading || i.media || i.subtext || i.text, 'an item needs at least one of a heading, a picture, a subtext or its words');
+  .refine((i) => i.heading || i.media || i.svg || i.subtext || i.text, 'an item needs at least one of a heading, a picture, an illustration, a subtext or its words')
+  .refine((i) => !(i.media && i.svg), { message: 'an item has a picture or an illustration, not both', path: ['svg'] });
 
 /** A block's stable name (documentation/editor/ai-editing.md §3): six lowercase letters and digits, unique in its article, so a proposal or a comment can follow the block as others move. Edit mode gives one; the site never renders it. */
 export const blockKey = z.string().regex(/^[a-z0-9]{6}$/).optional();
@@ -268,9 +280,9 @@ export const block = z.discriminatedUnion('type', [
     items: z.array(collectionItem).min(1).max(COLLECTION_MAX),
     /** How the items are laid out: any layout shows the same items. */
     layout: z.enum(COLLECTION_LAYOUTS),
-    /** Items to a row on a wide screen, for tiles and masonry; left out, one for a single item, else from how many there are. */
+    /** Items to a row on a wide screen, for tiles, figures and masonry; left out, one for a single item, else from how many there are. */
     columns: z.union([z.literal(1), z.literal(2), z.literal(3), z.literal(4)]).optional(),
-    /** Tiles only: each tile on the accent's soft surface with an accent edge, to stand out from the page. */
+    /** Tiles and figures only: each tile on the accent's soft surface with an accent edge, to stand out from the page. */
     prominent: z.boolean().optional(),
     /** How the items' headings read: small capitals over the words (labels, the default) or titles. */
     headings: z.enum(COLLECTION_HEADINGS).optional(),

@@ -1,7 +1,7 @@
 ---
 /**
- * A collection: items of the same shape (when it was, a heading, a picture, a subtext and a few words, each
- * optional), laid out one of seven ways. Any layout shows the same items, so a collection can change layout
+ * A collection: items of the same shape (when it was, a heading, a picture or an illustration, a subtext and a few words, each
+ * optional), laid out one of seven ways (the eighth, figures, is StatTiles). Any layout shows the same items, so a collection can change layout
  * at any time: rows (one under another, a picture beside its words), columns (side by side in a row between
  * two hairlines, wrapping when they don't fit: the scan layer before a story's first paragraph), tiles (an
  * even grid of cards, one to four to a row, prominent on the accent's soft surface if asked), masonry (cards in balanced columns, with shorter columns stretching their cards to end level), a carousel (cards in a strip that
@@ -10,10 +10,9 @@
  * scrolls sideways, with the carousel's buttons). An item's time sits by its mark in a timeline, and over
  * its heading in the other layouts. Headings read as small capitals over the words (labels) or as titles.
  * The pictures take every picture option: a frame shape, how each sits in it, the colour behind it,
- * rounded corners and a drop shadow. The strips (the carousel and the sideways timeline) can span the viewport's
- * width (full), centred inside the page's gutters, their items shrinking a little so the row fits; and with peek, a strip reaches out beside its column into
- * the room the page has there (up to its main region, or a box marked data-bleed-bounds; at most an item's width)
- * and fades to nothing across it, so what's next shows as a hint while the column stays the strip's own.
+ * rounded corners and a drop shadow; an illustration (an SVG in the site's colour roles) stands in a picture's place. The strips (the carousel and the sideways timeline) can span the viewport's
+ * width (full), centred inside the page's gutters, their items shrinking a little so the row fits; and with peek, a strip reaches out beside its column into the room the page has there
+ * (up to its main region, or a box marked data-bleed-bounds; at most an item's width) and fades to nothing across it, so what's next shows as a hint while the column stays the strip's own.
  * @tier compound
  * @a11y A list (role list, not a ul, so the article's list styles stay off it): each item is a list item, read in order whatever the layout (masonry's columns and the strips included); a timeline's item reads its time first.
  * @a11y The strips (the carousel and the sideways timeline) are named regions (the carousel with aria-roledescription carousel) whose list scrolls with the keyboard; their buttons are named and disabled at the ends, and with nothing to scroll the buttons are hidden and the list leaves the tab order.
@@ -23,6 +22,7 @@
  * @key Enter or Space: on Previous or Next, scrolls the strip by a view
  */
 import Image from '../fundamentals/Image.astro';
+import Illustration from '../fundamentals/Illustration.astro';
 import Heading from '../fundamentals/Heading.astro';
 import Prose from '../fundamentals/Prose.astro';
 import IconButton from '../fundamentals/IconButton.astro';
@@ -89,7 +89,7 @@ const heading = Astro.props.showHeading !== false ? Astro.props.heading?.trim() 
   <div class="items" role="list" tabindex={strip ? '0' : undefined} data-scrollbar={strip ? '' : undefined} data-collection-track={strip ? '' : undefined} data-masonry-track={layout === 'masonry' ? '' : undefined}>
     {
       items.map((item) => {
-        const picture = item.picture && (
+        const picture = item.illustration ? <span class="picture"><Illustration svg={item.illustration} /></span> : item.picture && (
           <span class="picture">
             <Image src={item.picture.src} srcset={item.picture.srcset} sizes={pictureSizes} alt={item.picture.alt} width={item.picture.width} height={item.picture.height} ratio={ratio} display={shown} focus={item.picture.focus} rounded={rounded} shadow={shadow} bg={background && item.picture.bg ? { light: item.picture.bg, dark: item.picture.dark?.bg } : undefined} dark={item.picture.dark} />
           </span>
@@ -111,7 +111,7 @@ const heading = Astro.props.showHeading !== false ? Astro.props.heading?.trim() 
           </div>
         );
         return timeline ? (
-          <div class="item" role="listitem" data-picture={item.picture ? '' : undefined}>
+          <div class="item" role="listitem" data-picture={picture ? '' : undefined}>
             <span class="mark" aria-hidden="true" />
             {item.when && <p class="when">{item.when}</p>}
             <div class="body">
@@ -120,7 +120,7 @@ const heading = Astro.props.showHeading !== false ? Astro.props.heading?.trim() 
             </div>
           </div>
         ) : (
-          <div class="item" role="listitem" data-picture={item.picture ? '' : undefined} data-masonry-item={layout === 'masonry' ? '' : undefined}>
+          <div class="item" role="listitem" data-picture={picture ? '' : undefined} data-masonry-item={layout === 'masonry' ? '' : undefined}>
             {picture}
             {words}
           </div>

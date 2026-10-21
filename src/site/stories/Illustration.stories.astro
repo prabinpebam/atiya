@@ -1,0 +1,59 @@
+---
+import Example from '../library/Example.astro';
+import Illustration from '../components/fundamentals/Illustration.astro';
+
+const bars = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 120">
+  <title>Two bars: this year's is twice last year's</title>
+  <path d="M16 104 H224" data-line="rule-strong" stroke-width="1.5"/>
+  <rect x="48" y="64" width="48" height="40" rx="6" data-ink="accent-soft" data-motion="grow"/>
+  <rect x="144" y="24" width="48" height="80" rx="6" data-ink="accent" data-motion="grow" data-step="1"/>
+  <text x="72" y="56" font-size="12" text-anchor="middle" data-ink="muted">1×</text>
+  <text x="168" y="16" font-size="12" font-weight="600" text-anchor="middle" data-ink="text" data-motion="fade" data-step="2">2×</text>
+</svg>`;
+
+const line = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 120">
+  <title>A line rising over a year</title>
+  <defs>
+    <linearGradient id="under" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" data-stop="positive-soft"/>
+      <stop offset="1" data-stop="positive-soft" stop-opacity="0"/>
+    </linearGradient>
+  </defs>
+  <path d="M16 96 C70 92 110 70 150 52 S206 26 224 20 V104 H16 Z" fill="url(#under)" data-motion="fade" data-step="2"/>
+  <path d="M16 96 C70 92 110 70 150 52 S206 26 224 20" fill="none" data-line="positive" stroke-width="3" stroke-linecap="round" pathLength="1" data-motion="draw"/>
+  <circle cx="224" cy="20" r="6" data-ink="positive" data-line="page" stroke-width="2" data-motion="pop" data-step="3"/>
+</svg>`;
+
+const roles = ['text', 'muted', 'accent', 'accent-soft', 'on-accent', 'highlight', 'positive', 'positive-soft', 'negative', 'negative-soft', 'rule', 'rule-strong', 'page', 'raised', 'sunk'];
+const palette = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 64">
+  <title>The fifteen colour roles</title>
+  ${roles.map((r, n) => `<rect x="${n * 20 + 2}" y="8" width="16" height="32" rx="4" data-ink="${r}" data-line="rule" stroke-width="1" data-motion="rise" data-step="${Math.min(8, Math.floor(n / 2))}"/>`).join('')}
+  <text x="150" y="58" font-size="10" text-anchor="middle" data-ink="muted">text … sunk</text>
+</svg>`;
+
+const growX = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 48">
+  <rect x="8" y="12" width="224" height="24" rx="12" data-ink="sunk"/>
+  <rect x="8" y="12" width="150" height="24" rx="12" data-ink="highlight" data-motion="grow-x"/>
+</svg>`;
+---
+
+<Example title="Bars" description="Each part names a colour role, never a colour: switch the theme and it follows. The bars grow from their foot, one beat apart.">
+  <Illustration svg={bars} />
+</Example>
+
+<Example title="Line" description="A line drawn along its length (pathLength 1), the area under it faded in, its end popped.">
+  <Illustration svg={line} />
+</Example>
+
+<Example title="Roles" description="Every colour role, rising in turn.">
+  <Illustration svg={palette} />
+</Example>
+
+<Example title="Decoration" description="With no title and no label it's decoration, hidden from assistive tech; animate false keeps it still.">
+  <Illustration svg={growX} animate={false} />
+  <Illustration svg={growX} />
+</Example>
+
+<Example title="Label" description="A label names it in place of its title.">
+  <Illustration svg={bars} label="Last year against this year: twice as many" />
+</Example>

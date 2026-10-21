@@ -11,6 +11,7 @@ import Gallery from '../components/compounds/Gallery.astro';
 import Carousel from '../components/compounds/Carousel.astro';
 import VideoEmbed from '../components/compounds/VideoEmbed.astro';
 import Collection from '../components/compounds/Collection.astro';
+import StatTiles from '../components/compounds/StatTiles.astro';
 import Table from '../components/compounds/Table.astro';
 import Quote from '../components/fundamentals/Quote.astro';
 import Divider from '../components/fundamentals/Divider.astro';
@@ -204,8 +205,10 @@ const linesOf = (text: string) => text.split('\n').map((l, k) => (k ? `\n${l}` :
           subtext: it.subtext,
           html: it.text ? renderMarkdown(it.text, { resolveRef, annotate: editable }) : undefined,
           picture: p && { src: p.src, srcset: p.srcset, alt: p.alt, width: p.width, height: p.height, focus: p.focus, bg: p.bg, dark: p.dark },
+          illustration: it.svg,
         };
       });
+      if (b.layout === 'stats') return <StatTiles items={items} heading={b.heading} showHeading={b.showHeading} columns={b.columns} width={b.width} prominent={!!b.prominent} ratio={b.ratio} display={b.display} background={!!b.background} rounded={b.rounded !== false} shadow={!!b.shadow} />;
       return <Collection items={items} heading={b.heading} showHeading={b.showHeading} layout={b.layout} columns={b.columns} headings={b.headings} label={b.label} width={b.width} peek={!!b.peek} prominent={!!b.prominent} ratio={b.ratio} display={b.display} background={!!b.background} rounded={b.rounded !== false} shadow={!!b.shadow} />;
     }
     if ('id' in v) {

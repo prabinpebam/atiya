@@ -1,0 +1,180 @@
+---
+/**
+ * Figures: a collection's items as tiles that each lead with a number (the collection's `stats` layout).
+ * Every tile is the same few parts, each optional: an illustration or a picture over it, when it was (a
+ * small label), the figure itself (the item's heading, set large in the display face with lined-up digits),
+ * what it counts (the subtext) and a few words (compact prose). The tiles share their place, one to four to
+ * a row as asked, and fall to fewer as the place narrows (never thinner than half a narrow measure), so
+ * there's no sideways scroll on a phone. Prominent tiles sit on the accent's soft surface with an accent
+ * edge. A figure is the author's words, kept exactly as written: no number is formatted or counted here.
+ * @tier compound
+ * @a11y A list (role list): each tile is a list item, read in order; its illustration is named by its title (or hidden as decoration), then its time, figure, what it counts and words.
+ * @a11y A figure is text, not a picture of one, so it zooms, reflows and can be selected; the collection's heading is a level-three heading.
+ * @key None: the tiles hold no controls (links in their words are ordinary links)
+ */
+import Image from '../fundamentals/Image.astro';
+import Heading from '../fundamentals/Heading.astro';
+import Prose from '../fundamentals/Prose.astro';
+import Illustration from '../fundamentals/Illustration.astro';
+import { collectionView, itemBody, type CollectionItem } from '../../scripts/collection';
+
+interface Props {
+  /** Optional plain-text header for the whole set, rendered as a level-three heading. */
+  heading?: string;
+  /** Show the header when its words are set; false hides it without discarding them. */
+  showHeading?: boolean;
+  /** The figures, in reading order: each item's heading is its figure ("130M+"), its subtext what it counts. */
+  items: CollectionItem[];
+  /** Tiles to a row on a wide screen (fewer as the place narrows). Left out: one for one, three for three, six or more than four, otherwise two. */
+  columns?: 1 | 2 | 3 | 4;
+  /** Each tile on the accent's soft surface with an accent edge, to stand out from the page. */
+  prominent?: boolean;
+  /** Where the article layout places it: in the column (the default), a little wider, or wide; full shows as wide (shown in ArticleLayout). */
+  width?: 'content' | 'popout' | 'wide' | 'full';
+  /** The pictures' frame shape. Left out, each its own (the shapes are Image’s: shown in Image). */
+  ratio?: '1/1' | '4/3' | '3/2' | '16/9' | '21/9';
+  /** How each picture is shown in its frame. Left out, fill in a shape, fit in its own (each shown in Image). */
+  display?: 'fill' | 'fit' | 'actual' | 'tile';
+  /** Puts each picture's own edge colour behind it. */
+  background?: boolean;
+  /** Rounded corners on the pictures; false squares them. */
+  rounded?: boolean;
+  /** A drop shadow under each picture, following its shape. */
+  shadow?: boolean;
+}
+
+const { items, ratio, background = false, rounded = true, shadow = false } = Astro.props;
+const { columns, prominent, shown, width, pictureSizes } = collectionView({ ...Astro.props, count: items.length, layout: 'stats' });
+const heading = Astro.props.showHeading !== false ? Astro.props.heading?.trim() : undefined;
+---
+
+<div class="stat-tiles" data-columns={String(columns)} data-breakout={width} data-prominent={prominent ? '' : undefined} style={`--columns: ${columns}`}>
+  {heading && <header class="stat-tiles-header"><Heading level={3}>{heading}</Heading></header>}
+  <div class="items" role="list">
+    {
+      items.map((item) => {
+        const body = itemBody(item.html);
+        return (
+          <div class="item" role="listitem">
+            {item.illustration ? (
+              <span class="picture drawing">
+                <Illustration svg={item.illustration} />
+              </span>
+            ) : (
+              item.picture && (
+                <span class="picture">
+                  <Image src={item.picture.src} srcset={item.picture.srcset} sizes={pictureSizes} alt={item.picture.alt} width={item.picture.width} height={item.picture.height} ratio={ratio} display={shown} focus={item.picture.focus} rounded={rounded} shadow={shadow} bg={background && item.picture.bg ? { light: item.picture.bg, dark: item.picture.dark?.bg } : undefined} dark={item.picture.dark} />
+                </span>
+              )
+            )}
+            {item.when && <p class="when">{item.when}</p>}
+            {item.heading && <p class="figure">{item.heading}</p>}
+            {item.subtext && <p class="what">{item.subtext}</p>}
+            {body && (
+              <div class="texts">
+                <Prose size="compact">
+                  <Fragment set:html={body} />
+                </Prose>
+              </div>
+            )}
+          </div>
+        );
+      })
+    }
+  </div>
+</div>
+
+<style>
+  .stat-tiles-header {
+    margin-block-end: var(--space-6);
+  }
+
+  /* --columns to a row at most, each never thinner than half a narrow measure (so fewer as the place narrows);
+     the rows' spacing is the tiles' own margin, taken back after the last row */
+  .items {
+    --stat-tiles-min: min(100%, calc(var(--size-measure-narrow) / 2));
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(max(var(--stat-tiles-min), calc((100% - (var(--columns) - 1) * var(--space-4)) / var(--columns))), 1fr));
+    column-gap: var(--space-4);
+    margin-block-end: calc(var(--space-4) * -1);
+  }
+
+  /* each tile spans the row's five parts (picture, time, figure, what it counts, words) as a subgrid, so
+     every tile's figure sits level with its neighbours' whatever they carry above it */
+  .item {
+    display: grid;
+    grid-row: span 5;
+    grid-template-rows: subgrid;
+    row-gap: 0;
+    min-width: 0;
+    margin-block-end: var(--space-4);
+    border: var(--border-hairline) solid var(--color-rule);
+    border-radius: var(--radius-lg);
+    padding: var(--space-5) var(--space-6) var(--space-6);
+    background: var(--color-bg-raised);
+  }
+
+  .picture {
+    display: block;
+    grid-row: 1;
+    min-width: 0;
+    margin-block-end: var(--space-4);
+  }
+
+  /* a drawing no larger than in a tile four to a row, so it never outweighs its figure */
+  .drawing {
+    max-inline-size: calc(var(--size-measure-narrow) / 2);
+  }
+
+  .when {
+    grid-row: 2;
+    margin-block-end: var(--space-1);
+    color: var(--color-text-muted);
+    font: var(--type-label);
+    letter-spacing: var(--tracking-label);
+    text-transform: uppercase;
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* the figure: the display face, large and tight, its digits lined up; a long one wraps rather than overflowing */
+  .figure {
+    grid-row: 3;
+    color: var(--color-text);
+    font-family: var(--font-display);
+    font-size: var(--text-h2);
+    font-weight: var(--weight-display);
+    line-height: var(--leading-tight);
+    letter-spacing: var(--tracking-display);
+    font-variant-numeric: lining-nums tabular-nums;
+    overflow-wrap: anywhere;
+  }
+
+  [data-columns='1'] .figure,
+  [data-columns='2'] .figure {
+    font-size: var(--text-h1);
+  }
+
+  .what {
+    grid-row: 4;
+    margin-block-start: var(--space-1);
+    color: var(--color-text);
+    font: var(--type-control);
+  }
+
+  .texts {
+    grid-row: 5;
+    margin-block-start: var(--space-2);
+    color: var(--color-text-muted);
+  }
+
+  /* prominent: the accent's soft tint (never inverted), an accent edge down the start */
+  [data-prominent] .item {
+    border-color: transparent;
+    border-inline-start: var(--border-quote) solid var(--color-accent);
+    background: var(--color-accent-soft);
+  }
+
+  [data-prominent] .when {
+    color: var(--color-on-accent-soft);
+  }
+</style>

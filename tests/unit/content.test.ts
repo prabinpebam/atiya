@@ -479,8 +479,18 @@ describe('the collection block (items of one shape, in any layout)', () => {
     expect(ok(of([{ heading: 'a' }], { prominent: 'yes' }))).toBe(false);
   });
 
-  it('lays them out any of seven ways, with the options every picture has', () => {
-    for (const layout of ['rows', 'columns', 'tiles', 'masonry', 'carousel', 'timeline', 'timeline-scroll']) expect(ok(of([{ heading: 'a' }], { layout })), layout).toBe(true);
+  it('an item can be drawn by an illustration in its colours’ roles, instead of a picture', () => {
+    const svg = '<svg viewBox="0 0 200 100"><title>Rising</title><path d="M0 90 L200 10" data-line="accent" pathLength="1" data-motion="draw"/></svg>';
+    expect(ok(of([{ heading: '+20 pts', subtext: 'Share completion', svg }], { layout: 'stats' }))).toBe(true);
+    expect(ok(of([{ svg }]))).toBe(true);
+    expect(ok(of([{ svg, media: 'articles/a/cover' }]))).toBe(false);
+    expect(ok(of([{ heading: 'a', svg: '<svg viewBox="0 0 1 1"><script>alert(1)</script></svg>' }]))).toBe(false);
+    expect(ok(of([{ heading: 'a', svg: '<svg viewBox="0 0 1 1"><rect fill="#f00" width="1" height="1"/></svg>' }]))).toBe(false);
+    expect(ok(of([{ heading: 'a', svg: '<img src="x">' }]))).toBe(false);
+  });
+
+  it('lays them out any of eight ways, with the options every picture has', () => {
+    for (const layout of ['rows', 'columns', 'tiles', 'masonry', 'carousel', 'timeline', 'timeline-scroll', 'stats']) expect(ok(of([{ heading: 'a' }], { layout })), layout).toBe(true);
     expect(ok(of([{ heading: 'a' }], { layout: 'grid' }))).toBe(false);
     expect(ok({ type: 'collection', items: [{ heading: 'a' }] })).toBe(false);
     expect(ok(of([{ heading: 'a' }], { columns: 4, headings: 'title', label: 'Places', width: 'wide', ratio: '3/2', display: 'tile', background: true, rounded: false, shadow: true }))).toBe(true);

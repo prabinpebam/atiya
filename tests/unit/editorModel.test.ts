@@ -16,7 +16,7 @@ import { SaveQueue, type Outcome } from '../../src/site/editor/model/queue';
 import { parseInline, parseMarkdown, runs } from '../../src/site/content/markdown';
 import type { Article, Block, PlanetStructure, SiteStructure } from '../../src/site/content/schema';
 import { block, COLLECTION_HEADINGS, COLLECTION_LAYOUTS } from '../../src/site/content/schema';
-import { HEADING_CHOICES, LAYOUT_CHOICES, TAKES_COLUMNS, TAKES_LABEL, TIMELINES, startWidth } from '../../src/site/editor/model/collection';
+import { HEADING_CHOICES, LAYOUT_CHOICES, TAKES_COLUMNS, TAKES_LABEL, TAKES_PROMINENT, TIMELINES, startWidth } from '../../src/site/editor/model/collection';
 
 // ---------- document operations ----------
 const t = (markdown: string): Block => ({ type: 'text', markdown });
@@ -246,11 +246,12 @@ describe('turning text into another kind, any time', () => {
   it("offers every layout and heading style the contract has, in its order, and columns only where they're used", () => {
     expect(LAYOUT_CHOICES.map((c) => c.value)).toEqual([...COLLECTION_LAYOUTS]);
     expect(HEADING_CHOICES.map((c) => c.value)).toEqual([...COLLECTION_HEADINGS]);
-    expect([...TAKES_COLUMNS].sort()).toEqual(['masonry', 'tiles']);
+    expect([...TAKES_COLUMNS].sort()).toEqual(['masonry', 'stats', 'tiles']);
+    expect([...TAKES_PROMINENT].sort()).toEqual(['stats', 'tiles']);
     // the strips take a label, the timelines set each item by its time, and a new strip or grid starts a little wider
     expect([...TAKES_LABEL].sort()).toEqual(['carousel', 'timeline-scroll']);
     expect([...TIMELINES].sort()).toEqual(['timeline', 'timeline-scroll']);
-    expect(COLLECTION_LAYOUTS.filter((l) => startWidth(l) === 'popout')).toEqual(['tiles', 'masonry', 'carousel', 'timeline-scroll']);
+    expect(COLLECTION_LAYOUTS.filter((l) => startWidth(l) === 'popout')).toEqual(['tiles', 'masonry', 'carousel', 'timeline-scroll', 'stats']);
   });
 
   it('reads the keys by their place: Ctrl or Cmd + Alt + 0, 2, 3, 4; Ctrl or Cmd + Shift + 7, 8, 9', () => {

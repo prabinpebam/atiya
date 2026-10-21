@@ -1,0 +1,51 @@
+---
+import Example from '../library/Example.astro';
+import StatTiles from '../components/compounds/StatTiles.astro';
+
+const rising = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 72">
+  <title>A line rising to a high point</title>
+  <path d="M8 62 H192" data-line="rule" stroke-width="1"/>
+  <path d="M8 58 C60 56 90 40 120 30 S170 12 188 10" fill="none" data-line="accent" stroke-width="3" stroke-linecap="round" pathLength="1" data-motion="draw"/>
+  <circle cx="188" cy="10" r="5" data-ink="accent" data-motion="pop" data-step="3"/>
+</svg>`;
+
+const doubled = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 72">
+  <title>Two bars: the second twice the first</title>
+  <path d="M8 66 H192" data-line="rule" stroke-width="1"/>
+  <rect x="48" y="38" width="40" height="28" rx="5" data-ink="muted" data-motion="grow"/>
+  <rect x="112" y="10" width="40" height="56" rx="5" data-ink="positive" data-motion="grow" data-step="1"/>
+</svg>`;
+
+const people = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 72">
+  <title>A crowd of small figures</title>
+  <g data-ink="highlight">
+    <circle cx="40" cy="26" r="9" data-motion="pop"/><circle cx="80" cy="26" r="9" data-motion="pop" data-step="1"/><circle cx="120" cy="26" r="9" data-motion="pop" data-step="2"/><circle cx="160" cy="26" r="9" data-motion="pop" data-step="3"/>
+  </g>
+  <g data-ink="muted">
+    <rect x="28" y="40" width="24" height="24" rx="10" data-motion="rise"/><rect x="68" y="40" width="24" height="24" rx="10" data-motion="rise" data-step="1"/><rect x="108" y="40" width="24" height="24" rx="10" data-motion="rise" data-step="2"/><rect x="148" y="40" width="24" height="24" rx="10" data-motion="rise" data-step="3"/>
+  </g>
+</svg>`;
+
+const figures = [
+  { when: '2025', heading: '12k', subtext: 'Readers in the first month', illustration: people },
+  { heading: '+18 pts', subtext: 'Completion, year on year', illustration: rising },
+  { heading: '2×', subtext: 'Orders against last spring', illustration: doubled, html: '<p>Measured over the same eight weeks.</p>' },
+  { heading: '4.6', subtext: 'Average rating, out of five' },
+];
+---
+
+<Example title="Four to a row" layout="block" description="Each item's heading is the figure, its subtext what it counts; an illustration (an SVG in the site's colour roles) can sit over it. Fewer to a row as the place narrows.">
+  <StatTiles heading="A year in numbers" items={figures} columns={4} width="wide" />
+</Example>
+
+<Example title="Three to a row, prominent" layout="block" description="On the accent's soft surface, with an accent edge.">
+  <StatTiles items={figures.slice(0, 3)} columns={3} prominent />
+</Example>
+
+<Example title="Two to a row" layout="block" description="With one or two to a row, the figures are set larger.">
+  <StatTiles items={figures.slice(1, 3)} columns={2} />
+</Example>
+
+<Example title="One" layout="block" description="A single figure, with only words.">
+  <StatTiles items={[{ heading: '96%', subtext: 'Tasks finished without help', html: '<p>Across all five sessions of the study.</p>' }]} columns={1} />
+</Example>

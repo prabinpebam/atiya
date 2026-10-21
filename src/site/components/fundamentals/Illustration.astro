@@ -1,0 +1,253 @@
+---
+/**
+ * An illustration: an SVG written for the site and drawn inline, so it scales to its place and takes the
+ * page's colours in light and dark. Its shapes never hold a colour: each names a role (`data-ink` for a
+ * fill, `data-line` for a stroke, `data-stop` for a gradient's stop: text, muted, accent, accent-soft,
+ * on-accent, highlight, positive, positive-soft, negative, negative-soft, rule, rule-strong, page, raised,
+ * sunk), and a part may arrive when it first comes into view (`data-motion`: draw, grow, grow-x, rise, pop,
+ * fade; `data-step` for its turn, 0 to 8). Its words are the site's interface font. Without JavaScript, or
+ * when the reader asks for less motion, it's simply there. The SVG must pass the content contract's check
+ * (scripts/illustration.ts), which allows only shapes, words, groups, gradients, clips and masks.
+ * @tier fundamental
+ * @a11y Named by its label, else its own <title> (role="img"); with neither, it's decoration and hidden.
+ * @a11y The drawing itself is hidden from assistive tech: its words are read only through the name.
+ * @a11y Its motion runs once, never under prefers-reduced-motion, and nothing waits for it.
+ * @key None: it's a picture, not a control
+ */
+import { stableId } from '../../design/stableId';
+import { prepareIllustration } from '../../scripts/illustration';
+
+interface Props {
+  /** The SVG, checked by the content contract (scripts/illustration.ts). */
+  svg: string;
+  /** What it shows, for assistive tech: left out, its <title>; empty, decoration. */
+  label?: string;
+  /** Its parts arrive when it first comes into view (never under reduced motion). On by default. */
+  animate?: boolean;
+  [data: `data-${string}`]: string | undefined;
+}
+
+const { svg, label, animate = true, ...rest } = Astro.props;
+const drawing = prepareIllustration(svg, `ill-${stableId(Astro, 'Illustration')}`);
+const name = label ?? drawing.label;
+---
+
+<span
+  class="illustration"
+  role={name ? 'img' : undefined}
+  aria-label={name || undefined}
+  aria-hidden={name ? undefined : 'true'}
+  data-illustration
+  data-moves={animate && drawing.moves ? '' : undefined}
+  {...rest}
+  set:html={drawing.markup}
+/>
+
+<style>
+  .illustration {
+    display: block;
+    color: var(--color-text);
+  }
+
+  .illustration :global(svg) {
+    display: block;
+    inline-size: 100%;
+    block-size: auto;
+    overflow: visible;
+  }
+
+  .illustration :global(text) {
+    font-family: var(--font-ui);
+    font-variant-numeric: lining-nums tabular-nums;
+  }
+
+  /* the colour roles, each a semantic colour, so light and dark follow the page */
+  .illustration :global([data-ink='text']) { fill: var(--color-text); }
+  .illustration :global([data-ink='muted']) { fill: var(--color-text-muted); }
+  .illustration :global([data-ink='accent']) { fill: var(--color-accent); }
+  .illustration :global([data-ink='accent-soft']) { fill: var(--color-accent-soft); }
+  .illustration :global([data-ink='on-accent']) { fill: var(--color-on-accent); }
+  .illustration :global([data-ink='highlight']) { fill: var(--color-highlight); }
+  .illustration :global([data-ink='positive']) { fill: var(--color-positive); }
+  .illustration :global([data-ink='positive-soft']) { fill: var(--color-positive-soft); }
+  .illustration :global([data-ink='negative']) { fill: var(--color-negative); }
+  .illustration :global([data-ink='negative-soft']) { fill: var(--color-negative-soft); }
+  .illustration :global([data-ink='rule']) { fill: var(--color-rule); }
+  .illustration :global([data-ink='rule-strong']) { fill: var(--color-rule-strong); }
+  .illustration :global([data-ink='page']) { fill: var(--color-bg); }
+  .illustration :global([data-ink='raised']) { fill: var(--color-bg-raised); }
+  .illustration :global([data-ink='sunk']) { fill: var(--color-bg-sunk); }
+
+  .illustration :global([data-line='text']) { stroke: var(--color-text); }
+  .illustration :global([data-line='muted']) { stroke: var(--color-text-muted); }
+  .illustration :global([data-line='accent']) { stroke: var(--color-accent); }
+  .illustration :global([data-line='accent-soft']) { stroke: var(--color-accent-soft); }
+  .illustration :global([data-line='on-accent']) { stroke: var(--color-on-accent); }
+  .illustration :global([data-line='highlight']) { stroke: var(--color-highlight); }
+  .illustration :global([data-line='positive']) { stroke: var(--color-positive); }
+  .illustration :global([data-line='positive-soft']) { stroke: var(--color-positive-soft); }
+  .illustration :global([data-line='negative']) { stroke: var(--color-negative); }
+  .illustration :global([data-line='negative-soft']) { stroke: var(--color-negative-soft); }
+  .illustration :global([data-line='rule']) { stroke: var(--color-rule); }
+  .illustration :global([data-line='rule-strong']) { stroke: var(--color-rule-strong); }
+  .illustration :global([data-line='page']) { stroke: var(--color-bg); }
+  .illustration :global([data-line='raised']) { stroke: var(--color-bg-raised); }
+  .illustration :global([data-line='sunk']) { stroke: var(--color-bg-sunk); }
+
+  .illustration :global([data-stop='text']) { stop-color: var(--color-text); }
+  .illustration :global([data-stop='muted']) { stop-color: var(--color-text-muted); }
+  .illustration :global([data-stop='accent']) { stop-color: var(--color-accent); }
+  .illustration :global([data-stop='accent-soft']) { stop-color: var(--color-accent-soft); }
+  .illustration :global([data-stop='on-accent']) { stop-color: var(--color-on-accent); }
+  .illustration :global([data-stop='highlight']) { stop-color: var(--color-highlight); }
+  .illustration :global([data-stop='positive']) { stop-color: var(--color-positive); }
+  .illustration :global([data-stop='positive-soft']) { stop-color: var(--color-positive-soft); }
+  .illustration :global([data-stop='negative']) { stop-color: var(--color-negative); }
+  .illustration :global([data-stop='negative-soft']) { stop-color: var(--color-negative-soft); }
+  .illustration :global([data-stop='rule']) { stop-color: var(--color-rule); }
+  .illustration :global([data-stop='rule-strong']) { stop-color: var(--color-rule-strong); }
+  .illustration :global([data-stop='page']) { stop-color: var(--color-bg); }
+  .illustration :global([data-stop='raised']) { stop-color: var(--color-bg-raised); }
+  .illustration :global([data-stop='sunk']) { stop-color: var(--color-bg-sunk); }
+
+  /* each turn waits a short beat after the one before (a group's parts share its turn) */
+  .illustration :global([data-step='1']) { --illustration-step: 1; }
+  .illustration :global([data-step='2']) { --illustration-step: 2; }
+  .illustration :global([data-step='3']) { --illustration-step: 3; }
+  .illustration :global([data-step='4']) { --illustration-step: 4; }
+  .illustration :global([data-step='5']) { --illustration-step: 5; }
+  .illustration :global([data-step='6']) { --illustration-step: 6; }
+  .illustration :global([data-step='7']) { --illustration-step: 7; }
+  .illustration :global([data-step='8']) { --illustration-step: 8; }
+
+  /* armed by the script (so without it the drawing is simply there), held at its start until it's in view */
+  @media (prefers-reduced-motion: no-preference) {
+    .illustration[data-armed] :global([data-motion]) {
+      transform-box: fill-box;
+      transform-origin: 50% 50%;
+      animation-duration: var(--duration-slow);
+      animation-timing-function: var(--ease-enter);
+      animation-delay: calc(var(--duration-fast) * var(--illustration-step, 0));
+      animation-fill-mode: both;
+      animation-play-state: paused;
+    }
+
+    .illustration[data-armed][data-shown] :global([data-motion]) {
+      animation-play-state: running;
+    }
+
+    .illustration[data-armed] :global([data-motion='draw']) {
+      animation-name: illustration-draw;
+      animation-duration: var(--duration-slower);
+    }
+
+    .illustration[data-armed] :global([data-motion='grow']) {
+      transform-origin: 50% 100%;
+      animation-name: illustration-grow;
+    }
+
+    .illustration[data-armed] :global([data-motion='grow-x']) {
+      transform-origin: 0% 50%;
+      animation-name: illustration-grow-x;
+    }
+
+    .illustration[data-armed] :global([data-motion='rise']) {
+      animation-name: illustration-rise;
+    }
+
+    .illustration[data-armed] :global([data-motion='pop']) {
+      animation-name: illustration-pop;
+      animation-timing-function: var(--ease-spring);
+    }
+
+    .illustration[data-armed] :global([data-motion='fade']) {
+      animation-name: illustration-fade;
+    }
+  }
+
+  @keyframes illustration-draw {
+    from {
+      stroke-dasharray: 1;
+      stroke-dashoffset: 1;
+    }
+
+    to {
+      stroke-dasharray: 1;
+      stroke-dashoffset: 0;
+    }
+  }
+
+  @keyframes illustration-grow {
+    from {
+      transform: scaleY(0);
+    }
+
+    to {
+      transform: none;
+    }
+  }
+
+  @keyframes illustration-grow-x {
+    from {
+      transform: scaleX(0);
+    }
+
+    to {
+      transform: none;
+    }
+  }
+
+  @keyframes illustration-rise {
+    from {
+      opacity: 0;
+      transform: translateY(40%);
+    }
+
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+
+  @keyframes illustration-pop {
+    from {
+      opacity: 0;
+      transform: scale(var(--scale-pop-from));
+    }
+
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+
+  @keyframes illustration-fade {
+    from {
+      opacity: 0;
+    }
+
+    to {
+      opacity: 1;
+    }
+  }
+</style>
+
+<script>
+  import { each } from '../../scripts/page';
+
+  // arms an illustration's motion and plays it once, the first time a third of it is in view
+  each<HTMLElement>('[data-illustration][data-moves]', (el, signal) => {
+    if (matchMedia('(prefers-reduced-motion: reduce)').matches || !('IntersectionObserver' in window)) return;
+    const seen = new IntersectionObserver(
+      ([entry]) => {
+        if (!entry.isIntersecting) return;
+        el.dataset.shown = '';
+        seen.disconnect();
+      },
+      { threshold: 0.35 },
+    );
+    el.dataset.armed = '';
+    seen.observe(el);
+    signal.addEventListener('abort', () => seen.disconnect());
+  });
+</script>

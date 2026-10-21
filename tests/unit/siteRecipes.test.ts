@@ -43,7 +43,7 @@ describe('design library: types a component re-exports from tier 0', () => {
   it("documents Collection's item and picture types, in the order it names them", () => {
     const types = reexportedTypes("export type { CollectionPicture, CollectionItem } from '../../scripts/collection';", join(__dirname, '../../src/site/components/compounds'));
     expect(types.map((t) => t.name)).toEqual(['CollectionPicture', 'CollectionItem']);
-    expect(types[1].props.map((p) => p.name)).toEqual(['when', 'heading', 'picture', 'subtext', 'html']);
+    expect(types[1].props.map((p) => p.name)).toEqual(['when', 'heading', 'picture', 'illustration', 'subtext', 'html']);
     expect(types[0].props.every((p) => p.description.length > 0)).toBe(true);
   });
 });

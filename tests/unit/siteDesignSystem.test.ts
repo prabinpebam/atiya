@@ -409,8 +409,10 @@ describe('CSS reads tokens, never raw values', () => {
       'Prose.astro': 'rich text from Markdown',
       'Lightbox.astro': 'the filmstrip its script builds',
       'VideoEmbed.astro': 'the iframe its script swaps in',
+      'Illustration.astro': "an illustration's SVG, written by its author: its colour roles and motion",
       'CanvasChrome.astro': "edit mode's canvas: the page's own editable text and the paragraph its script adds",
       'CollectionFields.astro': "edit mode's rich fields (a collection item's words): the paragraphs and lists the browser writes as they're edited",
+      'AiPrompt.astro': "edit mode's AI result: the table and paragraphs its script puts in the After pane",
       'InsertForms.astro': "edit mode's rich fields (a new collection's words): the paragraphs and lists the browser writes as they're edited",
     };
     const bad = siteAstro.filter((f) => !ALLOWED[f.split(sep).pop()!] && (/:global\(/.test(styles(read(f))) || /<style[^>]*is:global/.test(read(f)))).map(rel);

@@ -14,6 +14,7 @@ export const LAYOUT_CHOICES: { value: CollectionLayout; label: string; descripti
   { value: 'carousel', label: 'Carousel', description: 'Cards in a strip that scrolls sideways' },
   { value: 'timeline', label: 'Timeline', description: 'Down a line, each item by its time' },
   { value: 'timeline-scroll', label: 'Timeline, sideways', description: 'Along a line that scrolls sideways' },
+  { value: 'stats', label: 'Figures', description: 'Tiles that each lead with a number' },
 ];
 
 export const HEADING_CHOICES: { value: (typeof COLLECTION_HEADINGS)[number]; label: string; description: string }[] = [
@@ -22,7 +23,10 @@ export const HEADING_CHOICES: { value: (typeof COLLECTION_HEADINGS)[number]; lab
 ];
 
 /** The layouts that take a number of columns. */
-export const TAKES_COLUMNS: ReadonlySet<CollectionLayout> = new Set(['tiles', 'masonry']);
+export const TAKES_COLUMNS: ReadonlySet<CollectionLayout> = new Set(['tiles', 'masonry', 'stats']);
+
+/** The layouts whose tiles can stand out on the accent's soft surface. */
+export const TAKES_PROMINENT: ReadonlySet<CollectionLayout> = new Set(['tiles', 'stats']);
 
 /** The layouts in a strip that scrolls sideways: a named region, so they take a label. */
 export const TAKES_LABEL: ReadonlySet<CollectionLayout> = new Set(['carousel', 'timeline-scroll']);
@@ -35,5 +39,5 @@ export const startWidth = (layout: CollectionLayout): 'popout' | undefined => (T
 
 type Item = Extract<Block, { type: 'collection' }>['items'][number];
 
-/** An item's name in the inspector's list of sections: its heading, or else its subtext, its time, its words or its picture's alt text. */
-export const itemName = (it: Item, alt?: string): string => it.heading ?? it.subtext ?? it.when ?? (it.text ? plainText(it.text) : it.media ? alt || 'A picture' : '');
+/** An item's name in the inspector's list of sections: its heading, or else its subtext, its time, its words, its picture's alt text or its illustration. */
+export const itemName = (it: Item, alt?: string): string => it.heading ?? it.subtext ?? it.when ?? (it.text ? plainText(it.text) : it.media ? alt || 'A picture' : it.svg ? 'An illustration' : '');

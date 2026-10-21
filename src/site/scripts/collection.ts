@@ -35,16 +35,18 @@ export interface CollectionItem {
   heading?: string;
   /** Its picture. */
   picture?: CollectionPicture;
+  /** An SVG drawn in the picture's place, its colours the site's roles (the Illustration fundamental): an item has one or the other. */
+  illustration?: string;
   /** A short line under the heading. */
   subtext?: string;
   /** Its words as HTML the content layer rendered from Markdown (paragraphs and lists, bold, italic, strikethrough, code, links), set as compact prose; a line of inline HTML, or several (each a paragraph), works too. */
   html?: string | string[];
 }
 
-export type CollectionLayout = 'rows' | 'columns' | 'tiles' | 'masonry' | 'carousel' | 'timeline' | 'timeline-scroll';
+export type CollectionLayout = 'rows' | 'columns' | 'tiles' | 'masonry' | 'carousel' | 'timeline' | 'timeline-scroll' | 'stats';
 export type CollectionWidth = 'content' | 'popout' | 'wide' | 'full';
 
-/** Items to a row for tiles and masonry, when the collection doesn't say: one for one, three for three, six or more than four, otherwise two. */
+/** Items to a row for tiles, figures and masonry, when the collection doesn't say: one for one, three for three, six or more than four, otherwise two. */
 export function defaultColumns(count: number): 1 | 2 | 3 {
   return count === 1 ? 1 : count % 3 === 0 || count > 4 ? 3 : 2;
 }
@@ -126,10 +128,10 @@ export function collectionView(o: CollectionOptions): CollectionView {
   // only a strip spans the viewport (a grid of cards or a list of rows that wide reads badly); a peek needs room beside it
   const width = o.width === 'full' && !strip ? 'wide' : (o.width ?? 'content');
   const place = width === 'content' ? 'measure' : width === 'full' ? 'wide' : width;
-  const across = o.layout === 'tiles' || o.layout === 'masonry' ? columns : 1;
+  const across = o.layout === 'tiles' || o.layout === 'masonry' || o.layout === 'stats' ? columns : 1;
   return {
     columns,
-    prominent: o.layout === 'tiles' && !!o.prominent,
+    prominent: (o.layout === 'tiles' || o.layout === 'stats') && !!o.prominent,
     shown: o.display ?? (o.ratio ? 'fill' : 'fit'),
     strip,
     timeline: o.layout === 'timeline' || o.layout === 'timeline-scroll',
