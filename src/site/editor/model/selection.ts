@@ -17,6 +17,19 @@ export function chosenFiles<T extends { key: string }>(files: T[], keys?: readon
   return files.filter((f) => wanted.has(f.key));
 }
 
+/**
+ * The changes that are one page's (spec §7.1): its file in either folder (a page made private has a row in
+ * each) and the media uploaded to it. Save to remote opened from that page ticks only these.
+ */
+export function pageScope(resources: readonly string[], id: string): string[] {
+  const files = [`/content/articles/${id}.json`, `/private/articles/${id}.json`];
+  const media = [`/content/media/articles/${id}/`, `/private/media/articles/${id}/`];
+  return resources.filter((r) => files.includes(r) || media.some((folder) => r.startsWith(folder)));
+}
+
+/** The page an edit mode address is the editor of (/_edit/articles/<id>/), or null. */
+export const pageOf = (path: string): string | null => /\/_edit\/articles\/([^/]+)\/?$/.exec(path)?.[1] ?? null;
+
 /** What happens to the message when private pages are in the save (documentation/access/spec.md §8.3), or null. */
 export function privateNote(keys: readonly string[]): string | null {
   if (!keys.some((k) => k.startsWith('/private/'))) return null;

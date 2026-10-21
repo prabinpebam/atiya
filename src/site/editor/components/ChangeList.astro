@@ -63,16 +63,18 @@ interface Props {
   wide?: boolean;
   /** Not read from git yet: the list says it's checking, and Save to remote waits (the dialog reads it as it opens). */
   checking?: boolean;
+  /** Opened from a page's editor: that page's changes (their resources), the only ones ticked as the dialog opens. None changed: every change is. */
+  scope?: string[];
 }
 
-const { changes, ahead, blocked, message, privateNote, actions, published, drafts = [], wide = false, checking = false } = Astro.props;
+const { changes, ahead, blocked, message, privateNote, actions, published, drafts = [], wide = false, checking = false, scope } = Astro.props;
 const ICON: Record<string, IconName> = { Article: 'article', 'Private page': 'article', Media: 'image', 'Private media': 'image', Sections: 'sections', Settings: 'settings', Person: 'user' };
 const STATUS = { added: { label: 'New', tone: 'positive' }, changed: { label: 'Changed', tone: 'accent' }, deleted: { label: 'Deleted', tone: 'negative' } } as const;
 const pickable = changes.filter((c) => c.keys.length > 0).length;
 const reason = checking ? null : blocked ?? (changes.length || drafts.some((draft) => draft.checked) ? null : 'Nothing to save: content/ and private-pages/ are as they were last saved to remote.');
 ---
 
-<div class="publish" data-region="publish" data-editor-publish data-width={wide ? 'wide' : undefined} data-publish-has-changes={changes.length ? '' : undefined} data-publish-blocked={blocked ? '' : undefined} data-published={published ?? undefined} data-checking={checking ? '' : undefined} aria-busy={checking ? 'true' : undefined}>
+<div class="publish" data-region="publish" data-editor-publish data-width={wide ? 'wide' : undefined} data-publish-has-changes={changes.length ? '' : undefined} data-publish-blocked={blocked ? '' : undefined} data-published={published ?? undefined} data-checking={checking ? '' : undefined} data-publish-scope={scope?.length ? JSON.stringify(scope) : undefined} aria-busy={checking ? 'true' : undefined}>
   {
     published && (
       <Panel tone="positive" labelledby="publish-done-title">

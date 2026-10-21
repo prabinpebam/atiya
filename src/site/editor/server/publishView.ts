@@ -1,6 +1,6 @@
 import type { ChangeRow } from '../components/ChangeList.astro';
 import { actionsUrl, groupChanges, suggestMessage, type Titles } from '../model/names';
-import { privateNote as privateNoteFor } from '../model/selection';
+import { pageOf, pageScope, privateNote as privateNoteFor } from '../model/selection';
 import { summariseChange, type SummaryContext } from '../model/changeSummary';
 import { readDoc } from './store';
 import { load } from './screens';
@@ -86,6 +86,8 @@ export async function publishView(url: URL) {
       })
     : [];
 
+  // opened from a page's editor: that page's changes are the ones ticked to begin with
+  const pageId = pageOf(url.pathname);
   return {
     branch: state.branch,
     issues: loaded.ok ? [] : loaded.issues,
@@ -98,6 +100,7 @@ export async function publishView(url: URL) {
       actions: remote ? actionsUrl(remote) : null,
       published,
       drafts,
+      scope: pageId ? pageScope(rows.map((row) => row.resource), pageId) : undefined,
     },
   };
 }

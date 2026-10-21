@@ -8,6 +8,8 @@ import { messageFor, privateNote, saveLabel } from '../model/selection';
 
 // the changes unticked (by resource), kept while the list is drawn again; a save clears them
 const leftOut = new Set<string>();
+// the article's dialog is opening: the list drawn next starts from its page's changes, not what was left out before
+let opening = false;
 
 const WHAT: Record<string, string> = {
   added: "is new since the last save to remote, so it's deleted. This can't be undone.",
@@ -85,7 +87,11 @@ export function initPublish(root: HTMLElement, signal: AbortSignal) {
     document.addEventListener(
       'click',
       (e) => {
-        if ((e.target as Element).closest?.('[data-dialog-open="save-to-remote"]')) void recheck();
+        if (!(e.target as Element).closest?.('[data-dialog-open="save-to-remote"]')) return;
+        // opened from a page: only its changes are ticked to begin with (every change when it has none)
+        opening = true;
+        fresh();
+        void recheck().finally(() => (opening = false));
       },
       { signal, capture: true },
     );
@@ -155,6 +161,13 @@ export function initPublish(root: HTMLElement, signal: AbortSignal) {
       return input ? [{ input, name: el.dataset.name ?? '', keys: JSON.parse(el.dataset.publishPick!) as string[] }] : [];
     });
   const all = () => root.querySelector<HTMLInputElement>('[data-publish-pick-all] input[type="checkbox"]');
+  // a fresh choice: the page's own changes ticked (data-publish-scope), or every change
+  function fresh() {
+    leftOut.clear();
+    const scope: string[] | null = root.dataset.publishScope ? JSON.parse(root.dataset.publishScope) : null;
+    for (const p of picks()) p.input.checked = !scope || scope.includes(p.input.value);
+    chose();
+  }
   for (const p of picks()) if (leftOut.has(p.input.value)) p.input.checked = false;
   const picked = () => picks().filter((p) => p.input.checked);
   // ticking a draft makes this a publish too, and unticking a change leaves it for later: the button says so
@@ -217,7 +230,8 @@ export function initPublish(root: HTMLElement, signal: AbortSignal) {
     { signal },
   );
   form?.addEventListener('change', label, { signal });
-  if (picks().some((p) => !p.input.checked)) chose();
+  if (opening) fresh();
+  else if (picks().some((p) => !p.input.checked)) chose();
   else label();
   form?.addEventListener(
     'submit',

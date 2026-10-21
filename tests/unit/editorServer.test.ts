@@ -18,7 +18,7 @@ import { cropMedia, cropSource, deleteMedia, MAX_BYTES, MAX_SIDE, MAX_UPLOAD, pa
 import { MAX_GIF_BYTES, MAX_VIDEO_BYTES } from '../../src/site/editor/model/upload';
 import { byteRange } from '../../integrations/content-files.mjs';
 import { asCommitted, changes, committedJson, discard, pendingCount, publish, push } from '../../src/site/editor/server/git';
-import { chosenFiles, messageFor, privateNote, saveLabel } from '../../src/site/editor/model/selection';
+import { chosenFiles, messageFor, pageOf, pageScope, privateNote, saveLabel } from '../../src/site/editor/model/selection';
 import editor from '../../integrations/editor.mjs';
 
 const ROOT = join(__dirname, '../..');
@@ -672,6 +672,23 @@ describe('choosing what a save takes (documentation/editor/spec.md §7.1)', () =
     expect(saveLabel(2, 3, true)).toBe('Publish and save 2 of 3 to remote');
     expect(messageFor([])).toBe('Publish pages');
     expect(messageFor([{ name: 'My article', keys: ['/content/articles/a.json'] }])).toMatch(/My article/);
+  });
+  it("ticks a page's own changes when opened from its editor: its file in either folder and its media", () => {
+    const resources = [
+      '/content/articles/a.json',
+      '/private/articles/a.json',
+      '/content/articles/ab.json',
+      '/content/media/articles/a/hero',
+      '/private/media/articles/a/sketch',
+      '/content/media/articles/ab/hero',
+      '/content/site.json',
+    ];
+    expect(pageScope(resources, 'a')).toEqual(['/content/articles/a.json', '/private/articles/a.json', '/content/media/articles/a/hero', '/private/media/articles/a/sketch']);
+    expect(pageScope(['/content/site.json'], 'a')).toEqual([]);
+    expect(pageOf('/_edit/articles/a/')).toBe('a');
+    expect(pageOf('/atiya/_edit/articles/my-page')).toBe('my-page');
+    expect(pageOf('/_edit/publish/')).toBeNull();
+    expect(pageOf('/_edit/articles/')).toBeNull();
   });
 });
 

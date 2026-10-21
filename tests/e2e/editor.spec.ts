@@ -1672,6 +1672,36 @@ test.describe('editor', () => {
     await expect(dialog.getByRole('heading', { name: 'Saved to remote', exact: true })).toBeVisible();
   });
 
+  test("Save to remote from an article ticks only that article's changes, each time it opens", async ({ page }) => {
+    const site = readJson(join(FIXTURE, 'content/site.json'));
+    writeFileSync(join(FIXTURE, 'content/site.json'), `${JSON.stringify({ ...site, positioning: 'Left for a later save.' }, null, 2)}\n`);
+    const article = readJson(articleFile());
+    writeFileSync(articleFile(), `${JSON.stringify({ ...article, summary: 'Saved on its own.' }, null, 2)}\n`);
+
+    await openArticle(page);
+    const open = page.getByRole('button', { name: 'Save to remote', exact: true });
+    const dialog = page.getByRole('dialog', { name: 'Save to remote' });
+    const row = (kind: string) => dialog.locator('li', { has: page.locator(`[data-publish-discard][data-name^="${kind}"]`) }).getByRole('checkbox');
+    await open.click();
+    await expect(dialog.getByRole('heading', { name: '2 changes to save' })).toBeVisible();
+    await expect(row('Article')).toBeChecked();
+    await expect(row('Settings')).not.toBeChecked();
+    await expect(dialog.getByRole('button', { name: 'Save 1 of 2 to remote' })).toBeVisible();
+
+    // ticked by hand, then closed: it opens again with the article alone
+    await row('Settings').check();
+    await expect(dialog.getByRole('button', { name: 'Save to remote', exact: true })).toBeVisible();
+    await dialog.getByRole('button', { name: 'Close and keep editing' }).click();
+    await open.click();
+    await expect(row('Settings')).not.toBeChecked();
+    await expect(row('Article')).toBeChecked();
+
+    await dialog.getByRole('button', { name: 'Save 1 of 2 to remote' }).click();
+    await expect(dialog.getByRole('heading', { name: 'Saved to remote', exact: true })).toBeVisible({ timeout: 30_000 });
+    expect(git('show', '--name-only', '--format=', 'HEAD').trim()).toBe(`content/articles/${ARTICLE}.json`);
+    expect(readJson(join(FIXTURE, 'content/site.json')).positioning).toBe('Left for a later save.');
+  });
+
   test('what waits to be saved to remote is always current: an edit made just now is counted and listed, and git moved outside edit mode is read again when the dialog opens', async ({ page }) => {
     await openArticle(page);
     const pending = page.locator('[data-region="editor-pending"]');
