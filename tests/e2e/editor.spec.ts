@@ -46,6 +46,34 @@ test.describe('editor', () => {
   test.beforeEach(() => reset());
   test.afterAll(() => reset());
 
+  test('unpublishing an article pinned in Questions saves Draft and restores its evidence on republish', async ({ page, request }) => {
+    const showcaseFile = join(FIXTURE, 'content', 'showcase.json');
+    const showcase = {
+      capabilities: [{ id: 'design', name: 'Design', short: 'Design', line: 'Builds useful things', proof: [{ ref: `ref:article/${ARTICLE}` }] }],
+      questions: [{ id: 'q', question: 'What do you do?', answer: 'I build useful things.', capabilities: ['design'], proof: [{ ref: `ref:article/${ARTICLE}` }] }],
+    };
+    const before = `${JSON.stringify(showcase, null, 2)}\n`;
+    writeFileSync(showcaseFile, before);
+    await openArticle(page);
+    await page.getByRole('tab', { name: 'Page', exact: true }).click();
+    await page.getByRole('combobox', { name: 'Status', exact: true }).click();
+    await page.getByRole('option', { name: /^Draft/ }).click();
+    await saved(page);
+    expect(readJson(articleFile()).status).toBe('draft');
+    expect(readFileSync(showcaseFile, 'utf8')).toBe(before);
+    const draftSection = await request.get('/leadership/');
+    expect(draftSection.status()).toBe(200);
+    expect(await draftSection.text()).not.toContain(`href="/leadership/${ARTICLE}/"`);
+    expect((await request.get('/')).status()).toBe(200);
+    await page.getByRole('combobox', { name: 'Status', exact: true }).click();
+    await page.getByRole('option', { name: /^Published/ }).click();
+    await saved(page);
+    expect(readJson(articleFile()).status).toBe('published');
+    expect(readFileSync(showcaseFile, 'utf8')).toBe(before);
+    expect((await request.get(`/leadership/${ARTICLE}/`)).status()).toBe(200);
+    expect(await (await request.get('/leadership/')).text()).toContain(`href="/leadership/${ARTICLE}/"`);
+  });
+
   test('editor thumbnails show whole images with square corners in Media, the picker and the inspector', async ({ page }) => {
     const before = readFileSync(articleFile(), 'utf8');
     const check = async (images: ReturnType<Page['locator']>) => {

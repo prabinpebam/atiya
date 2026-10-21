@@ -124,6 +124,26 @@ describe('a published page moves freely: its old address simply goes (documentat
   });
 });
 
+describe('unpublishing a page pinned on the home page', () => {
+  it('saves Draft and Published without rewriting the Questions answer or its proof', async () => {
+    const key = '/content/articles/a.json';
+    const showcase = '/content/showcase.json';
+    put(key, article({ status: 'published', publishedAt: '2026-09-30' }));
+    put(showcase, {
+      capabilities: [{ id: 'design', name: 'Design', short: 'Design', line: 'Builds useful things', proof: [{ ref: 'ref:article/a' }] }],
+      questions: [{ id: 'q', question: 'What do you do?', answer: 'I build useful things.', capabilities: ['design'], proof: [{ ref: 'ref:article/a' }] }],
+    });
+    const before = readFileSync(join(content, 'showcase.json'), 'utf8');
+    for (const status of ['draft', 'published'] as const) {
+      const current = readDoc<import('../../src/site/content/schema').Article>(key)!;
+      const result = await saveArticle({ id: 'a', article: { ...current.value, status }, ifMatch: { [key]: current.version } });
+      expect(result).toMatchObject({ ok: true, article: { status } });
+      expect(readDoc<typeof current.value>(key)?.value.status).toBe(status);
+      expect(readFileSync(join(content, 'showcase.json'), 'utf8')).toBe(before);
+    }
+  });
+});
+
 // ---------- media ----------
 describe('uploads', () => {
   it('make a WebP master within the budgets, without metadata, named from the file, with its sidecar', async () => {

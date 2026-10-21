@@ -1,7 +1,7 @@
 /**
  * The home page's content check (documentation/home-views/foundation.md §2, curation.md §2, switcher.md §5): what
- * the spine's and the ways file's shapes can't hold. Every page it names is open (a public file never names a
- * private page), every quote, fact and résumé line is found word for word in its source, and every ID it names
+ * the spine's and the ways file's shapes can't hold. Every page it names is public and placed (saved picks
+ * can wait for publication), every quote, fact and résumé line is found word for word in its source, and every ID it names
  * exists. The views' minimums aren't refused here: a site falls back from a view below its minimum (for-every-site
  * §5), and edit mode refuses to save one as the default. Pure.
  */
@@ -22,7 +22,7 @@ const QUOTE = /[“"]([^”"]{2,})[”"]/g;
 type Index = Pick<ContentIndex, 'site' | 'articles' | 'origins' | 'routes' | 'recommendations' | 'media'> & { showcase: Showcase | null; topics: { topics: { id: string }[] } | null };
 
 /** Why a page can't be named by the home page (empty when it's open), so the message says what to change. */
-function whyNot(index: Index, id: string): string {
+function whyNot(index: Index, id: string, published = true): string {
   const a = index.articles.get(id);
   if (!a) return `"${id}" isn't a page of the site`;
   if (index.origins.get(id) === 'private') return `"${id}" is a private page: the home page names open pages only (V25)`;
@@ -30,7 +30,7 @@ function whyNot(index: Index, id: string): string {
   const r = index.routes.find((x) => x.node.kind === 'item' && x.node.item.id === id);
   if (!r) return `"${id}" isn't placed on the site`;
   if (r.access !== 'open') return `"${id}" is a private page: the home page names open pages only (V25)`;
-  if (!r.published) return `"${id}" isn't published`;
+  if (published && !r.published) return `"${id}" isn't published`;
   return '';
 }
 
@@ -49,11 +49,11 @@ export function checkHome(index: Index, ways: { home?: HomeWays } | null, skip: 
 
   if (showcase) {
     const add2 = (message: string, path?: string) => add(SHOWCASE, message, path);
-    /** A page the spine names: open, or refused with why. */
-    const page = (ref: string, at: string) => {
+    /** Saved picks can wait for publication; facts still need a published source. */
+    const page = (ref: string, at: string, published = false) => {
       const id = refId(ref);
       if (skip.has(id)) return false;
-      const why = whyNot(index, id);
+      const why = whyNot(index, id, published);
       if (why) add2(why, at);
       return !why;
     };
@@ -138,7 +138,7 @@ export function checkHome(index: Index, ways: { home?: HomeWays } | null, skip: 
     });
 
     showcase.facts?.forEach((f, i) => {
-      if (!page(f.source, `facts.${i}.source`)) return;
+      if (!page(f.source, `facts.${i}.source`, true)) return;
       if (!fullText(index.articles.get(refId(f.source))!).includes(normalise(f.text))) add2(`"${f.text}" isn't on "${refId(f.source)}" word for word`, `facts.${i}.text`);
     });
     showcase.highlights?.forEach((h, i) => {

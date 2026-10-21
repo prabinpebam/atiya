@@ -141,7 +141,7 @@ const pageReason = (why: string, e: Evidence) => `Auto: ${[why, e.kind ?? 'a pag
 
 const pagePick = (e: Evidence, extra: Partial<Pick> & { reason: string; pinned: boolean }): Pick => ({ source: 'page', ref: e.ref, id: e.id, title: e.title, ...(e.picture ? { picture: e.picture } : {}), ...(e.kind ? { kind: e.kind } : {}), ...extra });
 
-/** A pin as placed; a page pin to a page that isn't open is left out (the content check refuses it). */
+/** A pin as placed; an unpublished page's pin waits until the page is open again. */
 export function pinPick(p: ProofItem, ev: EvidenceIndex): Pick | undefined {
   if (p.ref) {
     const e = ev.byId.get(refId(p.ref));

@@ -7,6 +7,9 @@ import { describe, expect, it } from 'vitest';
 import { ContentError, loadContent, loadContentLeavingOut } from '../../src/site/content/load';
 import { article } from '../../src/site/content/schema';
 import { capability, proofItem, showcaseFile, type Showcase } from '../../src/site/home/schema';
+import { buildEvidence } from '../../src/site/home/evidence';
+import { curate } from '../../src/site/home/curate';
+import { questionsOf, QUESTIONS_DEFAULTS } from '../../src/site/home/questions';
 
 const page = (id: string, extra: Record<string, unknown> = {}) => ({
   id, type: 'article', kind: 'note', slug: id, title: id.toUpperCase(), summary: 'S', status: 'published', visibility: 'public', updatedAt: '2026-09-30', locale: 'en', body: [], ...extra,
@@ -146,8 +149,22 @@ describe('the content check refuses', () => {
     expect(withShowcase((s) => s.capabilities[1].proof!.push({ ref: 'ref:article/gone' }))).toMatch(/"gone" isn't a page of the site/);
   });
 
-  it('a page that isn’t published', () => {
-    expect(withShowcase((s) => s.capabilities[1].proof!.push({ ref: 'ref:article/draft' }))).toMatch(/"draft" isn't published/);
+  it('saved page picks can wait for publication in every home-view reference', () => {
+    expect(withShowcase((s) => {
+      s.capabilities[1].proof!.push({ ref: 'ref:article/draft' });
+      s.capabilities[2].hide = ['ref:article/draft'];
+      s.highlights!.push({ ref: 'ref:article/draft', capability: 'ai' });
+      s.hideHighlights = ['ref:article/draft'];
+      s.held = { proof: { ai: ['ref:article/draft'] }, highlights: [{ ref: 'ref:article/draft', capability: 'ai' }] };
+      s.questions = [{ id: 'q', question: 'Why?', answer: 'Because.', capabilities: ['ai'], proof: [{ ref: 'ref:article/draft' }] }];
+      s.reel = { chapters: [{ capability: 'ai', highlight: 'ref:article/draft' }] };
+    })).toBe('');
+  });
+
+  it('facts still need a published source because their words are shown directly', () => {
+    expect(withShowcase((s) => {
+      s.facts = [{ id: 'draft-fact', text: 'S', source: 'ref:article/draft' }];
+    })).toMatch(/"draft" isn't published/);
   });
 
   it('a private page, wherever the spine names it', () => {
@@ -226,6 +243,41 @@ describe('the content check refuses', () => {
 
   it('a picture that doesn’t exist', () => {
     expect(withShowcase((s) => (s.capabilities[2].media = 'articles/case/gone'))).toMatch(/media "articles\/case\/gone" doesn't exist/);
+  });
+});
+
+describe('unpublishing home-view evidence', () => {
+  it.each([false, true])('keeps pins but hides unpublished evidence and restores it on republish (held: %s)', (held) => {
+    const s = structuredClone(SHOWCASE);
+    s.capabilities[2].proof = [{ ref: 'ref:article/tool' }];
+    s.questions = [{ id: 'q', question: 'Why?', answer: 'Because.', capabilities: ['ai'], proof: [{ ref: 'ref:article/tool' }] }];
+    if (held) {
+      s.curation = { hold: true };
+      s.held = { proof: { ai: ['ref:article/tool'] }, highlights: [{ ref: 'ref:article/tool', capability: 'ai' }] };
+    }
+    const d = docs({ showcase: s });
+    const model = () => {
+      const c = loadContent(d, masters);
+      const evidence = buildEvidence(c);
+      const picks = curate({ showcase: c.showcase!, evidence });
+      const questions = questionsOf({
+        questions: c.showcase!.questions, picks, evidence, settings: QUESTIONS_DEFAULTS,
+        env: { pageHref: (id) => evidence.byId.has(id) ? `/pages/${id}/` : undefined, person: () => undefined },
+      });
+      return { c, evidence, picks, questions };
+    };
+    expect(model().questions.answers[0].evidence.some((p) => p.key === 'page:tool')).toBe(true);
+    d['/content/articles/tool.json'] = page('tool', { status: 'draft' });
+    const draft = model();
+    expect(draft.c.showcase).toEqual(s);
+    expect(draft.evidence.open.has('tool')).toBe(false);
+    expect(draft.picks.strengths.flatMap((p) => p.all).some((p) => p.id === 'tool')).toBe(false);
+    expect(draft.picks.highlights.some((p) => p.id === 'tool')).toBe(false);
+    expect(draft.picks.reel.some((p) => p.id === 'tool')).toBe(false);
+    expect(draft.questions.answers[0].evidence.some((p) => p.key === 'page:tool')).toBe(false);
+    d['/content/articles/tool.json'] = page('tool');
+    expect(model().questions.answers[0].evidence.some((p) => p.key === 'page:tool')).toBe(true);
+    expect(model().picks.highlights.some((p) => p.id === 'tool')).toBe(true);
   });
 });
 

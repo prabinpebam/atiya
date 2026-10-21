@@ -269,7 +269,8 @@ Each pick carries its reason, shown in edit mode as one line: "Auto: topic AI, a
 | **A page is published** | It's indexed and scored; it may enter L3, L2 or the highlights | A card after Publish: "Now on your home: AI, in the details" with Pin, Hide, Open Home ([owner flows §4](owner-flows.md)). Save to remote lists home changes with the rest |
 | **A page is edited** | It's re-scored | Nothing, unless its place on the home changes; then the same card |
 | **A quoted sentence is edited** (a voice, a résumé line, a quoted block) | The quote would no longer be word for word | The editor marks quoted blocks. Saving a change to one asks: **Update the quote too**, **Remove the quote** or Cancel, in one transaction |
-| **A pinned page is made private, unpublished or deleted** | A pin to it would fail the check | The dialog that does it says so, and the same transaction removes the pin |
+| **A pinned page is unpublished** | Its saved picks remain, but it leaves the evidence index, including Questions evidence and held picks | Saving Draft succeeds without changing the home-page decisions; publishing it again restores eligible evidence |
+| **A pinned page is made private or deleted** | A reference to it still fails the check | Remove its home-page references before changing access or deleting it |
 | **A page moves or is renamed** | Nothing: proof points at IDs, which never change | Nothing |
 | **A strength is renamed** | Its ID stays, so lenses and tailored links keep working | Nothing |
 | **Hold automatic changes is on** | The picks are frozen as they are, written to `showcase.json` as a snapshot | New pages wait. The Home screen lists what would change, with Release |
@@ -327,5 +328,6 @@ Stage 1 of the [plan](plan.md) built the rules as specified above, in `src/site/
 - **Not proof:** the résumé, contact and privacy pages never enter the evidence index as pages. The résumé proves through pinned résumé lines instead.
 - **A page's date** is `publishedAt`, else `updatedAt`.
 - **Held picks** (`held`, written when Hold automatic changes is turned on) keep each strength's pages and the highlights as `{ ref, capability }` pairs.
+- **Unpublished page references wait:** strength pins and hides, highlights and their hides, held picks, Questions proof and reel chapter references may name an existing public page placed on the site while it is a draft. Only published, open pages enter the evidence index; republishing restores eligible evidence without rewriting `showcase.json`. Missing, private and unplaced references still fail validation. Facts, résumé fragments and answer quotations retain their published-source checks because their words are displayed directly. Regression evidence: `homeContract.test.ts`, `editorServer.test.ts` and the editor E2E "unpublishing an article pinned in Questions".
 - **Headlines follow the person's order whatever the lens:** a lens reorders the strengths and swaps the lead voice, but never moves a proof from one strength to another.
 - **Cost:** a made-up site of 500 pages curates in well under 150 ms in the unit tests; the owner's 17 pages take about 33 ms cold and under 2 ms warm.
