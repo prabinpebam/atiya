@@ -188,6 +188,13 @@ test.describe('editor: private pages', () => {
     await expect(page.locator('[data-region="editor-pending"]')).toContainText(/changes? to save/);
     await page.goto('/_edit/publish/');
     await expect(page.getByText(/this message goes on the private commit only/)).toBeVisible();
+    // the page's two rows say it's being made private, and the private one is tagged (editor spec §7.2)
+    const privateRow = page.locator('[data-change-list] li', { has: page.locator('[data-publish-discard][data-name^="Private page"]') });
+    await expect(privateRow.getByText('Private', { exact: true })).toBeVisible();
+    await expect(privateRow.getByRole('checkbox')).toHaveAccessibleDescription(/^Private page: Made private/);
+    const openRow = page.locator('[data-change-list] li', { has: page.locator('[data-publish-discard][data-name^="Article"]') });
+    await expect(openRow.getByRole('checkbox')).toHaveAccessibleDescription('Article: Made private: moves to the private pages');
+    await expect(openRow.getByText('Private', { exact: true })).toHaveCount(0);
     await page.getByLabel('Message').fill('Make Watai private for the Contoso panel');
     await page.getByRole('button', { name: 'Save to remote', exact: true }).last().click();
     await expect(page.getByRole('heading', { name: 'Saved to remote' })).toBeVisible({ timeout: 30_000 });

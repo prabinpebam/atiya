@@ -544,7 +544,7 @@ A picture can have a dark mode version, shown on the site instead of it whenever
 
 You can save every change at once, or only the ones you choose and leave the rest for a later save (21 October 2026).
 
-- **Every change has a checkbox,** ticked to begin with, named by the change, with its kind as the hint, and **Open** (its screen) and **Discard** beside it. Above them, **All changes** ticks or unticks them together, and shows a mixed state when only some are ticked. **Private pages: Saved privately, not yet linked from the site** has no checkbox, because it goes with any save.
+- **Every change has a checkbox,** ticked to begin with, named by the change, with its kind and what changed (§7.2) as the hint, and **Open** (its screen) and **Discard** beside it. Above them, **All changes** ticks or unticks them together, and shows a mixed state when only some are ticked. **Private pages: Saved privately, not yet linked from the site** has no checkbox, because it goes with any save.
 - **The button counts.** It says **Save to remote** when every change is ticked, and **Save 1 of 3 to remote** when only some are (**Publish and save … to remote** with a draft ticked). With nothing ticked and no draft to publish, it's disabled and the form says to tick something. The message offered follows what's ticked until you write your own, and so does the note about private pages.
 - **What you untick stays unticked** while the list is drawn again (after a Discard, or when the window comes back), until a save succeeds.
 - **The server takes the same choice.** The form sends the ticked changes' files (`keys`) only when some are left out; a draft ticked to publish adds its own file. `publish(message, titles, { keys })` in `server/git.ts` then:
@@ -554,6 +554,20 @@ You can save every change at once, or only the ones you choose and leave the res
   4. pushes as before. The private-pages pointer goes with the public commit when a private commit was made or it had already moved.
 - The pure rules (which files, the button's words, the message and the private note) are `model/selection.ts`, shared by the screen's script and the server.
 - **Evidence:** the unit tests "saves only the changes chosen…", "saves a chosen deletion alone…", "refuses a choice that needs a change left out…" and "the content a partial save commits" (`tests/unit/editorServer.test.ts`), and the editor E2E "publish: only the ticked changes are saved, the one left out stays for a later save".
+
+### 7.2 What each change is, and which are private
+
+Every row says what changed in it, and a private one says it's private (21 October 2026).
+
+- **Private** (the key icon, as on Pages and Media) tags every row whose files are in `private-pages/`: a private page, its media, the sharing and where private pages are listed. Its commit goes to the private repository.
+- **A summary** follows the change's kind in its checkbox's hint, so a screen reader hears it with the box: "Article: Title changed, a paragraph added". It comes from comparing each JSON file with its last commit (`summariseChange` in `model/changeSummary.ts`, pure):
+  - **a page:** published, unpublished or a new status; the fields that changed, in words (the slug is the address, the hero the lead picture); its blocks changed, added, removed or reordered, matched by their keys (else by content), naming the kind when they're all one ("a heading added"); "Dates updated" when nothing else did; "New article" (or page, gallery) for a new one;
+  - **a picture, video or document:** the file replaced, its dark version or poster added, removed or replaced, and the words and settings chosen for it (alt text, focus point, crop, credit…), never the measures a new file brings;
+  - **the sections:** sections and pages added, removed, moved or changed, the order and the navigation, naming two and counting the rest;
+  - **anything else** (the settings, a person, the sharing): the fields that changed, and lists of things with IDs counted ("2 grants added").
+  - **A page made private or open** shows on both its rows: the old one "Made private: moves to the private pages", the new one "Made private" with what else changed; its pictures say "Made private with its page".
+- **One git process per repository:** the committed files are read with one `git cat-file --batch` each (`committedJson` in `server/git.ts`), because the list is drawn again on every check. A deleted page is named by its last committed title. A summary that can't be made is left out; it never stops the list.
+- **Evidence:** `tests/unit/editorChangeSummary.test.ts`, the unit test "reads JSON files as last committed in one batch…" (`tests/unit/editorServer.test.ts`), the editor E2E "publish: only the ticked changes are saved…" (the summaries) and "makes a page private in its place from its settings…" (`tests/e2e/editor-access.spec.ts`: the Private tag and both rows' summaries).
 
 ## 8. Architecture
 

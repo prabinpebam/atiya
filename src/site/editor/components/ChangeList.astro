@@ -1,7 +1,8 @@
 ---
 /**
  * The Publish screen's changes (documentation/editor/spec.md §7): every resource in content/ that differs
- * from the last commit, as git sees it, named in words, each ticked to go with the next save (untick one to
+ * from the last commit, as git sees it, named in words with what changed in it ("Title changed, a paragraph
+ * added") and tagged Private when it's in private-pages/, each ticked to go with the next save (untick one to
  * leave it for later), with Open and Discard; commits not pushed yet, with Push again; the last publish's
  * result, with a link to its deploy; and the publish form, enabled only when something is ticked, the
  * content passes its check and git has a branch to push to.
@@ -35,6 +36,10 @@ export interface ChangeRow {
   keys: string[];
   /** Where to change it in edit mode (from /_edit/), when it still exists. */
   href?: string;
+  /** What changed, in a few words ("Title changed, a paragraph added"), when there's more to say than its status. */
+  summary?: string;
+  /** It's in private-pages/: tagged Private, and its commit goes to the private repository. */
+  private?: boolean;
 }
 
 interface Props {
@@ -110,16 +115,19 @@ const reason = checking ? null : blocked ?? (changes.length || drafts.some((draf
           {changes.map((c, i) => (
             <li class="change">
               {c.keys.length > 0 ? (
-                <Checkbox id={`publish-pick-${i}`} name={`pick:${c.resource}`} value={c.resource} label={c.name} hint={c.kind} checked disabled={!!blocked} data-publish-pick={JSON.stringify(c.keys)} data-name={c.name} />
+                <Checkbox id={`publish-pick-${i}`} name={`pick:${c.resource}`} value={c.resource} label={c.name} hint={c.summary ? `${c.kind}: ${c.summary}` : c.kind} checked disabled={!!blocked} data-publish-pick={JSON.stringify(c.keys)} data-name={c.name} />
               ) : (
                 <span class="what">
                   <Text as="span" variant="ui">{c.name}</Text>
                   <Text as="span" variant="small" tone="muted">{`${c.kind}: goes with any save`}</Text>
                 </span>
               )}
-              <Tag size="sm" tone={STATUS[c.status].tone}>
-                {STATUS[c.status].label}
-              </Tag>
+              <span class="tags">
+                {c.private && <Tag size="sm" tone="highlight" icon="key">Private</Tag>}
+                <Tag size="sm" tone={STATUS[c.status].tone}>
+                  {STATUS[c.status].label}
+                </Tag>
+              </span>
               <span class="actions">
                 {c.href && (
                   <Button variant="quiet" size="sm" icon={ICON[c.kind] ?? 'edit'} href={withBase(`/_edit/${c.href}`)}>
@@ -208,10 +216,15 @@ const reason = checking ? null : blocked ?? (changes.length || drafts.some((draf
     overflow-wrap: anywhere;
   }
 
-  .actions {
+  .actions,
+  .tags {
     display: flex;
     justify-content: end;
     gap: var(--space-1);
+  }
+
+  .tags {
+    flex-wrap: wrap;
   }
 
   .pick-all {

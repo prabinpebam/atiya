@@ -188,8 +188,9 @@ export const LEFT_OUT: Issue[] = [
 
 /** What changed since the last save to remote. */
 export const CHANGES = [
-  { resource: 'article:a-walk-round-the-pond', kind: 'Article', name: 'A walk round the pond', status: 'changed' as const, keys: ['/content/articles/a-walk-round-the-pond.json'], href: 'articles/a-walk-round-the-pond/' },
-  { resource: 'media:samples/pond', kind: 'Media', name: 'pond', status: 'added' as const, keys: ['/content/media/samples/pond.json'] },
+  { resource: 'article:a-walk-round-the-pond', kind: 'Article', name: 'A walk round the pond', status: 'changed' as const, keys: ['/content/articles/a-walk-round-the-pond.json'], href: 'articles/a-walk-round-the-pond/', summary: 'Title changed, a paragraph added' },
+  { resource: '/private/articles/letters-home', kind: 'Private page', name: 'Letters home', status: 'changed' as const, keys: ['/private/articles/letters-home.json'], href: 'articles/letters-home/', summary: 'Published', private: true },
+  { resource: 'media:samples/pond', kind: 'Media', name: 'pond', status: 'added' as const, keys: ['/content/media/samples/pond.json'], summary: 'New picture with a dark version' },
 ];
 
 /** Pictures in the media library. */

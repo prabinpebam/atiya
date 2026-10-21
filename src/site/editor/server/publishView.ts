@@ -1,19 +1,39 @@
-import type { Article, Person } from '../../content/schema';
 import type { ChangeRow } from '../components/ChangeList.astro';
 import { actionsUrl, groupChanges, suggestMessage, type Titles } from '../model/names';
 import { privateNote as privateNoteFor } from '../model/selection';
+import { summariseChange, type SummaryContext } from '../model/changeSummary';
 import { readDoc } from './store';
 import { load } from './screens';
-import { changes, git, remoteUrl, repo } from './git';
+import { changes, committedJson, git, remoteUrl, repo } from './git';
 
 /** Builds the shared Save to remote view for the standalone screen and article dialog. */
 export async function publishView(url: URL) {
   const loaded = load();
   const state = await changes();
-  const titles: Titles = {
-    article: (id) => (readDoc<Article>(`/content/articles/${id}.json`) ?? readDoc<Article>(`/private/articles/${id}.json`))?.value.title,
-    person: (id) => readDoc<Person>(`/content/people/${id}.json`)?.value.name,
+  const committed = await committedJson(state.files.filter((file) => file.status !== 'added').map((file) => file.key));
+  const read = new Map<string, unknown>();
+  const now = (key: string): unknown => {
+    if (read.has(key)) return read.get(key);
+    let value: unknown;
+    try {
+      value = readDoc(key)?.value;
+    } catch {
+      value = undefined;
+    }
+    read.set(key, value);
+    return value;
   };
+  const field = (value: unknown, name: string) => (value && typeof value === 'object' ? ((value as Record<string, unknown>)[name] as string | undefined) : undefined);
+  // a deleted page is named as it was last committed
+  const titles: Titles = {
+    article: (id) => {
+      const keys = [`/content/articles/${id}.json`, `/private/articles/${id}.json`];
+      return keys.map((key) => field(now(key), 'title')).find(Boolean) ?? keys.map((key) => field(committed.get(key), 'title')).find(Boolean);
+    },
+    person: (id) => field(now(`/content/people/${id}.json`), 'name') ?? field(committed.get(`/content/people/${id}.json`), 'name'),
+  };
+  const statusOf = new Map(state.files.map((file) => [file.key, file.status]));
+  const context: SummaryContext = { status: (key) => statusOf.get(key), before: (key) => committed.get(key), after: now, titles };
   const rows: ChangeRow[] = groupChanges(state.files, titles).map((change) => {
     const id = change.resource.replace(/^\/(content|private)\/(articles|media|people)\//, '').replace(/\.json$/, '');
     const href =
@@ -24,7 +44,8 @@ export async function publishView(url: URL) {
       : change.kind === 'Access' || change.kind === 'Private places' ? 'access/'
       : change.kind === 'Settings' || change.kind === 'Person' ? 'settings/'
       : undefined;
-    return { ...change, href };
+    const summary = summariseChange(change, context) ?? undefined;
+    return { ...change, href, summary, private: change.resource.startsWith('/private/') };
   });
   // private commits the public repository doesn't record yet (a private save whose public commit didn't
   // happen): saving links them, so it counts as a change, but there's no file here to discard

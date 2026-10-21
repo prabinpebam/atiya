@@ -374,6 +374,62 @@ export function originUrl(dir = contentRoot()): string | null {
   }
 }
 
+/** Parses `git cat-file --batch` output: each object's bytes, in the order asked, or null for a missing one. */
+export function parseCatFileBatch(out: Buffer, count: number): (Buffer | null)[] {
+  const found: (Buffer | null)[] = [];
+  let at = 0;
+  while (found.length < count && at < out.length) {
+    const eol = out.indexOf(0x0a, at);
+    if (eol < 0) break;
+    const head = out.subarray(at, eol).toString('utf8');
+    const m = /^[0-9a-f]+ \w+ (\d+)$/.exec(head);
+    if (!m) {
+      found.push(null);
+      at = eol + 1;
+      continue;
+    }
+    const size = Number(m[1]);
+    found.push(out.subarray(eol + 1, eol + 1 + size));
+    at = eol + 1 + size + 1;
+  }
+  while (found.length < count) found.push(null);
+  return found;
+}
+
+/**
+ * JSON files as last committed, read with one git process per repository (the publish screen asks on every
+ * recheck): a file that's new, isn't JSON or doesn't parse is left out.
+ */
+export async function committedJson(keys: string[]): Promise<Map<string, unknown>> {
+  const out = new Map<string, unknown>();
+  const places = await Promise.all(keys.filter((k) => k.endsWith('.json')).map(async (key) => ({ key, at: await locate(key) })));
+  const byTop = new Map<string, { key: string; path: string }[]>();
+  for (const { key, at } of places) if (at) byTop.set(at.top, [...(byTop.get(at.top) ?? []), { key, path: at.path }]);
+  await Promise.all(
+    [...byTop].map(([top, files]) =>
+      timedAsync('git', () =>
+        new Promise<void>((done) => {
+          const child = execFile('git', ['cat-file', '--batch'], { cwd: top, encoding: 'buffer', env: { ...process.env, ...ENV }, maxBuffer: 64 * 1024 * 1024, timeout: 30_000, windowsHide: true }, (err, stdout) => {
+            if (!err) {
+              parseCatFileBatch(stdout as unknown as Buffer, files.length).forEach((bytes, i) => {
+                if (!bytes) return;
+                try {
+                  out.set(files[i].key, JSON.parse(bytes.toString('utf8')));
+                } catch {
+                  // not JSON as committed: no summary from it
+                }
+              });
+            }
+            done();
+          });
+          child.stdin?.end(files.map((f) => `HEAD:${f.path}\n`).join(''));
+        }),
+      ),
+    ),
+  );
+  return out;
+}
+
 function showBinary(cwd: string, path: string): Promise<Buffer | null> {
   return new Promise((resolvePromise) => {
     execFile('git', ['show', `HEAD:${path}`], { cwd, encoding: 'buffer', env: { ...process.env, ...ENV }, maxBuffer: 64 * 1024 * 1024, windowsHide: true }, (err, stdout) => resolvePromise(err ? null : (stdout as unknown as Buffer)));

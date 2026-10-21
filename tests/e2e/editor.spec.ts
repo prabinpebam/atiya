@@ -1741,6 +1741,9 @@ test.describe('editor', () => {
     await expect(page.getByRole('heading', { name: '2 changes to save' })).toBeVisible();
     const all = page.getByRole('checkbox', { name: /All changes/ });
     await expect(all).toBeChecked();
+    // each change says what changed in it (spec §7.2)
+    await expect(page.locator('li', { has: page.locator('[data-publish-discard][data-name^="Settings"]') }).getByRole('checkbox')).toHaveAccessibleDescription('Settings: Positioning changed');
+    await expect(page.locator('li', { has: page.locator('[data-publish-discard][data-name^="Person"]') }).getByRole('checkbox')).toHaveAccessibleDescription('Person: Role changed');
 
     const personRow = page.locator('li', { has: page.locator('[data-publish-discard][data-name^="Person"]') }).getByRole('checkbox');
     await personRow.uncheck();

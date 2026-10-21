@@ -17,7 +17,7 @@ import { createArticle, deleteArticle, saveArticle } from '../../src/site/editor
 import { cropMedia, cropSource, deleteMedia, MAX_BYTES, MAX_SIDE, MAX_UPLOAD, parseUploadCrop, removeDark, replaceMaster, saveSidecar, setDark, upload, uploadVideo } from '../../src/site/editor/server/media';
 import { MAX_GIF_BYTES, MAX_VIDEO_BYTES } from '../../src/site/editor/model/upload';
 import { byteRange } from '../../integrations/content-files.mjs';
-import { asCommitted, changes, discard, pendingCount, publish, push } from '../../src/site/editor/server/git';
+import { asCommitted, changes, committedJson, discard, pendingCount, publish, push } from '../../src/site/editor/server/git';
 import { chosenFiles, messageFor, privateNote, saveLabel } from '../../src/site/editor/model/selection';
 import editor from '../../integrations/editor.mjs';
 
@@ -492,6 +492,16 @@ describe('publishing with git', { timeout: 60_000 }, () => {
     expect(pendingCount({ ...base, private: { branch: 'main', upstream: 'origin/main', ahead: 1 } })).toBe(1);
     expect(pendingCount({ ...base, pointer: { path: 'private-pages', moved: true } })).toBe(1);
     expect(pendingCount({ ...base, pointer: { path: 'private-pages', moved: false } })).toBe(0);
+  });
+
+  it('reads JSON files as last committed in one batch, leaving out new files (documentation/editor/spec.md §7.2)', async () => {
+    setupRepo();
+    put('/content/site.json', { name: 'New name', description: 'D', owner: 'p', locale: 'en' });
+    put('/content/people/q.json', { id: 'q', name: 'Q' });
+    const before = await committedJson(['/content/site.json', '/content/people/q.json', '/content/media/x.webp']);
+    expect([...before.keys()]).toEqual(['/content/site.json']);
+    expect(before.get('/content/site.json')).toMatchObject({ name: expect.any(String) });
+    expect((before.get('/content/site.json') as { name: string }).name).not.toBe('New name');
   });
 
   it("a git status it couldn't read is said, never taken for nothing changed, and nothing is saved", async () => {
