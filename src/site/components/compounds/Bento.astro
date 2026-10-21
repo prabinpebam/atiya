@@ -219,10 +219,12 @@ const shows = (t: Props['tiles'][number]) => bentoPictures(t.role, t.pictures, c
     background: var(--color-bg-raised);
     isolation: isolate;
     scroll-margin-block-start: calc(var(--size-chrome-block) + var(--space-8));
+    /* a risen tile stays over its neighbours until it has settled back */
     transition:
       scale var(--duration-fast) var(--ease-standard),
       box-shadow var(--duration-fast) var(--ease-standard),
-      border-color var(--duration-fast) var(--ease-standard);
+      border-color var(--duration-fast) var(--ease-standard),
+      z-index 0s linear var(--duration-fast) allow-discrete;
   }
 
   .tile[data-role='feature'] {
@@ -300,7 +302,9 @@ const shows = (t: Props['tiles'][number]) => bentoPictures(t.role, t.pictures, c
   /* under the pointer, focused or pressed: the tile rises on a soft shadow and a hover quote takes the line's place */
   @media (hover: hover) {
     .tile:hover {
+      z-index: var(--layer-raised);
       box-shadow: var(--shadow-md);
+      transition-delay: 0s;
     }
 
     [data-quote='hover']:hover .quote {
@@ -313,7 +317,9 @@ const shows = (t: Props['tiles'][number]) => bentoPictures(t.role, t.pictures, c
   }
 
   .tile:has(.toggle:is(:focus-visible, :active)) {
+    z-index: var(--layer-raised);
     box-shadow: var(--shadow-md);
+    transition-delay: 0s;
   }
 
   [data-quote='hover']:has(.toggle:is(:focus-visible, :active)) .quote {
