@@ -14,11 +14,14 @@
     "breakpoint.short": {"v":"30rem"},
     "breakpoint.sm": {"v":"40rem"},
     "c.bento.evidence": {"v":"15rem"},
-    "c.bento.picture": {"v":"20rem"},
-    "c.bento.picture-band": {"v":"5.5rem"},
-    "c.bento.picture-side": {"v":"6rem"},
+    "c.bento.picture": {"v":"20rem","d":"Bento's pictures now take their tile's width, shown whole: no replacement"},
+    "c.bento.picture-band": {"v":"5.5rem","d":"Bento's pictures now take their tile's width, shown whole: no replacement"},
+    "c.bento.picture-side": {"v":"6rem","d":"Bento's pictures now take their tile's width, shown whole: no replacement"},
     "c.bento.query-one": {"v":"36rem"},
-    "c.bento.query-two": {"v":"50rem"},
+    "c.bento.query-two": {"v":"64rem"},
+    "c.bento.wrap-band": {"v":"4rem"},
+    "c.bento.wrap-gap": {"v":"var(--space-4)"},
+    "c.bento.wrap-measure": {"v":"9rem"},
     "c.button.hover-wash": {"v":"var(--color-bg-hover)"},
     "c.button.pad-x-lg": {"v":"var(--space-8)"},
     "c.button.pad-x-md": {"v":"var(--space-6)"},
@@ -448,7 +451,52 @@
             "v": "12rem"
           },
           {
-            "v": "20rem"
+            "v": "20rem",
+            "d": "Bento's pictures now take their tile's width, shown whole: no replacement"
+          }
+        ],
+        "c.bento.picture-band": [
+          {
+            "v": "5.5rem"
+          },
+          {
+            "v": "5.5rem",
+            "d": "Bento's pictures now take their tile's width, shown whole: no replacement"
+          }
+        ],
+        "c.bento.picture-side": [
+          {
+            "v": "6rem"
+          },
+          {
+            "v": "6rem",
+            "d": "Bento's pictures now take their tile's width, shown whole: no replacement"
+          }
+        ],
+        "c.bento.query-two": [
+          {
+            "v": "50rem"
+          },
+          {
+            "v": "64rem"
+          }
+        ],
+        "c.bento.wrap-band": [
+          null,
+          {
+            "v": "4rem"
+          }
+        ],
+        "c.bento.wrap-gap": [
+          null,
+          {
+            "v": "var(--space-4)"
+          }
+        ],
+        "c.bento.wrap-measure": [
+          null,
+          {
+            "v": "9rem"
           }
         ],
         "c.questions.query-phone": [

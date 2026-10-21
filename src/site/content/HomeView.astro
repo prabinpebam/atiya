@@ -41,10 +41,10 @@ const choices = viewSwitch(view, lens);
 const chip = lensChip(view, lens);
 ---
 
-<HomeLayout title={frame.title} description={frame.description} canonical={at === 'view' ? '/' : undefined} nav={frame.nav} footer={frame.footer} sections={frame.sections} view={view} home={homeRouting(view, at, lens)}>
+<HomeLayout title={frame.title} description={frame.description} canonical={at === 'view' ? '/' : undefined} nav={frame.nav} footer={frame.footer} sections={frame.sections} view={view} home={homeRouting(view, at, lens)} width={bento ? 'max' : 'wide'}>
   {
     bento && (
-      <Bento tiles={bento.tiles} density={bento.density}>
+      <Bento tiles={bento.tiles} density={bento.density} columns={bento.columns}>
         <ViewLead slot="lead" lead={bento.lead} planet={frame.planet} change={!!choices} lens={chip} />
         {bento.voices.length > 0 && <Voices slot="voices" voices={bento.voices} />}
       </Bento>

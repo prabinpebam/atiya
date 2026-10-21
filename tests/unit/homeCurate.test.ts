@@ -359,7 +359,7 @@ describe('the views’ minimums (for-every-site §5)', () => {
   });
 
   it('a view’s settings are its defaults with the person’s own over them', () => {
-    expect(viewSettings('bento', { density: 'full' })).toEqual({ lead: 'who', density: 'full', pictures: 'work', order: 'yours', words: 'on' });
+    expect(viewSettings('bento', { density: 'full' })).toEqual({ lead: 'who', density: 'full', pictures: 'work', order: 'yours', words: 'on', corners: 'square' });
     expect(viewSettings('classic')).toEqual({});
   });
 });

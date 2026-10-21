@@ -32,15 +32,17 @@ interface Props {
   view: string;
   /** A home page's router, run in the head (documentation/home-views/switcher.md §3). */
   home?: HomeRouting;
+  /** How wide the view goes: wide, the reading width (the default); max, the header's width, for a view its pictures carry (Bento). */
+  width?: 'wide' | 'max';
 }
 
-const { title, description, canonical, nav, footer, sections = [], view, home } = Astro.props;
+const { title, description, canonical, nav, footer, sections = [], view, home, width = 'wide' } = Astro.props;
 ---
 
 <PageShell title={title} description={description} canonical={canonical} home={home} preload={['display', 'ui']}>
   <SiteHeader nav={nav} access />
   <main id="main" class="home" tabindex="-1" data-home-view={view}>
-    <div class="view">
+    <div class="view" data-width={width}>
       <slot />
     </div>
     {
@@ -81,6 +83,10 @@ const { title, description, canonical, nav, footer, sections = [], view, home } 
 
   .view {
     padding-block-start: var(--space-8);
+  }
+
+  .view[data-width='max'] {
+    max-width: var(--size-max);
   }
 
   .sections {

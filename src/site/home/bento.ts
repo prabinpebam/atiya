@@ -17,9 +17,11 @@ export interface BentoSettings {
   order: 'yours' | 'strongest';
   /** In their words, beside the lead. */
   words: 'on' | 'off';
+  /** The pictures' corners: square, unless the person asks for rounded. */
+  corners: 'square' | 'rounded';
 }
 
-export const BENTO_DEFAULTS: BentoSettings = { lead: 'who', density: 'calm', pictures: 'work', order: 'yours', words: 'on' };
+export const BENTO_DEFAULTS: BentoSettings = { lead: 'who', density: 'calm', pictures: 'work', order: 'yours', words: 'on', corners: 'square' };
 
 const pickOf = <K extends keyof BentoSettings>(key: K, v: unknown, values: readonly BentoSettings[K][]): BentoSettings[K] => (values.includes(v as BentoSettings[K]) ? (v as BentoSettings[K]) : BENTO_DEFAULTS[key]);
 
@@ -30,44 +32,104 @@ export const bentoSettings = (s: Record<string, unknown> = {}): BentoSettings =>
   pictures: pickOf('pictures', s.pictures, ['work', 'chosen', 'none']),
   order: pickOf('order', s.order, ['yours', 'strongest']),
   words: pickOf('words', s.words, ['on', 'off']),
+  corners: pickOf('corners', s.corners, ['square', 'rounded']),
 });
 
-/** How many of the 12 columns each tile takes, by how many strengths there are (for-every-site §4). */
-export const SPANS: Record<number, number[]> = {
-  1: [12],
-  2: [6, 6],
-  3: [4, 4, 4],
-  4: [6, 6, 6, 6],
-  5: [6, 6, 4, 4, 4],
-  6: [4, 4, 4, 4, 4, 4],
+/**
+ * A tile's place in the tray (for-every-site §4), its picture carrying it: a feature is two columns by two rows, a
+ * tall tile one by two (its square picture), a wide tile two by one (its wide picture), a single one by one (its
+ * 3:2 picture). Two to a row, a feature and a wide tile take the row; one to a row, every tile does.
+ */
+export type BentoRole = 'feature' | 'tall' | 'wide' | 'single';
+
+/** Each role's columns and rows: at the tray's widest (four columns) and two to a row. */
+export const ROLE_SIZE: Record<BentoRole, { four: [number, number]; two: [number, number] }> = {
+  feature: { four: [2, 2], two: [2, 1] },
+  tall: { four: [1, 2], two: [1, 2] },
+  wide: { four: [2, 1], two: [2, 1] },
+  single: { four: [1, 1], two: [1, 1] },
 };
 
+/** The roles for n strengths, a whole rectangle of four columns (two for one strength): the bigger the role, the more its picture shows. */
+export const ROLES: Record<number, BentoRole[]> = {
+  1: ['wide'],
+  2: ['feature', 'feature'],
+  3: ['feature', 'wide', 'wide'],
+  4: ['feature', 'tall', 'single', 'single'],
+  5: ['feature', 'single', 'single', 'single', 'single'],
+  6: ['feature', 'tall', 'single', 'single', 'wide', 'wide'],
+};
+
+/** The tray's columns at its widest, by how many strengths: four, or two for one. */
+export const bentoColumns = (n: number): 2 | 4 => (n <= 1 ? 2 : 4);
+
 /**
- * Tiles two rows tall, for a strength whose picture earns the room: n strengths in k columns, so 2k − n of the
- * first k stand two rows tall and every tile is still in the first two rows (its name on the first screen). The
- * counts not here, or too few pictures among the first k, keep SPANS, one row each.
+ * Where a grid of `columns` puts tiles of these sizes, in order, as CSS grid's dense auto-placement does (each
+ * at the first place it fits, from the top): their top-left cells and whether they fill a whole rectangle.
  */
-export const TALL_COLUMNS: Record<number, number> = { 3: 2, 4: 3, 5: 3, 6: 4 };
-
-/** The picture a two-row tile shows, by how wide it is: its frame is about square at 3 of 12 columns, 3:2 at 4, wide at 6. */
-export const tallShape = (span: number): ThumbnailShape => (span <= 3 ? 'square' : span <= 4 ? 'thumbnail' : 'wide');
-
-/** Each tile's columns and rows, in order: the richest of the first k with a picture (a quote, then the most proof) stand tall. */
-export function bentoLayout(tiles: { picture: boolean; quote: boolean; total: number }[]): { span: number; rows: 1 | 2 }[] {
-  const n = tiles.length;
-  const flat = tiles.map((_, i) => ({ span: SPANS[Math.min(6, Math.max(1, n))]?.[i] ?? 4, rows: 1 as const }));
-  const k = TALL_COLUMNS[n];
-  if (!k) return flat;
-  const tall = tiles
-    .slice(0, k)
-    .map((t, i) => ({ ...t, i }))
-    .filter((t) => t.picture)
-    .sort((a, b) => Number(b.quote) - Number(a.quote) || b.total - a.total || a.i - b.i)
-    .slice(0, 2 * k - n)
-    .map((t) => t.i);
-  if (tall.length < 2 * k - n) return flat;
-  return tiles.map((_, i) => ({ span: 12 / k, rows: tall.includes(i) ? 2 : 1 }));
+export function pack(sizes: [number, number][], columns: number): { at: [number, number][]; whole: boolean; inOrder: boolean } {
+  const taken = new Set<string>();
+  const at: [number, number][] = [];
+  for (const [w, h] of sizes) {
+    const cols = Math.min(w, columns);
+    let placed: [number, number] | undefined;
+    for (let r = 0; !placed; r++) {
+      for (let c = 0; c + cols <= columns && !placed; c++) {
+        let free = true;
+        for (let dr = 0; dr < h && free; dr++) for (let dc = 0; dc < cols && free; dc++) if (taken.has(`${r + dr},${c + dc}`)) free = false;
+        if (free) placed = [r, c];
+      }
+    }
+    for (let dr = 0; dr < h; dr++) for (let dc = 0; dc < cols; dc++) taken.add(`${placed[0] + dr},${placed[1] + dc}`);
+    at.push(placed);
+  }
+  const rows = Math.max(0, ...[...taken].map((k) => Number(k.split(',')[0]) + 1));
+  const inOrder = at.every((p, i) => i === 0 || p[0] > at[i - 1][0] || (p[0] === at[i - 1][0] && p[1] > at[i - 1][1]));
+  return { at, whole: taken.size === rows * columns, inOrder };
 }
+
+const permutations = (roles: BentoRole[]): BentoRole[][] => {
+  if (roles.length <= 1) return [roles];
+  const out: BentoRole[][] = [];
+  const seen = new Set<BentoRole>();
+  roles.forEach((r, i) => {
+    if (seen.has(r)) return;
+    seen.add(r);
+    for (const rest of permutations([...roles.slice(0, i), ...roles.slice(i + 1)])) out.push([r, ...rest]);
+  });
+  return out;
+};
+
+const AREA: Record<BentoRole, number> = { feature: 4, tall: 2, wide: 2, single: 1 };
+
+/**
+ * Each tile's role, in the person's order (never reordered): of the arrangements that fill a whole rectangle at
+ * four columns and at two, read in order, the one that gives the most room to the tiles with a picture, then a
+ * colleague's words, then the most proof, then the earlier.
+ */
+export function bentoRoles(tiles: { picture: boolean; quote: boolean; total: number }[]): BentoRole[] {
+  const n = tiles.length;
+  const base = ROLES[n] ?? tiles.map(() => 'single' as const);
+  if (!ROLES[n]) return base;
+  const columns = bentoColumns(n);
+  const worth = tiles.map((t, i) => (t.picture ? 1000 : 0) + (t.quote ? 100 : 0) + Math.min(t.total, 50) + (n - i) / 100);
+  let best = base;
+  let bestScore = -Infinity;
+  for (const roles of permutations(base)) {
+    const four = pack(roles.map((r) => ROLE_SIZE[r].four), columns);
+    const two = pack(roles.map((r) => ROLE_SIZE[r].two), 2);
+    if (!four.whole || !four.inOrder || !two.whole || !two.inOrder) continue;
+    const score = roles.reduce((s, r, i) => s + AREA[r] * worth[i], 0);
+    if (score > bestScore) {
+      best = roles;
+      bestScore = score;
+    }
+  }
+  return best;
+}
+
+/** The shape a role's picture is shown in at the tray's widest: its frame's shape, so the picture shows whole, uncropped. */
+export const ROLE_SHAPE: Record<BentoRole, ThumbnailShape> = { feature: 'thumbnail', tall: 'square', wide: 'wide', single: 'thumbnail' };
 
 export interface BentoTile {
   id: string;
@@ -76,15 +138,18 @@ export interface BentoTile {
   line: string;
   /** Its strongest kind and how much proves it: "Led · 4 pieces of evidence". */
   label: string;
+  /** A few of its keywords, other than its name. */
+  keywords: string[];
   quote?: Voice;
-  /** Media IDs: tall, the picture a two-row tile shows (tallShape); side, the square beside a tile's words on a narrower screen. */
-  pictures?: { tall?: string; side: string };
-  /** Columns of 12 on a wide screen. */
-  span: number;
-  /** Rows on a wide screen: 2 for a tile whose picture earns the room. */
-  rows: 1 | 2;
+  /** Media IDs, one per shape (the same picture when it has only one): the tile shows the one its frame takes, whole. */
+  pictures?: Partial<Record<ThumbnailShape, string>>;
+  /** Its place in the tray. */
+  role: BentoRole;
   details: EvidenceItem[];
 }
+
+/** How many keywords a tile shows under its line. */
+export const TILE_KEYWORDS = 4;
 
 export const evidenceLabel = (s: Pick<StrengthPicks, 'all' | 'total'>, goal: HomePicks['goal']) => {
   const kind = strongestKind(s, goal);
@@ -100,22 +165,22 @@ export function bentoTiles(picks: HomePicks, settings: BentoSettings, env: Prese
     const one = settings.pictures === 'chosen' ? s.capability.media : s.pictures ? undefined : s.picture;
     return one ? { wide: one, thumbnail: one, square: one } : settings.pictures === 'work' ? s.pictures : undefined;
   });
-  const layout = bentoLayout(ordered.map((s, i) => ({ picture: !!shapes[i]?.square, quote: !!s.voice, total: s.total })));
+  const roles = bentoRoles(ordered.map((s, i) => ({ picture: !!shapes[i]?.thumbnail, quote: !!s.voice, total: s.total })));
   return ordered.map((s, i) => {
     const who = s.voice ? env.person(s.voice.recommendation) : undefined;
-    const { span, rows } = layout[i];
-    const shape = shapes[i];
-    const pictures = shape?.square ? { side: shape.square, ...(rows === 2 ? { tall: shape[tallShape(span)] ?? shape.square } : {}) } : undefined;
+    const pictures = shapes[i]?.thumbnail ? shapes[i] : undefined;
+    const own = s.capability.name.toLowerCase();
+    const keywords = s.keywords.filter((k) => k.toLowerCase() !== own).slice(0, TILE_KEYWORDS);
     return {
       id: s.id,
       name: s.capability.name,
       short: s.capability.short,
       line: s.capability.line,
       label: evidenceLabel(s, picks.goal),
+      keywords,
       ...(s.voice && who ? { quote: { recommendation: s.voice.recommendation, quote: s.voice.quote, name: who.name, ...(who.title ? { title: who.title } : {}) } } : {}),
       ...(pictures ? { pictures } : {}),
-      span,
-      rows,
+      role: roles[i],
       details: evidenceOf(s, env),
     };
   });

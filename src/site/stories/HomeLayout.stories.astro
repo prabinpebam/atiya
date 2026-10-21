@@ -17,11 +17,12 @@ const sections = [
   { title: 'About', summary: 'Who I am, and how I lead teams.', href: withBase('/about/') },
 ];
 const quote = { text: 'She made the hard calls look easy, and brought the whole team along.', name: 'Sam Rivera', title: 'Director of Product' };
+const roles = ['feature', 'wide', 'wide'] as const;
 const tiles = [
   { id: 'layout-teams', name: 'Leading design teams', line: 'Grew a studio of twelve.', label: 'Led · 4 pieces of evidence', picture: sample('workshop'), quote },
   { id: 'layout-research', name: 'Research that changes plans', line: 'Studies that moved a roadmap.', label: 'Shipped · 3 pieces of evidence', picture: sample('bridge') },
   { id: 'layout-systems', name: 'Design systems', line: 'One kit for forty products.', label: 'Built · 5 pieces of evidence', picture: sample('pond'), quote },
-].map((t) => ({ ...t, short: t.name.split(' ')[0], span: 4, details: [{ key: `${t.id}-a`, title: 'A case study that shows it', kindLabel: 'Case study', href: withBase('/design/') }] }));
+].map(({ picture, ...t }, i) => ({ ...t, short: t.name.split(' ')[0], role: roles[i], pictures: { thumbnail: picture }, details: [{ key: `${t.id}-a`, title: 'A case study that shows it', kindLabel: 'Case study', href: withBase('/design/') }] }));
 ---
 
 <HomeLayout title="Alex Morgan" description="Head of Design." canonical="/" nav={nav} sections={sections} view="bento">

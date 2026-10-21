@@ -73,7 +73,8 @@
         "density": { "label": "Density", "type": "choice", "values": ["calm", "full"], "labels": ["Calm", "Full"], "default": "calm" },
         "pictures": { "label": "Pictures", "type": "choice", "values": ["work", "chosen", "none"], "labels": ["From the work", "Chosen only", "Type only"], "default": "work" },
         "order": { "label": "Order", "type": "choice", "values": ["yours", "strongest"], "labels": ["Yours", "Strongest first"], "default": "yours" },
-        "words": { "label": "In their words", "type": "choice", "values": ["on", "off"], "labels": ["On", "Off"], "default": "on" }
+        "words": { "label": "In their words", "type": "choice", "values": ["on", "off"], "labels": ["On", "Off"], "default": "on" },
+        "corners": { "label": "Picture corners", "type": "choice", "values": ["square", "rounded"], "labels": ["Square", "Rounded"], "default": "square" }
       }
     },
     "cover": {

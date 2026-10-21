@@ -1,16 +1,18 @@
 ---
 /**
- * Bento, a home view (documentation/home-views/bento.md): a tray of the person's strengths, every one in
- * view at once. Each tile names a strength, says it in a line and shows how much proves it (L1, L2); a
- * press opens its drawer under its row, with the evidence and where it leads (L3). The lead and In their
- * words come in as slots, beside each other on a wide screen. On a phone the tiles stack, an index of
- * their short names comes first so every one is seen before a scroll, and a drawer opens as an accordion.
+ * Bento, a home view (documentation/home-views/bento.md): a tray of the person's strengths, as wide as the
+ * header, its pictures carrying it. Each tile shows a picture of its work whole (in the shape its frame takes,
+ * square-cornered unless the person asks), names the strength, says it in a line with a few keywords and shows
+ * how much proves it (L1, L2); a press opens its drawer under its rows, with the evidence and where it leads
+ * (L3). The tiles are a feature, tall, wide or single (the model's roles), packed into a whole rectangle at
+ * four columns, at two and at one. The index of strengths comes first, so every one is in view before a
+ * scroll: full names on a wide screen, short names on a phone. The lead and In their words come in as slots.
  * Nothing moves on its own: tiles lift and show their quote under the pointer or focus.
  * @tier compound
  * @a11y Each tile is an article whose title is one button (a disclosure): aria-expanded, aria-controls its drawer; the whole tile presses it.
- * @a11y The tile's line, evidence and quote are its button's description, so the quote shown on hover is never hover-only.
- * @a11y A drawer is a region named by its heading, right after its tile in the reading order (the grid packs the row's other tiles around it).
- * @a11y The phone's index is a nav of links that jump to a tile and focus it.
+ * @a11y The tile's line, keywords, evidence and quote are its button's description, so a quote shown on hover is never hover-only.
+ * @a11y A drawer is a region named by its heading, right after its tile in the reading order (the grid packs the other tiles around it).
+ * @a11y The index is a nav of links that jump to a tile and focus it.
  * @key Enter / Space on a tile: opens or closes its drawer (any other closes)
  * @key Esc in an open drawer or on its tile: closes it, focus back on the tile
  */
@@ -21,61 +23,51 @@ import Icon from '../fundamentals/Icon.astro';
 import Tag from '../fundamentals/Tag.astro';
 import Link from '../fundamentals/Link.astro';
 import Button from '../fundamentals/Button.astro';
-import { type CardPicture } from '../../design/pictures';
-import { sizes } from '../../design/responsive';
+import { type CardPicture, type ThumbnailShape } from '../../design/pictures';
+import { bentoPictures, type BentoRole as Role } from '../../design/bentoPictures';
+
 
 interface Props {
-  /** The strengths, in order, each with its words, its picture and its evidence. */
+  /** The strengths, in order, each with its words, its pictures, its role and its evidence. */
   tiles: {
     /** Its ID: the tile's address is #cap-<id>. */
     id: string;
     /** Its name ("AI transformation"). */
     name: string;
-    /** Its short name, for the phone's index ("AI"). */
+    /** Its short name, for the index on a phone ("AI"). */
     short: string;
     /** One line that says it (about five words). */
     line: string;
     /** Its strongest kind of proof and how much: "Led · 4 pieces of evidence". */
     label: string;
-    /** A colleague's words about it: in its line's place on hover and focus (with it, density full). */
+    /** A few of its keywords, under its line. */
+    keywords?: string[];
+    /** A colleague's words about it: at rest on a feature or tall tile (or with density full), else on hover and focus. */
     quote?: { text: string; name: string; title?: string };
-    /** Its pictures, each with its dark mode version: tall, over the words of a two-row tile (its square, 3:2 or wide thumbnail); side, the square beside its words on a narrower screen. */
-    pictures?: { tall?: CardPicture; side: CardPicture };
-    /** How many of 12 columns it takes on a wide screen (3, 4, 6 or 12). */
-    span: number;
-    /** How many rows it takes on a wide screen: 2 for a tile whose picture earns the room. */
-    rows?: 1 | 2;
+    /** Its picture in each shape (3:2 thumbnail, square, wide), each with its dark mode version: the tile shows the one its frame takes, whole. */
+    pictures?: Partial<Record<ThumbnailShape, CardPicture>>;
+    /** Its place: feature (2 by 2), tall (1 by 2), wide (2 by 1) or single, at four columns. */
+    role: Role;
     /** Its evidence, in the drawer: a page, a résumé line or a voice, with where it leads. */
     details: { key: string; title: string; kindLabel?: string; href?: string; ask?: string }[];
   }[];
-  /** Calm: the quote shows on hover and focus; full: at rest too. */
+  /** The tray's columns at its widest: 4, or 2 for one strength. */
+  columns?: 2 | 4;
+  /** Calm: a single or wide tile's quote shows on hover and focus; full: every quote at rest. */
   density?: 'calm' | 'full';
-  /** Names the phone's index of strengths ("6 strengths"). */
+  /** Names the index of strengths ("6 strengths"). */
   indexLabel?: string;
   /** The tiles' heading level (their drawers' are one lower). */
   headingLevel?: 2 | 3;
 }
 
-const { tiles, density = 'calm', indexLabel = `${tiles.length} strengths`, headingLevel = 2 } = Astro.props;
+const { tiles, columns = 4, density = 'calm', indexLabel = `${tiles.length} strengths`, headingLevel = 2 } = Astro.props;
 const drawerLevel = (headingLevel + 1) as 3 | 4;
 const lead = Astro.slots.has('lead');
 const voices = Astro.slots.has('voices');
-// a two-row tile's picture fills its frame (shown only on a wide screen); the side square, only narrower
-const tallSizes = sizes('bento-picture');
-const sideSizes = sizes('bento-picture-side');
-const picture = (p: CardPicture, shown: string) => ({
-  src: p.src,
-  srcset: p.srcset,
-  sizes: shown,
-  alt: p.alt,
-  width: p.width,
-  height: p.height,
-  display: 'fill' as const,
-  fill: true,
-  focus: p.focus,
-  rounded: p.rounded !== false,
-  dark: p.dark,
-});
+
+const quoteAt = (role: Role) => (density === 'full' || role === 'feature' || role === 'tall' ? 'rest' : 'hover');
+const shows = (t: Props['tiles'][number]) => bentoPictures(t.role, t.pictures, columns);
 ---
 
 <div class="bento" data-bento data-density={density}>
@@ -85,36 +77,44 @@ const picture = (p: CardPicture, shown: string) => ({
       <Text variant="label" tone="muted" as="p">{indexLabel}</Text>
       <ul>
         {tiles.map((t) => (
-          <li data-capability={t.id}><Link href={`#cap-${t.id}`} variant="standalone" data-bento-jump={t.id}>{t.short}</Link></li>
+          <li data-capability={t.id}>
+            <Link href={`#cap-${t.id}`} variant="standalone" data-bento-jump={t.id}><span class="full">{t.name}</span><span class="short">{t.short}</span></Link>
+          </li>
         ))}
       </ul>
     </nav>
-    <div class="tiles">
+    <div class="tiles" data-columns={String(columns)}>
       {
         tiles.map((t) => (
           <Fragment>
-            <article class="tile" id={`cap-${t.id}`} data-capability={t.id} data-span={String(t.span)} data-rows={String(t.rows ?? 1)} data-card>
+            <article class="tile" id={`cap-${t.id}`} data-capability={t.id} data-role={t.role} data-quote={t.quote ? quoteAt(t.role) : undefined} data-card>
               <div class="words">
-                <Heading level={headingLevel} size={t.span <= 3 ? 'h4' : 'h3'}>
-                  <button class="toggle" type="button" aria-expanded="false" aria-controls={`cap-${t.id}-detail`} aria-describedby={[`cap-${t.id}-about`, t.quote && `cap-${t.id}-quote`].filter(Boolean).join(' ')} data-card-link data-bento-toggle={t.id}>
+                {shows(t).map((s) => (
+                  <div class="picture" data-alpha-wrap data-shape={s.shape} data-four={s.at.includes('four') ? '' : undefined} data-two={s.at.includes('two') ? '' : undefined} data-one={s.at.includes('one') ? '' : undefined}>
+                    <Image {...s.image} />
+                  </div>
+                ))}
+                <Heading level={headingLevel} size={t.role === 'feature' ? 'h2' : 'h3'}>
+                  <button class="toggle" type="button" aria-expanded="false" aria-controls={`cap-${t.id}-detail`} aria-describedby={[`cap-${t.id}-about`, t.quote && `cap-${t.id}-quote`, `cap-${t.id}-label`].filter(Boolean).join(' ')} data-card-link data-bento-toggle={t.id}>
                     <span>{t.name.split(' ').slice(0, -1).join(' ')} <span class="last">{t.name.split(' ').at(-1)}<span class="chevron"><Icon name="chevron-down" /></span></span></span>
                   </button>
                 </Heading>
                 <div class="say">
                   <div class="about" id={`cap-${t.id}-about`}>
-                    <Text tone="muted">{t.line}</Text>
-                    <Text variant="label" as="p">{t.label}</Text>
+                    <Text variant={t.role === 'feature' ? 'lead' : 'body'} tone="muted">{t.line}</Text>
+                    {t.keywords && t.keywords.length > 0 && <div class="then"><Text variant="meta" as="p">{t.keywords.join(' · ')}</Text></div>}
                   </div>
                   {t.quote && (
                     <div class="quote" id={`cap-${t.id}-quote`}>
-                      <Text variant="small" as="p">“{t.quote.text}”</Text>
-                      <Text variant="meta" as="p">{t.quote.name}</Text>
+                      <Text variant={t.role === 'feature' ? 'body' : 'small'} as="p">“{t.quote.text}”</Text>
+                      <div class="then"><Text variant="meta" as="p">{t.quote.name}{t.quote.title ? `, ${t.quote.title}` : ''}</Text></div>
                     </div>
                   )}
                 </div>
               </div>
-              {t.pictures?.tall && <div class="picture tall"><Image {...picture(t.pictures.tall, tallSizes)} /></div>}
-              {t.pictures && <div class="picture side"><Image {...picture(t.pictures.side, sideSizes)} /></div>}
+              <div class="foot" id={`cap-${t.id}-label`}>
+                <Text variant="label" as="p">{t.label}</Text>
+              </div>
             </article>
             <section class="drawer" id={`cap-${t.id}-detail`} aria-labelledby={`cap-${t.id}-detail-title`} data-bento-drawer={t.id} hidden>
               <Heading level={drawerLevel} size="h4" id={`cap-${t.id}-detail-title`}>{t.name}, in detail</Heading>
@@ -145,7 +145,7 @@ const picture = (p: CardPicture, shown: string) => ({
     container: bento / inline-size;
   }
 
-  /* the lead with In their words beside it, then the tiles; without one, the other takes the row */
+  /* the lead with In their words beside it, the index, then the tiles; without one, the other takes the row */
   .frame {
     display: grid;
     grid-template-columns: minmax(0, 7fr) minmax(0, 5fr);
@@ -169,24 +169,50 @@ const picture = (p: CardPicture, shown: string) => ({
     display: grid;
   }
 
+  /* ---------- the index: every strength named before a scroll ---------- */
   .index {
+    display: grid;
+    gap: var(--space-2);
+  }
+
+  .index ul {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-1) var(--space-5);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  /* a short name ("AI") still makes a 44 px target */
+  .index li {
+    display: grid;
+    align-items: center;
+    min-block-size: var(--size-touch);
+    min-inline-size: var(--size-touch);
+  }
+
+  .short {
     display: none;
   }
 
+  /* ---------- the tray: four columns, rows as tall as their tiles, packed whole (the model's roles) ---------- */
   .tiles {
     display: grid;
-    grid-template-columns: repeat(12, minmax(0, 1fr));
+    grid-template-columns: repeat(4, minmax(0, 1fr));
     grid-auto-flow: row dense;
     gap: var(--space-5);
   }
 
-  /* ---------- a tile: its words; two rows tall, its picture over them, filling what the rows leave ---------- */
+  .tiles[data-columns='2'] {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  /* ---------- a tile: its picture whole, over its words; the label at the foot ---------- */
   .tile {
-    grid-column: span 4;
-    display: grid;
-    grid-template-areas: 'words';
-    gap: var(--space-4);
-    align-content: start;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-5);
     padding: var(--space-5);
     border: var(--border-hairline) solid var(--color-rule);
     border-radius: var(--radius-lg);
@@ -199,93 +225,89 @@ const picture = (p: CardPicture, shown: string) => ({
       border-color var(--duration-fast) var(--ease-standard);
   }
 
-  .tile[data-span='3'] {
-    grid-column: span 3;
+  .tile[data-role='feature'] {
+    grid-column: span 2;
+    grid-row: span 2;
+    padding: var(--space-6);
   }
 
-  .tile[data-span='6'] {
-    grid-column: span 6;
-  }
-
-  .tile[data-span='12'] {
-    grid-column: 1 / -1;
-  }
-
-  .tile[data-rows='2'] {
+  .tile[data-role='tall'] {
     grid-row: span 2;
   }
 
-  .tile:has(.tall) {
-    grid-template-areas: 'picture' 'words';
-    grid-template-rows: minmax(var(--c-bento-picture-band), 1fr) auto;
-    align-content: stretch;
+  .tile[data-role='wide'] {
+    grid-column: span 2;
   }
 
+  /* the words flow round the picture's drawn shape, not its box (scripts/alphaWrap.ts traces its outline from
+     its own transparency and closes gaps too small for a line); without it, they sit under the picture */
   .words {
-    grid-area: words;
-    display: grid;
-    gap: var(--space-2);
-    align-content: start;
+    display: flow-root;
   }
 
-  /* its size never sets the tile's: it fills what the rows leave, cropped round its focus point */
   .picture {
-    display: grid;
-    grid-template-rows: minmax(0, 1fr);
-    contain: size;
-  }
+    --alpha-wrap-measure: var(--c-bento-wrap-measure);
+    --alpha-wrap-band: var(--c-bento-wrap-band);
 
-  .tall {
-    grid-area: picture;
-  }
-
-  .side {
     display: none;
-    grid-area: side;
-    block-size: var(--c-bento-picture-side);
+    float: inline-end;
+    inline-size: 100%;
+    margin-block-end: var(--space-4);
+    shape-outside: var(--alpha-wrap-shape, none);
+    shape-margin: var(--c-bento-wrap-gap);
   }
 
-  /* the line and the quote share a place: calm, the quote takes the line's on hover and focus; full, one under the other */
+  .picture[data-wrap='start'] {
+    float: inline-start;
+  }
+
+  .picture[data-four] {
+    display: block;
+  }
+
+  .foot {
+    margin-block-start: auto;
+  }
+
+  /* the line and the quote: at rest, one under the other, in the flow round the picture; on hover, the quote takes the line's place */
   .say {
-    display: grid;
-  }
-
-  .say > * {
-    grid-area: 1 / 1;
-    transition: opacity var(--duration-fast) var(--ease-standard);
+    margin-block-start: var(--space-3);
   }
 
   .quote {
-    display: grid;
-    gap: var(--space-1);
-    align-content: start;
+    margin-block-start: var(--space-4);
     font-style: italic;
+  }
+
+  .then {
+    margin-block-start: var(--space-2);
+  }
+
+  [data-quote='hover'] .say {
+    display: grid;
+  }
+
+  [data-quote='hover'] .say > * {
+    grid-area: 1 / 1;
+    margin-block-start: 0;
+    transition: opacity var(--duration-fast) var(--ease-standard);
+  }
+
+  [data-quote='hover'] .quote {
     opacity: 0;
   }
 
-  .bento[data-density='full'] .say {
-    gap: var(--space-3);
-  }
-
-  .bento[data-density='full'] .say > * {
-    grid-area: auto;
-  }
-
-  .bento[data-density='full'] .quote {
-    opacity: 1;
-  }
-
-  /* under the pointer, focused or pressed: the tile rises on a soft shadow and, when calm, the quote takes the line's place */
+  /* under the pointer, focused or pressed: the tile rises on a soft shadow and a hover quote takes the line's place */
   @media (hover: hover) {
     .tile:hover {
       box-shadow: var(--shadow-md);
     }
 
-    .tile:hover .quote {
+    [data-quote='hover']:hover .quote {
       opacity: 1;
     }
 
-    [data-density='calm'] .tile:hover .say:has(.quote) > .about {
+    [data-quote='hover']:hover .about {
       opacity: 0;
     }
   }
@@ -294,11 +316,11 @@ const picture = (p: CardPicture, shown: string) => ({
     box-shadow: var(--shadow-md);
   }
 
-  .tile:has(.toggle:is(:focus-visible, :active)) .quote {
+  [data-quote='hover']:has(.toggle:is(:focus-visible, :active)) .quote {
     opacity: 1;
   }
 
-  [data-density='calm'] .tile:has(.toggle:is(:focus-visible, :active)) .say:has(.quote) > .about {
+  [data-quote='hover']:has(.toggle:is(:focus-visible, :active)) .about {
     opacity: 0;
   }
 
@@ -352,12 +374,7 @@ const picture = (p: CardPicture, shown: string) => ({
     rotate: 180deg;
   }
 
-  .about {
-    display: grid;
-    gap: var(--space-2);
-  }
-
-  /* ---------- a drawer: the row's whole width, right after its tile ---------- */
+  /* ---------- a drawer: the tray's whole width, right under its tile's rows ---------- */
   .drawer {
     grid-column: 1 / -1;
     display: grid;
@@ -405,67 +422,58 @@ const picture = (p: CardPicture, shown: string) => ({
     justify-content: flex-end;
   }
 
-  /* ---------- narrower: two to a row, one row each, the square at the side; In their words after the tiles ---------- */
-  @container bento (width < 50rem) {
+  /* ---------- two columns: a feature and a wide tile take a row (wide pictures), a tall tile keeps its two rows; In their words after the tiles ---------- */
+  @container bento (width < 64rem) {
     .frame[data-voices] > .lead,
     .frame[data-lead] > .voices {
       grid-area: auto / 1 / auto / -1;
     }
 
-    .tile[data-span] {
-      grid-column: span 6;
+    .tiles {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .tile[data-role='feature'] {
       grid-row: auto;
-      grid-template-areas: 'words';
-      grid-template-rows: auto;
-      align-content: start;
+      padding: var(--space-5);
     }
 
-    .tile:last-of-type:nth-of-type(odd) {
-      grid-column: 1 / -1;
-    }
-
-    .tile[data-span]:has(.side) {
-      grid-template-areas: 'words side';
-      grid-template-columns: minmax(0, 1fr) var(--c-bento-picture-side);
-    }
-
-    .tall {
+    .picture[data-four] {
       display: none;
     }
 
-    .side {
-      display: grid;
+    .picture[data-two] {
+      display: block;
     }
   }
 
-  /* ---------- a phone: the index first, the tiles stacked with their pictures at the side, the drawers an accordion ---------- */
+  /* ---------- a phone: the index's short names first, the tiles stacked, each with its 3:2 picture, the drawers an accordion ---------- */
   @container bento (width < 36rem) {
-    .index {
-      display: grid;
-      gap: var(--space-2);
+    .tiles {
+      grid-template-columns: minmax(0, 1fr);
     }
 
-    .index ul {
-      display: flex;
-      flex-wrap: wrap;
-      gap: var(--space-1) var(--space-4);
-      margin: 0;
-      padding: 0;
-      list-style: none;
-    }
-
-    /* a short name ("AI") still makes a 44 px target */
-    .index li {
-      display: grid;
-      align-items: center;
-      min-block-size: var(--size-touch);
-      min-inline-size: var(--size-touch);
-      text-align: center;
-    }
-
-    .tile[data-span] {
+    .tile[data-role] {
       grid-column: 1 / -1;
+      grid-row: auto;
       padding: var(--space-4);
+    }
+
+    .picture[data-four],
+    .picture[data-two] {
+      display: none;
+    }
+
+    .picture[data-one] {
+      display: block;
+    }
+
+    .full {
+      display: none;
+    }
+
+    .short {
+      display: inline;
     }
 
     .drawer {
@@ -477,6 +485,8 @@ const picture = (p: CardPicture, shown: string) => ({
 <script>
   import { each } from '../../scripts/page';
   import { setupBento } from '../../scripts/bento';
+  import { alphaWrap } from '../../scripts/alphaWrap';
 
   each<HTMLElement>('[data-bento]', setupBento);
+  each<HTMLElement>('[data-bento] [data-alpha-wrap]', alphaWrap);
 </script>

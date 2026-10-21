@@ -101,7 +101,9 @@ test.describe('home views', () => {
   test('bento: names at rest, a quote on focus and hover (and in the description), the drawer by press, Close, Esc and #cap-', async ({ page }) => {
     await page.goto(BENTO);
     const ids = await strengths(page);
-    const tile = page.locator('article[data-capability]').filter({ has: page.locator('.quote') }).first();
+    // a single or wide tile shows its quote on hover and focus (a feature or tall one, at rest): take a hover one if there is one
+    const hovering = page.locator("article[data-quote='hover']");
+    const tile = (await hovering.count()) ? hovering.first() : page.locator('article[data-quote]').first();
     const id = (await tile.getAttribute('data-capability'))!;
     const toggle = page.locator(`[data-bento-toggle="${id}"]`);
     const quote = tile.locator('.quote');
@@ -109,7 +111,7 @@ test.describe('home views', () => {
     // the quote is the toggle's description, so a screen reader hears it without hovering
     expect(await description(page, id)).toContain(words.slice(0, 20));
     const opacity = () => quote.evaluate((e) => getComputedStyle(e).opacity);
-    if (await tile.locator('.picture').count()) {
+    if ((await tile.getAttribute('data-quote')) === 'hover') {
       await expect.poll(opacity).toBe('0');
       await toggle.focus();
       await expect.poll(opacity).toBe('1');

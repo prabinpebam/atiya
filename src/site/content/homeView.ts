@@ -6,8 +6,9 @@
 import { canonicalPath, content, getAccess, getArticle, getHome, getHomeEvidence, getPerson, getPlanet, getRecommendations, getRoute, getRoutes, getSite, getStructure } from './repository';
 import { footerLinks, siteNav } from './navigation';
 import { picture } from './pictures';
+import type { CardPicture, ThumbnailShape } from '../design/pictures';
 import { withBase } from '../design/meta';
-import { bentoSettings, bentoTiles } from '../home/bento';
+import { bentoColumns, bentoSettings, bentoTiles } from '../home/bento';
 import { coverIssue, coverSettings } from '../home/cover';
 import { proofGrid, proofGridSettings } from '../home/proofGrid';
 import { spotlightSettings, spotlightShow } from '../home/spotlight';
@@ -148,9 +149,6 @@ async function cardPicture(id: string, slot: 'card' | 'content' = 'card') {
   return { src: p.src, srcset: p.srcset, alt: p.alt, width: p.width, height: p.height, bg: p.bg, display: 'fit' as const, ...(p.focus ? { focus: p.focus } : {}), ...(dark ? { dark } : {}) };
 }
 
-/** A picture shaped for its frame (a thumbnail shape): it fills the frame, cropped around its focus point. */
-const filledPicture = async (id: string) => ({ ...(await cardPicture(id)), display: 'fill' as const });
-
 /** The frame every home view shares: the page's title, the header's sections, the footer, and the sections index at the foot. */
 export function homeFrame() {
   const site = getSite();
@@ -181,15 +179,17 @@ export async function bentoView(lens?: string) {
   if (!home) return null;
   const env = presentEnv();
   const settings = bentoSettings(home.settings.bento);
+  const corners = { rounded: settings.corners === 'rounded' };
   const tiles = await Promise.all(
     bentoTiles(home.picks, settings, env).map(async ({ quote, pictures, ...t }) => ({
       ...t,
       ...(quote ? { quote: { text: quote.quote, name: quote.name, ...(quote.title ? { title: quote.title } : {}) } } : {}),
-      ...(pictures ? { pictures: { side: await filledPicture(pictures.side), ...(pictures.tall ? { tall: await filledPicture(pictures.tall) } : {}) } } : {}),
+      // each shape the tile can show, whole in its frame, at the sizes a big tile needs
+      ...(pictures ? { pictures: Object.fromEntries(await Promise.all(Object.entries(pictures).map(async ([shape, id]) => [shape, { ...(await cardPicture(id, 'content')), ...corners }]))) as Partial<Record<ThumbnailShape, CardPicture>> } : {}),
     })),
   );
   const voices = settings.words === 'on' ? voicesOf(home.picks, env).map(voiceProps) : [];
-  return { lead: homeLead(home, env), tiles, voices, density: settings.density };
+  return { lead: homeLead(home, env), tiles, voices, density: settings.density, columns: bentoColumns(tiles.length) };
 }
 
 /** A colleague's words as Voices and Cover take them. */
