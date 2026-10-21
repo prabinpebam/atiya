@@ -37,7 +37,11 @@ async function metadata(master: string, kept?: SidecarFacts): Promise<ImageMetad
   url.searchParams.append('origWidth', String(m.width));
   url.searchParams.append('origHeight', String(m.height));
   url.searchParams.append('origFormat', m.format);
-  // exactly what an import gives in dev (astro's emitImageMetadata)
+  // A version from the master's file: astro's dev endpoint tells the browser to keep each size for a year,
+  // so a master replaced at the same name and size would otherwise keep showing the old picture. The
+  // endpoint drops the query before reading the file.
+  url.searchParams.append('v', `${Math.round(st.mtimeMs).toString(36)}-${st.size.toString(36)}`);
+  // otherwise exactly what an import gives in dev (astro's emitImageMetadata)
   const src = '/@fs/' + (fileURLToPath(url) + url.search).replace(/\\/g, '/').replace(/^\//, '');
   const meta = { src, width: m.width, height: m.height, format: m.format } as ImageMetadata;
   Object.defineProperty(meta, 'fsPath', { enumerable: false, writable: false, value: abs.replace(/\\/g, '/') });
@@ -159,7 +163,8 @@ async function work(master: string, slot: Slot, posterMaster?: string, kept?: Si
  * poster (each with its size and time, so a replaced master is worked out again), slot and these rules.
  * On globalThis, so a module reloaded by HMR keeps them; at most MEMO_MAX, the oldest used dropped first.
  */
-const MEMO_RULES = JSON.stringify([WIDTHS, FULL, THUMB]);
+// the address rule (a master's version in its URL) is one of the rules: a change to it works pictures out again
+const MEMO_RULES = JSON.stringify([WIDTHS, FULL, THUMB, 'v']);
 const MEMO_MAX = 4000;
 type Memo = Map<string, Promise<{ value: Sized; urls: string[] }>>;
 const memo = (): Memo => ((globalThis as typeof globalThis & { __sitePictureMemo?: Memo }).__sitePictureMemo ??= new Map());

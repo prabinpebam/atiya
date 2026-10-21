@@ -72,6 +72,15 @@ describe('pictures remembered', () => {
     expect(getImage.mock.calls.length).toBeGreaterThan(withContent);
   });
 
+  it('gives a replaced master a new address, so a browser never keeps showing the old picture', async () => {
+    const first = await picture('shared/p', 'card');
+    expect(first.src).toMatch(/[?&]v=/);
+    const t = statSync(master).mtime;
+    utimesSync(master, t, new Date(t.getTime() + 5000));
+    const after = await picture('shared/p', 'card');
+    expect(after.src).not.toBe(first.src);
+  });
+
   it('shares one working out between pictures asked for at once', async () => {
     await Promise.all([picture('shared/p', 'card'), picture('shared/p', 'card'), picture('shared/p', 'card')]);
     const once = getImage.mock.calls.length;
