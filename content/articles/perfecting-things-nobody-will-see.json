@@ -1,0 +1,466 @@
+{
+  "id": "perfecting-things-nobody-will-see",
+  "type": "article",
+  "kind": "note",
+  "slug": "perfecting-things-nobody-will-see",
+  "title": "Why do we spend time perfecting things nobody will ever see?",
+  "summary": "Why careful work on the parts nobody sees can still be worth it: what it does to the person doing it, and why that reason may not hold for AI and robots.",
+  "status": "published",
+  "visibility": "public",
+  "publishedAt": "2026-10-21",
+  "updatedAt": "2026-10-21",
+  "locale": "en",
+  "hero": {
+    "media": "articles/perfecting-things-nobody-will-see/two-phones-inside",
+    "display": "fit",
+    "background": false,
+    "rounded": false,
+    "showCaption": false
+  },
+  "body": [
+    {
+      "type": "text",
+      "markdown": "The debate over Apple's obsession with craftsmanship is hardly new. Every time a teardown reveals meticulously arranged internals, the same arguments resurface. Some see evidence of engineering excellence and an uncompromising attention to detail. Others see wasted effort: time and resources spent perfecting something the customer will never see, at the expense of things that actually matter.",
+      "key": "4bed07"
+    },
+    {
+      "type": "text",
+      "markdown": "Both sides have a point. But I think the debate misses an important variable.",
+      "key": "4bdbb6"
+    },
+    {
+      "type": "text",
+      "markdown": "The usual arguments focus on the artifact: whether the extra effort improves the product, whether consumers care, and whether those resources could have been better spent. What they overlook is the person doing the work.",
+      "key": "4ec73b"
+    },
+    {
+      "type": "text",
+      "markdown": "Consider the same question across different walks of life. Why does a carpenter finish the underside of a table that nobody will ever see? Why does a chef take the time to arrange food beautifully on a plate meant for takeaway? Why does a programmer document code that seems perfectly self-explanatory? Why does a designer name every layer in Figma or organise files that nobody else may ever open?",
+      "key": "9b0924"
+    },
+    {
+      "type": "figure",
+      "media": "articles/perfecting-things-nobody-will-see/the-underside",
+      "width": "popout",
+      "lightbox": true,
+      "display": "fit",
+      "background": false,
+      "rounded": false,
+      "showCaption": false
+    },
+    {
+      "type": "text",
+      "markdown": "Each of these practices has its own justification. But we can imagine circumstances where the immediate benefit barely justifies the effort. The table will function just as well, the food will taste the same, and the software will run without those extra touches.",
+      "key": "3626b2"
+    },
+    {
+      "type": "text",
+      "markdown": "From a purely utilitarian perspective, these are reasonable questions. Time and effort are finite. We should spend them where they make a difference.",
+      "key": "0fedba"
+    },
+    {
+      "type": "text",
+      "markdown": "And yet, I think there is a reason to do some of these things even when the immediate benefit is marginal.",
+      "key": "7afb24"
+    },
+    {
+      "type": "quote",
+      "text": "The value of the work may extend beyond what we produce to what the work does to us.",
+      "variant": "pull",
+      "key": "pq7val"
+    },
+    {
+      "type": "heading",
+      "level": 2,
+      "text": "The things nobody sees",
+      "key": "a1ed0d"
+    },
+    {
+      "type": "text",
+      "markdown": "Steve Jobs often spoke about a lesson in craftsmanship he learned from his father, Paul Jobs. His father believed that even the parts of a cabinet hidden from view deserved the same care as the visible surfaces. Nobody might ever see the back, but that wasn't the point. You would know.",
+      "key": "f4caaa"
+    },
+    {
+      "type": "text",
+      "markdown": "It's a simple idea, but it shifts the question from who will see the work to who is doing it. The standard isn't determined by the audience. It's determined by the person making it.",
+      "key": "f5b134"
+    },
+    {
+      "type": "figure",
+      "media": "articles/perfecting-things-nobody-will-see/the-back-of-the-cabinet",
+      "width": "popout",
+      "lightbox": true,
+      "display": "fit",
+      "background": false,
+      "rounded": false,
+      "showCaption": false
+    },
+    {
+      "type": "text",
+      "markdown": "Jobs carried that sensibility into Apple. According to his biographer Walter Isaacson, he cared about details such as the finish of screws and the arrangement of components hidden inside the original Macintosh.",
+      "key": "3c0d46"
+    },
+    {
+      "type": "text",
+      "markdown": "The story is often used to argue that craftsmanship should extend to every part of a product. Quality, in this view, is a standard rather than a performance for an audience.",
+      "key": "30b514"
+    },
+    {
+      "type": "text",
+      "markdown": "I agree with the sentiment, but not necessarily with the implication that every hidden detail deserves the same investment of time and effort.",
+      "key": "eecfb1"
+    },
+    {
+      "type": "text",
+      "markdown": "There is a point at which arranging internal components for visual symmetry produces no meaningful benefit for the customer. An engineer could spend that time improving something more consequential. The same applies to polishing a codebase beyond what maintainability requires or meticulously organising files that nobody else will ever need to open.",
+      "key": "1f6dc2"
+    },
+    {
+      "type": "figure",
+      "media": "articles/perfecting-things-nobody-will-see/the-leaking-roof",
+      "width": "popout",
+      "lightbox": true,
+      "display": "fit",
+      "background": false,
+      "rounded": false,
+      "showCaption": false
+    },
+    {
+      "type": "text",
+      "markdown": "We shouldn't pretend that every extra hour of refinement is a good investment simply because the result looks more meticulous.",
+      "key": "fd8aa8"
+    },
+    {
+      "type": "text",
+      "markdown": "Perhaps, then, we should ask a different question. What if the value of doing something well isn't limited to the thing being made?",
+      "key": "bfd4a4"
+    },
+    {
+      "type": "heading",
+      "level": 2,
+      "text": "You become what you practise",
+      "key": "4b3862"
+    },
+    {
+      "type": "text",
+      "markdown": "In *Nicomachean Ethics*, Aristotle wrote:",
+      "key": "0617d6"
+    },
+    {
+      "type": "quote",
+      "text": "We become just by doing just acts, temperate by doing temperate acts, brave by doing brave acts.",
+      "cite": "Aristotle, Nicomachean Ethics",
+      "variant": "block",
+      "key": "edef0c"
+    },
+    {
+      "type": "text",
+      "markdown": "His point was that character isn't formed simply by understanding what is right or intending to do it. We develop dispositions through repeated action. Our habits influence how we behave when circumstances demand it.",
+      "key": "cc94b6"
+    },
+    {
+      "type": "text",
+      "markdown": "The same idea offers a useful way to think about our professional lives.",
+      "key": "a707d1"
+    },
+    {
+      "type": "text",
+      "markdown": "A designer who consistently names layers, organises files and documents decisions is practising a kind of care. An engineer who writes clear comments, handles edge cases and leaves a comprehensible codebase for the next person is practising the same. A craftsperson who finishes the hidden side of a cabinet is doing something similar.",
+      "key": "e06242"
+    },
+    {
+      "type": "text",
+      "markdown": "None of these actions automatically makes someone meticulous. But repeated, deliberate practice can make careful work more natural.",
+      "key": "3dddce"
+    },
+    {
+      "type": "text",
+      "markdown": "We tend to think of attention to detail as a capability we can switch on when necessary: be careless with the unimportant things, meticulous with the important ones, and know exactly when to change modes.",
+      "key": "9ec3cf"
+    },
+    {
+      "type": "text",
+      "markdown": "Humans aren't quite that modular.",
+      "key": "8f8b43"
+    },
+    {
+      "type": "text",
+      "markdown": "We carry our habits and inclinations into our decisions. We don't always recognise which details matter, nor can we reliably predict which seemingly inconsequential decision will have consequences later. The discipline of paying attention is itself something we have to cultivate.",
+      "key": "5dc7b9"
+    },
+    {
+      "type": "text",
+      "markdown": "This idea isn't entirely foreign to established quality practices. Consider **5S**, a methodology used in Lean manufacturing and quality improvement. Its five steps are to Sort, Set in Order, Shine, Standardise and Sustain.",
+      "key": "0dfdc8"
+    },
+    {
+      "type": "text",
+      "markdown": "The immediate benefits are practical: a mechanic can find the right tool quickly, a machine operator can spot a problem more easily, and a team can reduce avoidable errors. But something interesting happens when people internalise these practices. Many who practise 5S at work carry the same habits into their homes, organising their personal spaces and putting things back where they belong, even when there is no operational need to do so.",
+      "key": "5ebb2f"
+    },
+    {
+      "type": "text",
+      "markdown": "The practice has outgrown its original purpose. What began as a workplace discipline has become part of how they live.",
+      "key": "88f353"
+    },
+    {
+      "type": "figure",
+      "media": "articles/perfecting-things-nobody-will-see/it-comes-home",
+      "width": "wide",
+      "lightbox": true,
+      "display": "fit",
+      "background": false,
+      "rounded": false,
+      "showCaption": false
+    },
+    {
+      "type": "text",
+      "markdown": "This is what repeated practice can do. We may begin doing something because it is useful in a particular context, but over time, the behaviour can become independent of that context. We no longer need to assess the utility of every individual action before deciding how to act. The habit has become part of our default way of operating.",
+      "key": "48df14"
+    },
+    {
+      "type": "text",
+      "markdown": "My argument goes a step further. Even when a particular act of care has little immediate utility, practising it can still have value because of the habits it reinforces.",
+      "key": "fa9260"
+    },
+    {
+      "type": "quote",
+      "text": "Sometimes, the point of doing the work carefully is not just to improve that piece of work. It is to practise being someone who does careful work.",
+      "variant": "pull",
+      "key": "2da262"
+    },
+    {
+      "type": "heading",
+      "level": 2,
+      "text": "Safety is an attitude",
+      "key": "791f94"
+    },
+    {
+      "type": "text",
+      "markdown": "I often use the phrase \"Safety is an attitude.\"",
+      "key": "e0d4e4"
+    },
+    {
+      "type": "text",
+      "markdown": "We don't wear a helmet because every ride is dangerous. We wear one because we don't know which ride will be. It's the attitude towards safety that will count in this scenario.",
+      "key": "1c3a16"
+    },
+    {
+      "type": "figure",
+      "media": "articles/perfecting-things-nobody-will-see/the-helmet",
+      "width": "popout",
+      "lightbox": true,
+      "display": "fit",
+      "background": false,
+      "rounded": false,
+      "showCaption": false
+    },
+    {
+      "type": "text",
+      "markdown": "Craftsmanship works in a similar way, though the consequences are different. We cannot reliably predict every situation in which attention to detail will matter, or assume we will always recognise the consequential details correctly. The habits we cultivate in routine work influence how we approach the work that matters most.",
+      "key": "60011b"
+    },
+    {
+      "type": "text",
+      "markdown": "This is why I think it is worth developing a drive for craftsmanship even when a particular task doesn't objectively warrant the extra effort.",
+      "key": "8d542d"
+    },
+    {
+      "type": "quote",
+      "text": "Not every ride ends in an accident. Not every line of code needs a comment. Not every internal component needs to be beautiful.",
+      "variant": "pull",
+      "key": "adb7ed"
+    },
+    {
+      "type": "text",
+      "markdown": "The value lies partly in cultivating a consistent attitude rather than relying entirely on our ability to judge correctly every time.",
+      "key": "26943b"
+    },
+    {
+      "type": "text",
+      "markdown": "This doesn't mean perfecting everything regardless of cost. It means recognising that our ability to make good judgements about where quality matters is itself imperfect, and that the habits we practise can help compensate for that imperfection.",
+      "key": "e90fce"
+    },
+    {
+      "type": "heading",
+      "level": 2,
+      "text": "What does the work tell us about the people who made it?",
+      "key": "9e22db"
+    },
+    {
+      "type": "text",
+      "markdown": "There is another consequence of this way of working: it gives others a reason to trust us.",
+      "key": "cc1064"
+    },
+    {
+      "type": "text",
+      "markdown": "When I encounter a well-crafted product, including parts that didn't need to be beautiful to function, I see a signal of the standards its creators may have practised. That gives me some confidence that the same care might extend to decisions I cannot see.",
+      "key": "33f069"
+    },
+    {
+      "type": "figure",
+      "media": "articles/perfecting-things-nobody-will-see/the-drawer",
+      "width": "popout",
+      "lightbox": true,
+      "display": "fit",
+      "background": false,
+      "rounded": false,
+      "showCaption": false
+    },
+    {
+      "type": "text",
+      "markdown": "We rarely have complete visibility into how a product was made. We cannot inspect every design decision, engineering trade-off or quality check. We rely on signals to judge the people and organisations responsible.",
+      "key": "7ed66a"
+    },
+    {
+      "type": "text",
+      "markdown": "Craftsmanship can be one of those signals.",
+      "key": "81c77b"
+    },
+    {
+      "type": "text",
+      "markdown": "A meticulously arranged phone interior doesn't prove that the battery will last longer, the software will be more reliable, or the company has made the right trade-offs. But it can reflect an approach to work that we have reason to value.",
+      "key": "be5cdc"
+    },
+    {
+      "type": "text",
+      "markdown": "The same applies to a thoughtful design file, a well-organised codebase or a product whose less visible details have clearly received attention.",
+      "key": "482c3c"
+    },
+    {
+      "type": "text",
+      "markdown": "These things don't guarantee excellence everywhere. They give us a reason to believe that the people behind the work care about its quality beyond what is immediately visible or rewarded.",
+      "key": "9954e8"
+    },
+    {
+      "type": "text",
+      "markdown": "That trust has value, even when the individual act of refinement has little direct utility.",
+      "key": "68c3cf"
+    },
+    {
+      "type": "text",
+      "markdown": "But if the value of craftsmanship partly lies in how it shapes the person doing it, we arrive at a more fundamental question:",
+      "key": "047401"
+    },
+    {
+      "type": "quote",
+      "text": "What happens when the person doing the work is no longer human?",
+      "variant": "pull",
+      "key": "c620fc"
+    },
+    {
+      "type": "heading",
+      "level": 2,
+      "text": "But what happens in the age of AI and robots?",
+      "key": "c3cd1d"
+    },
+    {
+      "type": "text",
+      "markdown": "Imagine an AI system designing a phone. Its objective is to deliver the best product possible within the available constraints. It can evaluate performance, reliability, cost, manufacturability, repairability and every other relevant consideration.",
+      "key": "367820"
+    },
+    {
+      "type": "text",
+      "markdown": "Should it spend additional resources arranging internal components for aesthetic symmetry if doing so offers no benefit to the product?",
+      "key": "1555dc"
+    },
+    {
+      "type": "text",
+      "markdown": "Probably not.",
+      "key": "c29cdd"
+    },
+    {
+      "type": "text",
+      "markdown": "The AI doesn't need to practise meticulousness on an inconsequential task so that it will be more careful on a consequential one. It doesn't need to cultivate discipline or develop character through repetition. It can, in principle, apply the level of attention each task warrants.",
+      "key": "8d22b4"
+    },
+    {
+      "type": "text",
+      "markdown": "If visual symmetry matters, it can optimise for it. If it doesn't, those resources can be spent elsewhere.",
+      "key": "132ec8"
+    },
+    {
+      "type": "text",
+      "markdown": "The same applies to robots manufacturing the product. They don't need to practise precision where it doesn't matter in order to become more precise where it does. Their behaviour can be specified, tested and improved against the requirements of each task.",
+      "key": "7f3537"
+    },
+    {
+      "type": "text",
+      "markdown": "Of course, AI systems and robots have their own limitations. They can make mistakes, overlook constraints and optimise for the wrong objectives. They may need verification, redundancy and consistent procedures. But these needs don't necessarily require them to cultivate character in the human sense.",
+      "key": "ccc958"
+    },
+    {
+      "type": "text",
+      "markdown": "And that changes the economics of craftsmanship.",
+      "key": "349a92"
+    },
+    {
+      "type": "text",
+      "markdown": "For humans, a task can have value not only because of what it produces, but also because of what it develops in the person performing it. For a machine, the justification is different: the capability it develops, the output it produces and the resources it consumes.",
+      "key": "46accb"
+    },
+    {
+      "type": "text",
+      "markdown": "A task that is inefficient for the artifact but valuable for developing the human may have no equivalent justification for the machine.",
+      "key": "1b9cd8"
+    },
+    {
+      "type": "quote",
+      "text": "The same action, producing the same immediate result, can therefore have different value depending on who performs it.",
+      "variant": "pull",
+      "key": "3ddde5"
+    },
+    {
+      "type": "figure",
+      "media": "articles/perfecting-things-nobody-will-see/two-workshops",
+      "width": "wide",
+      "lightbox": true,
+      "display": "fit",
+      "background": false,
+      "rounded": false,
+      "showCaption": false
+    },
+    {
+      "type": "heading",
+      "level": 2,
+      "text": "So, was it a waste of time after all?",
+      "key": "24d596"
+    },
+    {
+      "type": "text",
+      "markdown": "Perhaps the engineer who spends hours making the inside of a phone beautiful is wasting time from the perspective of the phone alone.",
+      "key": "3dfac6"
+    },
+    {
+      "type": "text",
+      "markdown": "But the engineer isn't just producing a phone. They are also reinforcing habits and developing standards that may influence thousands of other decisions throughout their career.",
+      "key": "e908fc"
+    },
+    {
+      "type": "text",
+      "markdown": "That is the part of craftsmanship we overlook when we evaluate work exclusively by its immediate output.",
+      "key": "3bc3e2"
+    },
+    {
+      "type": "text",
+      "markdown": "Yet it also leaves us with an intriguing possibility. If AI and robots can produce excellent work without needing the process to shape them, some practices we value in human craftsmanship may become unnecessary. We may be able to produce better-optimised products precisely because their makers don't need to spend time cultivating the habits required to make them well.",
+      "key": "0c457c"
+    },
+    {
+      "type": "text",
+      "markdown": "The beautiful internals might still matter if they serve another purpose. But the reason for making them beautiful may no longer be the same.",
+      "key": "e12272"
+    },
+    {
+      "type": "text",
+      "markdown": "For humans, work has always been more than the thing we produce. It is also part of the process through which we become who we are.",
+      "key": "6262a5"
+    },
+    {
+      "type": "quote",
+      "text": "In the age of AI and robots, what happens when the work no longer needs to change the worker?",
+      "variant": "pull",
+      "key": "dc8972"
+    }
+  ]
+}

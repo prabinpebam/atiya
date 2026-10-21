@@ -84,6 +84,14 @@
         "view": "features",
         "children": [
           {
+            "id": "perfecting-things-nobody-will-see",
+            "kind": "item",
+            "item": {
+              "type": "article",
+              "id": "perfecting-things-nobody-will-see"
+            }
+          },
+          {
             "id": "you-dont-have-a-storytelling-problem",
             "kind": "item",
             "item": {

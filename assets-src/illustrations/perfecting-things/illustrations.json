@@ -1,0 +1,72 @@
+{
+  "style": "ink-sketch",
+  "article": "perfecting-things-nobody-will-see",
+  "theme": "The cabinetmaker's workshop: a small craftsman who finishes the parts nobody will ever see, and a robot that doesn't need to. Taken from the essay's own image of the carpenter who finishes the underside of the table.",
+  "cast": "THE CABINETMAKER, the recurring hero: a small, round, fuzzy creature with huge, slightly mismatched round eyes, a floppy flat cap, a stubby pencil behind one ear, a long carpenter's apron that is far too big for him and drags on the floor, a folding ruler and a sanding block poking out of its pocket; earnest, quietly proud and a little obsessive. THE OLD MASTER (only where the subject asks for him): a tall, stooped, wrinkly old creature with bushy eyebrows, round spectacles on the end of a long nose, a walrus moustache and a leather apron, leaning on a mallet; kind and wise. THE ROBOT (only where the subject asks for it): a sleek, tall, polished robot with a smooth egg-shaped body, a single round camera eye, thin jointed arms ending in calipers and precise tools, gliding on one wheel; calm, tireless and utterly efficient. THE CUSTOMERS: plump, cheerful, oblivious creatures in bobble hats and scarves.",
+  "castAnchor": "the-underside",
+  "images": [
+    {
+      "name": "the-underside",
+      "use": "figure",
+      "format": "figure",
+      "width": "popout",
+      "after": "Consider the same question across different walks of life.",
+      "subject": "A family of customers eats a big, happy dinner at a sturdy wooden table, chattering and spilling peas, completely unaware of what's beneath them. Under the table, the cabinetmaker lies on his back on a little creeper board with a tiny lantern, lovingly painting a delicate, ornate flower pattern on the table's underside with a fine brush, tongue poking out in concentration. The only witness is a small dog under the table, staring up at the painting in awe.",
+      "alt": "A family eats dinner at a wooden table while, underneath it, a small carpenter lies on his back by lantern light painting an ornate flower on the table's underside, watched only by an awed little dog."
+    },
+    {
+      "name": "the-back-of-the-cabinet",
+      "use": "figure",
+      "format": "figure",
+      "width": "popout",
+      "after": "It's a simple idea, but it shifts the question",
+      "subject": "A tall cabinet is pushed flat against a wall in an old workshop. The cabinetmaker has squeezed into the narrow gap behind it with a candle and is polishing the cabinet's back panel to a mirror shine, so his own delighted face reflects in it. The old master stands beside the cabinet, peeking round its side over his spectacles, smiling, tapping his own chest with one finger, as if to say: you would know.",
+      "alt": "A small carpenter squeezed behind a cabinet pushed against a wall polishes its hidden back until his face shows in it, while an old craftsman peeks round the side, smiling and tapping his chest."
+    },
+    {
+      "name": "the-leaking-roof",
+      "use": "figure",
+      "format": "figure",
+      "width": "popout",
+      "after": "There is a point at which arranging internal components",
+      "subject": "Late at night in a shop, the cabinetmaker hunches over an open music box with tweezers and a magnifying lamp, arranging dozens of tiny screws inside it into a perfect symmetrical rosette pattern, utterly absorbed; a clock on the wall shows very late. Behind him, the roof is leaking badly: water pours onto a soaked, glum customer holding an umbrella with a hole in it, waiting at the counter, and a bucket is overflowing.",
+      "alt": "Late at night a carpenter arranges tiny screws inside a music box into a perfect rosette with tweezers, while behind him the roof leaks onto a soaked customer waiting at the counter beside an overflowing bucket."
+    },
+    {
+      "name": "it-comes-home",
+      "use": "figure",
+      "format": "comic",
+      "width": "wide",
+      "after": "The practice has outgrown its original purpose.",
+      "subject": "Three panels, the cabinetmaker's tidy habit spreading. 1: at the workshop, he hangs his last tool on a pegboard where every tool has its painted outline, very satisfied. 2: at home in his kitchen, he hangs a whisk, a ladle and a frying pan on a pegboard with painted outlines too, and his teacup sits on a painted outline of a teacup. 3: at a picnic on a hillside, he has laid the sandwiches in a perfect grid on the blanket and is lining the ants up in a neat row, while his picnic companions stare at him, baffled, mid-bite.",
+      "alt": "A three-panel comic: a carpenter hangs tools on a pegboard with painted outlines, then hangs kitchen utensils on outlines at home, then lays out a picnic in a perfect grid and lines up the ants while friends stare."
+    },
+    {
+      "name": "the-helmet",
+      "use": "figure",
+      "format": "figure",
+      "width": "popout",
+      "after": "We don't wear a helmet because every ride is dangerous.",
+      "subject": "On a calm, sunny, perfectly ordinary country lane, the cabinetmaker pedals a little bicycle wearing a big, well-fitted helmet, strap neatly buckled, looking cheerful and unbothered. Passing customers on the verge look at the helmet and chuckle at the fuss. Just ahead of his front wheel, hidden in the grass where nobody has noticed it, lies a single banana peel.",
+      "alt": "On a calm country lane a small carpenter cycles in a big, neatly buckled helmet while onlookers chuckle at the fuss; just ahead of his wheel, unnoticed in the grass, lies a banana peel."
+    },
+    {
+      "name": "the-drawer",
+      "use": "figure",
+      "format": "figure",
+      "width": "popout",
+      "after": "When I encounter a well-crafted product",
+      "subject": "In a furniture shop, a customer has pulled a drawer all the way out of a chest and is peering at its back corner through a magnifying glass, discovering beautiful hand-cut dovetail joints; their eyes are huge and starry with delight, and their other hand is already holding out a purse to pay. The cabinetmaker stands behind the counter, pretending to be modest, quietly blushing.",
+      "alt": "In a furniture shop a customer peers through a magnifying glass at the hand-cut joints on the back of a pulled-out drawer, eyes shining, already holding out a purse, while the carpenter blushes behind the counter."
+    },
+    {
+      "name": "two-workshops",
+      "use": "figure",
+      "format": "strip",
+      "width": "wide",
+      "after": "The same action, producing the same immediate result",
+      "subject": "Two workshops side by side, each finishing an identical cabinet. On the left, the robot glides along a spotless line of perfectly identical cabinets stretching back into the distance, each exactly the same, and the robot itself is unchanged, calm and gleaming. On the right, the cabinetmaker steps back from his finished cabinet; behind him a trail of his earlier cabinets stretches back into the distance, from a wobbly, lopsided first attempt to ever better ones, and along that trail stand earlier versions of the cabinetmaker himself, from a clumsy little apprentice with bandaged fingers to the confident craftsman at the front.",
+      "alt": "Two workshops finish the same cabinet: a robot beside a line of identical cabinets, unchanged; a carpenter in front of a trail of ever-better cabinets and earlier, clumsier versions of himself."
+    }
+  ]
+}
