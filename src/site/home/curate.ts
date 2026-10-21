@@ -37,6 +37,8 @@ export interface StrengthPicks {
   headline?: Pick;
   /** Its own picture, else its headline's. */
   picture?: string;
+  /** The same picture in each shape (media IDs): its own picture for all of them, else its headline page's. */
+  pictures?: Evidence['pictures'];
   voice?: Capability['voice'];
   /** What its details show before Show all: pins, then the best, kinds balanced. */
   details: Pick[];
@@ -272,6 +274,7 @@ export function curate({ showcase, evidence, topics = [], lens: lensId }: Curate
       shown: all.length > 0,
       ...(h ? { headline: h } : {}),
       ...(c.media ?? h?.picture ? { picture: c.media ?? h?.picture } : {}),
+      ...(c.media ? { pictures: { wide: c.media, thumbnail: c.media, square: c.media } } : h?.picture && h.id && evidence.byId.get(h.id)?.pictures ? { pictures: evidence.byId.get(h.id)!.pictures } : {}),
       ...(c.voice ? { voice: c.voice } : {}),
       details,
       all,

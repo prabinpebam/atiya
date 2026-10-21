@@ -77,6 +77,8 @@ export interface CardPicture extends PictureSource {
   rounded?: boolean;
   /** A drop shadow following its shape. */
   shadow?: boolean;
+  /** Its focus point ("40% 30%"), round which a fill crops it. */
+  focus?: string;
   /** Its dark mode version. */
   dark?: PictureSource;
   /** The page's own square picture (media.md §9.4), filling a list row's square frame, with its dark mode version. */

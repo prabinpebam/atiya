@@ -8,7 +8,7 @@ import { plainText } from '../content/markdown';
 import type { Recommendation } from '../content/recommendations';
 import type { Article, Contribution, PageKind } from '../content/schema';
 import { toRef } from './schema';
-import { thumbnailFor } from '../design/pictures';
+import { thumbnailFor, type ThumbnailShape } from '../design/pictures';
 
 /** One page that may prove a strength. */
 export interface Evidence {
@@ -32,6 +32,8 @@ export interface Evidence {
   depth: number;
   /** Its wide card picture (a media ID; media.md §9.4): its own, else its lead picture, else its thumbnail. */
   picture?: string;
+  /** Its card picture in each shape (media IDs; media.md §9.4), for a view that frames it otherwise (Bento's tiles). */
+  pictures?: Partial<Record<ThumbnailShape, string>>;
   /** How many other open pages point at it. */
   linksIn: number;
   stale: boolean;
@@ -164,6 +166,7 @@ export function buildEvidence(index: Pick<ContentIndex, 'articles' | 'origins' |
       numbers,
       depth: Math.min(1, Math.max(words / 1500, (figures + numbers) / 6)),
       picture: thumbnailFor(a, 'wide'),
+      ...(thumbnailFor(a, 'wide') ? { pictures: { wide: thumbnailFor(a, 'wide'), thumbnail: thumbnailFor(a, 'thumbnail'), square: thumbnailFor(a, 'square') } } : {}),
       linksIn: linkedBy.get(id)?.size ?? 0,
       stale: a.status === 'stale',
       text: { title: normalise(a.title), summary: normalise(a.summary), headings: headings.map(normalise), body: normalise(body.join(' ')) },

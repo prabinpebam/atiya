@@ -3,6 +3,7 @@
  * name, line, label, quote and picture (L1, L2) and its evidence (L3), laid out for 3 to 6 strengths. Pure.
  */
 import type { HomePicks, StrengthPicks } from './curate';
+import type { ThumbnailShape } from '../design/pictures';
 import { KIND_LABEL, evidenceOf, strengthsInOrder, strongestKind, type EvidenceItem, type PresentEnv, type Voice } from './present';
 
 export interface BentoSettings {
@@ -41,6 +42,33 @@ export const SPANS: Record<number, number[]> = {
   6: [4, 4, 4, 4, 4, 4],
 };
 
+/**
+ * Tiles two rows tall, for a strength whose picture earns the room: n strengths in k columns, so 2k − n of the
+ * first k stand two rows tall and every tile is still in the first two rows (its name on the first screen). The
+ * counts not here, or too few pictures among the first k, keep SPANS, one row each.
+ */
+export const TALL_COLUMNS: Record<number, number> = { 3: 2, 4: 3, 5: 3, 6: 4 };
+
+/** The picture a two-row tile shows, by how wide it is: its frame is about square at 3 of 12 columns, 3:2 at 4, wide at 6. */
+export const tallShape = (span: number): ThumbnailShape => (span <= 3 ? 'square' : span <= 4 ? 'thumbnail' : 'wide');
+
+/** Each tile's columns and rows, in order: the richest of the first k with a picture (a quote, then the most proof) stand tall. */
+export function bentoLayout(tiles: { picture: boolean; quote: boolean; total: number }[]): { span: number; rows: 1 | 2 }[] {
+  const n = tiles.length;
+  const flat = tiles.map((_, i) => ({ span: SPANS[Math.min(6, Math.max(1, n))]?.[i] ?? 4, rows: 1 as const }));
+  const k = TALL_COLUMNS[n];
+  if (!k) return flat;
+  const tall = tiles
+    .slice(0, k)
+    .map((t, i) => ({ ...t, i }))
+    .filter((t) => t.picture)
+    .sort((a, b) => Number(b.quote) - Number(a.quote) || b.total - a.total || a.i - b.i)
+    .slice(0, 2 * k - n)
+    .map((t) => t.i);
+  if (tall.length < 2 * k - n) return flat;
+  return tiles.map((_, i) => ({ span: 12 / k, rows: tall.includes(i) ? 2 : 1 }));
+}
+
 export interface BentoTile {
   id: string;
   name: string;
@@ -49,10 +77,12 @@ export interface BentoTile {
   /** Its strongest kind and how much proves it: "Led · 4 pieces of evidence". */
   label: string;
   quote?: Voice;
-  /** A media ID. */
-  picture?: string;
+  /** Media IDs: tall, the picture a two-row tile shows (tallShape); side, the square beside a tile's words on a narrower screen. */
+  pictures?: { tall?: string; side: string };
   /** Columns of 12 on a wide screen. */
   span: number;
+  /** Rows on a wide screen: 2 for a tile whose picture earns the room. */
+  rows: 1 | 2;
   details: EvidenceItem[];
 }
 
@@ -65,10 +95,17 @@ export const evidenceLabel = (s: Pick<StrengthPicks, 'all' | 'total'>, goal: Hom
 /** The tiles, in order: the lens's, else the person's, else strongest first; only strengths with proof (CU7). */
 export function bentoTiles(picks: HomePicks, settings: BentoSettings, env: PresentEnv): BentoTile[] {
   const ordered = strengthsInOrder(picks, settings.order);
-  const spans = SPANS[Math.min(6, Math.max(1, ordered.length))] ?? [];
+  const shapes = ordered.map((s): Partial<Record<ThumbnailShape, string>> | undefined => {
+    if (settings.pictures === 'none') return undefined;
+    const one = settings.pictures === 'chosen' ? s.capability.media : s.pictures ? undefined : s.picture;
+    return one ? { wide: one, thumbnail: one, square: one } : settings.pictures === 'work' ? s.pictures : undefined;
+  });
+  const layout = bentoLayout(ordered.map((s, i) => ({ picture: !!shapes[i]?.square, quote: !!s.voice, total: s.total })));
   return ordered.map((s, i) => {
     const who = s.voice ? env.person(s.voice.recommendation) : undefined;
-    const picture = settings.pictures === 'none' ? undefined : settings.pictures === 'chosen' ? s.capability.media : s.picture;
+    const { span, rows } = layout[i];
+    const shape = shapes[i];
+    const pictures = shape?.square ? { side: shape.square, ...(rows === 2 ? { tall: shape[tallShape(span)] ?? shape.square } : {}) } : undefined;
     return {
       id: s.id,
       name: s.capability.name,
@@ -76,8 +113,9 @@ export function bentoTiles(picks: HomePicks, settings: BentoSettings, env: Prese
       line: s.capability.line,
       label: evidenceLabel(s, picks.goal),
       ...(s.voice && who ? { quote: { recommendation: s.voice.recommendation, quote: s.voice.quote, name: who.name, ...(who.title ? { title: who.title } : {}) } } : {}),
-      ...(picture ? { picture } : {}),
-      span: spans[i] ?? 4,
+      ...(pictures ? { pictures } : {}),
+      span,
+      rows,
       details: evidenceOf(s, env),
     };
   });

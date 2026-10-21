@@ -145,8 +145,11 @@ export function presentEnv(): PresentEnv {
 async function cardPicture(id: string, slot: 'card' | 'content' = 'card') {
   const p = await picture(id, slot);
   const dark = p.dark ? { src: p.dark.src, srcset: p.dark.srcset, width: p.dark.width, height: p.dark.height, bg: p.dark.bg } : undefined;
-  return { src: p.src, srcset: p.srcset, alt: p.alt, width: p.width, height: p.height, bg: p.bg, display: 'fit' as const, ...(dark ? { dark } : {}) };
+  return { src: p.src, srcset: p.srcset, alt: p.alt, width: p.width, height: p.height, bg: p.bg, display: 'fit' as const, ...(p.focus ? { focus: p.focus } : {}), ...(dark ? { dark } : {}) };
 }
+
+/** A picture shaped for its frame (a thumbnail shape): it fills the frame, cropped around its focus point. */
+const filledPicture = async (id: string) => ({ ...(await cardPicture(id)), display: 'fill' as const });
 
 /** The frame every home view shares: the page's title, the header's sections, the footer, and the sections index at the foot. */
 export function homeFrame() {
@@ -179,10 +182,10 @@ export async function bentoView(lens?: string) {
   const env = presentEnv();
   const settings = bentoSettings(home.settings.bento);
   const tiles = await Promise.all(
-    bentoTiles(home.picks, settings, env).map(async ({ quote, picture: media, ...t }) => ({
+    bentoTiles(home.picks, settings, env).map(async ({ quote, pictures, ...t }) => ({
       ...t,
       ...(quote ? { quote: { text: quote.quote, name: quote.name, ...(quote.title ? { title: quote.title } : {}) } } : {}),
-      ...(media ? { picture: await cardPicture(media) } : {}),
+      ...(pictures ? { pictures: { side: await filledPicture(pictures.side), ...(pictures.tall ? { tall: await filledPicture(pictures.tall) } : {}) } } : {}),
     })),
   );
   const voices = settings.words === 'on' ? voicesOf(home.picks, env).map(voiceProps) : [];

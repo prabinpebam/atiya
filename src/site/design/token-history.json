@@ -14,7 +14,7 @@
     "breakpoint.short": {"v":"30rem"},
     "breakpoint.sm": {"v":"40rem"},
     "c.bento.evidence": {"v":"15rem"},
-    "c.bento.picture": {"v":"12rem"},
+    "c.bento.picture": {"v":"20rem"},
     "c.bento.picture-band": {"v":"5.5rem"},
     "c.bento.picture-side": {"v":"6rem"},
     "c.bento.query-one": {"v":"36rem"},
@@ -443,6 +443,14 @@
     {
       "date": "2026-10-21",
       "changes": {
+        "c.bento.picture": [
+          {
+            "v": "12rem"
+          },
+          {
+            "v": "20rem"
+          }
+        ],
         "c.questions.query-phone": [
           null,
           {

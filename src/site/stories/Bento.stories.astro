@@ -21,12 +21,13 @@ const details = (id: string) => [
   { key: `${id}-b`, title: 'A line from the résumé', kindLabel: 'Résumé', href: withBase('/design/') },
   { key: `${id}-c`, title: 'What a colleague said', kindLabel: 'In their words' },
 ];
-const tiles = (prefix: string, count: number, spans: number[], withPictures = true) =>
+const tiles = (prefix: string, count: number, spans: number[], rows: (1 | 2)[] = [], withPictures = true) =>
   strengths.slice(0, count).map((s, i) => ({
     ...s,
     id: `${prefix}-${s.id}`,
     span: spans[i],
-    picture: withPictures ? pictures[i] : undefined,
+    rows: rows[i] ?? 1,
+    pictures: withPictures ? { side: pictures[i], ...(rows[i] === 2 ? { tall: pictures[i] } : {}) } : undefined,
     quote: i % 2 === 0 ? quote : undefined,
     details: details(`${prefix}-${s.id}`),
   }));
@@ -37,23 +38,23 @@ const voices = [
 ];
 ---
 
-<Example title="Six strengths, calm" layout="block" description="Every strength in view at once, with the lead and In their words beside them. A quote shows under the pointer or focus; a press opens the drawer under its row.">
-  <Bento tiles={tiles('six', 6, [4, 4, 4, 4, 4, 4])} density="calm" headingLevel={3}>
+<Example title="Six strengths, calm" layout="block" description="Every strength in view at once, with the lead and In their words beside them. Two tiles stand two rows tall with their pictures; a quote takes a tile's line under the pointer or focus; a press anywhere on a tile opens the drawer under its row.">
+  <Bento tiles={tiles('six', 6, [3, 3, 3, 3, 3, 3], [1, 1, 2, 2, 1, 1])} density="calm" headingLevel={3}>
     <HomeLead slot="lead" name="Alex Morgan" role="Head of Design" facts={['15 years', 'Teams of 40', 'Three products']} primary={{ label: 'Read my résumé', href: withBase('/design/') }} secondary={{ label: 'Get in touch', href: withBase('/design/') }} headingLevel={2} />
     <Voices slot="voices" voices={voices} />
   </Bento>
 </Example>
 
-<Example title="Five strengths, full" layout="block" description="Density full shows every quote at rest. The first two are wider.">
-  <Bento tiles={tiles('five', 5, [6, 6, 4, 4, 4])} density="full" />
+<Example title="Five strengths, full" layout="block" description="Density full shows every quote at rest. The first stands two rows tall.">
+  <Bento tiles={tiles('five', 5, [4, 4, 4, 4, 4], [2, 1, 1, 1, 1])} density="full" />
 </Example>
 
 <Example title="Four strengths, no pictures" layout="block" description="A site with no pictures yet: the words carry the tiles.">
-  <Bento tiles={tiles('four', 4, [6, 6, 6, 6], false)} />
+  <Bento tiles={tiles('four', 4, [6, 6, 6, 6], [], false)} />
 </Example>
 
-<Example title="Three strengths, with a lead" layout="block" description="A new site: three tiles in a row.">
-  <Bento tiles={tiles('three', 3, [4, 4, 4])} headingLevel={3}>
+<Example title="Three strengths, with a lead" layout="block" description="A new site: the first tall with its wide picture, the other two beside it.">
+  <Bento tiles={tiles('three', 3, [6, 6, 6], [2, 1, 1])} headingLevel={3}>
     <HomeLead slot="lead" name="Alex Morgan" role="Head of Design" primary={{ label: 'Read my résumé', href: withBase('/design/') }} headingLevel={2} />
   </Bento>
 </Example>

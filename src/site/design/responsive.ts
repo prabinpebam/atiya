@@ -29,7 +29,7 @@ export const PICTURE_WIDTHS = {
   'image-portrait': 13,
   'image-portrait-sm': 8,
   'bento-picture-side': 6,
-  'bento-picture': 12,
+  'bento-picture': 20,
   'cover-picture': 44,
   'cover-feature-picture': 34,
   'spotlight-picture': 44,

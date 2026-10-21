@@ -19,8 +19,9 @@ None.
 - `--c-questions-strength`: `12rem`
 - `--c-view-choices-still`: `6.5rem`
 
-**Changed in value** (1)
+**Changed in value** (2)
 
+- `--c-bento-picture`: `12rem` → `20rem`
 - `--c-story-card-row-picture`: `11rem` → `8rem`
 
 ## 20 October 2026

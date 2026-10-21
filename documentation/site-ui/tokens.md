@@ -719,9 +719,9 @@ The Bento home view (documentation/home-views/bento.md): a tray of the person's 
 
 | Token | Value | Resolves to | Use |
 |---|---|---|---|
-| `--c-bento-picture-side` | `6rem` |  | A strength's picture at the side of its tile, when the tiles stack one under another (a phone) |
-| `--c-bento-picture-band` | `5.5rem` |  | The least height of the band at a tile's foot that shows its picture whole: low enough that every strength's name is on the first screen at 1280 by 800 |
-| `--c-bento-picture` | `12rem` |  | The widest a strength's picture shows in its band (a wide picture at the band's height), for the browser to choose its file |
+| `--c-bento-picture-side` | `6rem` |  | A strength's square picture at the side of its tile, when the tiles go two to a row or stack one under another |
+| `--c-bento-picture-band` | `5.5rem` |  | The least height of a two-row tile's picture, over its words: low enough that every strength's name is on the first screen at 1280 by 800 |
+| `--c-bento-picture` | `20rem` |  | About the widest a two-row tile's picture shows (its square, 3:2 or wide thumbnail, filling its frame), for the browser to choose its file |
 | `--c-bento-evidence` | `15rem` |  | The narrowest a piece of evidence gets in an open drawer, so its title keeps a few words to a line |
 | `--c-bento-query-two` | `50rem` |  | A container query (@container only): narrower than this, the tiles go two to a row and In their words goes under the lead. The page's column at about an 860 px window, just under md |
 | `--c-bento-query-one` | `36rem` |  | A container query (@container only): narrower than this, the tiles stack with their pictures at the side and the index of strengths shows. The page's column at about a 620 px window, just under sm |

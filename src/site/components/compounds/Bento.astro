@@ -37,12 +37,14 @@ interface Props {
     line: string;
     /** Its strongest kind of proof and how much: "Led · 4 pieces of evidence". */
     label: string;
-    /** A colleague's words about it, shown on hover and focus (always, with density full). */
+    /** A colleague's words about it: in its line's place on hover and focus (with it, density full). */
     quote?: { text: string; name: string; title?: string };
-    /** Its picture, and its dark mode version. */
-    picture?: CardPicture;
-    /** How many of 12 columns it takes on a wide screen (4, 6 or 12). */
+    /** Its pictures, each with its dark mode version: tall, over the words of a two-row tile (its square, 3:2 or wide thumbnail); side, the square beside its words on a narrower screen. */
+    pictures?: { tall?: CardPicture; side: CardPicture };
+    /** How many of 12 columns it takes on a wide screen (3, 4, 6 or 12). */
     span: number;
+    /** How many rows it takes on a wide screen: 2 for a tile whose picture earns the room. */
+    rows?: 1 | 2;
     /** Its evidence, in the drawer: a page, a résumé line or a voice, with where it leads. */
     details: { key: string; title: string; kindLabel?: string; href?: string; ask?: string }[];
   }[];
@@ -58,8 +60,22 @@ const { tiles, density = 'calm', indexLabel = `${tiles.length} strengths`, headi
 const drawerLevel = (headingLevel + 1) as 3 | 4;
 const lead = Astro.slots.has('lead');
 const voices = Astro.slots.has('voices');
-// shown whole in its band, a picture is never wider than the band lets it be (at the side on a phone)
-const pictureSizes = sizes(['sm', 'bento-picture-side'], 'bento-picture');
+// a two-row tile's picture fills its frame (shown only on a wide screen); the side square, only narrower
+const tallSizes = sizes('bento-picture');
+const sideSizes = sizes('bento-picture-side');
+const picture = (p: CardPicture, shown: string) => ({
+  src: p.src,
+  srcset: p.srcset,
+  sizes: shown,
+  alt: p.alt,
+  width: p.width,
+  height: p.height,
+  display: 'fill' as const,
+  fill: true,
+  focus: p.focus,
+  rounded: p.rounded !== false,
+  dark: p.dark,
+});
 ---
 
 <div class="bento" data-bento data-density={density}>
@@ -77,38 +93,18 @@ const pictureSizes = sizes(['sm', 'bento-picture-side'], 'bento-picture');
       {
         tiles.map((t) => (
           <Fragment>
-            <article class="tile" id={`cap-${t.id}`} data-capability={t.id} data-span={String(t.span)} data-card>
+            <article class="tile" id={`cap-${t.id}`} data-capability={t.id} data-span={String(t.span)} data-rows={String(t.rows ?? 1)} data-card>
               <div class="words">
-                <Heading level={headingLevel} size="h3">
+                <Heading level={headingLevel} size={t.span <= 3 ? 'h4' : 'h3'}>
                   <button class="toggle" type="button" aria-expanded="false" aria-controls={`cap-${t.id}-detail`} aria-describedby={[`cap-${t.id}-about`, t.quote && `cap-${t.id}-quote`].filter(Boolean).join(' ')} data-card-link data-bento-toggle={t.id}>
-                    <span>{t.name}</span>
-                    <span class="chevron"><Icon name="chevron-down" /></span>
+                    <span>{t.name.split(' ').slice(0, -1).join(' ')} <span class="last">{t.name.split(' ').at(-1)}<span class="chevron"><Icon name="chevron-down" /></span></span></span>
                   </button>
                 </Heading>
-                <div class="about" id={`cap-${t.id}-about`}>
-                  <Text tone="muted">{t.line}</Text>
-                  <Text variant="label" as="p">{t.label}</Text>
-                </div>
-              </div>
-              {(t.picture || t.quote) && (
-                <div class="foot">
-                  {t.picture && (
-                    <div class="picture">
-                      <Image
-                        src={t.picture.src}
-                        srcset={t.picture.srcset}
-                        sizes={pictureSizes}
-                        alt={t.picture.alt}
-                        width={t.picture.width}
-                        height={t.picture.height}
-                        display="fit"
-                        fill
-                        rounded={t.picture.rounded !== false}
-                        bg={t.picture.background && t.picture.bg ? { light: t.picture.bg, dark: t.picture.dark?.bg } : undefined}
-                        dark={t.picture.dark}
-                      />
-                    </div>
-                  )}
+                <div class="say">
+                  <div class="about" id={`cap-${t.id}-about`}>
+                    <Text tone="muted">{t.line}</Text>
+                    <Text variant="label" as="p">{t.label}</Text>
+                  </div>
                   {t.quote && (
                     <div class="quote" id={`cap-${t.id}-quote`}>
                       <Text variant="small" as="p">“{t.quote.text}”</Text>
@@ -116,7 +112,9 @@ const pictureSizes = sizes(['sm', 'bento-picture-side'], 'bento-picture');
                     </div>
                   )}
                 </div>
-              )}
+              </div>
+              {t.pictures?.tall && <div class="picture tall"><Image {...picture(t.pictures.tall, tallSizes)} /></div>}
+              {t.pictures && <div class="picture side"><Image {...picture(t.pictures.side, sideSizes)} /></div>}
             </article>
             <section class="drawer" id={`cap-${t.id}-detail`} aria-labelledby={`cap-${t.id}-detail-title`} data-bento-drawer={t.id} hidden>
               <Heading level={drawerLevel} size="h4" id={`cap-${t.id}-detail-title`}>{t.name}, in detail</Heading>
@@ -182,20 +180,27 @@ const pictureSizes = sizes(['sm', 'bento-picture-side'], 'bento-picture');
     gap: var(--space-5);
   }
 
-  /* ---------- a tile: its words, then its picture whole in a band at the foot that takes what the row leaves ---------- */
+  /* ---------- a tile: its words; two rows tall, its picture over them, filling what the rows leave ---------- */
   .tile {
     grid-column: span 4;
     display: grid;
-    grid-template-rows: auto minmax(var(--c-bento-picture-band), 1fr);
+    grid-template-areas: 'words';
     gap: var(--space-4);
+    align-content: start;
     padding: var(--space-5);
-    border: var(--border-hairline) solid var(--color-border);
+    border: var(--border-hairline) solid var(--color-rule);
     border-radius: var(--radius-lg);
     background: var(--color-bg-raised);
+    isolation: isolate;
     scroll-margin-block-start: calc(var(--size-chrome-block) + var(--space-8));
     transition:
       scale var(--duration-fast) var(--ease-standard),
+      box-shadow var(--duration-fast) var(--ease-standard),
       border-color var(--duration-fast) var(--ease-standard);
+  }
+
+  .tile[data-span='3'] {
+    grid-column: span 3;
   }
 
   .tile[data-span='6'] {
@@ -206,75 +211,94 @@ const pictureSizes = sizes(['sm', 'bento-picture-side'], 'bento-picture');
     grid-column: 1 / -1;
   }
 
-  .tile:not(:has(.foot)) {
-    grid-template-rows: auto;
+  .tile[data-rows='2'] {
+    grid-row: span 2;
+  }
+
+  .tile:has(.tall) {
+    grid-template-areas: 'picture' 'words';
+    grid-template-rows: minmax(var(--c-bento-picture-band), 1fr) auto;
+    align-content: stretch;
+  }
+
+  .words {
+    grid-area: words;
+    display: grid;
+    gap: var(--space-2);
     align-content: start;
   }
 
-  /* the foot: the picture whole in its band; calm, a colleague's words fade in over it on hover and focus (at rest, without a picture); full, both */
-  .foot {
-    display: grid;
-  }
-
-  .foot > * {
-    grid-area: 1 / 1;
-    transition: opacity var(--duration-fast) var(--ease-standard);
-  }
-
-  /* its size never sets the tile's: the band takes the least height, or what the row leaves */
+  /* its size never sets the tile's: it fills what the rows leave, cropped round its focus point */
   .picture {
     display: grid;
     grid-template-rows: minmax(0, 1fr);
     contain: size;
   }
 
+  .tall {
+    grid-area: picture;
+  }
+
+  .side {
+    display: none;
+    grid-area: side;
+    block-size: var(--c-bento-picture-side);
+  }
+
+  /* the line and the quote share a place: calm, the quote takes the line's on hover and focus; full, one under the other */
+  .say {
+    display: grid;
+  }
+
+  .say > * {
+    grid-area: 1 / 1;
+    transition: opacity var(--duration-fast) var(--ease-standard);
+  }
+
   .quote {
     display: grid;
     gap: var(--space-1);
-    align-content: center;
+    align-content: start;
     font-style: italic;
-  }
-
-  .foot:has(.picture) > .quote {
     opacity: 0;
   }
 
-  .bento[data-density='full'] .foot {
+  .bento[data-density='full'] .say {
     gap: var(--space-3);
   }
 
-  .bento[data-density='full'] .foot > * {
+  .bento[data-density='full'] .say > * {
     grid-area: auto;
   }
 
-  .bento[data-density='full'] .foot > .quote {
+  .bento[data-density='full'] .quote {
     opacity: 1;
   }
 
-  /* under the pointer, focused or pressed: the border darkens and, when calm, the quote takes the picture's place */
+  /* under the pointer, focused or pressed: the tile rises on a soft shadow and, when calm, the quote takes the line's place */
   @media (hover: hover) {
     .tile:hover {
-      border-color: var(--color-border-strong);
+      box-shadow: var(--shadow-md);
     }
 
     .tile:hover .quote {
       opacity: 1;
     }
 
-    [data-density='calm'] .tile:hover .foot:has(.quote) > .picture {
+    [data-density='calm'] .tile:hover .say:has(.quote) > .about {
       opacity: 0;
     }
   }
 
   .tile:has(.toggle:is(:focus-visible, :active)) {
-    border-color: var(--color-border-strong);
+    box-shadow: var(--shadow-md);
   }
 
   .tile:has(.toggle:is(:focus-visible, :active)) .quote {
     opacity: 1;
   }
 
-  [data-density='calm'] .tile:has(.toggle:is(:focus-visible, :active)) .foot:has(.quote) > .picture {
+  [data-density='calm'] .tile:has(.toggle:is(:focus-visible, :active)) .say:has(.quote) > .about {
     opacity: 0;
   }
 
@@ -282,7 +306,7 @@ const pictureSizes = sizes(['sm', 'bento-picture-side'], 'bento-picture');
     border-color: var(--color-accent);
   }
 
-  /* the lift: only for those who don't ask for less motion (they see the border darken) */
+  /* the lift: only for those who don't ask for less motion (they see the shadow) */
   @media (prefers-reduced-motion: no-preference) {
     @media (hover: hover) {
       .tile:hover {
@@ -299,12 +323,6 @@ const pictureSizes = sizes(['sm', 'bento-picture-side'], 'bento-picture');
     }
   }
 
-  .words {
-    display: grid;
-    gap: var(--space-2);
-    align-content: start;
-  }
-
   /* the chevron follows the name's last word, however it wraps */
   .toggle {
     display: inline-block;
@@ -312,8 +330,14 @@ const pictureSizes = sizes(['sm', 'bento-picture-side'], 'bento-picture');
     padding-block: var(--space-1);
   }
 
+  /* the whole tile presses its title: over the picture and the quote, which paint in their own layers */
   .toggle::after {
+    z-index: var(--layer-raised);
     border-radius: var(--radius-lg);
+  }
+
+  .last {
+    white-space: nowrap;
   }
 
   .chevron {
@@ -381,7 +405,7 @@ const pictureSizes = sizes(['sm', 'bento-picture-side'], 'bento-picture');
     justify-content: flex-end;
   }
 
-  /* ---------- narrower: two to a row, In their words after the tiles ---------- */
+  /* ---------- narrower: two to a row, one row each, the square at the side; In their words after the tiles ---------- */
   @container bento (width < 50rem) {
     .frame[data-voices] > .lead,
     .frame[data-lead] > .voices {
@@ -390,10 +414,27 @@ const pictureSizes = sizes(['sm', 'bento-picture-side'], 'bento-picture');
 
     .tile[data-span] {
       grid-column: span 6;
+      grid-row: auto;
+      grid-template-areas: 'words';
+      grid-template-rows: auto;
+      align-content: start;
     }
 
     .tile:last-of-type:nth-of-type(odd) {
       grid-column: 1 / -1;
+    }
+
+    .tile[data-span]:has(.side) {
+      grid-template-areas: 'words side';
+      grid-template-columns: minmax(0, 1fr) var(--c-bento-picture-side);
+    }
+
+    .tall {
+      display: none;
+    }
+
+    .side {
+      display: grid;
     }
   }
 
@@ -425,24 +466,6 @@ const pictureSizes = sizes(['sm', 'bento-picture-side'], 'bento-picture');
     .tile[data-span] {
       grid-column: 1 / -1;
       padding: var(--space-4);
-    }
-
-    .tile:has(.picture) {
-      grid-template-columns: minmax(0, 1fr) var(--c-bento-picture-side);
-      grid-template-rows: minmax(var(--c-bento-picture-side), auto);
-    }
-
-    .tile:has(.picture) .foot {
-      grid-area: 1 / 2;
-    }
-
-    /* no room for a quote beside the words: it stays the tile's description */
-    .tile:has(.picture) .quote {
-      display: none;
-    }
-
-    .words {
-      grid-area: 1 / 1;
     }
 
     .drawer {
