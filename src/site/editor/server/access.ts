@@ -8,7 +8,7 @@
  */
 import { type AccessMessage, type Article, type HubNode, type Overlay, type PlanetStructure, type SiteNode, type SiteStructure } from '../../content/schema';
 import { commit, jsonBytes, readDoc, readFile, versionOf, type Change, type Result } from './store';
-import { articleKey, OVERLAY, STRUCTURE } from './articles';
+import { albumRefusal, articleKey, OVERLAY, STRUCTURE } from './articles';
 import { generateCode } from '../../access/codes';
 import { b64, grantId, randomBytes, token } from '../../access/crypto';
 import { grantState, isValid } from '../../access/grants';
@@ -240,6 +240,9 @@ export async function setPageAccess(id: string, to: PageAccess, section?: string
   let nextOverlay = overlay;
 
   if (from === 'open') {
+    // an album another page shows stays open (V51): said with the pages that show it
+    const shown = to === 'private' ? albumRefusal(id, 'private') : undefined;
+    if (shown) return refuse(key, shown, 'access');
     const where = sectionOf(structure, ref) ?? section;
     if (!where) return refuse(STRUCTURE, 'a private page is in a section, like any page: put it in one first', 'section');
     const order = sectionOrder(structure, overlay, where).map((p) => p.id);

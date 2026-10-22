@@ -2,19 +2,22 @@
 /**
  * The AI screen's writer (documentation/editor/ai-services.md §8.1): the service every AI request goes to, chosen
  * from those set up, and Found on this computer: Ollama or LM Studio answering and not added yet, offered with
- * its models and Add. Changing the writer saves at once.
+ * its models and Add. Changing the writer saves at once. Pictures says whether the writer's model sees them (its
+ * last Test) and, when it does, holds "Suggest alt text for new pictures" (gallery spec §9.6), saved at once.
  * @tier editor
- * @a11y A section named by its heading; Found on this computer is its own group, named by its heading; each
- * offer's Add names the runner.
+ * @a11y A section named by its heading; Found on this computer and Pictures are their own groups, named by their
+ * headings; each offer's Add names the runner.
  */
 import Heading from '../../components/fundamentals/Heading.astro';
 import Text from '../../components/fundamentals/Text.astro';
 import Select from '../../components/fundamentals/Select.astro';
 import Button from '../../components/fundamentals/Button.astro';
+import Switch from '../../components/fundamentals/Switch.astro';
 import ActionBar from '../../components/compounds/ActionBar.astro';
 import Panel from '../kit/Panel.astro';
 import { stableId } from '../../design/stableId';
 import { disclaimerOf, offerLine, type Runner } from '../model/aiServices';
+import { PICTURES_NO, PICTURES_UNTESTED } from '../model/altText';
 
 interface Props {
   /** The services set up, in order: their ID, name and model. */
@@ -23,9 +26,13 @@ interface Props {
   writer: string | null;
   /** Runners on this computer that answer and aren't added yet. */
   offers: Runner[];
+  /** Whether the writer's model sees pictures, from its last Test (§7.7): the Pictures row. */
+  pictures?: 'yes' | 'no' | 'untested';
+  /** "Suggest alt text for new pictures" (gallery spec §9.6): on unless turned off. */
+  suggest?: boolean;
 }
 
-const { services, writer, offers } = Astro.props;
+const { services, writer, offers, pictures = 'untested', suggest = true } = Astro.props;
 const id = `ai-writer-${stableId(Astro, 'AiWriter')}`;
 ---
 
@@ -40,6 +47,18 @@ const id = `ai-writer-${stableId(Astro, 'AiWriter')}`;
         <ActionBar>
           <Button variant="secondary" size="sm" icon="plus" href="#ai-add">Add a service</Button>
         </ActionBar>
+      </div>
+    )
+  }
+  {
+    services.length > 0 && (
+      <div class="pictures" role="group" aria-labelledby={`${id}-pictures`} data-ai-pictures={pictures}>
+        <Heading level={3} size="ui" id={`${id}-pictures`}>Pictures</Heading>
+        {pictures === 'yes' ? (
+          <Switch label="Suggest alt text for new pictures" name="suggestAlt" checked={suggest} />
+        ) : (
+          <Text variant="small" tone="muted">{pictures === 'no' ? PICTURES_NO : PICTURES_UNTESTED}</Text>
+        )}
       </div>
     )
   }
@@ -70,6 +89,7 @@ const id = `ai-writer-${stableId(Astro, 'AiWriter')}`;
 <style>
   .empty,
   .found,
+  .pictures,
   .offer {
     display: grid;
     gap: var(--space-3);

@@ -7,6 +7,7 @@
  */
 import { api, announce, describeIssue, feedbackTiming, saveStatus, startTask, swapRegions } from './client';
 import { openCrop } from './crop';
+import { initAltSuggest } from './altSuggest';
 import { showUploadOptions, sizeOf, uploadNote } from './uploadOptions';
 import { APNG_NOTE, isApng, refusedFormat, removedNote, typeOf } from '../model/upload';
 import type { ImageMedia, VideoMedia } from '../../content/schema';
@@ -121,6 +122,8 @@ export function initMediaDetails(root: HTMLElement, signal: AbortSignal) {
     p.textContent = text;
     p.hidden = !text;
   };
+  // Suggest beside an empty alt text field (gallery spec §9.6)
+  initAltSuggest(form, signal, { media: () => state.id });
 
   // ---------- the focus point ----------
   let focus: [number, number] | null = state.sidecar.focus ? (state.sidecar.focus.split(' ').map((v) => parseInt(v, 10)) as [number, number]) : null;

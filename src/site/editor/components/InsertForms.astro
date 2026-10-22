@@ -1,7 +1,8 @@
 ---
 /**
  * What a block asks for before it exists (documentation/editor/spec.md §3.4): a quote's words, a
- * collection's first items and its layout, a video's address and title, a carousel's label, and the link form
+ * collection's first items and its layout, a video's address and title, a carousel's label, an album block's
+ * album (one of the site's, chosen from a list that says why one can't be) and the link form
  * for text. Each is shown in a Dialog the article editor composes; the editor makes the block (or the link)
  * from what's entered. Its actions are a footer (kit/FormFoot) that stays in view while the form scrolls; a
  * collection is laid out in sections as the inspector's (kit/Sections), starting with one item (more are added
@@ -28,17 +29,22 @@ import RichField from '../kit/RichField.astro';
 import type { SelectOption } from '../../components/fundamentals/Select.astro';
 import { HEADING_CHOICES, LAYOUT_CHOICES } from '../model/collection';
 import { QUOTE_STYLES } from '../model/inspectorFields';
+import { ALBUM_WIDTHS, type AlbumChoice } from '../model/albumBlock';
+import RadioCard from '../../components/fundamentals/RadioCard.astro';
+import Fieldset from '../kit/Fieldset.astro';
 import { COLLECTION_MAX } from '../../content/schema';
 
 interface Props {
   /** Which form. */
-  kind: 'quote' | 'collection' | 'video' | 'carousel' | 'link';
+  kind: 'quote' | 'collection' | 'video' | 'carousel' | 'link' | 'album';
   /** For the link form: the articles a link can go to. */
   articles?: SelectOption[];
+  /** For the album form: the site's albums, each one this page can show or disabled with the reason it can't. */
+  albums?: AlbumChoice[];
 }
 
-const { kind, articles = [] } = Astro.props;
-const SUBMIT: Record<Props['kind'], string> = { quote: 'Add the quote', collection: 'Add the collection', video: 'Add the video', carousel: 'Add the carousel', link: 'Set the link' };
+const { kind, articles = [], albums = [] } = Astro.props;
+const SUBMIT: Record<Props['kind'], string> = { quote: 'Add the quote', collection: 'Add the collection', video: 'Add the video', carousel: 'Add the carousel', link: 'Set the link', album: 'Add the album' };
 ---
 
 <Form data-editor-insert-form={kind}>
@@ -142,6 +148,26 @@ const SUBMIT: Record<Props['kind'], string> = { quote: 'Add the quote', collecti
       <>
         <TextField label="Address" type="url" name="href" optional hint="https://…, http://… or mailto:…" />
         <Select label="Or an article" name="ref" placeholder="Choose an article" options={[{ value: '', label: 'None' }, ...articles]} hint="A link to an article follows it if its address ever changes." />
+      </>
+    )
+  }
+  {
+    kind === 'album' && (
+      <>
+        <Text variant="ui" tone="muted">Another page's album, shown here as its band: its pictures up front, what it holds, and See all to its page. It shows the album as it's arranged there, so a change to the album shows here too.</Text>
+        {albums.length === 0 ? (
+          <div data-insert-albums-none=""><Text variant="ui" tone="muted">The site has no albums yet: make one under Pages, New album.</Text></div>
+        ) : (
+          <Fieldset legend="Album" data-insert-albums="">
+            {albums.map((a) => (
+              <RadioCard name="album" value={a.id} disabled={a.disabled} data-insert-album={a.id} data-unavailable={a.disabled ? '' : undefined}>
+                {a.title}
+                <span slot="detail">{a.detail}</span>
+              </RadioCard>
+            ))}
+          </Fieldset>
+        )}
+        <Select label="Width" name="width" value="wide" options={ALBUM_WIDTHS} />
       </>
     )
   }

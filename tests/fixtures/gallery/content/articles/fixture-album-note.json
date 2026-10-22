@@ -1,0 +1,31 @@
+{
+  "id": "fixture-album-note",
+  "type": "article",
+  "kind": "note",
+  "slug": "fixture-album-note",
+  "title": "Notes from the hills",
+  "summary": "A made-up page that carries the made-up album as an album block.",
+  "status": "published",
+  "visibility": "public",
+  "updatedAt": "2026-06-02",
+  "locale": "en",
+  "body": [
+    {
+      "type": "text",
+      "markdown": "A few words before the pictures.",
+      "key": "fanote"
+    },
+    {
+      "type": "heading",
+      "level": 2,
+      "text": "Where we walked",
+      "key": "fahead"
+    },
+    {
+      "type": "album",
+      "album": "fixture-album",
+      "width": "full",
+      "key": "fablok"
+    }
+  ]
+}

@@ -1,6 +1,7 @@
 ---
 import Example from '../../library/Example.astro';
 import InsertForms from '../components/InsertForms.astro';
+import { ALBUM_CHOICES } from './samples';
 ---
 
 <Example title="A quote" description="kind 'quote': its words, who said it and its style." layout="block">
@@ -21,4 +22,12 @@ import InsertForms from '../components/InsertForms.astro';
 
 <Example title="A link" description="kind 'link': an address, or an article it follows." layout="block">
   <InsertForms kind="link" articles={[{ value: 'the-bridge', label: 'The bridge' }]} />
+</Example>
+
+<Example title="An album" description="kind 'album': the site's albums, each one this page can't show disabled with its reason; and the band's width." layout="block">
+  <InsertForms kind="album" albums={ALBUM_CHOICES} />
+</Example>
+
+<Example title="An album, with none to choose" description="kind 'album' on a site with no albums yet." layout="block">
+  <InsertForms kind="album" />
 </Example>

@@ -1,0 +1,15 @@
+---
+import Example from '../../library/Example.astro';
+import TextField from '../../components/fundamentals/TextField.astro';
+import AltSuggestion from '../kit/AltSuggestion.astro';
+---
+
+<Example title="A suggestion in the field" description="The writer's draft shows in the empty field in the muted style, marked Suggested; Accept takes it as it is and Edit takes it and puts the focus in the field. Until then the field is empty: nothing is saved." layout="stack">
+  <TextField label="Alt text" name="alt" multiline rows={2} placeholder="A wooden bench under a cherry tree in flower, beside a gravel path." />
+  <AltSuggestion suggestion="A wooden bench under a cherry tree in flower, beside a gravel path." />
+</Example>
+
+<Example title="Suggest, for a picture already uploaded" description="In a picture's details, Suggest asks for a draft while its alt text is empty (shown by the script when the writer sees pictures)." layout="stack">
+  <TextField label="Alt text" name="alt" multiline rows={2} />
+  <AltSuggestion ask offered field="alt" />
+</Example>

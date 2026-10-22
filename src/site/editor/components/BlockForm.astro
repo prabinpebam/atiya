@@ -31,6 +31,8 @@ import { kindOf } from '../model/ops';
 import { tableToText } from '../model/table';
 import { shapeLabel } from '../model/videoShape';
 import { DISPLAYS, QUOTE_STYLES, SHAPES, WIDTHS, duration, fieldId as id, videoUrl, type Thumb } from '../model/inspectorFields';
+import { ALBUM_WIDTHS, type AlbumChoice } from '../model/albumBlock';
+import { withBase } from '../../design/meta';
 
 interface Props {
   /** The block. */
@@ -47,9 +49,11 @@ interface Props {
   media: Record<string, Thumb>;
   /** Shown from the start (a story's); else hidden until the inspector shows the selected block's. */
   shown?: boolean;
+  /** For an album block: the site's albums, each one this page can't show disabled with its reason. */
+  albums?: AlbumChoice[];
 }
 
-const { block: b, index: i, count, prev, next, media, shown = false } = Astro.props;
+const { block: b, index: i, count, prev, next, media, shown = false, albums = [] } = Astro.props;
 const thumbOf = (m?: string) => (m ? media[m] : undefined);
 const TEXT = new Set(['text', 'heading', 'marker', 'subheading', 'quote']);
 ---
@@ -178,6 +182,27 @@ const TEXT = new Set(['text', 'heading', 'marker', 'subheading', 'quote']);
   <slot />
 
   {b.type === 'divider' && <Text variant="ui" tone="muted">A divider has no settings: it marks a turn in the story.</Text>}
+
+  {
+    b.type === 'album' && (
+      <>
+        <Text variant="ui" tone="muted">Another page's album, as its band: it shows the album as it's arranged on its own page.</Text>
+        <Select
+          label="Album"
+          name={`body.${i}.album`}
+          id={id(i, 'album')}
+          value={b.album}
+          options={albums.length ? albums.map((a) => ({ value: a.id, label: a.title, description: a.detail, disabled: a.disabled && a.id !== b.album })) : [{ value: b.album, label: b.album }]}
+          hint="An album that can't be shown here says why."
+          data-album-choice=""
+        />
+        <Select label="Width" name={`body.${i}.width`} id={id(i, 'width')} value={b.width ?? 'wide'} options={ALBUM_WIDTHS} />
+        <ActionBar gap="sm">
+          <Button variant="secondary" size="sm" icon="edit" href={withBase(`/_edit/articles/${b.album}/`)} data-album-edit="">Edit the album</Button>
+        </ActionBar>
+      </>
+    )
+  }
 
   {
     b.type === 'table' && (

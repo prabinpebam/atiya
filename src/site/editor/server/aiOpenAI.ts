@@ -5,6 +5,7 @@
  * within 30 s (120 s on this computer, where the model may be loading) and never stalls for 30 s.
  */
 import type { ChatMessage } from '../model/aiPrompt';
+import type { PictureMessage } from '../model/altText';
 
 /** What went wrong, named for the prompt's note (ai-editing.md §10.4) and the AI screen's card state. */
 export type AiFailure = 'key-refused' | 'no-credit' | 'busy' | 'unreachable' | 'not-running' | 'stalled' | 'stopped' | 'rejected';
@@ -24,7 +25,8 @@ export interface WriteCall {
   base: string;
   key?: string;
   model: string;
-  messages: ChatMessage[];
+  /** The messages; a picture goes as a part of one (suggested alt text, the Test's picture). */
+  messages: (ChatMessage | PictureMessage)[];
   schema: Record<string, unknown>;
   local: boolean;
   signal?: AbortSignal;

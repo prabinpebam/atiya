@@ -1,0 +1,218 @@
+import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
+import { mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import sharp from 'sharp';
+import { EMPTY_SETTINGS, keyVariable, readSettings, writeSettings, type AiService, type AiSettings } from '../../src/site/editor/server/aiSettings';
+import { altRoute, pictureToSend, suggestAlt, testPictures } from '../../src/site/editor/server/aiAlt';
+import { aiServicesRoute, testService } from '../../src/site/editor/server/aiServices';
+import { ALT_WIDTH } from '../../src/site/editor/model/altText';
+
+const sse = (text: string) =>
+  new Response(`data: ${JSON.stringify({ choices: [{ delta: { content: text }, finish_reason: null }] })}\n\ndata: ${JSON.stringify({ choices: [{ delta: {}, finish_reason: 'stop' }] })}\n\ndata: [DONE]\n\n`, {
+    status: 200,
+    headers: { 'content-type': 'text/event-stream' },
+  });
+const writer = (more: Partial<AiService> = {}): AiService => ({ id: 'eyes', kind: 'openai-compatible', provider: 'other', name: 'Eyes', base: 'https://eyes.test/v1', model: 'm', local: false, privatePages: true, pictures: true, ...more });
+const settingsWith = (s: Partial<AiService> = {}, more: Partial<AiSettings> = {}): AiSettings => ({ ...structuredClone(EMPTY_SETTINGS), services: [writer(s)], writer: 'eyes', ...more });
+
+/** A stand-in writer: what it was sent, and the alt text it answers. */
+function standIn(answer = '{"alt":"Image of a green field under a pale sky."}') {
+  const sent: string[] = [];
+  const f = (async (_u: string | URL | Request, init?: RequestInit) => {
+    const body = String(init?.body ?? '');
+    sent.push(body);
+    return sse(/picture test/.test(body) ? '{"colour":"red"}' : /connection test/.test(body) ? '{"ok":true}' : answer);
+  }) as typeof fetch;
+  return { f, sent };
+}
+/** The picture a request carried, decoded. */
+const pictureIn = (body: string) => {
+  const url = (JSON.parse(body) as { messages: { content: unknown }[] }).messages.flatMap((m) => (Array.isArray(m.content) ? m.content : [])).find((p: { type: string }) => p.type === 'image_url')?.image_url.url as string;
+  return Buffer.from(url.replace(/^data:image\/jpeg;base64,/, ''), 'base64');
+};
+
+let dir = '';
+const was = { content: process.env.CONTENT_ROOT, priv: process.env.PRIVATE_ROOT };
+const files = (root: string): string[] =>
+  readdirSync(root, { withFileTypes: true, recursive: true })
+    .filter((e) => e.isFile())
+    .map((e) => `${join(e.parentPath, e.name)} ${statSync(join(e.parentPath, e.name)).mtimeMs}`)
+    .sort();
+
+beforeAll(async () => {
+  dir = mkdtempSync(join(tmpdir(), 'atiya-alt-'));
+  process.env.CONTENT_ROOT = join(dir, 'content');
+  process.env.PRIVATE_ROOT = join(dir, 'private');
+  process.env.ATIYA_AI_CREDENTIALS = 'off';
+  process.env[keyVariable('eyes')] = 'sk-eyes-not-a-real-key';
+  const big = await sharp({ create: { width: 2000, height: 1200, channels: 3, background: { r: 40, g: 160, b: 60 } } }).webp().toBuffer();
+  mkdirSync(join(dir, 'content', 'media', 'shared'), { recursive: true });
+  writeFileSync(join(dir, 'content', 'media', 'shared', 'holiday-at-home.webp'), big);
+  writeFileSync(join(dir, 'content', 'media', 'shared', 'holiday-at-home.json'), JSON.stringify({ kind: 'image', file: 'holiday-at-home.webp' }));
+  mkdirSync(join(dir, 'private', 'media', 'articles', 'secret'), { recursive: true });
+  mkdirSync(join(dir, 'private', 'articles'), { recursive: true });
+  writeFileSync(join(dir, 'private', 'media', 'articles', 'secret', 'kept.webp'), big);
+  writeFileSync(join(dir, 'private', 'media', 'articles', 'secret', 'kept.json'), JSON.stringify({ kind: 'image', file: 'kept.webp' }));
+  writeFileSync(join(dir, 'private', 'articles', 'secret.json'), '{}');
+});
+afterAll(() => {
+  for (const [k, v] of [
+    ['CONTENT_ROOT', was.content],
+    ['PRIVATE_ROOT', was.priv],
+  ] as const)
+    if (v === undefined) delete process.env[k];
+    else process.env[k] = v;
+  delete process.env[keyVariable('eyes')];
+  rmSync(dir, { recursive: true, force: true });
+});
+beforeEach(() => writeSettings(settingsWith()));
+
+describe('suggested alt text: what is sent (gallery spec §9.6)', () => {
+  it(`sends the picture at ${ALT_WIDTH} px wide as a JPEG, without its file name or its words, and keeps the rules' answer`, async () => {
+    const { f, sent } = standIn();
+    const pic = readFileSync(join(dir, 'content', 'media', 'shared', 'holiday-at-home.webp'));
+    expect(await suggestAlt(pic, false, { fetch: f })).toEqual({ alt: 'A green field under a pale sky.' });
+    expect(sent).toHaveLength(1);
+    expect(sent[0]).not.toMatch(/holiday|home/);
+    const meta = await sharp(pictureIn(sent[0])).metadata();
+    expect(meta.format).toBe('jpeg');
+    expect(meta.width).toBe(ALT_WIDTH);
+    expect(meta.exif).toBeUndefined();
+  });
+
+  it('never enlarges a small picture', async () => {
+    const small = await sharp({ create: { width: 300, height: 200, channels: 4, background: { r: 0, g: 0, b: 0, alpha: 0 } } }).png().toBuffer();
+    expect((await sharp(Buffer.from((await pictureToSend(small)).split(',')[1], 'base64')).metadata()).width).toBe(300);
+  });
+
+  it('asks nothing without a writer that sees pictures, or with the switch off', async () => {
+    const pic = await sharp({ create: { width: 10, height: 10, channels: 3, background: '#fff' } }).png().toBuffer();
+    for (const [settings, why] of [
+      [{ ...settingsWith(), writer: null }, 'no-writer'],
+      [settingsWith({ pictures: false }), 'blind'],
+      [settingsWith({ pictures: undefined }), 'blind'],
+      [settingsWith({}, { alt: { suggest: false } }), 'off'],
+    ] as const) {
+      const { f, sent } = standIn();
+      expect(await suggestAlt(pic, false, { fetch: f, settings })).toEqual({ alt: null, why });
+      expect(sent).toHaveLength(0);
+    }
+  });
+
+  it("sends a private page's picture only to a service that may get private pages", async () => {
+    const pic = await sharp({ create: { width: 10, height: 10, channels: 3, background: '#fff' } }).png().toBuffer();
+    const no = standIn();
+    expect(await suggestAlt(pic, true, { fetch: no.f, settings: settingsWith({ privatePages: false }) })).toEqual({ alt: null, why: 'private' });
+    expect(no.sent).toHaveLength(0);
+    const yes = standIn();
+    expect((await suggestAlt(pic, true, { fetch: yes.f, settings: settingsWith({ privatePages: true }) })).alt).toBeTruthy();
+  });
+
+  it('gives up quietly after its time, even when the service never answers', async () => {
+    const pic = await sharp({ create: { width: 10, height: 10, channels: 3, background: '#fff' } }).png().toBuffer();
+    let stopped = false;
+    const hangs = ((_u: string | URL | Request, init?: RequestInit) =>
+      new Promise<Response>((_, reject) => init?.signal?.addEventListener('abort', () => ((stopped = true), reject(new DOMException('stopped', 'AbortError')))))) as typeof fetch;
+    const t0 = Date.now();
+    expect(await suggestAlt(pic, false, { fetch: hangs, waitMs: 60 })).toEqual({ alt: null, why: 'timeout' });
+    expect(Date.now() - t0).toBeLessThan(5000);
+    expect(stopped).toBe(true);
+    const deaf = (() => new Promise<Response>(() => undefined)) as typeof fetch;
+    expect(await suggestAlt(pic, false, { fetch: deaf, waitMs: 60 })).toEqual({ alt: null, why: 'timeout' });
+  });
+
+  it('is none when the service fails, or its answer breaks the rules', async () => {
+    const pic = await sharp({ create: { width: 10, height: 10, channels: 3, background: '#fff' } }).png().toBuffer();
+    expect(await suggestAlt(pic, false, { fetch: (async () => new Response('{}', { status: 500 })) as typeof fetch })).toEqual({ alt: null, why: 'failed' });
+    expect(await suggestAlt(pic, false, { fetch: standIn('{"alt":"A man named John Smith at a desk."}').f })).toEqual({ alt: null, why: 'refused' });
+    expect(await suggestAlt(pic, false, { fetch: standIn('Sure, a desk.').f })).toEqual({ alt: null, why: 'refused' });
+    expect(await suggestAlt(Buffer.from('not a picture'), false, { fetch: standIn().f })).toEqual({ alt: null, why: 'unreadable' });
+  });
+});
+
+describe('suggested alt text: the routes', () => {
+  const route = (path: string, method: string, body?: BodyInit, type = 'application/json', f?: typeof fetch) =>
+    altRoute(['ai', ...path.split('?')[0].split('/')], method, new Request(`http://localhost/_edit/api/ai/${path}`, { method, body, headers: body instanceof FormData ? undefined : { 'content-type': type } }), { fetch: f });
+
+  it('says whether a suggestion is offered for a picture, a private one, or a folder', async () => {
+    expect(await (await route('alt?media=shared/holiday-at-home', 'GET'))!.json()).toEqual({ ok: true, on: true });
+    expect((await route('alt?media=shared/nothing', 'GET'))!.status).toBe(404);
+    expect((await route('alt?media=Not%20an%20id', 'GET'))!.status).toBe(404);
+    expect(await (await route('alt?owner=articles/elsewhere', 'GET'))!.json()).toEqual({ ok: true, on: true });
+    writeSettings(settingsWith({ privatePages: false }));
+    expect(await (await route('alt?media=articles/secret/kept', 'GET'))!.json()).toEqual({ ok: true, on: false, why: 'private' });
+    expect(await (await route('alt?owner=articles/secret', 'GET'))!.json()).toEqual({ ok: true, on: false, why: 'private' });
+    expect(await (await route('alt?owner=shared', 'GET'))!.json()).toEqual({ ok: true, on: true });
+    expect((await route('alt?owner=../x', 'GET'))!.status).toBe(400);
+  });
+
+  it("suggests for a picture in the library and for a file about to be uploaded, never sending the file's name, and writes nothing", async () => {
+    const before = files(dir).filter((f) => !f.includes('.atiya'));
+    const library = standIn();
+    expect(await (await route('alt', 'POST', JSON.stringify({ media: 'shared/holiday-at-home' }), undefined, library.f))!.json()).toEqual({ ok: true, alt: 'A green field under a pale sky.' });
+    expect(library.sent[0]).not.toMatch(/holiday/);
+    const upload = standIn();
+    const form = new FormData();
+    form.append('file', new Blob([await sharp({ create: { width: 1500, height: 900, channels: 3, background: '#88f' } }).png().toBuffer()], { type: 'image/png' }), 'our-street-number-12.png');
+    form.append('owner', 'shared');
+    expect(await (await route('alt', 'POST', form, undefined, upload.f))!.json()).toEqual({ ok: true, alt: 'A green field under a pale sky.' });
+    expect(upload.sent[0]).not.toMatch(/street|number-12/);
+    expect((await sharp(pictureIn(upload.sent[0])).metadata()).width).toBe(ALT_WIDTH);
+    expect(files(dir).filter((f) => !f.includes('.atiya'))).toEqual(before);
+  });
+
+  it("keeps a private page's upload from a service that mayn't get private pages", async () => {
+    writeSettings(settingsWith({ privatePages: false }));
+    const s = standIn();
+    const form = new FormData();
+    form.append('file', new Blob([await sharp({ create: { width: 10, height: 10, channels: 3, background: '#000' } }).png().toBuffer()], { type: 'image/png' }), 'x.png');
+    form.append('owner', 'articles/secret');
+    expect(await (await route('alt', 'POST', form, undefined, s.f))!.json()).toEqual({ ok: true, alt: null, why: 'private' });
+    expect(await (await route('alt', 'POST', JSON.stringify({ media: 'articles/secret/kept' }), undefined, s.f))!.json()).toEqual({ ok: true, alt: null, why: 'private' });
+    expect(s.sent).toHaveLength(0);
+  });
+
+  it('refuses what is not a picture or a folder', async () => {
+    expect((await route('alt', 'POST', JSON.stringify({})))!.status).toBe(400);
+    expect((await route('alt', 'POST', JSON.stringify({ media: 'shared/nothing' })))!.status).toBe(404);
+    const form = new FormData();
+    form.append('owner', 'shared');
+    expect((await route('alt', 'POST', form))!.status).toBe(400);
+    expect(await route('alt', 'DELETE')).toBeNull();
+    expect(await route('alt/more', 'GET')).toBeNull();
+  });
+
+  it('turns "Suggest alt text for new pictures" off and on, kept in the settings', async () => {
+    expect(await (await route('pictures', 'PUT', JSON.stringify({ suggest: false })))!.json()).toEqual({ ok: true, suggest: false });
+    expect(readSettings().alt).toEqual({ suggest: false });
+    expect(readSettings().services[0].pictures).toBe(true);
+    await route('pictures', 'PUT', JSON.stringify({ suggest: true }));
+    expect(readSettings().alt).toEqual({ suggest: true });
+    expect((await route('pictures', 'PUT', JSON.stringify({ suggest: 'yes' })))!.status).toBe(400);
+  });
+
+  it('is reached through the AI routes', async () => {
+    const res = await aiServicesRoute(['ai', 'pictures'], 'PUT', new Request('http://localhost/', { method: 'PUT', body: JSON.stringify({ suggest: false }) }));
+    expect(res?.status).toBe(200);
+    expect(readSettings().alt).toEqual({ suggest: false });
+  });
+});
+
+describe('the AI screen: the Test checks picture input (ai-services.md §7.7)', () => {
+  it('finds whether the model sees a picture', async () => {
+    expect(await testPictures(writer(), 'k', standIn().f)).toBe(true);
+    expect(await testPictures(writer(), 'k', (async () => sse('{"colour":"blue"}')) as typeof fetch)).toBe(false);
+    expect(await testPictures(writer(), 'k', (async () => new Response('{"error":{"message":"this model does not support images"}}', { status: 400 })) as typeof fetch)).toBe(false);
+  });
+
+  it('tests pictures only once the words work, and says so', async () => {
+    const s = standIn('{"ok":true}');
+    const r = await testService(writer(), s.f);
+    expect(r).toMatchObject({ state: 'ok', pictures: true });
+    expect(s.sent).toHaveLength(2);
+    const failed = await testService(writer(), (async () => new Response('{}', { status: 401 })) as typeof fetch);
+    expect(failed.state).toBe('key-refused');
+    expect(failed.pictures).toBeUndefined();
+  });
+});

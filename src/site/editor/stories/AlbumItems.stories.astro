@@ -1,0 +1,30 @@
+---
+import Example from '../../library/Example.astro';
+import AlbumItems from '../components/AlbumItems.astro';
+import AlbumItemDetails from '../components/AlbumItemDetails.astro';
+import { ALBUM_CARDS } from './samples';
+---
+
+<Example title="An album's items" description="The cards in album order, the first two up front, the alt text dimmed where there's no caption, one picture gone; the chosen one's details beside them." layout="block">
+  <AlbumItems cards={ALBUM_CARDS} chosen="pond" counts="3 pictures, 1 video, 1 embedded video" weight="About 4 MB to download." sortable>
+    <Fragment slot="details">
+      <AlbumItemDetails card={ALBUM_CARDS[0]} />
+    </Fragment>
+  </AlbumItems>
+</Example>
+
+<Example title="An empty album" description="Nothing yet: the ways to add are the head's." layout="block">
+  <AlbumItems cards={[]} counts="Nothing yet" weight="Nothing to download yet.">
+    <Fragment slot="details">
+      <AlbumItemDetails />
+    </Fragment>
+  </AlbumItems>
+</Example>
+
+<Example title="A full album" description="At the most items an album holds: Add is off, and the head says why." layout="block">
+  <AlbumItems cards={ALBUM_CARDS.slice(0, 2)} counts="2 pictures" weight="About 2 MB to download." full>
+    <Fragment slot="details">
+      <AlbumItemDetails card={ALBUM_CARDS[1]} />
+    </Fragment>
+  </AlbumItems>
+</Example>

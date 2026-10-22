@@ -522,6 +522,13 @@ describe('albums: the content check (documentation/gallery/spec.md §16, V38 to 
     expect(problems((d) => (album(d).items[4].poster = 'articles/g/clip'))).toMatch(/poster is a picture.*V45/);
   });
 
+  it("V41: an album's words link on the page only to its own items", () => {
+    const first = (d: Parameters<typeof album>[0]) => album(d).items[0].id;
+    expect(problems((d) => (album(d).description = `See [it](#item-${first(d)}).`))).not.toMatch(/goes nowhere/);
+    expect(problems((d) => (album(d).description = 'See [it](#item-gone).'))).toMatch(/"#item-gone" goes nowhere.*\(V41\)/);
+    expect(problems((d) => (album(d).items[0].description = 'See [it](#top).'))).toMatch(/album\.items\.0\.description.*"#top" goes nowhere/s);
+  });
+
   it("V46: a page's social image is never a drawing", () => {
     expect(problems((d) => (d['/content/articles/g.json'].seo = { image: 'articles/g/plan' }))).toMatch(/seo\.image: a social image is a picture.*V46/);
     expect(problems((d) => (d['/content/articles/g.json'].seo = { image: 'articles/g/one' }))).toBe('');

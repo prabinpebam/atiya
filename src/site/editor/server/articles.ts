@@ -11,6 +11,7 @@ import { slugify, today, unique } from '../model/ids';
 import { childSlugs, nodeIds, place, sectionOf, unplace } from '../model/structure';
 import { isMeaningful } from '../model/ops';
 import { withKeys } from '../model/keys';
+import { albumLifecycleRefusal, showingPages, type AlbumChange } from '../model/albumBlock';
 import { readSnapshot, fileOf, hasPrivate, privateRoot } from '../../content/source';
 import { LEGACY_PLANET_FILE, PLANET_FILE } from '../../modes/contract';
 import { existsSync } from 'node:fs';
@@ -53,6 +54,17 @@ function articles(): Map<string, Article> {
   return out;
 }
 
+/**
+ * Why `change` to the album page `id` is refused (documentation/gallery/spec.md §7.2, V51), naming the pages
+ * whose album block shows it; undefined when it isn't an album or nothing stops the change.
+ */
+export function albumRefusal(id: string, change: AlbumChange): string | undefined {
+  const all = articles();
+  if (all.get(id)?.kind !== 'gallery') return undefined;
+  const pages = [...all].map(([pid, a]) => ({ id: pid, title: a.title, published: isPublished(a), body: Array.isArray(a.body) ? a.body : [] }));
+  return albumLifecycleRefusal(change, showingPages(pages, id));
+}
+
 export interface SaveArticle {
   id: string;
   article: Article;
@@ -70,6 +82,11 @@ export async function saveArticle(req: SaveArticle): Promise<Result & { article?
   const was = current.value;
 
   if (next.kind === 'talk' && was.kind !== 'talk') return refuse(key, "can't become a talk until the content model holds a talk's event, date and recording", 'kind');
+  // an album a published page shows stays published (V51): said with the pages, from the album's own editor
+  if (isPublished(was) && !isPublished(next)) {
+    const no = albumRefusal(req.id, 'draft');
+    if (no) return refuse(key, no, 'status');
+  }
 
   // the dates the server keeps true (a date set by hand in the same change wins)
   if (isMeaningful(was, next) && next.updatedAt === was.updatedAt) next = { ...next, updatedAt: today() };
@@ -129,6 +146,8 @@ export async function createArticle(req: CreateArticle): Promise<Result & { id?:
     updatedAt: today(),
     locale: 'en',
     body: [],
+    // an album (documentation/gallery/spec.md §9.1): a gallery always has one, empty to begin with
+    ...(req.kind === 'gallery' ? { album: { items: [] } } : {}),
   };
   const parsed = articleSchema.safeParse(doc);
   if (!parsed.success) return { ok: false, status: 422, issues: parsed.error.issues.map((i) => ({ file: 'content/articles/new.json', path: i.path.join('.'), message: i.message })) };
@@ -202,6 +221,8 @@ export async function deleteArticle(id: string, withMedia: boolean, ifMatch: Rec
   const s = readDoc<SiteStructure>(STRUCTURE);
   if (!cur || !s) return refuse(key, "doesn't exist");
   if (isPublished(cur.value)) return refuse(key, 'is published: unpublish it (set its status back to Draft) before deleting it', 'status');
+  const shown = albumRefusal(id, 'delete');
+  if (shown) return refuse(key, shown);
   const changes: Change[] = [{ key, bytes: null }];
   const match: Record<string, string | null> = { [key]: ifMatch[key] ?? cur.version };
   if (sectionOf(s.value, { type: 'article', id })) {

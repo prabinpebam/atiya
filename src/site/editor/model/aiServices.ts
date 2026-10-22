@@ -60,8 +60,8 @@ export function idFor(name: string, taken: string[]): string {
 /** Adds a service; the first one becomes the writer. */
 export const addService = (s: AiSettings, service: AiService): AiSettings => ({ ...s, services: [...s.services, service], writer: s.writer ?? service.id });
 
-/** Changes a service's model or its private-pages switch. */
-export const updateService = (s: AiSettings, id: string, patch: Partial<Pick<AiService, 'model' | 'privatePages' | 'lastTest'>>): AiSettings => ({
+/** Changes a service's model or its private-pages switch, or keeps its last test (and whether its model sees pictures). */
+export const updateService = (s: AiSettings, id: string, patch: Partial<Pick<AiService, 'model' | 'privatePages' | 'lastTest' | 'pictures'>>): AiSettings => ({
   ...s,
   services: s.services.map((x) => (x.id === id ? { ...x, ...patch } : x)),
 });

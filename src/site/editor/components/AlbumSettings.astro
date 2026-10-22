@@ -1,0 +1,68 @@
+---
+/**
+ * An album's settings (documentation/gallery/spec.md §9.1), in the Page view's inspector under Album settings:
+ * its layout (Grid or Story), Captions under pictures (Grid only), Show dates taken, Allow downloads and the
+ * album's own introduction. Each shows its default until it's changed, and choosing a default again takes it
+ * out of the file (§18). The article editor's inspector saves them (`album.*` names, model/album.ts
+ * `applyAlbumField`); the Items and Up front views are links in the top bar.
+ * @tier editor
+ * @a11y Every setting is a labelled field (a select or a switch) with a hint saying what it does; Captions under
+ * pictures says why it's off in a story rather than disappearing without a word.
+ */
+import Select from '../../components/fundamentals/Select.astro';
+import Switch from '../../components/fundamentals/Switch.astro';
+import Text from '../../components/fundamentals/Text.astro';
+import RichField from '../kit/RichField.astro';
+import type { Album } from '../../content/schema';
+import { ALBUM_DESCRIPTION_MAX, ALBUM_DESCRIPTION_PARAGRAPHS } from '../../content/schema';
+
+interface Props {
+  /** The page's album (none yet: an empty one, every setting at its default). */
+  album?: Album;
+}
+
+const { album = { items: [] } } = Astro.props;
+const story = album.layout === 'story';
+const LAYOUTS = [
+  { value: '', label: 'Grid' },
+  { value: 'story', label: 'Story' },
+];
+---
+
+<div class="album-settings" data-album-settings>
+  <Select
+    label="Layout"
+    name="album.layout"
+    id="album-layout"
+    value={story ? 'story' : ''}
+    options={LAYOUTS}
+    hint={story ? 'A story: each item in turn, with its words beside it.' : 'A grid of the items, in album order, opening in the lightbox.'}
+    data-refresh=""
+  />
+  {
+    story ? (
+      <Text variant="small" tone="muted">
+        Captions under pictures is for a grid: a story shows every item's words.
+      </Text>
+    ) : (
+      <Switch label="Captions under pictures" name="album.captions" id="album-captions" checked={album.captions === true} />
+    )
+  }
+  <Switch label="Show dates taken" name="album.dates" id="album-dates" checked={album.dates !== false} data-type="bool-default-true" />
+  <Switch label="Allow downloads" name="album.download" id="album-download" checked={album.download === true} />
+  <RichField
+    label="Introduction"
+    toolsLabel="Introduction: formatting"
+    inputId="album-description"
+    name="album.description"
+    markdown={album.description}
+    hint={`The album's own words, under its title: at most ${ALBUM_DESCRIPTION_PARAGRAPHS} paragraphs and ${ALBUM_DESCRIPTION_MAX} characters.`}
+  />
+</div>
+
+<style>
+  .album-settings {
+    display: grid;
+    gap: var(--space-6);
+  }
+</style>

@@ -28,6 +28,8 @@ export interface AiService {
   acceptedAt?: string;
   /** Its last test. */
   lastTest?: { at: string; ok: boolean; state?: string; ms?: number };
+  /** Whether its model accepts pictures, found by its last Test (§7.7); unknown until tested. */
+  pictures?: boolean;
 }
 
 export interface AiSettings {
@@ -37,6 +39,8 @@ export interface AiSettings {
   writer: string | null;
   decider: { kind: 'rules' } | { kind: 'jev'; model: string };
   agents: { propose: boolean };
+  /** "Suggest alt text for new pictures" (gallery spec §9.6): on unless turned off. */
+  alt?: { suggest: boolean };
 }
 
 export const EMPTY_SETTINGS: AiSettings = { version: 1, services: [], writer: null, decider: { kind: 'rules' }, agents: { propose: false } };
@@ -75,8 +79,8 @@ export function writeJsonAtomic(file: string, value: unknown): void {
 
 /** Writes the settings atomically. Anything key-shaped never reaches the file: only the fields a service has. */
 export function writeSettings(s: AiSettings, file = settingsFile()): void {
-  const pick = ({ id, kind, provider, name, base, model, local, privatePages, acceptedAt, lastTest }: AiService): AiService => ({ id, kind, provider, name, base, model, local, privatePages, acceptedAt, lastTest });
-  writeJsonAtomic(file, { version: 1, services: s.services.map(pick), writer: s.writer, decider: s.decider, agents: s.agents } satisfies AiSettings);
+  const pick = ({ id, kind, provider, name, base, model, local, privatePages, acceptedAt, lastTest, pictures }: AiService): AiService => ({ id, kind, provider, name, base, model, local, privatePages, acceptedAt, lastTest, pictures });
+  writeJsonAtomic(file, { version: 1, services: s.services.map(pick), writer: s.writer, decider: s.decider, agents: s.agents, ...(s.alt ? { alt: { suggest: s.alt.suggest !== false } } : {}) } satisfies AiSettings);
 }
 
 /** A service's key's environment variable: `ATIYA_AI_<ID>_KEY`. */

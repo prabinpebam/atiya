@@ -5,6 +5,7 @@
  */
 import { announce, api, describeIssue, saveStatus, startTask, swapRegions, type Reply } from './client';
 import { PRIVATE_LINE, removeQuestion, testLine, type AiService, type CloudKind } from '../model/aiServices';
+import { picturesTestLine } from '../model/altText';
 
 /** Atiya Studio's side of keys (ai-services.md §6.1): its own dialog takes the key and answers only whether it was saved. */
 interface StudioKeys {
@@ -44,6 +45,7 @@ export function initAiWriter(el: HTMLElement, signal: AbortSignal) {
     (e) => {
       const input = e.target as HTMLInputElement;
       if (input.name === 'writer') void save('PUT', 'ai/writer', { id: input.value }, 'The writer', () => '[data-ai-writer] [role="combobox"]');
+      if (input.name === 'suggestAlt') void save('PUT', 'ai/pictures', { suggest: input.checked }, 'Suggested alt text', () => '[data-ai-writer] input[name="suggestAlt"]');
     },
     { signal },
   );
@@ -87,13 +89,13 @@ export function initAiCard(el: HTMLElement, signal: AbortSignal) {
       if (t.closest('[data-ai-test]')) {
         const button = t.closest<HTMLElement>('[data-ai-test]')!;
         const task = startTask(`Testing ${name}`, { el: button, busyLabel: 'Testing' });
-        const r = await api<{ lastTest: NonNullable<AiService['lastTest']> }>('POST', `ai/services/${id}/test`);
+        const r = await api<{ lastTest: NonNullable<AiService['lastTest']>; pictures?: boolean }>('POST', `ai/services/${id}/test`);
         void task.done();
         if (!r.ok) {
           announce(why(r), 'negative');
           return;
         }
-        announce(testLine({ name, lastTest: r.data.lastTest }), r.data.lastTest.ok ? 'default' : 'negative');
+        announce(`${testLine({ name, lastTest: r.data.lastTest })}${picturesTestLine(r.data.pictures)}`, r.data.lastTest.ok ? 'default' : 'negative');
         await refresh(`${card(id)} [data-ai-test]`);
       } else if (t.closest('[data-ai-remove]')) {
         if (!confirm(removeQuestion(name, local ? 'local' : studio ? 'studio' : 'dev'))) return;

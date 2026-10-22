@@ -9,9 +9,10 @@ import AiWriter from '../components/AiWriter.astro';
 import AiServiceList from '../components/AiServiceList.astro';
 import AiServiceCard from '../components/AiServiceCard.astro';
 import AiAddService from '../components/AiAddService.astro';
-import { credentialName, keyFor, keyVariable, readSettings, studioKeys } from '../server/aiSettings';
+import { credentialName, keyFor, keyVariable, readSettings, studioKeys, writerOf } from '../server/aiSettings';
 import { findLocal } from '../server/aiLocal';
 import { offers } from '../model/aiServices';
+import { picturesOf, suggestsAlt } from '../model/altText';
 
 export const prerender = false;
 
@@ -22,7 +23,7 @@ const same = (a: string, b: string) => a.replace(/\/$/, '') === b.replace(/\/$/,
 ---
 
 <EditorLayout title="AI" screen="ai" heading="AI" intro="AI sends your words only when you ask, to the service named in the prompt.">
-  <AiWriter services={settings.services} writer={settings.writer} offers={offers(runners, settings.services)} />
+  <AiWriter services={settings.services} writer={settings.writer} offers={offers(runners, settings.services)} pictures={picturesOf(writerOf(settings))} suggest={suggestsAlt(settings)} />
   <AiServiceList>
     {
       settings.services.map((s, i) => (

@@ -10,6 +10,7 @@
  */
 import { announce, api, describeIssue, saveStatus, startTask } from './client';
 import { canCrop, openCrop } from './crop';
+import { initAltSuggest } from './altSuggest';
 import { keptAsDrawing, showUploadOptions, uploadNote } from './uploadOptions';
 import { APNG_NOTE, HEIC_REFUSED, describePicture, describeVideo, formatLabel, isApng, isVideoFile, keptAsIs, mayHaveAlpha, needsConversion, pastedName, pictureOfPaste, pictureSizeIssue, pngName, posterTime, refusedFormat, removedNote, typeOf, videoSizeIssue, videoTypeOf } from '../model/upload';
 import { takenOf } from '../model/exif';
@@ -131,6 +132,8 @@ export function initUpload(root: HTMLElement, signal: AbortSignal) {
   let chosen: Chosen | null = null;
   let clip: ChosenVideo | null = null;
   let loading = 0;
+  // suggested alt text for the picture chosen (gallery spec §9.6): only its bytes are sent, never its name
+  const alt = initAltSuggest(form, signal, { file: () => (chosen && !clip ? chosen.file : null), owner: () => root.dataset.owner ?? 'shared' });
 
   const say = (text: string) => {
     issue.textContent = text;
@@ -218,6 +221,7 @@ export function initUpload(root: HTMLElement, signal: AbortSignal) {
     const mine = ++loading;
     say('');
     drop();
+    alt?.clear();
     showUploadOptions(form, null);
     uploadNote(form, '');
     if (!file) return render();
@@ -275,6 +279,7 @@ export function initUpload(root: HTMLElement, signal: AbortSignal) {
     showUploadOptions(form, { type, bytes: up.size, width: chosen.width, height: chosen.height, animated: apng });
     uploadNote(form, apng ? APNG_NOTE : '');
     render();
+    void alt?.suggest();
   };
 
   /** Puts a picture (or a video) in the form, as if chosen: from a paste here or on the canvas. */

@@ -2,7 +2,8 @@
  * A stand-in AI service for edit mode's tests (documentation/editor/ai-plan.md, S3, S4): it answers like Ollama
  * (`/api/tags`, and the OpenAI-compatible `/v1/chat/completions`, streamed), so tests never reach a real model.
  * Its answer is canned: the block the request names, cut to its first sentence (or, asked for "longer", with a
- * sentence added); asked for a table, the block's sentences as rows; the AI screen's connection test gets `{"ok": true}`. A request that says "slowly" streams
+ * sentence added); asked for a table, the block's sentences as rows; the AI screen's connection test gets `{"ok": true}`, its picture test `{"colour": "red"}`, and
+ * a picture's suggested alt text `STAND_IN_ALT` (the model `blind` refuses any picture). A request that says "slowly" streams
  * slowly enough to stop. A model named after a failure fails that way (`FAILURES`), so a test can choose it on a card.
  */
 import { createServer } from 'node:http';
@@ -14,7 +15,12 @@ export const FAILURES = {
   busy: { status: 429, body: '{"error":{"message":"rate limited"}}' },
   'no-shape': { text: 'Sure! It works.' },
 };
-const MODELS = ['stand-in', ...Object.keys(FAILURES)];
+/** A model that can't see pictures: a request with a picture in it is refused, as such models' services do. */
+export const BLIND = 'blind';
+const MODELS = ['stand-in', BLIND, ...Object.keys(FAILURES)];
+/** The alt text the stand-in suggests for any picture (gallery spec §9.6). */
+export const STAND_IN_ALT = 'A small square of solid colour.';
+const hasPicture = (messages) => messages.some((m) => Array.isArray(m.content) && m.content.some((p) => p?.type === 'image_url'));
 
 /** The words a text block is cut to: its first sentence, or the whole of a short one. */
 const shorter = (s) => (/^[\s\S]*?[.!?](?=\s|$)/.exec(s)?.[0] ?? s).trim();
@@ -44,6 +50,9 @@ function sectionAnswer(body, key, change) {
 export function answerFor(messages) {
   const system = messages.find((m) => m.role === 'system')?.content ?? '';
   if (/connection test/i.test(system)) return { ok: true };
+  // the AI screen's picture test (ai-services.md §7.7) is a red square; suggested alt text is always the same words
+  if (/picture test/i.test(system)) return { colour: 'red' };
+  if (/alt text/i.test(system)) return { alt: STAND_IN_ALT };
   const user = messages.find((m) => m.role === 'user')?.content ?? '';
   const key = /\(key ([a-z0-9]{6})\)/.exec(system)?.[1];
   const material = /<material>\n([\s\S]*)\n<\/material>/.exec(user)?.[1];
@@ -83,6 +92,10 @@ export function startStandIn(port) {
       if (failure?.status) {
         res.writeHead(failure.status, { 'Content-Type': 'application/json' });
         return res.end(failure.body);
+      }
+      if (model === BLIND && hasPicture(messages)) {
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        return res.end('{"error":{"message":"this model does not support images"}}');
       }
       const slow = /slowly/i.test(messages.find((m) => m.role === 'user')?.content ?? '');
       const text = failure?.text ?? JSON.stringify(answerFor(messages));

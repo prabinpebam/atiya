@@ -152,6 +152,13 @@ export function itemProblems(album: Album, lookup: MediaLookup, opts: { publishe
     if (m.kind === 'image' && (m.decorative || !m.alt)) out.push({ path: `${at}.media`, message: `the picture "${item.media}" needs alt text: in an album a picture is the content, never decorative (V38)` });
     if ((item.autoplay !== undefined || item.loop !== undefined) && m.kind !== 'video') out.push({ path: at, message: 'autoplay and loop are for a video file, not a picture (V49)' });
   });
+  // the album's words may link to its own items (#item-<id>), and only to items it has
+  const links = (md: string | undefined, path: string) => {
+    for (const [, href] of (md ?? '').matchAll(/\]\((#[^)\s]*)\)/g))
+      if (!(href.startsWith('#item-') && ids.has(href.slice('#item-'.length)))) out.push({ path, message: `the link "${href}" goes nowhere: in an album's words a link on the page goes to one of its items, #item-<id> (V41)` });
+  };
+  links(album.description, 'description');
+  album.items.forEach((item, i) => links(item.description, `items.${i}.description`));
   return out;
 }
 

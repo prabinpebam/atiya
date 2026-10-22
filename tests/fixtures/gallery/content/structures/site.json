@@ -19,6 +19,14 @@
               "type": "article",
               "id": "fixture-album"
             }
+          },
+          {
+            "id": "fixture-album-note",
+            "kind": "item",
+            "item": {
+              "type": "article",
+              "id": "fixture-album-note"
+            }
           }
         ]
       }

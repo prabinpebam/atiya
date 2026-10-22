@@ -35,7 +35,7 @@ const HOSTILE_SVG = Buffer.from(
 
 /** A plain SVG over 200 KB (a long path): too big to keep as a drawing. */
 const bigSvg = () => {
-  const points = Array.from({ length: 24_000 }, (_, i) => `L${(i * 7) % 400} ${(i * 13) % 300}`).join(' ');
+  const points = Array.from({ length: 30_000 }, (_, i) => `L${(i * 7) % 400} ${(i * 13) % 300}`).join(' ');
   return Buffer.from(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 300"><path d="M0 0 ${points}" stroke="#333" fill="none"/></svg>`);
 };
 

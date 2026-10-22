@@ -116,7 +116,7 @@ const { mode, sections = [], section = '', kind = 'note', article, protectable =
       if (access === 'private' && !body.section) return show(form, 'A private page is in a section, like any page: choose one.');
       show(form, '');
       const r = await api<{ id: string }>('POST', 'articles', body);
-      if (r.ok) location.assign(editorUrl(`articles/${r.data.id}/`));
+      if (r.ok) location.assign(editorUrl(`articles/${r.data.id}/${body.kind === 'gallery' ? '?view=items' : ''}`));
       else show(form, (r.data.issues ?? []).map(describeIssue).join(' ') || "Couldn't create it.");
     });
   });

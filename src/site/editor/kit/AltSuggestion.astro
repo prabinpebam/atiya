@@ -1,0 +1,63 @@
+---
+/**
+ * The suggested alt text beside an alt text field (documentation/gallery/spec.md §9.6): the AI writer's draft,
+ * shown in the field in the muted style (its placeholder), marked Suggested, with Accept and Edit. Until one is
+ * pressed the field stays empty, so a suggestion is never saved and never counts as alt text. Optionally a Suggest
+ * button for a picture already uploaded. The media screens' scripts fill it (scripts/altSuggest.ts).
+ * @tier kit
+ * @a11y The suggestion is read out politely when it comes (its words, after "Suggested"), and Accept and Edit name
+ * what they do; Edit puts the focus in the field. Nothing moves the focus when a suggestion arrives.
+ */
+import Tag from '../../components/fundamentals/Tag.astro';
+import Button from '../../components/fundamentals/Button.astro';
+import ActionBar from '../../components/compounds/ActionBar.astro';
+
+interface Props {
+  /** The name of the alt text field it belongs to (in the same form). */
+  field?: string;
+  /** Shows Suggest, which asks for a suggestion while the field is empty (the details of a picture already uploaded). */
+  ask?: boolean;
+  /** Suggest is shown from the start (the parts library's examples); otherwise the script shows it when the writer sees pictures. */
+  offered?: boolean;
+  /** A suggestion to show from the start (the parts library's examples; the scripts fill it otherwise). */
+  suggestion?: string;
+}
+
+const { field = 'alt', ask = false, offered = false, suggestion } = Astro.props;
+---
+
+<div class="alt-suggestion" data-alt-suggestion={field} data-busy-line="">
+  {
+    ask && (
+      <span data-alt-ask-wrap="" hidden={!offered}>
+        <Button variant="quiet" size="sm" icon="sparkles" data-alt-ask="">Suggest alt text</Button>
+      </span>
+    )
+  }
+  <div class="alt-offer" data-alt-offer="" hidden={!suggestion} data-alt-text={suggestion}>
+    <Tag tone="accent" size="sm" icon="sparkles">Suggested</Tag>
+    <ActionBar gap="sm">
+      <Button variant="secondary" size="sm" icon="check" data-alt-accept="">Accept</Button>
+      <Button variant="quiet" size="sm" icon="edit" data-alt-edit="">Edit</Button>
+    </ActionBar>
+  </div>
+  <p class="sr-only" aria-live="polite" data-alt-said="">{suggestion ? `Suggested alt text: ${suggestion}` : ''}</p>
+</div>
+
+<style>
+  .alt-suggestion {
+    display: grid;
+    gap: var(--space-2);
+  }
+
+  .alt-offer {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-3);
+  }
+
+  .alt-offer[hidden] {
+    display: none;
+  }
+</style>

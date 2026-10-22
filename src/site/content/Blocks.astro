@@ -13,12 +13,16 @@ import VideoEmbed from '../components/compounds/VideoEmbed.astro';
 import Collection from '../components/compounds/Collection.astro';
 import StatTiles from '../components/compounds/StatTiles.astro';
 import Table from '../components/compounds/Table.astro';
+import AlbumBand from '../components/compounds/AlbumBand.astro';
 import Quote from '../components/fundamentals/Quote.astro';
 import Divider from '../components/fundamentals/Divider.astro';
+import Text from '../components/fundamentals/Text.astro';
 import { withBase } from '../design/meta';
 import { sizes } from '../design/responsive';
 import { renderInlineMarkdown, renderMarkdown } from './markdown';
 import { headingIds } from './load';
+import { albumHeadingLevel } from './albumBlock';
+import { bandOf, type Band } from './bands';
 import { picture, video, type Picture, type VideoFile } from './pictures';
 import { canonicalPath, documentHref, isVideoMedia } from './repository';
 import type { Block } from './schema';
@@ -57,7 +61,8 @@ type View =
   | { b: Extract<Block, { type: 'video' }>; p?: Picture; v?: VideoFile }
   | { b: Extract<Block, { type: 'heading' }>; id: string }
   | { b: Extract<Block, { type: 'collection' }>; pictures: (Picture | undefined)[] }
-  | { b: Exclude<Block, { type: 'figure' | 'gallery' | 'carousel' | 'video' | 'heading' | 'collection' }> };
+  | { b: Extract<Block, { type: 'album' }>; band?: Band; level: 2 | 3 | 4 | 5 }
+  | { b: Exclude<Block, { type: 'figure' | 'gallery' | 'carousel' | 'video' | 'heading' | 'collection' | 'album' }> };
 
 /** A gallery's or a carousel's item: a picture, or a video file shown by its poster's fields with its file beside them. */
 type Slide = Picture & { video?: { src: string; type: 'video/mp4' | 'video/webm'; autoplay?: boolean; loop?: boolean } };
@@ -102,6 +107,13 @@ const views: View[] = await Promise.all(
         return { b, id: anchors[n]! };
       case 'collection':
         return { b, pictures: await Promise.all(b.items.map((i) => (i.media ? picture(i.media, 'gallery') : undefined))) };
+      case 'album': {
+        // another page's album, as its band (gallery spec §7.2): See all goes to the album's page; a draft album
+        // has no address yet, so in edit mode's canvas its links stay on the page
+        const path = canonicalPath('article', b.album);
+        const band = path || editable ? await bandOf(b.album, path ? withBase(path) : '#') : undefined;
+        return { b, level: albumHeadingLevel(blocks, n), ...(band ? { band } : {}) };
+      }
       default:
         return { b };
     }
@@ -210,6 +222,13 @@ const linesOf = (text: string) => text.split('\n').map((l, k) => (k ? `\n${l}` :
       });
       if (b.layout === 'stats') return <StatTiles items={items} heading={b.heading} showHeading={b.showHeading} columns={b.columns} width={b.width} prominent={!!b.prominent} ratio={b.ratio} display={b.display} background={!!b.background} rounded={b.rounded !== false} shadow={!!b.shadow} />;
       return <Collection items={items} heading={b.heading} showHeading={b.showHeading} layout={b.layout} columns={b.columns} headings={b.headings} label={b.label} width={b.width} peek={!!b.peek} prominent={!!b.prominent} ratio={b.ratio} display={b.display} background={!!b.background} rounded={b.rounded !== false} shadow={!!b.shadow} />;
+    }
+    if (v.b.type === 'album' && 'level' in v) {
+      const { b, band, level } = v;
+      // the band at the block's width, with no break above it (the page's own spacing sets it apart)
+      if (band) return <div data-breakout={b.width ?? 'wide'} data-album-block={b.album}><AlbumBand {...band} headingLevel={level} /></div>;
+      // an album with nothing to show has no band (§5); edit mode's canvas says so where the block is
+      return editable ? <div data-album-block={b.album} data-album-empty=""><Text variant="ui" tone="muted">This album has nothing to show yet: add pictures to it.</Text></div> : null;
     }
     if ('id' in v) {
       const H = tag(v.b.level);

@@ -1,0 +1,13 @@
+---
+import Example from '../../library/Example.astro';
+import AlbumSettings from '../components/AlbumSettings.astro';
+import { ALBUM_SAMPLE } from './samples';
+---
+
+<Example title="A new album" description="Every setting at its default: a grid, dates shown, captions off, no downloads." layout="block">
+  <AlbumSettings />
+</Example>
+
+<Example title="A story" description="The story layout, its description and downloads allowed." layout="block">
+  <AlbumSettings album={ALBUM_SAMPLE} />
+</Example>

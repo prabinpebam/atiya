@@ -8,7 +8,7 @@ import type { Block } from '../../content/schema';
 import { blocksOf, type MiniNode } from './dom';
 
 /** The HTML a rich field starts with: its Markdown rendered, each link keeping its written target. */
-export const richHtml = (md: string | undefined): string => (md?.trim() ? renderBlocks(parseMarkdown(md), { annotate: true, resolveRef: () => '#' }) : '');
+export const richHtml = (md: string | undefined): string => (md?.trim() ? renderBlocks(parseMarkdown(md), { annotate: true, resolveRef: () => '#', fragment: () => true }) : '');
 
 /** A rich field's content back to Markdown: its paragraphs and lists, a blank line between them. */
 export const richMarkdown = (root: MiniNode): string => serializeBlocks(blocksOf(root));

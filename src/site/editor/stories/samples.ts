@@ -286,3 +286,18 @@ export const ALBUM_CHOICES = [
   { id: 'family-trip', title: 'Our trip north', detail: 'Private: its band would show its words outside its seal', disabled: true },
   { id: 'the-bridge-album', title: 'The bridge, in pictures', detail: 'This page: its album is already on it', disabled: true },
 ];
+
+/** What the Items view knows of a sample picture (made up). */
+const albumFacts = (s: ReturnType<typeof sample>, extra: Partial<import('../model/album').ItemFacts> = {}): import('../model/album').ItemFacts => ({ kind: 'picture', thumb: s.thumb, width: s.width, height: s.height, alt: s.alt, ...extra });
+
+/** An album's cards as the Items view draws them (made up): a captioned picture up front, one showing its alt text dimmed, a video file, an embed with its poster, and one whose picture has gone. */
+export const ALBUM_CARDS: import('../model/album').AlbumCard[] = [
+  { id: 'pond', kind: 'picture', thumb: pond.thumb, width: pond.width, height: pond.height, label: 'The pond at first light', dimmed: false, upFront: true, item: { id: 'pond', media: 'samples/pond', caption: 'The pond at first light', place: 'The east meadow' }, facts: albumFacts(pond, { taken: '2026-05-02', caption: 'Still water' }) },
+  { id: 'bridge', kind: 'picture', thumb: bridge.thumb, width: bridge.width, height: bridge.height, label: bridge.alt, dimmed: true, upFront: true, item: { id: 'bridge', media: 'samples/bridge' }, facts: albumFacts(bridge, { taken: '2026-05-03', large: true, focus: '50% 40%' }) },
+  { id: 'workshop', kind: 'video', thumb: workshop.thumb, width: workshop.width, height: workshop.height, label: 'Planing the bench', dimmed: false, upFront: false, item: { id: 'workshop', media: 'samples/workshop-film', caption: 'Planing the bench', autoplay: true, loop: true }, facts: albumFacts(workshop, { kind: 'video', alt: 'In the workshop', taken: '2026-05-04' }) },
+  { id: 'harbour', kind: 'embed', thumb: plaza.thumb, width: 16, height: 9, label: 'A walk round the harbour', dimmed: false, upFront: false, item: { id: 'harbour', embed: { provider: 'youtube', id: 'abc123XYZ_0' }, poster: 'samples/plaza', title: 'A walk round the harbour', duration: 140 }, facts: albumFacts(plaza) },
+  { id: 'lost', kind: 'missing', width: 4, height: 3, label: 'lost', dimmed: true, upFront: false, item: { id: 'lost', media: 'samples/gone' } },
+];
+
+/** A made-up album's settings: a story, its description, dates hidden and downloads allowed. */
+export const ALBUM_SAMPLE = { layout: 'story', dates: false, download: true, description: 'A spring of walks round the pond and the bridge, **one morning at a time**.', items: ALBUM_CARDS.map((c) => c.item) } as import('../../content/schema').Album;

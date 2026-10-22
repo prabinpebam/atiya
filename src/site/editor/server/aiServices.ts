@@ -7,6 +7,7 @@ import { readSettings, writeSettings, keyFor, holdKey, studioKeys, type AiServic
 import { findLocal } from './aiLocal';
 import { AiError, writeOpenAI } from './aiOpenAI';
 import { addService, CLOUD_KINDS, idFor, removeService, setWriter, updateService, type TestState } from '../model/aiServices';
+import { altRoute, testPictures } from './aiAlt';
 
 const json = (body: unknown, status = 200) => new Response(JSON.stringify(body), { status, headers: { 'content-type': 'application/json' } });
 const refuse = (message: string, status = 422) => json({ ok: false, issues: [{ file: '.atiya/ai.json', message }] }, status);
@@ -22,8 +23,13 @@ const TEST_MESSAGES = [
   { role: 'user' as const, content: 'Is this working?' },
 ];
 
-/** Tests a service: a tiny request that needs a JSON answer. */
-export async function testService(s: AiService, f?: typeof fetch): Promise<{ state: TestState; ms: number }> {
+/** Tests a service: a tiny request that needs a JSON answer, then, when that works, whether its model sees a picture (§7.7). */
+export async function testService(s: AiService, f?: typeof fetch): Promise<{ state: TestState; ms: number; pictures?: boolean }> {
+  const r = await testWords(s, f);
+  return r.state === 'ok' ? { ...r, pictures: await testPictures(s, await keyFor(s.id), f) } : r;
+}
+
+async function testWords(s: AiService, f?: typeof fetch): Promise<{ state: TestState; ms: number }> {
   const t0 = Date.now();
   const key = await keyFor(s.id);
   if (!s.local && !key) return { state: 'key-missing', ms: 0 };
@@ -100,6 +106,7 @@ export async function aiServicesRoute(parts: string[], method: string, request: 
     writeSettings(setWriter(s, id!));
     return json({ ok: true });
   }
+  if (parts[1] === 'alt' || parts[1] === 'pictures') return altRoute(parts, method, request);
   if (parts[1] !== 'services') return null;
   if (!parts[2] && method === 'POST') return add((await request.json()) as NewService);
   const id = parts[2] ?? '';
@@ -112,7 +119,7 @@ export async function aiServicesRoute(parts: string[], method: string, request: 
     const model = b.model === undefined ? undefined : text(b.model, 200);
     if (model === null) return refuse('Name its model.');
     // a new model hasn't been tested
-    writeSettings(updateService(s, id, { ...(model !== undefined && model !== service.model ? { model, lastTest: undefined } : {}), ...(typeof b.privatePages === 'boolean' ? { privatePages: b.privatePages } : {}) }));
+    writeSettings(updateService(s, id, { ...(model !== undefined && model !== service.model ? { model, lastTest: undefined, pictures: undefined } : {}), ...(typeof b.privatePages === 'boolean' ? { privatePages: b.privatePages } : {}) }));
     return json({ ok: true });
   }
   if (!parts[3] && method === 'DELETE') {
@@ -120,11 +127,11 @@ export async function aiServicesRoute(parts: string[], method: string, request: 
     return json({ ok: true });
   }
   if (parts[3] === 'test' && method === 'POST') {
-    const { state, ms } = await testService(service);
+    const { state, ms, pictures } = await testService(service);
     const lastTest = { at: new Date().toISOString(), ok: state === 'ok', state, ms };
-    // read again: the settings may have changed while the test ran
-    writeSettings(updateService(readSettings(), id, { lastTest }));
-    return json({ ok: true, lastTest });
+    // read again: the settings may have changed while the test ran; a failed test leaves pictures as they were
+    writeSettings(updateService(readSettings(), id, { lastTest, ...(pictures !== undefined ? { pictures } : {}) }));
+    return json({ ok: true, lastTest, ...(pictures !== undefined ? { pictures } : {}) });
   }
   return null;
 }

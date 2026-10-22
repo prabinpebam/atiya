@@ -4,8 +4,20 @@ import AiWriter from '../components/AiWriter.astro';
 import { AI_RUNNERS, AI_SERVICES } from './samples';
 ---
 
-<Example title="A writer, and a runner found" description="The writer is chosen from the services set up; LM Studio answers on this computer and isn't added yet, so it's offered with its models." layout="block">
+<Example title="A writer, and a runner found" description="The writer is chosen from the services set up; LM Studio answers on this computer and isn't added yet, so it's offered with its models. Its model hasn't been tested with a picture yet." layout="block">
   <AiWriter services={AI_SERVICES} writer="ollama" offers={AI_RUNNERS} />
+</Example>
+
+<Example title="A writer that sees pictures" description="Its last Test showed it a picture and it saw it, so Pictures holds Suggest alt text for new pictures." layout="block">
+  <AiWriter services={AI_SERVICES} writer="ollama" offers={[]} pictures="yes" suggest />
+</Example>
+
+<Example title="A writer that can't see pictures" description="Its last Test showed it a picture and it couldn't see it: no suggested alt text." layout="block">
+  <AiWriter services={AI_SERVICES} writer="ollama" offers={[]} pictures="no" />
+</Example>
+
+<Example title="Not tested with a picture" description="Test the writer to find out whether it sees pictures." layout="block">
+  <AiWriter services={AI_SERVICES} writer="ollama" offers={[]} pictures="untested" />
 </Example>
 
 <Example title="No service yet" description="Nothing set up and nothing running here: Add a service, and Look again." layout="block">

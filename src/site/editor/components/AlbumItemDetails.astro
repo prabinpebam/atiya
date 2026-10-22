@@ -1,0 +1,168 @@
+---
+/**
+ * The chosen album item's details (documentation/gallery/spec.md §9.2), beside the Items view's cards: its
+ * preview, its own words in this album (caption, description, place), Up front, Download, a video file's Play by
+ * itself and Loop, an embed's title, poster, length and shape, and Remove from the album (its file stays in the
+ * library). What belongs to the picture itself (its alt text, the date it was taken, its focus point) is shared
+ * with every use, so it's shown here with a link to its details in Media. With several cards chosen, it offers
+ * what can be done to them together. Every field saves as it changes (scripts/album.ts).
+ * @tier editor
+ * @a11y A section named by its heading; every field is labelled, with a hint where its limit or its sharing needs
+ * saying; the several-chosen panel is a polite live region that says how many are chosen.
+ */
+import Button from '../../components/fundamentals/Button.astro';
+import Heading from '../../components/fundamentals/Heading.astro';
+import Image from '../../components/fundamentals/Image.astro';
+import Link from '../../components/fundamentals/Link.astro';
+import Select from '../../components/fundamentals/Select.astro';
+import Switch from '../../components/fundamentals/Switch.astro';
+import Text from '../../components/fundamentals/Text.astro';
+import TextField from '../../components/fundamentals/TextField.astro';
+import ActionBar from '../../components/compounds/ActionBar.astro';
+import RichField from '../kit/RichField.astro';
+import StatusNote from '../kit/StatusNote.astro';
+import { CAPTION_MAX, ITEM_DESCRIPTION_MAX, ITEM_DESCRIPTION_PARAGRAPHS, PLACE_MAX } from '../../content/schema';
+import { EMBED_SHAPES, embedShape, lengthWords, type AlbumCard } from '../model/album';
+import { withBase } from '../../design/meta';
+
+interface Props {
+  /** The chosen item's card (none: the album is empty). */
+  card?: AlbumCard;
+}
+
+const { card } = Astro.props;
+const item = card?.item;
+const embed = item?.embed;
+const mediaId = embed ? item?.poster : item?.media;
+const mediaHref = mediaId ? withBase(`/_edit/media/?id=${encodeURIComponent(mediaId)}`) : '';
+const DOWNLOADS = [
+  { value: '', label: 'Follow the album' },
+  { value: 'true', label: 'Allow' },
+  { value: 'false', label: "Don't allow" },
+];
+const shape = embed ? embedShape(embed) : '16:9';
+const SHAPES = [...EMBED_SHAPES.map((s) => ({ value: s.value, label: s.label })), ...(shape === 'provider' ? [{ value: 'provider', label: "The provider's own" }] : [])];
+const day = (d: string) => new Date(`${d}T00:00:00Z`).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' });
+const picture = card && (card.kind === 'picture' || card.kind === 'animated' || card.kind === 'drawing');
+---
+
+<section class="album-details" data-region="album-details" data-album-details={card?.id ?? ''} aria-labelledby="album-details-title">
+  <div class="album-details-several" data-album-several="" aria-live="polite" hidden>
+    <Heading level={2} size="h3">
+      <span data-album-several-count="">Several items chosen</span>
+    </Heading>
+    <Text variant="ui" tone="muted">Moved and taken out together. Choose one card to see its details.</Text>
+    <ActionBar gap="sm">
+      <Button variant="secondary" size="sm" icon="arrow-up" data-album-move="start">Move to start</Button>
+      <Button variant="secondary" size="sm" icon="arrow-down" data-album-move="end">Move to end</Button>
+      <Button variant="quiet" size="sm" icon="delete" data-album-remove="">Remove from the album</Button>
+    </ActionBar>
+  </div>
+  {
+    card && item ? (
+      <div class="album-details-one" data-album-one="">
+        <header class="album-details-head">
+          <Heading level={2} size="h3" id="album-details-title">
+            {card.label}
+          </Heading>
+          <ActionBar gap="sm">
+            <Button variant="quiet" size="sm" icon="arrow-up" data-album-move="start">Move to start</Button>
+            <Button variant="quiet" size="sm" icon="arrow-down" data-album-move="end">Move to end</Button>
+            <Button variant="quiet" size="sm" icon="delete" data-album-remove="">Remove from the album</Button>
+          </ActionBar>
+        </header>
+        <div class="album-details-preview">
+          {card.thumb ? <Image src={card.thumb} alt="" width={card.width} height={card.height} display="fit" rounded={false} /> : <Text variant="ui" tone="negative">Its file isn't in the library any more: remove it, or put the file back.</Text>}
+        </div>
+        {card.facts && (
+          <div class="album-details-shared" data-album-shared="">
+            <Text variant="small">
+              <strong>Alt text:</strong> {card.facts.alt || 'none yet'}
+            </Text>
+            {picture && (
+              <Text variant="small">
+                <strong>Taken:</strong> {card.facts.taken ? day(card.facts.taken) : 'not known'}
+              </Text>
+            )}
+            <Text variant="small" tone="muted">
+              Shared with every use of the {embed ? 'poster' : card.kind === 'video' ? 'video' : 'picture'}: <Link href={mediaHref}>change them in Media</Link>.
+            </Text>
+            {picture && !card.facts.focus && card.kind !== 'drawing' && (
+              <Link href={mediaHref} data-album-focus-find="">Find the focus in Media</Link>
+            )}
+            {card.facts.large && (
+              <Button variant="secondary" size="sm" icon="compress" data-album-standard={mediaId}>Make it standard</Button>
+            )}
+          </div>
+        )}
+        <div class="album-details-fields" data-album-fields={card.id}>
+          {embed && <TextField label="Title" name="title" id="album-item-title" value={item.title} required maxlength={250} data-album-field="title" />}
+          <TextField label="Caption" name="caption" id="album-item-caption" value={item.caption} placeholder={embed ? undefined : card.facts?.caption} maxlength={CAPTION_MAX} hint={!embed && card.facts?.caption ? 'In this album only: the picture’s own caption shows when it’s empty.' : 'In this album only.'} data-album-field="caption" />
+          <RichField label="Description" toolsLabel="Description: formatting" inputId="album-item-description" name="description" markdown={item.description} hint={`At most ${ITEM_DESCRIPTION_PARAGRAPHS} paragraphs and ${ITEM_DESCRIPTION_MAX} characters.`} />
+          <StatusNote data-album-count="" />
+          <TextField label="Place" name="place" id="album-item-place" value={item.place} maxlength={PLACE_MAX} hint="One line, in this album only." data-album-field="place" />
+          <Switch label="Up front" name="upFront" id="album-item-upfront" checked={card.upFront} data-album-upfront="" />
+          {!embed && <Select label="Download" name="download" id="album-item-download" value={item.download === undefined ? '' : String(item.download)} options={DOWNLOADS} data-album-field="download" />}
+          {card.kind === 'video' && <Switch label="Play by itself" name="autoplay" id="album-item-autoplay" checked={item.autoplay === true} data-album-field="autoplay" />}
+          {card.kind === 'video' && <Switch label="Loop" name="loop" id="album-item-loop" checked={item.loop === true} data-album-field="loop" />}
+          {embed && <TextField label="Length" name="duration" id="album-item-duration" value={item.duration ? lengthWords(item.duration) : ''} placeholder="2:20" hint="Minutes and seconds, as the provider shows it." data-album-field="duration" />}
+          {embed && <Select label="Shape" name="shape" id="album-item-shape" value={shape} options={SHAPES} data-album-shape="" />}
+          {embed && <Button variant="secondary" size="sm" icon="image" data-album-poster="">Choose another poster</Button>}
+        </div>
+      </div>
+    ) : (
+      <div class="album-details-one">
+        <Heading level={2} size="h3" id="album-details-title">
+          Nothing chosen
+        </Heading>
+        <Text variant="ui" tone="muted">Add items, then choose one to see its details.</Text>
+      </div>
+    )
+  }
+</section>
+
+<style>
+  .album-details {
+    display: grid;
+    align-content: start;
+    gap: var(--space-4);
+    min-inline-size: 0;
+  }
+
+  .album-details-one,
+  .album-details-several {
+    display: grid;
+    gap: var(--space-6);
+    max-inline-size: var(--size-popout);
+  }
+
+  .album-details-several[hidden],
+  .album-details-one[hidden] {
+    display: none;
+  }
+
+  .album-details-head {
+    display: grid;
+    gap: var(--space-3);
+  }
+
+  .album-details-preview {
+    display: grid;
+    place-items: center;
+    max-block-size: var(--c-editor-upload-preview);
+    overflow: hidden;
+    border-radius: var(--radius-md);
+    background: var(--color-bg-sunk);
+  }
+
+  .album-details-shared {
+    display: grid;
+    justify-items: start;
+    gap: var(--space-2);
+  }
+
+  .album-details-fields {
+    display: grid;
+    gap: var(--space-5);
+  }
+</style>

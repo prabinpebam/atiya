@@ -10,6 +10,7 @@ import { createArticle, deleteArticle, duplicateArticle, saveArticle, PLANET, ST
 import { cropMedia, cropSource, deleteMedia, findFocus, makeStandard, parseUploadCrop, removeDark, replaceMaster, saveSidecar, setDark, upload, uploadVideo } from '../server/media';
 import { isVideoFile } from '../model/upload';
 import { measureVideo } from '../server/videoShape';
+import { addEmbed } from '../server/albumEmbed';
 import { changes, discard, publish, push } from '../server/git';
 import { changeAddress, createGrant, deleteGrant, extendGrant, moveSectionPages, rescopeGrant, setPageAccess, setSectionOrder, shareMessage, sharingView, updateGrant, withdrawGrant, type GrantEdit, type NewGrant, type PageAccess } from '../server/access';
 import { content } from '../../content/repository';
@@ -218,6 +219,8 @@ const handle: APIRoute = async ({ request, params, url }) => {
         return result(await saveArticle({ id, article: b.article, section: b.section, ifMatch: b.ifMatch ?? {} }));
       }
       if (method === 'POST' && id && parts[2] === 'duplicate') return result(await duplicateArticle(id));
+      // an album's YouTube or Vimeo video, by its address: its title, shape and poster (gallery spec §9.2)
+      if (method === 'POST' && id && parts[2] === 'embed') return result(await addEmbed(id, String((await body<{ url?: string }>(request)).url ?? '')));
       // its access (documentation/access/spec.md §8.2): open or private, and a private page's address
       if (method === 'PUT' && id && parts[2] === 'access') {
         const b = await body<{ access: PageAccess; section?: string }>(request);

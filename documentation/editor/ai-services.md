@@ -543,3 +543,10 @@ Each phase records here what differs from this page, with its evidence. Stage by
 
   Rules call every typed request a rewrite that fits its scope, so 64 kinds and 7 fits are left to Jev.
 - **Not done yet:** Jev itself, so no threshold yet. The 0.8 in §9.1 stays until Jev has answered this set.
+
+### Suggested alt text (gallery phase G10, S11)
+
+- **Pictures on the AI screen.** Test sends the words test, then, when they work, a small red picture with a question only a model that sees it can answer, and keeps the answer as the service's `pictures` in `.atiya/ai.json` (a new model clears it). The Pictures row in AiWriter (`data-ai-pictures`: `yes`, `no`, `untested`) shows the switch "Suggest alt text for new pictures" only on `yes`; the switch is kept as `alt.suggest` (on unless turned off), through `PUT /_edit/api/ai/pictures {suggest}`.
+- **Routes** (`server/aiAlt.ts`, reached through the AI routes): `GET /_edit/api/ai/alt?media=<id>` or `?owner=<folder>` says whether a suggestion is offered (`{on, why}`: off, no writer, a model that doesn't see pictures, or a private page's picture for a service that may not get private pages); `POST /_edit/api/ai/alt` with `{media}` (a picture already uploaded) or a form with the file's bytes and its `owner` (one about to be uploaded) answers `{alt}` or `{alt: null, why}`. It writes nothing.
+- **What's sent and kept.** The picture at 960 px wide as a JPEG, without its file name, its metadata or any of the site's words; it gives up after 20 seconds. The answer goes through `cleanAlt` (`model/altText.ts`): a leading "image of" is taken off, it's cut to 250 characters at a sentence or a word, and one that names or identifies a person is refused, not edited.
+- **Tests.** The stand-in answers every picture with one sentence and its `blind` model refuses pictures; `tests/unit/aiAlt.test.ts` and `altText.test.ts` hold the rules and the routes, and the editor E2E "editor: suggested alt text" the screens.

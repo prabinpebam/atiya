@@ -41,6 +41,7 @@ import ActionBar from '../../components/compounds/ActionBar.astro';
 import IssueNote from '../kit/IssueNote.astro';
 import StatusNote from '../kit/StatusNote.astro';
 import Fieldset from '../kit/Fieldset.astro';
+import AltSuggestion from '../kit/AltSuggestion.astro';
 
 export interface MediaCard {
   id: string;
@@ -127,6 +128,7 @@ const groups = [...new Set(media.map((m) => m.owner))].map((o) => ({ owner: o, l
       <StatusNote data-upload-note="" hidden />
       <div class="fields" data-upload-for="image">
         <TextField label="Alt text" name="alt" multiline rows={2} hint="What it shows, for someone who can't see it (250 characters at most). Leave it empty only if it's decorative." />
+        <AltSuggestion />
         <Checkbox label="It's decorative: it adds nothing a reader would miss" name="decorative" />
       </div>
       <div class="fields" data-upload-for="video" hidden>
