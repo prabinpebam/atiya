@@ -7,7 +7,7 @@
 /** A section's view on the site (the site's SECTION_VIEWS; a unit test keeps them equal). */
 export type ModeSectionView = 'list' | 'tiles' | 'bento' | 'features' | 'albums';
 /** A page's kind (the content contract's article kinds; a unit test keeps them equal). */
-export type ModePageKind = 'note' | 'page' | 'gallery' | 'talk';
+export type ModePageKind = 'note' | 'page' | 'talk';
 
 /** A picture a mode may show (made by the site's picture pipeline). */
 export interface ModePicture {

@@ -58,9 +58,9 @@ export interface EvidenceIndex {
   now: number;
 }
 
-const KIND_OF_PAGE: Partial<Record<PageKind, Contribution>> = { note: 'wrote', talk: 'spoke', gallery: 'built' };
+const KIND_OF_PAGE: Partial<Record<PageKind, Contribution>> = { note: 'wrote', talk: 'spoke' };
 
-/** A page's kind of proof (curation §2): the person's part, else its kind's (a note wrote, a talk spoke, a gallery built). */
+/** A page's kind of proof (curation §2): the person's part, else its kind's (a note wrote, a talk spoke). */
 export const kindOf = (a: Pick<Article, 'contribution' | 'kind'>): Contribution | undefined => a.contribution ?? KIND_OF_PAGE[a.kind];
 
 /** Words as matched and checked: lower case, curly quotes made straight, white space collapsed. */

@@ -1,5 +1,5 @@
 /**
- * The made-up album a test build and the editor's test server add to the real content as public content
+ * The made-up albums a test build and the editor's test server add to the real content as public content
  * (documentation/gallery/plan.md, G1 item 9; spec §20): tests/fixtures/gallery/content, read as an overlay by
  * a `--mode test` build only (integrations/roots.mjs, src/site/content/overlay.ts), its media made by
  * scripts/make-gallery-fixture.mjs.
@@ -49,8 +49,9 @@ describe('when the overlay applies', () => {
     expect(withArgv(['build', '--mode', 'production'], () => overlayRootFor(ROOT, 'build'))).toBeNull();
   });
 
-  it('reads articles, media and the structure; nothing else of the fixture', () => {
-    expect(overlayRole('articles/fixture-album.json')).toBe('add');
+  it('reads albums, articles, media and the structure; nothing else of the fixture', () => {
+    expect(overlayRole('albums/fixture-album.json')).toBe('add');
+    expect(overlayRole('articles/fixture-album-note.json')).toBe('add');
     expect(overlayRole('media/articles/fixture-album/p01.webp')).toBe('add');
     expect(overlayRole('structures/site.json')).toBe('structure');
     for (const rel of ['site.json', 'people/fixture.json', 'structures/ways.json', 'recommendations.json']) expect(overlayRole(rel)).toBe('skip');
@@ -70,14 +71,15 @@ describe('when the overlay applies', () => {
   });
 });
 
-describe('a test build reads the real content and the fixture album as one', () => {
+describe('a test build reads the real content and the fixture albums as one', () => {
   const snap = readSnapshot(CONTENT, PRIVATE_FIXTURE, FIXTURE);
   const c = loadContent(snap.docs, snap.masters, snap.errors, new Set(), snap.sizes);
 
   it('with no problem, the album placed in the Gallery section at /gallery/fixture-album/', () => {
     expect(snap.errors).toEqual([]);
-    expect(c.articles.get('fixture-album')?.kind).toBe('gallery');
-    const route = c.routes.find((r) => r.node.kind === 'item' && r.node.item.id === 'fixture-album');
+    expect(c.albums.get('fixture-album')?.type).toBe('album');
+    expect(c.articles.has('fixture-album')).toBe(false);
+    const route = c.routes.find((r) => r.node.kind === 'item' && r.node.item.type === 'album' && r.node.item.id === 'fixture-album');
     expect(route?.path).toBe('/gallery/fixture-album/');
     expect(route?.access).toBe('open');
     expect(c.media.get('articles/fixture-album/plan')?.master).toBe('/content/media/articles/fixture-album/plan.svg');
@@ -87,10 +89,22 @@ describe('a test build reads the real content and the fixture album as one', () 
   it('with an album that shows captions under its cells and one told as a Story, after it in the section (plan DoD 12)', () => {
     const talks = c.routes.find((r) => r.node.id === 'talks')!.node as { children: { id: string }[] };
     expect(talks.children.map((n) => n.id)).toEqual(expect.arrayContaining(['fixture-album', 'fixture-album-note', 'fixture-captions', 'fixture-story']));
-    expect(c.articles.get('fixture-captions')?.album).toMatchObject({ captions: true });
-    expect(c.articles.get('fixture-captions')?.album?.layout).toBeUndefined();
-    expect(c.articles.get('fixture-story')?.album).toMatchObject({ layout: 'story' });
+    expect(c.albums.get('fixture-captions')).toMatchObject({ captions: true });
+    expect(c.albums.get('fixture-captions')?.layout).toBeUndefined();
+    expect(c.albums.get('fixture-story')).toMatchObject({ layout: 'story', order: 'custom' });
+    expect(c.albums.get('fixture-story')?.items.some((i) => 'text' in i)).toBe(true);
     for (const id of ['fixture-captions', 'fixture-story']) expect(c.routes.find((r) => r.node.id === id)?.path).toBe(`/gallery/${id}/`);
+  });
+
+  it('with the private fixture album, read from private-pages/albums/', () => {
+    expect(c.albums.get('fx-private-album')?.type).toBe('album');
+    expect(c.origins.get('fx-private-album')).toBe('private');
+    expect(c.media.get('articles/fx-private-album/kite')?.place).toBe('Fixture place: the tidewater flats');
+  });
+
+  it('with nothing of the kind gallery: the fixtures are album files, their words on their pictures (plan DoD 36)', () => {
+    expect([...c.articles.values()].some((a) => (a.kind as string) === 'gallery' || 'album' in a)).toBe(false);
+    for (const [key, doc] of Object.entries(snap.docs)) if (/\/(articles|albums)\/[^/]+\.json$/.test(key)) expect((doc as { kind?: string }).kind, key).not.toBe('gallery');
   });
 
   it('with its masters keyed as public content, sized, and found in the fixture', () => {
@@ -175,13 +189,14 @@ describe("a test build publishes the fixture's video and its captions", () => {
 });
 
 describe("the editor's test server adds the fixture to its copy of the content", () => {
-  it('its articles and media copied in, its pages appended to the Gallery section', () => {
+  it('its albums, articles and media copied in, its pages appended to the Gallery section', () => {
     const copy = join(SCRATCH, 'content');
     mkdirSync(join(copy, 'articles'), { recursive: true });
     mkdirSync(join(copy, 'media'), { recursive: true });
     cpSync(join(CONTENT, 'structures', 'site.json'), join(copy, 'structures', 'site.json'));
     addGalleryFixture(copy);
-    expect(existsSync(join(copy, 'articles', 'fixture-album.json'))).toBe(true);
+    expect(existsSync(join(copy, 'albums', 'fixture-album.json'))).toBe(true);
+    expect(existsSync(join(copy, 'articles', 'fixture-album-note.json'))).toBe(true);
     expect(existsSync(join(copy, 'media', 'articles', 'fixture-album', 'clip.en.vtt'))).toBe(true);
     const site = JSON.parse(readFileSync(join(copy, 'structures', 'site.json'), 'utf8'));
     const talks = site.home.children.find((n: { id: string }) => n.id === 'talks');

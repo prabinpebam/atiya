@@ -29,14 +29,10 @@ export function pictureCount(a: Article): number {
 }
 
 /**
- * A page's measure, by its kind (documentation/sections/spec.md §3.3): an article's reading time, a
- * gallery's number of pictures, and nothing for a page (About, Contact).
+ * A page's measure, by its kind (documentation/sections/spec.md §3.3): an article's reading time, and nothing
+ * for a page (About, Contact). An album's is its counts (album.ts).
  */
 export function pageMeasure(a: Article): string | undefined {
   if (a.kind === 'page') return undefined;
-  if (a.kind === 'gallery') {
-    const n = pictureCount(a);
-    return `${n} ${n === 1 ? 'picture' : 'pictures'}`;
-  }
   return `${readingMinutes(a)} min read`;
 }

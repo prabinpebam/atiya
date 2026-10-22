@@ -16,7 +16,7 @@
             "id": "fixture-album",
             "kind": "item",
             "item": {
-              "type": "article",
+              "type": "album",
               "id": "fixture-album"
             }
           },
@@ -32,7 +32,7 @@
             "id": "fixture-captions",
             "kind": "item",
             "item": {
-              "type": "article",
+              "type": "album",
               "id": "fixture-captions"
             }
           },
@@ -40,7 +40,7 @@
             "id": "fixture-story",
             "kind": "item",
             "item": {
-              "type": "article",
+              "type": "album",
               "id": "fixture-story"
             }
           }

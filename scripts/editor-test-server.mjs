@@ -53,12 +53,13 @@ function writeAiSettings() {
 
 /**
  * The made-up album (tests/fixtures/gallery/content) joins the copy as public content, as a `--mode test`
- * build adds it (src/site/content/overlay.ts): its articles and media copied in, its pages appended to the
+ * build adds it (src/site/content/overlay.ts): its albums, articles and media copied in, its pages appended to the
  * real structure's sections. Never into the real content/.
  */
 export function addGalleryFixture(content) {
   const from = join(ROOT, GALLERY_FIXTURE);
-  for (const dir of ['articles', 'media']) {
+  for (const dir of ['albums', 'articles', 'media']) {
+    if (!existsSync(join(from, dir))) continue;
     for (const rel of readdirSync(join(from, dir), { recursive: true })) {
       const to = join(content, dir, rel);
       if (existsSync(to) && !statSync(to).isDirectory()) throw new Error(`The gallery fixture's ${dir}/${rel} is in the content too: rename the fixture's.`);

@@ -6,5 +6,6 @@
   "visibility": "public",
   "dark": {
     "file": "kite.dark.webp"
-  }
+  },
+  "place": "Fixture place: the tidewater flats"
 }

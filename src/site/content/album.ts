@@ -1,12 +1,13 @@
 /**
  * An album's rules and worked-out answers (documentation/gallery/spec.md §3, §5, §6, §7, §16, §18): the checks
- * the content check runs on an album (V38, V39, V40's warnings, V45, V47, V48), the band's reading order, the
- * counts and the span of dates in words, the six presets and the default arrangement, the phone's band
- * (`phoneTiles`) and keeping the owner's own phone arrangement in step, how a tile shows its item and the
- * album's card picture. Pure: no Astro, nothing read; media comes in through a lookup.
+ * the content check runs on an album (V38, V39, V40's warnings, V41's links, V47, V48, V49, V53, V54, V55), its
+ * order (`albumOrder`) and a gallery's (`albumsOrder`), the cover's reading order, the counts and the span of dates
+ * in words, the six presets and the automatic cover (`defaultCover`, led by `cover.lead`), the phone's cover
+ * (`phoneTiles`) and keeping the owner's own phone arrangement in step, how a tile shows its item and the album's
+ * cover picture. Pure: no Astro, nothing read; library items come in through a lookup.
  */
-import { isProvider, isProviderId } from './providers';
 import {
+  CAPTION_MAX,
   GRID_COLUMNS,
   GRID_ROWS_MAX,
   PHONE_COLUMNS,
@@ -20,33 +21,41 @@ import {
   isDrawingFile,
   type Album,
   type AlbumItem,
+  type AlbumMediaItem,
+  type AlbumTextItem,
   type AlbumTile,
   type PhoneTile,
+  type SectionAlbumOrder,
   type TileDisplay,
 } from './schema';
 
-/** What an item is, for its tile, its counts and its rules. An animated picture counts as a picture; an embed as a video. */
-export type ItemKind = 'picture' | 'animated' | 'drawing' | 'video' | 'embed';
+/**
+ * What an item is, for its tile, its counts and its rules: a library item's kind (an animated picture counts as a
+ * picture, a video file and a linked video as videos), or a text card.
+ */
+export type ItemKind = 'picture' | 'animated' | 'drawing' | 'video' | 'embed' | 'text';
 
-/** What an album needs to know of a piece of media: the loader's MediaRecord and VideoRecord fit it. */
+/** What an album needs to know of a library item: the loader's MediaRecord, VideoRecord and EmbedRecord fit it. */
 export type AlbumMedia =
   | {
       kind: 'image';
       file: string;
       alt?: string;
       decorative?: boolean;
+      caption?: string;
       animation?: unknown;
       facts?: { width: number; height: number; bytes: number };
       taken?: string;
       /** Its master's size in bytes, when known beyond its facts. */
       bytes?: number;
     }
-  | { kind: 'video'; file: string; width: number; height: number; captions?: readonly unknown[]; bytes?: number };
+  | { kind: 'video'; file: string; width: number; height: number; caption?: string; captions?: readonly unknown[]; taken?: string; bytes?: number }
+  | { kind: 'embed'; provider: string; shape?: { width: number; height: number }; caption?: string; taken?: string };
 
-/** Finds a piece of media by its ID (undefined: no such picture or video file). */
+/** Finds a library item by its media ID (undefined: no such picture, video file or linked video). */
 export type MediaLookup = (id: string) => AlbumMedia | undefined;
 
-/** One thing wrong with an album, at its path under `album`. */
+/** One thing wrong with an album, at its path in the album's file. */
 export interface AlbumIssue {
   path: string;
   message: string;
@@ -60,38 +69,100 @@ export interface Rect {
   h: number;
 }
 
+/** What the cover rules read of an album. */
+type Covered = Pick<Album, 'items' | 'cover' | 'order'>;
+
 // ---------- kinds ----------
 
-/** A piece of media's kind, or undefined for a file the album can't hold. */
+/** Whether an item is a text card. */
+export const isTextItem = (item: AlbumItem): item is AlbumTextItem => 'text' in item;
+/** Whether an item is a library item (a picture, a drawing, a video file or a linked video). */
+export const isMediaItem = (item: AlbumItem): item is AlbumMediaItem => 'media' in item;
+
+/** A library item's kind, or undefined for one the album can't hold. */
 export function mediaKind(m: AlbumMedia | undefined): ItemKind | undefined {
   if (!m) return undefined;
   if (m.kind === 'video') return 'video';
+  if (m.kind === 'embed') return 'embed';
   if (isDrawingFile(m.file)) return 'drawing';
   return m.animation ? 'animated' : 'picture';
 }
 
-/** An item's kind (undefined: its media doesn't exist). */
-export const itemKind = (item: AlbumItem, lookup: MediaLookup): ItemKind | undefined => (item.embed ? 'embed' : mediaKind(lookup(item.media!)));
+/** An item's kind: `text` for a text card, its library item's otherwise (undefined: that doesn't exist). */
+export const itemKind = (item: AlbumItem, lookup: MediaLookup): ItemKind | undefined => (isTextItem(item) ? 'text' : mediaKind(lookup(item.media)));
 
-/** Whether a kind is a raster picture (a card's or a social image's, a poster's). */
+/** Whether a kind is a raster picture (a card's or a social image's). */
 export const isRaster = (k: ItemKind | undefined): boolean => k === 'picture' || k === 'animated';
 
 /** How a tile shows its item (§6.5): its own `display`, else fit for a drawing and fill for everything else. */
 export const displayFor = (tile: { display?: TileDisplay }, kind: ItemKind | undefined): TileDisplay => tile.display ?? (kind === 'drawing' ? 'fit' : 'fill');
 
-/** A piece of media's shape (width over height), when it's known. */
+/** A library item's shape (width over height), when it's known: a linked video's is its player's, 16:9 when left out. */
 export function aspectOf(m: AlbumMedia | undefined): number | undefined {
   if (!m) return undefined;
+  if (m.kind === 'embed') return m.shape ? m.shape.width / m.shape.height : 16 / 9;
   const [w, h] = m.kind === 'video' ? [m.width, m.height] : [m.facts?.width, m.facts?.height];
   return w && h ? w / h : undefined;
 }
 
-/** An item's shape: its media's, or an embed's own (16:9 when left out). */
-export const itemAspect = (item: AlbumItem, lookup: MediaLookup): number | undefined =>
-  item.embed ? (item.embed.width && item.embed.height ? item.embed.width / item.embed.height : 16 / 9) : aspectOf(lookup(item.media!));
+/** An item's shape: its library item's (undefined for a text card). */
+export const itemAspect = (item: AlbumItem, lookup: MediaLookup): number | undefined => (isTextItem(item) ? undefined : aspectOf(lookup(item.media)));
 
-/** A piece of media's size in bytes, when known. */
-const bytesOf = (m: AlbumMedia | undefined): number | undefined => m?.bytes ?? (m?.kind === 'image' ? m.facts?.bytes : undefined);
+/** A library item's size in bytes, when known. */
+const bytesOf = (m: AlbumMedia | undefined): number | undefined => (m?.kind === 'embed' ? undefined : (m?.bytes ?? (m?.kind === 'image' ? m.facts?.bytes : undefined)));
+
+/** The day an item was taken, when its library item has one. */
+export const takenOf = (item: AlbumItem, lookup: MediaLookup): string | undefined => (isTextItem(item) ? undefined : lookup(item.media)?.taken);
+
+// ---------- order ----------
+
+/**
+ * The order an album's items are shown in (§3.3): by the day taken, oldest first (the default) or newest first, the
+ * undated after the dated in the order they were added, and items taken the same day in the order they were added;
+ * or, in the owner's own order (`custom`), exactly as `items` lists them. Text cards need the owner's order (V53):
+ * sorted, they go to the end.
+ */
+export function albumOrder<T extends AlbumItem>(album: { items: readonly T[]; order?: Album['order'] }, lookup: MediaLookup): T[] {
+  if (album.order === 'custom') return [...album.items];
+  const sign = album.order === 'newest' ? -1 : 1;
+  const dated: { item: T; day: string }[] = [];
+  const undated: T[] = [];
+  const text: T[] = [];
+  for (const item of album.items) {
+    if (isTextItem(item)) text.push(item);
+    else {
+      const day = takenOf(item, lookup);
+      if (day) dated.push({ item, day });
+      else undated.push(item);
+    }
+  }
+  // Array.prototype.sort is stable: ties keep the order they were added
+  dated.sort((a, b) => (a.day < b.day ? -sign : a.day > b.day ? sign : 0));
+  return [...dated.map((d) => d.item), ...undated, ...text];
+}
+
+/** The day a gallery sorts an album by (§5, D-G30): the latest day any of its items was taken, else the day it was made. */
+export function albumDay(album: Pick<Album, 'items' | 'createdAt' | 'publishedAt'>, lookup: MediaLookup): string {
+  let latest: string | undefined;
+  for (const item of album.items) {
+    const day = takenOf(item, lookup);
+    if (day && (!latest || day > latest)) latest = day;
+  }
+  return latest ?? album.createdAt.slice(0, 10);
+}
+
+/**
+ * A gallery's albums in the section's order (§5, V53): newest first (the default) or oldest first by `albumDay`,
+ * albums of the same day in the order given; `custom`, as given (the section's order in the structure).
+ */
+export function albumsOrder<A extends Pick<Album, 'items' | 'createdAt' | 'publishedAt'>>(albums: readonly A[], order: SectionAlbumOrder | undefined, lookup: MediaLookup): A[] {
+  if (order === 'custom') return [...albums];
+  const sign = order === 'oldest' ? 1 : -1;
+  return albums
+    .map((album) => ({ album, day: albumDay(album, lookup) }))
+    .sort((a, b) => (a.day < b.day ? -sign : a.day > b.day ? sign : 0))
+    .map((x) => x.album);
+}
 
 // ---------- the grid ----------
 
@@ -103,7 +174,7 @@ export const overlaps = (a: Rect, b: Rect): boolean => a.x < b.x + b.w && b.x < 
 /** How many rows tall a set of tiles is. */
 export const rowsOf = (tiles: readonly Rect[]): number => tiles.reduce((n, t) => Math.max(n, t.y + t.h), 0);
 
-/** The cells no tile covers, above the band's last row. */
+/** The cells no tile covers, above the cover's last row. */
 export function holes(tiles: readonly Rect[], columns = GRID_COLUMNS): { x: number; y: number }[] {
   const out: { x: number; y: number }[] = [];
   for (let y = 0; y < rowsOf(tiles); y++)
@@ -118,145 +189,178 @@ function overlapping(tiles: readonly Rect[]): [number, number][] {
   return out;
 }
 
-/** The band an album shows: its own tiles, or the default arrangement. */
-export const showcaseOf = (album: Pick<Album, 'items' | 'showcase'>): AlbumTile[] => album.showcase?.tiles ?? defaultShowcase(album.items);
+/** The owner's arranged tiles, when he has arranged the cover. */
+export const arrangedTiles = (album: Pick<Album, 'cover'>): AlbumTile[] | undefined => (album.cover && 'tiles' in album.cover ? album.cover.tiles : undefined);
+
+/** The item `cover.lead` names, when the cover isn't arranged. */
+export const coverLead = (album: Pick<Album, 'cover'>): string | undefined => (album.cover && 'lead' in album.cover ? album.cover.lead : undefined);
+
+/** The cover an album shows (§3.6): the owner's tiles, or the automatic cover. */
+export const coverOf = (album: Covered, lookup: MediaLookup): AlbumTile[] => arrangedTiles(album) ?? defaultCover(album, lookup);
 
 /** The tiles shown on phones. */
 export const shownOnPhones = <T extends { onPhones?: false }>(tiles: readonly T[]): T[] => tiles.filter((t) => t.onPhones !== false);
 
-/** The phone's band: the owner's own arrangement, or the rule's. */
-export const phoneOf = (album: Pick<Album, 'items' | 'showcase'>): PhoneTile[] => album.showcase?.phone?.tiles ?? phoneTiles(showcaseOf(album));
+/** The phone's cover: the owner's own arrangement, or the rule's. */
+export const phoneOf = (album: Covered, lookup: MediaLookup): PhoneTile[] =>
+  (album.cover && 'tiles' in album.cover ? album.cover.phone?.tiles : undefined) ?? phoneTiles(coverOf(album, lookup));
+
+/** The lead tile (§3.6): the largest, the first in reading order of equals. */
+export function leadTile<T extends Rect>(tiles: readonly T[]): T | undefined {
+  let best: T | undefined;
+  for (const t of readingOrder(tiles)) if (!best || t.w * t.h > best.w * best.h) best = t;
+  return best;
+}
 
 // ---------- checks ----------
 
-/** V38 and V45, and the item options that need its media: what's wrong with the album's items. Existence and visibility are the loader's (needMedia). */
-export function itemProblems(album: Album, lookup: MediaLookup, opts: { published: boolean }): AlbumIssue[] {
+/** V38, V41's links, V49, V53 and V54: what's wrong with the album's items. Existence and access are the loader's (V38, V52). */
+export function itemProblems(album: Pick<Album, 'items' | 'order' | 'description'>, lookup: MediaLookup, opts: { published: boolean }): AlbumIssue[] {
   const out: AlbumIssue[] = [];
-  if (opts.published && album.items.length === 0) out.push({ path: 'items', message: 'a published album has at least one item: add one, or set the page back to draft (V38)' });
+  if (opts.published && !album.items.some(isMediaItem)) out.push({ path: 'items', message: 'a published album has at least one picture or video: add one, or set it back to draft (V38)' });
   const ids = new Set<string>();
+  const used = new Map<string, string>();
   album.items.forEach((item, i) => {
     const at = `items.${i}`;
     if (ids.has(item.id)) out.push({ path: `${at}.id`, message: `two items have the ID "${item.id}": an item's ID is unique in its album (V38)` });
     ids.add(item.id);
-    if (item.embed) {
-      if (!isProvider(item.embed.provider)) out.push({ path: `${at}.embed.provider`, message: `"${item.embed.provider}" isn't a provider the site embeds (V45)` });
-      else if (!isProviderId(item.embed.provider, item.embed.id)) out.push({ path: `${at}.embed.id`, message: `"${item.embed.id}" isn't a ${item.embed.provider} video's ID (V45)` });
-      if (item.poster) {
-        const p = lookup(item.poster);
-        if (p && !isRaster(mediaKind(p))) out.push({ path: `${at}.poster`, message: "an embed's poster is a picture (not a drawing or a video file) (V45)" });
-      }
-      return;
-    }
-    const m = lookup(item.media!);
+    if (isTextItem(item)) return;
+    if (used.has(item.media)) out.push({ path: `${at}.media`, message: `"${item.media}" is in the album twice (items "${used.get(item.media)}" and "${item.id}"): a library item is in an album once (V38)` });
+    else used.set(item.media, item.id);
+    const m = lookup(item.media);
     if (!m) return;
-    if (m.kind === 'image' && (m.decorative || !m.alt)) out.push({ path: `${at}.media`, message: `the picture "${item.media}" needs alt text: in an album a picture is the content, never decorative (V38)` });
-    if ((item.autoplay !== undefined || item.loop !== undefined) && m.kind !== 'video') out.push({ path: at, message: 'autoplay and loop are for a video file, not a picture (V49)' });
+    if (m.kind === 'embed' && item.download !== undefined) out.push({ path: `${at}.download`, message: "a linked video can't be downloaded: its file is the provider's (V49)" });
+    if ((item.autoplay !== undefined || item.loop !== undefined) && m.kind !== 'video')
+      out.push({ path: at, message: `autoplay and loop are for a video file, not ${m.kind === 'embed' ? 'a linked video: it starts when the reader presses play' : 'a picture'} (V49)` });
+    if (opts.published && m.kind === 'image' && (m.decorative || !m.alt))
+      out.push({ path: `${at}.media`, message: `the picture "${item.media}" needs alt text: in a published album a picture is the content, never decorative (V54)` });
+    if (opts.published && m.caption && m.caption.length > CAPTION_MAX) out.push({ path: `${at}.media`, message: `the caption of "${item.media}" is ${m.caption.length} characters: in an album, at most ${CAPTION_MAX} (V41)` });
   });
+  const text = album.items.filter(isTextItem).length;
+  if (text && album.order !== 'custom') out.push({ path: 'order', message: `the album has ${text === 1 ? 'a text card' : `${text} text cards`}: its order is your own ("custom"), so they stay where they were put (V53)` });
   // the album's words may link to its own items (#item-<id>), and only to items it has
   const links = (md: string | undefined, path: string) => {
     for (const [, href] of (md ?? '').matchAll(/\]\((#[^)\s]*)\)/g))
       if (!(href.startsWith('#item-') && ids.has(href.slice('#item-'.length)))) out.push({ path, message: `the link "${href}" goes nowhere: in an album's words a link on the page goes to one of its items, #item-<id> (V41)` });
   };
   links(album.description, 'description');
-  album.items.forEach((item, i) => links(item.description, `items.${i}.description`));
+  album.items.forEach((item, i) => isTextItem(item) && links(item.text, `items.${i}.text`));
   return out;
 }
 
-/** V39: each tile names an item of the album once, and no two overlap (their bounds are the schema's). */
-export function tileProblems(album: Album): AlbumIssue[] {
-  const tiles = album.showcase?.tiles ?? [];
+/** V39: the cover's lead names an item that isn't a text card; each tile names such an item once, and no two overlap (their bounds are the schema's). */
+export function coverProblems(album: Pick<Album, 'items' | 'cover'>): AlbumIssue[] {
   const out: AlbumIssue[] = [];
-  const items = new Set(album.items.map((i) => i.id));
+  const byId = new Map(album.items.map((i) => [i.id, i]));
+  const lead = coverLead(album);
+  if (lead !== undefined) {
+    const item = byId.get(lead);
+    if (!item) out.push({ path: 'cover.lead', message: `"${lead}" isn't an item of the album (V39)` });
+    else if (isTextItem(item)) out.push({ path: 'cover.lead', message: `"${lead}" is a text card: the cover is pictures (V39)` });
+  }
+  const tiles = arrangedTiles(album) ?? [];
   const seen = new Set<string>();
   tiles.forEach((t, i) => {
-    if (!items.has(t.item)) out.push({ path: `showcase.tiles.${i}.item`, message: `"${t.item}" isn't an item of the album (V39)` });
-    else if (seen.has(t.item)) out.push({ path: `showcase.tiles.${i}.item`, message: `"${t.item}" has two tiles: an item is up front once (V39)` });
+    const item = byId.get(t.item);
+    if (!item) out.push({ path: `cover.tiles.${i}.item`, message: `"${t.item}" isn't an item of the album (V39)` });
+    else if (isTextItem(item)) out.push({ path: `cover.tiles.${i}.item`, message: `"${t.item}" is a text card: the cover is pictures (V39)` });
+    else if (seen.has(t.item)) out.push({ path: `cover.tiles.${i}.item`, message: `"${t.item}" has two tiles: an item is in the cover once (V39)` });
     seen.add(t.item);
   });
-  for (const [i, j] of overlapping(tiles)) out.push({ path: `showcase.tiles.${j}`, message: `the tiles of "${tiles[i].item}" and "${tiles[j].item}" overlap (V39)` });
+  for (const [i, j] of overlapping(tiles)) out.push({ path: `cover.tiles.${j}`, message: `the tiles of "${tiles[i].item}" and "${tiles[j].item}" overlap (V39)` });
   return out;
 }
 
-/** V47: the phone's band. Its own arrangement names exactly the tiles shown on phones, once each, never overlapping; at least one tile is shown. */
-export function phoneProblems(album: Album): AlbumIssue[] {
-  const tiles = album.showcase?.tiles;
+/** V47: the phone's cover. Its own arrangement names exactly the tiles shown on phones, once each, never overlapping; at least one tile is shown. */
+export function phoneProblems(album: Pick<Album, 'cover'>): AlbumIssue[] {
+  const tiles = arrangedTiles(album);
   if (!tiles) return [];
   const out: AlbumIssue[] = [];
   const shown = shownOnPhones(tiles);
-  if (!shown.length) out.push({ path: 'showcase.tiles', message: 'at least one tile is shown on phones (V47)' });
-  const phone = album.showcase?.phone?.tiles;
+  if (!shown.length) out.push({ path: 'cover.tiles', message: 'at least one tile is shown on phones (V47)' });
+  const phone = album.cover && 'tiles' in album.cover ? album.cover.phone?.tiles : undefined;
   if (!phone) return out;
   const want = new Set(shown.map((t) => t.item));
   const seen = new Set<string>();
   phone.forEach((p, i) => {
-    const at = `showcase.phone.tiles.${i}`;
+    const at = `cover.phone.tiles.${i}`;
     if (!want.has(p.item))
-      out.push({ path: `${at}.item`, message: tiles.some((t) => t.item === p.item) ? `"${p.item}" is hidden on phones, so it has no place there (V47)` : `"${p.item}" isn't up front (V47)` });
-    else if (seen.has(p.item)) out.push({ path: `${at}.item`, message: `"${p.item}" is in the phone's band twice (V47)` });
+      out.push({ path: `${at}.item`, message: tiles.some((t) => t.item === p.item) ? `"${p.item}" is hidden on phones, so it has no place there (V47)` : `"${p.item}" isn't in the cover (V47)` });
+    else if (seen.has(p.item)) out.push({ path: `${at}.item`, message: `"${p.item}" is in the phone's cover twice (V47)` });
     seen.add(p.item);
   });
-  for (const t of shown) if (!seen.has(t.item)) out.push({ path: 'showcase.phone.tiles', message: `"${t.item}" is shown on phones but has no place there (V47)` });
-  for (const [i, j] of overlapping(phone)) out.push({ path: `showcase.phone.tiles.${j}`, message: `the phone tiles of "${phone[i].item}" and "${phone[j].item}" overlap (V47)` });
+  for (const t of shown) if (!seen.has(t.item)) out.push({ path: 'cover.phone.tiles', message: `"${t.item}" is shown on phones but has no place there (V47)` });
+  for (const [i, j] of overlapping(phone)) out.push({ path: `cover.phone.tiles.${j}`, message: `the phone tiles of "${phone[i].item}" and "${phone[j].item}" overlap (V47)` });
   return out;
 }
 
 /** V48: a tile's focus (two percentages, a filled tile only) and playing (a video file or an animated picture of at most 10 MB, on at most 2 tiles). */
-export function playProblems(album: Album, lookup: MediaLookup): AlbumIssue[] {
-  const tiles = album.showcase?.tiles ?? [];
+export function playProblems(album: Pick<Album, 'items' | 'cover'>, lookup: MediaLookup): AlbumIssue[] {
+  const tiles = arrangedTiles(album) ?? [];
   const out: AlbumIssue[] = [];
   const byId = new Map(album.items.map((i) => [i.id, i]));
   tiles.forEach((t, i) => {
-    const at = `showcase.tiles.${i}`;
+    const at = `cover.tiles.${i}`;
     const item = byId.get(t.item);
     const kind = item && itemKind(item, lookup);
     if (t.focus) {
       if (t.focus.split(' ').some((p) => parseInt(p, 10) > 100)) out.push({ path: `${at}.focus`, message: 'a focus point is two percentages from 0% to 100% (V48)' });
-      if (displayFor(t, kind) !== 'fill') out.push({ path: `${at}.focus`, message: "a focus point is for a filled tile: a fitted one shows its item whole (V48)" });
+      if (displayFor(t, kind) !== 'fill') out.push({ path: `${at}.focus`, message: 'a focus point is for a filled tile: a fitted one shows its item whole (V48)' });
     }
-    if (t.play && item) {
-      if (kind !== 'video' && kind !== 'animated') out.push({ path: `${at}.play`, message: 'only a video file or an animated picture can play in the band (V48)' });
+    if (t.play && item && isMediaItem(item)) {
+      if (kind !== 'video' && kind !== 'animated') out.push({ path: `${at}.play`, message: 'only a video file or an animated picture can play in the cover (V48)' });
       else {
-        const bytes = bytesOf(lookup(item.media!));
+        const bytes = bytesOf(lookup(item.media));
         if (bytes !== undefined && bytes > PLAY_MAX_BYTES) out.push({ path: `${at}.play`, message: `"${t.item}" is ${mb(bytes)}: a tile plays only a file of at most ${mb(PLAY_MAX_BYTES)} (V48)` });
       }
     }
   });
   const playing = tiles.filter((t) => t.play).length;
-  if (playing > PLAY_MAX_TILES) out.push({ path: 'showcase.tiles', message: `${playing} tiles play: at most ${PLAY_MAX_TILES} play in a band (V48)` });
+  if (playing > PLAY_MAX_TILES) out.push({ path: 'cover.tiles', message: `${playing} tiles play: at most ${PLAY_MAX_TILES} play in a cover (V48)` });
   return out;
 }
 
-/** Every refusal of an album's own (V38, V39, V45, V47, V48). */
-export const albumProblems = (album: Album, lookup: MediaLookup, opts: { published: boolean }): AlbumIssue[] => [
+/** Every refusal of an album's own (V38, V39, V41's links, V47, V48, V49, V53, V54). */
+export const albumProblems = (album: Pick<Album, 'items' | 'cover' | 'order' | 'description'>, lookup: MediaLookup, opts: { published: boolean }): AlbumIssue[] => [
   ...itemProblems(album, lookup, opts),
-  ...tileProblems(album),
+  ...coverProblems(album),
   ...phoneProblems(album),
   ...playProblems(album, lookup),
 ];
 
-/** V40: warnings, never refusals (a hole in the band, a tall band or phone band, a heavy playing tile, a video file without captions). */
-export function albumWarnings(album: Album, lookup: MediaLookup): string[] {
+/** V40: warnings, never refusals (a hole in the cover, a tall cover or phone cover, a heavy playing tile, a video file without captions). */
+export function albumWarnings(album: Pick<Album, 'items' | 'cover' | 'order'>, lookup: MediaLookup): string[] {
   const out: string[] = [];
-  const tiles = album.showcase?.tiles;
+  const tiles = arrangedTiles(album);
   if (tiles) {
     const gaps = holes(tiles);
-    if (gaps.length) out.push(`the band has ${gaps.length} empty cell${gaps.length === 1 ? '' : 's'}, the first at row ${gaps[0].y + 1}, column ${gaps[0].x + 1}: move or resize a tile to fill it (V40)`);
+    if (gaps.length) out.push(`the cover has ${gaps.length} empty cell${gaps.length === 1 ? '' : 's'}, the first at row ${gaps[0].y + 1}, column ${gaps[0].x + 1}: move or resize a tile to fill it (V40)`);
     const rows = rowsOf(tiles);
-    if (rows > ROWS_WARN) out.push(`the band is ${rows} rows tall: past ${ROWS_WARN}, it's taller than a screen (V40)`);
-    const phoneRows = rowsOf(phoneOf(album));
-    if (phoneRows > PHONE_ROWS_WARN) out.push(`the band on phones is ${phoneRows} rows tall: past ${PHONE_ROWS_WARN}, hide a tile on phones (V40)`);
+    if (rows > ROWS_WARN) out.push(`the cover is ${rows} rows tall: past ${ROWS_WARN}, it's taller than a screen (V40)`);
+    const phoneRows = rowsOf(phoneOf(album, lookup));
+    if (phoneRows > PHONE_ROWS_WARN) out.push(`the cover on phones is ${phoneRows} rows tall: past ${PHONE_ROWS_WARN}, hide a tile on phones (V40)`);
     const byId = new Map(album.items.map((i) => [i.id, i]));
     for (const t of tiles) {
       const item = byId.get(t.item);
-      const bytes = t.play && item?.media ? bytesOf(lookup(item.media)) : undefined;
-      if (bytes !== undefined && bytes > PLAY_WARN_BYTES && bytes <= PLAY_MAX_BYTES) out.push(`"${t.item}" plays in the band and is ${mb(bytes)}: past ${mb(PLAY_WARN_BYTES)}, it's slow on a phone's connection (V40)`);
+      const bytes = t.play && item && isMediaItem(item) ? bytesOf(lookup(item.media)) : undefined;
+      if (bytes !== undefined && bytes > PLAY_WARN_BYTES && bytes <= PLAY_MAX_BYTES) out.push(`"${t.item}" plays in the cover and is ${mb(bytes)}: past ${mb(PLAY_WARN_BYTES)}, it's slow on a phone's connection (V40)`);
     }
   }
-  for (const item of album.items) {
-    const m = item.media ? lookup(item.media) : undefined;
+  for (const item of album.items.filter(isMediaItem)) {
+    const m = lookup(item.media);
     if (m?.kind === 'video' && !m.captions?.length) out.push(`the video "${item.media}" has no captions: a video with speech needs them (V40)`);
   }
   return out;
+}
+
+/**
+ * V55: a fingerprint names one library item. Each fingerprint held by more than one item, with the items' IDs
+ * (in the order given).
+ */
+export function fingerprintClashes(items: Iterable<{ id: string; fingerprint?: string }>): { fingerprint: string; ids: string[] }[] {
+  const by = new Map<string, string[]>();
+  for (const { id, fingerprint } of items) if (fingerprint) by.set(fingerprint, [...(by.get(fingerprint) ?? []), id]);
+  return [...by].filter(([, ids]) => ids.length > 1).map(([fingerprint, ids]) => ({ fingerprint, ids }));
 }
 
 const mb = (bytes: number) => `${(bytes / (1024 * 1024)).toFixed(1).replace(/\.0$/, '')} MB`;
@@ -266,15 +370,15 @@ const mb = (bytes: number) => `${(bytes / (1024 * 1024)).toFixed(1).replace(/\.0
 export interface AlbumCounts {
   /** Pictures, animated ones included. */
   pictures: number;
-  /** Video files and embeds. */
+  /** Video files and linked videos. */
   videos: number;
   drawings: number;
 }
 
-/** What an album holds, by kind (§5): an item whose media doesn't exist isn't counted. */
+/** What an album holds, by kind (§5): text cards, and an item whose media doesn't exist, aren't counted. */
 export function albumCounts(items: readonly AlbumItem[], lookup: MediaLookup): AlbumCounts {
   const counts: AlbumCounts = { pictures: 0, videos: 0, drawings: 0 };
-  for (const item of items) {
+  for (const item of items.filter(isMediaItem)) {
     const k = itemKind(item, lookup);
     if (k === 'picture' || k === 'animated') counts.pictures++;
     else if (k === 'video' || k === 'embed') counts.videos++;
@@ -318,8 +422,8 @@ export const albumDates = (album: Pick<Album, 'items' | 'dates'>, lookup: MediaL
   album.dates === false
     ? []
     : album.items.flatMap((i) => {
-        const m = i.media ? lookup(i.media) : undefined;
-        return m?.kind === 'image' && m.taken ? [m.taken] : [];
+        const day = takenOf(i, lookup);
+        return day ? [day] : [];
       });
 
 // ---------- presets and the default ----------
@@ -466,12 +570,20 @@ export function defaultPreset(n: number): { preset: PresetId; count: number } | 
   return { preset: n === 3 ? 'lead-two' : n === 1 ? 'single' : 'pairs', count: n };
 }
 
-/** The default band (§6.4), worked out, never saved: the album's first items in the preset that fits their number. */
-export function defaultShowcase(items: readonly Pick<AlbumItem, 'id'>[]): AlbumTile[] {
-  const d = defaultPreset(items.length);
+/**
+ * The automatic cover (§3.6, §6.4), worked out, never saved: the album's first pictures and videos in its order
+ * (`albumOrder`), led by `cover.lead` when it names one, in the preset that fits their number. Text cards are never
+ * on the cover.
+ */
+export function defaultCover(album: Covered, lookup: MediaLookup): AlbumTile[] {
+  const media = albumOrder(album, lookup).filter(isMediaItem);
+  const lead = coverLead(album);
+  const at = lead === undefined ? -1 : media.findIndex((i) => i.id === lead);
+  if (at > 0) media.unshift(...media.splice(at, 1));
+  const d = defaultPreset(media.length);
   if (!d) return [];
   const rects = presetRects(d.preset, d.count);
-  return items.slice(0, d.count).map((item, i) => ({ item: item.id, ...rects[i] }));
+  return media.slice(0, d.count).map((item, i) => ({ item: item.id, ...rects[i] }));
 }
 
 // ---------- on a phone ----------
@@ -525,50 +637,77 @@ export function keepPhoneInStep(phone: readonly PhoneTile[], tiles: readonly Alb
   return [...kept, ...added];
 }
 
-// ---------- the card ----------
+// ---------- the cover picture ----------
 
-/**
- * The album's card picture (§18): the page's thumbnail, else its first raster picture up front (in reading
- * order), else its first raster picture in the album; undefined when it has none.
- */
-export function cardPicture(page: { thumbnail?: string; album?: Album }, lookup: MediaLookup): string | undefined {
-  if (page.thumbnail) return page.thumbnail;
-  const album = page.album;
-  if (!album) return undefined;
-  const raster = (item: AlbumItem | undefined) => !!item?.media && isRaster(mediaKind(lookup(item.media)));
-  const byId = new Map(album.items.map((i) => [i.id, i]));
-  const upFront = readingOrder(showcaseOf(album)).map((t) => byId.get(t.item)).find(raster);
-  return (upFront ?? album.items.find(raster))?.media;
+/** The album's cover picture: the item, its library item's ID and its kind (a video's or linked video's shows its poster). */
+export interface CoverPicture {
+  item: AlbumMediaItem;
+  media: string;
+  kind: Exclude<ItemKind, 'text'>;
+  /** Whether what's shown is the item's poster frame (a video file or a linked video). */
+  poster: boolean;
 }
 
+/**
+ * The cover picture (§3.6): the item in the cover's lead tile, the album's picture on its cards, the planet's
+ * previews and social cards. A video file or a linked video gives its poster. For a social card (`social`), a drawing
+ * can't stand (V46), so the first other item in the cover's reading order does, else the first in the album's order.
+ * Undefined for an album with nothing to show.
+ */
+export function coverPicture(album: Covered, lookup: MediaLookup, opts: { social?: boolean } = {}): CoverPicture | undefined {
+  const byId = new Map(album.items.map((i) => [i.id, i]));
+  const picture = (item: AlbumItem | undefined): CoverPicture | undefined => {
+    if (!item || !isMediaItem(item)) return undefined;
+    const kind = mediaKind(lookup(item.media));
+    if (!kind || kind === 'text' || (opts.social && kind === 'drawing')) return undefined;
+    return { item, media: item.media, kind, poster: kind === 'video' || kind === 'embed' };
+  };
+  const tiles = coverOf(album, lookup);
+  const lead = leadTile(tiles);
+  const first = picture(lead && byId.get(lead.item));
+  if (first || !opts.social) return first;
+  for (const t of readingOrder(tiles)) {
+    const p = picture(byId.get(t.item));
+    if (p) return p;
+  }
+  for (const item of albumOrder(album, lookup)) {
+    const p = picture(item);
+    if (p) return p;
+  }
+  return undefined;
+}
 
 // ---------- an album with its media ----------
 
-/** An item with what it shows: its kind, its picture or video file (from the index) and an embed's poster. */
-export interface ResolvedItem<I, V> {
+/** An item with what it shows: its kind and its picture, video file or linked video (from the index), or its text. */
+export interface ResolvedItem<I, V, E> {
   item: AlbumItem;
   kind: ItemKind | undefined;
   /** Its picture, animated picture or drawing. */
   image?: I;
   /** Its video file. */
   video?: V;
-  /** An embed's poster picture. */
-  poster?: I;
+  /** Its linked video. */
+  embed?: E;
+  /** A text card's words (Markdown). */
+  text?: string;
 }
 
-/** An album with every item's media looked up in the loader's maps (`media`, `videos`), for the layouts. */
-export function resolveAlbum<I extends AlbumMedia, V extends AlbumMedia>(
+/**
+ * An album with its items in the order shown (`albumOrder`), each with its library item looked up in the loader's
+ * maps (`media`, `videos`, `embeds`), for the layouts.
+ */
+export function resolveAlbum<I extends AlbumMedia, V extends AlbumMedia, E extends AlbumMedia>(
   album: Album,
   images: ReadonlyMap<string, I>,
   videos: ReadonlyMap<string, V>,
-): { album: Album; items: ResolvedItem<I, V>[] } {
-  const lookup: MediaLookup = (id) => images.get(id) ?? videos.get(id);
-  const items = album.items.map((item) => ({
-    item,
-    kind: itemKind(item, lookup),
-    image: item.media ? images.get(item.media) : undefined,
-    video: item.media ? videos.get(item.media) : undefined,
-    poster: item.poster ? images.get(item.poster) : undefined,
-  }));
+  embeds: ReadonlyMap<string, E>,
+): { album: Album; items: ResolvedItem<I, V, E>[] } {
+  const lookup: MediaLookup = (id) => images.get(id) ?? videos.get(id) ?? embeds.get(id);
+  const items = albumOrder(album, lookup).map((item): ResolvedItem<I, V, E> =>
+    isTextItem(item)
+      ? { item, kind: 'text', text: item.text }
+      : { item, kind: itemKind(item, lookup), image: images.get(item.media), video: videos.get(item.media), embed: embeds.get(item.media) },
+  );
   return { album, items };
 }

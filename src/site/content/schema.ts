@@ -6,7 +6,7 @@
  */
 import { z } from 'astro/zod';
 import { paragraphsOf, plainText } from './markdown';
-import { PROVIDER_IDS } from './providers';
+import { PROVIDER_IDS, isProviderId } from './providers';
 import { illustrationProblems } from '../scripts/illustration';
 import { SEARCH_DESCRIPTION_MAX, SUMMARY_MAX } from './limits';
 import { SHAPES, embedHost } from '../services/services';
@@ -74,14 +74,90 @@ const takenDate = z.string().refine(isRealDate, 'a real date as YYYY-MM-DD');
 /** Whether a master is a drawing: an SVG kept as a vector (gallery spec §4.1). */
 export const isDrawingFile = (file: string): boolean => /\.svg$/i.test(file);
 
+// ---------- albums (documentation/gallery/spec.md §3) ----------
+
+/** The most items an album holds (V38). */
+export const ALBUM_MAX_ITEMS = 200;
+/** The most tiles in a cover (V39). */
+export const COVER_MAX_TILES = 12;
+/** The most text cards an album holds (V38). */
+export const TEXT_CARDS_MAX = 50;
+/** An album's title, at most (V41). */
+export const ALBUM_TITLE_MAX = 120;
+/** The band's columns of square cells on a wide screen, and the most rows it may be tall (V39). */
+export const GRID_COLUMNS = 12;
+export const GRID_ROWS_MAX = 12;
+/** A tile's least width and height, in cells, wide or on a phone. */
+export const TILE_MIN = 2;
+/** The phone's columns, and a phone tile's tallest (V47). */
+export const PHONE_COLUMNS = 6;
+export const PHONE_TILE_H_MAX = 8;
+/** At most this many tiles play in a band, each at most PLAY_MAX_BYTES; past PLAY_WARN_BYTES it's a warning (V40, V48). */
+export const PLAY_MAX_TILES = 2;
+export const PLAY_MAX_BYTES = 10 * 1024 * 1024;
+export const PLAY_WARN_BYTES = 4 * 1024 * 1024;
+/** Past these, a band (or a phone's) is a warning, not a refusal (V40). */
+export const ROWS_WARN = 8;
+export const PHONE_ROWS_WARN = 24;
+/** Words (V41, V50): an item's caption and place; an item's and an album's description, in paragraphs or lists and characters. */
+export const CAPTION_MAX = 200;
+export const PLACE_MAX = 80;
+export const ITEM_DESCRIPTION_PARAGRAPHS = 4;
+export const ITEM_DESCRIPTION_MAX = 1000;
+export const ALBUM_DESCRIPTION_PARAGRAPHS = 6;
+export const ALBUM_DESCRIPTION_MAX = 1500;
+/** A drawing's largest file (V42). */
+export const DRAWING_MAX_BYTES = 200 * 1024;
+/** A picture's long side: standard, and kept large (V50). */
+export const STANDARD_PX = 2560;
+export const LARGE_PX = 3840;
+/** A private album's video files are at most this (V44): a sealed file is fetched whole. */
+export const PRIVATE_VIDEO_MAX_BYTES = 10 * 1024 * 1024;
+/** The providers a linked video (and a video block's embed) can come from (V45): the one list in providers.ts. */
+export const EMBED_PROVIDERS = PROVIDER_IDS;
+/** The album page's layouts (§7, §7.1). */
+export const ALBUM_LAYOUTS = ['grid', 'story'] as const;
+/** How a tile shows its item (§6.5). */
+export const TILE_DISPLAYS = ['fill', 'fit'] as const;
+
+/** Rich text of the Markdown subset (§3.5), within a number of paragraphs or lists and of characters (V41). */
+const richWords = (what: string, paragraphs: number, max: number) =>
+  z
+    .string()
+    .min(1)
+    .refine((m) => paragraphsOf(m).length >= 1, `${what} isn't blank`)
+    .refine((m) => paragraphsOf(m).length <= paragraphs, `${what} is at most ${paragraphs} paragraphs or lists (V41)`)
+    .refine((m) => plainText(m).length <= max, `${what} is at most ${max} characters (V41)`);
+
+/** An item's ID: its address in the album (`#item-<id>`), never changed. */
+export const albumItemId = z.string().regex(/^[a-z0-9-]{1,64}$/, 'lowercase letters, digits and hyphens, at most 64 (V38)');
+const cell = (min: number, max: number) => z.int().min(min).max(max);
+
+/** A picture's description (rich text, V41). */
+const itemDescription = richWords("a picture's description", ITEM_DESCRIPTION_PARAGRAPHS, ITEM_DESCRIPTION_MAX);
+/** Where it was made, typed by the owner (never read from the file): one line of plain text (V50). */
+const placeWords = z
+  .string()
+  .trim()
+  .min(1)
+  .max(PLACE_MAX, `a place is at most ${PLACE_MAX} characters (V50)`)
+  .refine((p) => !/[\r\n]/.test(p), 'a place is one line of plain text (V50)');
+/** The SHA-256 of the file as it was uploaded, as 64 hex digits, so the same file added again is found (V55). */
+const fingerprint = z.string().regex(/^[0-9a-f]{64}$/, 'a SHA-256 as 64 lowercase hex digits (V55)');
+
 export const imageMedia = z
   .strictObject({
     kind: z.literal('image'),
     /** Its master: a raster picture, or a drawing (`.svg`, kept as a vector: gallery spec §4.1, V42). */
     file: z.string().regex(/^[a-z0-9-]+\.(webp|jpg|jpeg|png|avif|gif|svg)$/),
+    /** May wait in the library and in drafts; anything published that shows it needs it (V54). */
     alt: z.string().min(1).max(250).optional(),
     decorative: z.boolean().optional(),
     caption: z.string().optional(),
+    /** Its description (rich text): the lightbox's info panel and an album's Story (gallery spec §3.4, V41). */
+    description: itemDescription.optional(),
+    /** Where it was made, typed by the owner (gallery spec §3.4, V50). */
+    place: placeWords.optional(),
     credit: z.string().optional(),
     licence: z.strictObject({ name: z.string(), url: z.url().optional(), owner: z.string().optional() }).optional(),
     source: z.url().optional(),
@@ -102,9 +178,10 @@ export const imageMedia = z
     taken: takenDate.optional(),
     /** Keep it large: its master is kept at up to 3840 px instead of 2560 (gallery spec §4, V50). */
     large: z.literal(true).optional(),
+    /** The SHA-256 of the file as it was uploaded (V55). */
+    fingerprint: fingerprint.optional(),
     visibility: z.enum(['public', 'publicRedacted', 'summaryOnly', 'privateDiscussionOnly', 'notPublishable']),
   })
-  .refine((m) => m.alt || m.decorative, { message: 'an image needs alt text unless it is decorative', path: ['alt'] })
   .refine((m) => !/^(image|picture|photo) of\b/i.test(m.alt ?? ''), { message: 'alt text never starts with "image of"', path: ['alt'] })
   .refine((m) => !m.dark || isDrawingFile(m.dark.file) === isDrawingFile(m.file), { message: "a drawing's dark version is a drawing too, and a picture's a picture (V42)", path: ['dark', 'file'] })
   .refine((m) => !isDrawingFile(m.file) || (!m.animation && !m.dark?.animation), { message: 'a drawing has no animation: animate a picture instead (V42)', path: ['animation'] })
@@ -163,11 +240,50 @@ export const videoMedia = z.strictObject({
    */
   captions: z.array(captionTrack).min(1).optional(),
   caption: z.string().optional(),
+  description: itemDescription.optional(),
+  place: placeWords.optional(),
+  /** The day it was made (YYYY-MM-DD), read from its `creation_time` when it has one (gallery spec §3.3, V50). */
+  taken: takenDate.optional(),
   credit: z.string().optional(),
   licence: z.strictObject({ name: z.string(), url: z.url().optional(), owner: z.string().optional() }).optional(),
   source: z.url().optional(),
+  fingerprint: fingerprint.optional(),
   visibility: z.enum(['public', 'publicRedacted', 'summaryOnly', 'privateDiscussionOnly', 'notPublishable']),
 });
+
+/**
+ * A linked video (gallery spec §4.2, V45): a YouTube or Vimeo video kept in the library as its own kind, its
+ * provider and ID, its title, its player's shape, its length and a poster of the site's own beside it
+ * (`<name>.poster.webp`), with the words every library item has. Its file is the provider's: it's never
+ * downloaded, and plays only after a press.
+ */
+export const embedMedia = z
+  .strictObject({
+    kind: z.literal('embed'),
+    provider: z.enum(PROVIDER_IDS),
+    /** The provider's ID for the video, of the provider's shape (isProviderId). */
+    id: z.string().regex(/^[\w-]+$/),
+    /** Its name: the tile's link name ("Video: …") and the player's. */
+    title: z.string().trim().min(1).max(250),
+    /** Its player's width to height; left out, 16:9. */
+    shape: z.strictObject({ width: z.int().positive(), height: z.int().positive() }).optional(),
+    /** Its length in whole seconds, when the provider gives it. */
+    duration: z.int().positive().optional(),
+    /** Its poster, a raster picture of the site's own beside the sidecar. */
+    poster: z.strictObject({ file: z.string().regex(/^[a-z0-9-]+\.poster\.webp$/, 'a WebP named <name>.poster.webp beside it (V45)') }),
+    /** The poster's alt text (not shown: the poster sits inside a link named by the video). */
+    alt: z.string().min(1).max(250).optional(),
+    caption: z.string().optional(),
+    description: itemDescription.optional(),
+    place: placeWords.optional(),
+    taken: takenDate.optional(),
+    credit: z.string().optional(),
+    licence: z.strictObject({ name: z.string(), url: z.url().optional(), owner: z.string().optional() }).optional(),
+    source: z.url().optional(),
+    fingerprint: fingerprint.optional(),
+    visibility: z.enum(['public', 'publicRedacted', 'summaryOnly', 'privateDiscussionOnly', 'notPublishable']),
+  })
+  .refine((m) => isProviderId(m.provider, m.id), { message: "the ID isn't of the provider's shape (V45)", path: ['id'] });
 
 /** The most blocks (paragraphs and lists) an item's words run to: past these, it's a story of its own, not an item. */
 export const ITEM_PARAGRAPHS_MAX = 6;
@@ -179,101 +295,6 @@ const itemWords = z
   .refine((m) => paragraphsOf(m).length >= 1, "an item's words aren't blank")
   .refine((m) => paragraphsOf(m).length <= ITEM_PARAGRAPHS_MAX, `an item's words are at most ${ITEM_PARAGRAPHS_MAX} paragraphs or lists: a blank line starts each`);
 
-// ---------- albums (documentation/gallery/spec.md §3) ----------
-
-/** The most items an album holds (V38). */
-export const ALBUM_MAX_ITEMS = 200;
-/** The most tiles up front, in the band (V39). */
-export const SHOWCASE_MAX_TILES = 12;
-/** The band's columns of square cells on a wide screen, and the most rows it may be tall (V39). */
-export const GRID_COLUMNS = 12;
-export const GRID_ROWS_MAX = 12;
-/** A tile's least width and height, in cells, wide or on a phone. */
-export const TILE_MIN = 2;
-/** The phone's columns, and a phone tile's tallest (V47). */
-export const PHONE_COLUMNS = 6;
-export const PHONE_TILE_H_MAX = 8;
-/** At most this many tiles play in a band, each at most PLAY_MAX_BYTES; past PLAY_WARN_BYTES it's a warning (V40, V48). */
-export const PLAY_MAX_TILES = 2;
-export const PLAY_MAX_BYTES = 10 * 1024 * 1024;
-export const PLAY_WARN_BYTES = 4 * 1024 * 1024;
-/** Past these, a band (or a phone's) is a warning, not a refusal (V40). */
-export const ROWS_WARN = 8;
-export const PHONE_ROWS_WARN = 24;
-/** Words (V41, V50): an item's caption and place; an item's and an album's description, in paragraphs or lists and characters. */
-export const CAPTION_MAX = 200;
-export const PLACE_MAX = 80;
-export const ITEM_DESCRIPTION_PARAGRAPHS = 4;
-export const ITEM_DESCRIPTION_MAX = 1000;
-export const ALBUM_DESCRIPTION_PARAGRAPHS = 6;
-export const ALBUM_DESCRIPTION_MAX = 1500;
-/** A drawing's largest file (V42). */
-export const DRAWING_MAX_BYTES = 200 * 1024;
-/** A picture's long side: standard, and kept large (V50). */
-export const STANDARD_PX = 2560;
-export const LARGE_PX = 3840;
-/** A private album's video files are at most this (V44): a sealed file is fetched whole. */
-export const PRIVATE_VIDEO_MAX_BYTES = 10 * 1024 * 1024;
-/** The providers an album's embed (and a video block's) can come from (V45): the one list in providers.ts. */
-export const EMBED_PROVIDERS = PROVIDER_IDS;
-/** The album page's layouts (§7, §7.1). */
-export const ALBUM_LAYOUTS = ['grid', 'story'] as const;
-/** How a tile shows its item (§6.5). */
-export const TILE_DISPLAYS = ['fill', 'fit'] as const;
-
-/** Rich text of the Markdown subset (§3.5), within a number of paragraphs or lists and of characters (V41). */
-const richWords = (what: string, paragraphs: number, max: number) =>
-  z
-    .string()
-    .min(1)
-    .refine((m) => paragraphsOf(m).length >= 1, `${what} isn't blank`)
-    .refine((m) => paragraphsOf(m).length <= paragraphs, `${what} is at most ${paragraphs} paragraphs or lists (V41)`)
-    .refine((m) => plainText(m).length <= max, `${what} is at most ${max} characters (V41)`);
-
-/** An item's ID: its address in the album (`#item-<id>`), never changed. */
-export const albumItemId = z.string().regex(/^[a-z0-9-]{1,64}$/, 'lowercase letters, digits and hyphens, at most 64 (V38)');
-const cell = (min: number, max: number) => z.int().min(min).max(max);
-
-/** A YouTube or Vimeo video, as the video block's `embed`: its shape from the provider's oEmbed when it's added; left out, 16:9. */
-export const albumEmbed = z
-  .strictObject({ provider: z.enum(PROVIDER_IDS), id: z.string().regex(/^[\w-]+$/), width: z.int().positive().optional(), height: z.int().positive().optional() })
-  .refine((e) => !e.width === !e.height, { message: "an embed's shape needs both its width and its height", path: ['height'] });
-
-/** One of an album's items (§3.3): a piece of media (a picture, an animated picture, a drawing or a video file) or an embed. */
-export const albumItem = z
-  .strictObject({
-    id: albumItemId,
-    media: mediaId.optional(),
-    embed: albumEmbed.optional(),
-    /** An embed's name (required for one); for a video file, left out, the file's own title. */
-    title: z.string().trim().min(1).max(250).optional(),
-    /** A raster picture shown before an embed plays (required for one). */
-    poster: mediaId.optional(),
-    /** An embed's length, in seconds. */
-    duration: z.number().int().positive().optional(),
-    /** Plain text: overrides the media's own caption in this album only. */
-    caption: z.string().trim().min(1).max(CAPTION_MAX, `a caption is at most ${CAPTION_MAX} characters (V41)`).optional(),
-    description: richWords("an item's description", ITEM_DESCRIPTION_PARAGRAPHS, ITEM_DESCRIPTION_MAX).optional(),
-    /** Where it was made, typed by the owner (never read from the file). */
-    place: z
-      .string()
-      .trim()
-      .min(1)
-      .max(PLACE_MAX, `a place is at most ${PLACE_MAX} characters (V50)`)
-      .refine((p) => !/[\r\n]/.test(p), 'a place is one line of plain text (V50)')
-      .optional(),
-    /** Overrides the album's `download` for this item; never on an embed. */
-    download: z.boolean().optional(),
-    /** A video file only: plays muted while in view on the album page. */
-    autoplay: z.boolean().optional(),
-    loop: z.boolean().optional(),
-  })
-  .refine((i) => !i.media !== !i.embed, { message: 'an item is a piece of media or an embed: exactly one of the two (V38)', path: ['media'] })
-  .refine((i) => !i.embed || !!i.title, { message: 'an embedded video needs its title (V45)', path: ['title'] })
-  .refine((i) => !i.embed || !!i.poster, { message: 'an embedded video needs a poster picture (V45)', path: ['poster'] })
-  .refine((i) => !i.embed || i.download === undefined, { message: "an embed can't be downloaded: its file is the provider's (V49)", path: ['download'] })
-  .refine((i) => !i.embed || (i.autoplay === undefined && i.loop === undefined), { message: 'autoplay and loop are for a video file: an embed starts when the reader presses play', path: ['autoplay'] })
-  .refine((i) => !i.media || (i.poster === undefined && i.duration === undefined), { message: 'a poster and a length are for an embed: a video file has its own', path: ['poster'] });
 
 /** A tile up front (§6.2): an item's place on the band's 12 columns of square cells. */
 export const albumTile = z
@@ -300,23 +321,64 @@ export const phoneTile = z
   .strictObject({ item: albumItemId, x: cell(0, PHONE_COLUMNS - 1), y: z.int().min(0), w: cell(TILE_MIN, PHONE_COLUMNS), h: cell(TILE_MIN, PHONE_TILE_H_MAX) })
   .refine((t) => t.x + t.w <= PHONE_COLUMNS, { message: `a phone tile stays inside the ${PHONE_COLUMNS} columns (V47)`, path: ['w'] });
 
+/** An album's orders (§3.3): by the day taken, oldest first (the default, left out) or newest first, or the owner's own. */
+export const ALBUM_ORDERS = ['oldest', 'newest', 'custom'] as const;
+/** A gallery's (a section of view Albums) orders of its albums (§2.2, V53): newest first (the default, left out), oldest first, or the structure's. */
+export const SECTION_ALBUM_ORDERS = ['newest', 'oldest', 'custom'] as const;
+
+/** One of an album's library items (§3.2): a picture, an animated picture, a drawing, a video file or a linked video. */
+export const albumMediaItem = z.strictObject({
+  id: albumItemId,
+  media: mediaId,
+  /** Overrides the album's `download` for this item; never on a linked video (V49). */
+  download: z.boolean().optional(),
+  /** A video file only: plays muted while in view on the album page (V49). */
+  autoplay: z.boolean().optional(),
+  loop: z.boolean().optional(),
+});
+/** A text card (§3.2): words between the pictures, in the owner's own order (V53). */
+export const albumTextItem = z.strictObject({
+  id: albumItemId,
+  text: richWords('a text card', ITEM_DESCRIPTION_PARAGRAPHS, ITEM_DESCRIPTION_MAX),
+});
+/** An album's item: a library item or a text card, exactly one of the two (V38). */
+export const albumItem = z.union([albumMediaItem, albumTextItem]);
+
+/** The cover (§3.6): an item to lead the automatic cover, or the owner's own tiles; never both (V39). */
+export const albumCover = z.union([
+  z.strictObject({ lead: albumItemId }),
+  z.strictObject({
+    tiles: z.array(albumTile).min(1, 'a cover has at least one tile: leave the cover out for the automatic one (V39)').max(COVER_MAX_TILES, `a cover has at most ${COVER_MAX_TILES} tiles (V39)`),
+    /** The owner's own arrangement for phones; without it, phoneTiles works one out. */
+    phone: z.strictObject({ tiles: z.array(phoneTile).min(1, 'at least one tile is shown on phones (V47)') }).optional(),
+  }),
+]);
+
 /**
- * An album (documentation/gallery/spec.md §3): a gallery page's items, in order, and which of them are up front
- * (`showcase`). Settings are left out while they're the defaults.
+ * An album (documentation/gallery/spec.md §3): a resource of its own, `content/albums/<id>.json` (a private one
+ * `private-pages/albums/<id>.json`), placed by the structure as `{ type: "album", id }`. Its items refer to
+ * library items, whose sidecars hold their words; its settings are left out while they're the defaults.
  */
 export const album = z
   .strictObject({
+    id,
+    type: z.literal('album'),
+    slug: id,
+    title: z.string().trim().min(1).max(ALBUM_TITLE_MAX, `an album's title is at most ${ALBUM_TITLE_MAX} characters (V41)`),
+    /** Its short description: below its band, its page's standfirst, its cards. */
+    summary: z.string().trim().min(1).max(SUMMARY_MAX).optional(),
     /** The album's introduction on its page (rich text). */
     description: richWords("an album's description", ALBUM_DESCRIPTION_PARAGRAPHS, ALBUM_DESCRIPTION_MAX).optional(),
-    items: z.array(albumItem).max(ALBUM_MAX_ITEMS, `an album holds at most ${ALBUM_MAX_ITEMS} items (V38)`),
-    /** The band; without it, the default arrangement (defaultShowcase). */
-    showcase: z
-      .strictObject({
-        tiles: z.array(albumTile).min(1, 'a band has at least one tile: leave the showcase out for the default (V39)').max(SHOWCASE_MAX_TILES, `a band has at most ${SHOWCASE_MAX_TILES} tiles (V39)`),
-        /** The owner's own arrangement for phones; without it, phoneTiles works one out. */
-        phone: z.strictObject({ tiles: z.array(phoneTile).min(1, 'at least one tile is shown on phones (V47)') }).optional(),
-      })
-      .optional(),
+    status: z.enum(['draft', 'published']),
+    createdAt: isoDate,
+    updatedAt: isoDate,
+    publishedAt: isoDate.optional(),
+    topics: z.array(id).optional(),
+    /** Left out: oldest first (§3.3). */
+    order: z.enum(ALBUM_ORDERS).optional(),
+    items: z.array(albumItem),
+    /** Left out: the automatic cover (defaultCover). */
+    cover: albumCover.optional(),
     layout: z.enum(ALBUM_LAYOUTS).optional(),
     /** Each item's caption under its cell in the grid. */
     captions: z.literal(true).optional(),
@@ -324,7 +386,11 @@ export const album = z
     dates: z.literal(false).optional(),
     /** Lets readers download the items from the lightbox. */
     download: z.literal(true).optional(),
+    /** Pictures uploaded into it are kept at up to 3840 px (§4, V50). */
+    large: z.literal(true).optional(),
   })
+  .refine((a) => a.items.filter((i) => 'media' in i).length <= ALBUM_MAX_ITEMS, { message: `an album holds at most ${ALBUM_MAX_ITEMS} library items (V38)`, path: ['items'] })
+  .refine((a) => a.items.filter((i) => 'text' in i).length <= TEXT_CARDS_MAX, { message: `an album holds at most ${TEXT_CARDS_MAX} text cards (V38)`, path: ['items'] })
   .refine((a) => !(a.captions && a.layout === 'story'), { message: 'captions under pictures are for the grid: a story shows every item\'s words (V49)', path: ['captions'] });
 
 /**
@@ -455,11 +521,11 @@ export const block = z.discriminatedUnion('type', [
     loop: z.boolean().optional(),
   }),
   z.strictObject({ type: z.literal('quote'), key: blockKey, text: z.string().min(1), cite: z.string().optional(), variant: z.enum(['block', 'pull']).default('block') }),
-  /** Another page's album, shown as its band with its title and a link to it (gallery spec §7.2, V51). */
+  /** An album, shown as its band with its title and a link to it (gallery spec §7.2, V51). */
   z.strictObject({
     type: z.literal('album'),
     key: blockKey,
-    /** The gallery page whose album it shows. */
+    /** The album's ID. */
     album: id,
     /** Where the article layout places it; left out, wide. */
     width: z.enum(['wide', 'full']).optional(),
@@ -515,15 +581,18 @@ export const block = z.discriminatedUnion('type', [
     .refine((t) => t.rows.every((r) => r.length === t.columns.length), { message: 'every row has a cell for each column', path: ['rows'] }),
 ]);
 
-const itemRef = z.strictObject({ type: z.enum(['article', 'caseStudy', 'practiceArea', 'leadershipTopic', 'gallery', 'resume']), id });
+const itemRef = z.strictObject({ type: z.enum(['article', 'caseStudy', 'practiceArea', 'leadershipTopic', 'gallery', 'resume', 'album']), id });
 
-/** A page's kind: how its opening reads (documentation/sections/spec.md §3.3). `note` is shown as "Article". */
-export const PAGE_KINDS = ['note', 'page', 'gallery', 'talk'] as const;
+/**
+ * A page's kind: how its opening reads (documentation/sections/spec.md §3.3). `note` is shown as "Article". An album
+ * isn't a page: it's its own resource (gallery spec §3.1), so there's no kind `gallery` (V43).
+ */
+export const PAGE_KINDS = ['note', 'page', 'talk'] as const;
 export type PageKind = (typeof PAGE_KINDS)[number];
 
 /**
  * The person's part in a page's work, its kind of proof on the home page (documentation/home-views/curation.md §2):
- * set as Your part; left out, the page's kind decides (a note wrote it, a talk spoke it, a gallery built it).
+ * set as Your part; left out, the page's kind decides (a note wrote it, a talk spoke it).
  */
 export const CONTRIBUTIONS = ['shipped', 'led', 'built', 'wrote', 'spoke', 'recognised'] as const;
 export type Contribution = (typeof CONTRIBUTIONS)[number];
@@ -556,8 +625,6 @@ export const article = z.strictObject({
   /** A picture of the person the page is about (a résumé, About), shown whole beside its title. */
   portrait: mediaId.optional(),
   body: z.array(block),
-  /** A gallery page's album (documentation/gallery/spec.md §3): only on kind gallery (V43). */
-  album: album.optional(),
   related: z.array(itemRef).max(3).optional(),
   topics: z.array(id).optional(),
   /** The person's part in the work (Your part): what kind of proof the page is on the home page. */
@@ -635,10 +702,10 @@ export const siteSettings = z.strictObject({
 });
 
 /**
- * What a structure places: a page (the article resource, whatever its kind). The content model's other
- * item types have no repository or renderer yet, so a structure can't refer to them (spec §3.3).
+ * What a structure places: a page (the article resource, whatever its kind) or an album (gallery spec §3.1). The
+ * content model's other item types have no repository or renderer yet, so a structure can't refer to them (spec §3.3).
  */
-const pageRef = z.strictObject({ type: z.literal('article'), id });
+const pageRef = z.strictObject({ type: z.enum(['article', 'album']), id });
 
 /** How a section (or a building on the planet) lists its pages. */
 export const SECTION_VIEWS = ['list', 'tiles', 'bento', 'features', 'albums'] as const;
@@ -681,7 +748,7 @@ export interface ItemNode {
   kind: 'item';
   slug?: string;
   navLabel?: string;
-  item: { type: 'article'; id: string };
+  item: { type: 'article' | 'album'; id: string };
 }
 /** The home hub (the root) or a section (a hub directly under it): documentation/sections/spec.md §3. */
 export interface HubNode {
@@ -695,6 +762,8 @@ export interface HubNode {
   sequence?: boolean;
   /** Recommendations shown in this section, and where and how (documentation/sections/recommendations.md §2.2). */
   recommendations?: RecommendationSettings;
+  /** A gallery's order of its albums (view `albums` only; left out, newest first: gallery spec §2.2, V53). */
+  albumOrder?: (typeof SECTION_ALBUM_ORDERS)[number];
   children?: SiteNode[];
 }
 export type SiteNode = HubNode | ItemNode;
@@ -711,8 +780,9 @@ const hubNode: z.ZodType<HubNode> = z.lazy(() =>
     view: z.enum(SECTION_VIEWS).optional(),
     sequence: z.boolean().optional(),
     recommendations: recommendationSettings.optional(),
+    albumOrder: z.enum(SECTION_ALBUM_ORDERS).optional(),
     children: z.array(z.union([hubNode, itemNode])).optional(),
-  }),
+  }).refine((h) => !h.albumOrder || h.view === 'albums', { message: "an order of albums is for a section whose view is Albums (V53)", path: ['albumOrder'] }),
 );
 
 /**
@@ -869,7 +939,12 @@ export type RecommendationsFile = z.infer<typeof recommendationsFile>;
 export type FontFileDoc = z.infer<typeof fontFile>;
 export type Album = z.infer<typeof album>;
 export type AlbumItem = z.infer<typeof albumItem>;
-export type AlbumEmbed = z.infer<typeof albumEmbed>;
+export type AlbumMediaItem = z.infer<typeof albumMediaItem>;
+export type AlbumTextItem = z.infer<typeof albumTextItem>;
+export type AlbumCover = z.infer<typeof albumCover>;
+export type AlbumOrder = (typeof ALBUM_ORDERS)[number];
+export type SectionAlbumOrder = (typeof SECTION_ALBUM_ORDERS)[number];
+export type EmbedMedia = z.infer<typeof embedMedia>;
 export type AlbumTile = z.infer<typeof albumTile>;
 export type PhoneTile = z.infer<typeof phoneTile>;
 export type AlbumLayout = (typeof ALBUM_LAYOUTS)[number];

@@ -1,0 +1,151 @@
+{
+  "id": "fixture-album",
+  "type": "album",
+  "slug": "fixture-album",
+  "title": "A spring in the hills",
+  "summary": "Pictures, a drawing and videos from a spring in the hills.",
+  "description": "Three months in the hills, in **pictures**, a drawing and a few videos.\n\nThe [plan](#item-plan) is of the cottage we stayed in.",
+  "status": "published",
+  "createdAt": "2026-06-01",
+  "updatedAt": "2026-06-01",
+  "items": [
+    {
+      "id": "p01",
+      "media": "articles/fixture-album/p01"
+    },
+    {
+      "id": "p02",
+      "media": "articles/fixture-album/p02"
+    },
+    {
+      "id": "p03",
+      "media": "articles/fixture-album/p03"
+    },
+    {
+      "id": "anim",
+      "media": "articles/fixture-album/anim"
+    },
+    {
+      "id": "p04",
+      "media": "articles/fixture-album/p04"
+    },
+    {
+      "id": "p05",
+      "media": "articles/fixture-album/p05",
+      "download": false
+    },
+    {
+      "id": "plan",
+      "media": "articles/fixture-album/plan"
+    },
+    {
+      "id": "p06",
+      "media": "articles/fixture-album/p06"
+    },
+    {
+      "id": "p07",
+      "media": "articles/fixture-album/p07"
+    },
+    {
+      "id": "clip",
+      "media": "articles/fixture-album/clip",
+      "autoplay": true,
+      "loop": true
+    },
+    {
+      "id": "p08",
+      "media": "articles/fixture-album/p08"
+    },
+    {
+      "id": "p09",
+      "media": "articles/fixture-album/p09"
+    },
+    {
+      "id": "p10",
+      "media": "articles/fixture-album/p10"
+    },
+    {
+      "id": "p11",
+      "media": "articles/fixture-album/p11"
+    },
+    {
+      "id": "p12",
+      "media": "articles/fixture-album/p12"
+    },
+    {
+      "id": "p13",
+      "media": "articles/fixture-album/p13"
+    },
+    {
+      "id": "p14",
+      "media": "articles/fixture-album/p14"
+    },
+    {
+      "id": "p15",
+      "media": "articles/fixture-album/p15"
+    },
+    {
+      "id": "p16",
+      "media": "articles/fixture-album/p16"
+    },
+    {
+      "id": "talk",
+      "media": "articles/fixture-album/talk"
+    },
+    {
+      "id": "short",
+      "media": "articles/fixture-album/short"
+    }
+  ],
+  "cover": {
+    "tiles": [
+      {
+        "item": "p01",
+        "x": 0,
+        "y": 0,
+        "w": 8,
+        "h": 4,
+        "focus": "50% 40%"
+      },
+      {
+        "item": "clip",
+        "x": 8,
+        "y": 0,
+        "w": 4,
+        "h": 2,
+        "play": true
+      },
+      {
+        "item": "anim",
+        "x": 8,
+        "y": 2,
+        "w": 4,
+        "h": 2,
+        "play": true
+      },
+      {
+        "item": "plan",
+        "x": 0,
+        "y": 4,
+        "w": 4,
+        "h": 3
+      },
+      {
+        "item": "p02",
+        "x": 4,
+        "y": 4,
+        "w": 4,
+        "h": 3
+      },
+      {
+        "item": "talk",
+        "x": 8,
+        "y": 4,
+        "w": 4,
+        "h": 3,
+        "onPhones": false
+      }
+    ]
+  },
+  "download": true
+}

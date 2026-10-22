@@ -1,0 +1,12 @@
+{
+  "kind": "embed",
+  "provider": "youtube",
+  "id": "aqz-KE-bpKQ",
+  "title": "A talk on travel pictures",
+  "duration": 634,
+  "poster": {
+    "file": "talk.poster.webp"
+  },
+  "alt": "A title card: the talk.",
+  "visibility": "public"
+}

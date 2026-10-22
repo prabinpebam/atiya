@@ -4,7 +4,7 @@
  * them all. Pure: the files and the list of media masters come in as arguments, so tests can feed it.
  */
 import type { z } from 'astro/zod';
-import { PLACE_IDS, accessFile, accessMessage, article, documentMedia, fontFile, imageMedia, overlay as overlaySchema, person, planetStructure, recommendationsFile, redirects as redirectList, siteSettings, siteStructure, themeFile, videoMedia, type AccessMessage, type Article, type DocumentMedia, type FontFileDoc, type GrantRecord, type HubNode, type ImageMedia, type Overlay, type Person, type PlanetStructure, type Redirect, type SiteNode, type SiteSettings, type SiteStructure, type ThemeFile, type VideoMedia } from './schema';
+import { PLACE_IDS, accessFile, accessMessage, album as albumSchema, article, documentMedia, embedMedia, fontFile, imageMedia, overlay as overlaySchema, person, planetStructure, recommendationsFile, redirects as redirectList, siteSettings, siteStructure, themeFile, videoMedia, type AccessMessage, type Album, type Article, type DocumentMedia, type EmbedMedia, type FontFileDoc, type GrantRecord, type HubNode, type ImageMedia, type Overlay, type Person, type PlanetStructure, type Redirect, type SiteNode, type SiteSettings, type SiteStructure, type ThemeFile, type VideoMedia } from './schema';
 import type { Recommendation } from './recommendations';
 import { CUSTOM_FONT, FONT_ROLES, isPreset } from '../theme/model';
 import { buildRoutes, canonicalPaths, withOverlay, type Access, type Route } from './routes';
@@ -15,7 +15,7 @@ import { BUILTIN_MODES } from '../modes/builtin';
 import { effectiveWays } from '../modes/ways';
 import { SHOWCASE_FILE, TOPICS_FILE, showcaseFile, topicsFile, type Showcase, type TopicsFile } from '../home/schema';
 import { checkHome } from '../home/check';
-import { albumProblems, albumWarnings, type MediaLookup } from './album';
+import { albumProblems, albumWarnings, fingerprintClashes, isMediaItem, type MediaLookup } from './album';
 import { DRAWING_MAX_BYTES, PRIVATE_VIDEO_MAX_BYTES, isDrawingFile } from './schema';
 
 const kb = (bytes: number) => `${Math.round(bytes / 1024)} KB`;
@@ -57,14 +57,31 @@ export interface VideoRecord extends VideoMedia {
   origin: Origin;
 }
 
+/**
+ * A linked video (a YouTube or Vimeo video kept in the library: gallery spec §4.2), with its media ID, its poster's
+ * master and its origin. The sidecar's own `id` (the provider's ID for the video) is `video` here, as `id` is the
+ * media ID, as every other record's.
+ */
+export interface EmbedRecord extends Omit<EmbedMedia, 'id'> {
+  /** The media ID: its path under its media folder without the extension. */
+  id: string;
+  /** The provider's ID for the video (the sidecar's `id`). */
+  video: string;
+  /** Its poster's master (`<name>.poster.webp`, beside the sidecar). */
+  posterMaster: string;
+  origin: Origin;
+}
+
 export interface ContentIndex {
   site: SiteSettings;
   /** The public site structure, as written (the editor's and the navigation's). */
   structure: SiteStructure;
   articles: Map<string, Article>;
-  /** Where each article comes from. */
+  /** The albums (content/albums/ and private-pages/albums/: documentation/gallery/spec.md §3), by ID. */
+  albums: Map<string, Album>;
+  /** Where each article and album comes from (an ID is unique among both, V43). */
   origins: Map<string, Origin>;
-  /** Each placed article's access (open or private); an unplaced one isn't in it. */
+  /** Each placed article's and album's access (open or private); an unplaced one isn't in it. */
   access: Map<string, Access>;
   people: Map<string, Person>;
   media: Map<string, MediaRecord>;
@@ -72,6 +89,8 @@ export interface ContentIndex {
   documents: Map<string, DocumentRecord>;
   /** Video files, by media ID: shown by a video block's `media`. */
   videos: Map<string, VideoRecord>;
+  /** Linked videos (YouTube, Vimeo), by media ID: an album's items (gallery spec §4.2). */
+  embeds: Map<string, EmbedRecord>;
   /** Every node's route, drafts included (their `published` is false); only published ones are built. Private pages included. */
   routes: Route[];
   /** Canonical paths of published items, keyed `type/id`. */
@@ -129,6 +148,10 @@ export class ContentError extends Error {
 const PUBLISHED = new Set(['published', 'stale']);
 const PUBLIC = new Set(['public', 'publicRedacted', 'summaryOnly']);
 export const isPublished = (a: { status: string; visibility: string }) => PUBLISHED.has(a.status) && PUBLIC.has(a.visibility);
+/** Whether an album is published (an album has no visibility: a private one is in private-pages/). */
+export const isAlbumPublished = (a: Pick<Album, 'status'>) => a.status === 'published';
+/** An album's file, from its origin. */
+export const albumFile = (id: string, origin: Origin) => `${origin === 'private' ? 'private' : 'content'}/albums/${id}.json`;
 
 /** Every picture's media ID a document uses, and every gallery's and carousel's item (a picture or a video file); a video block's file isn't here: see videosUsed. */
 export function mediaUsed(a: Article): string[] {
@@ -143,17 +166,9 @@ export function mediaUsed(a: Article): string[] {
     else if (b.type === 'collection') ids.push(...b.items.flatMap((i) => (i.media ? [i.media] : [])));
     else if (b.type === 'video' && b.poster) ids.push(b.poster);
   }
-  // an album's items (a picture, a drawing or a video file) and its embeds' posters
-  for (const item of a.album?.items ?? []) ids.push(...(item.media ? [item.media] : []), ...(item.poster ? [item.poster] : []));
   if (a.seo?.image) ids.push(a.seo.image);
   return ids;
 }
-
-/**
- * A gallery page as the site reads it (V43): one written before albums has none, and reads as an album with no
- * items (edit mode writes it on its first save), so it keeps loading.
- */
-export const withAlbum = (a: Article): Article => (a.kind === 'gallery' && !a.album ? { ...a, album: { items: [] } } : a);
 
 /** Every video file's media ID a document uses. */
 export const videosUsed = (a: Article): string[] => a.body.flatMap((b) => (b.type === 'video' && b.media ? [b.media] : []));
@@ -162,7 +177,7 @@ export const videosUsed = (a: Article): string[] => a.body.flatMap((b) => (b.typ
  * @param docs the JSON files under content/, keyed by their path from the project root (/content/…)
  * @param masters the media masters under content/media/, as paths from the project root
  * @param readErrors files the source couldn't read (not valid JSON, not a content file)
- * @param leftOut files to treat as absent (an article as one that doesn't pass its check): loadContentLeavingOut's
+ * @param leftOut files to treat as absent (an article or an album as one that doesn't pass its check): loadContentLeavingOut's
  * @param sizes the masters' sizes in bytes, when the source knows them (a drawing's limit, V42; a playing tile's
  *   and a private album's video's, V40, V44, V48); without one, a picture's measured `facts.bytes` stand in, and a
  *   size not known at all isn't checked
@@ -198,11 +213,15 @@ export function loadContent(docs: Record<string, unknown>, masters: Set<string>,
   const articles = new Map<string, Article>();
   // articles whose file is there but doesn't pass its own check: its issues say why, so a node placing one isn't "missing"
   const invalidArticles = new Set<string>();
+  const albums = new Map<string, Album>();
+  // the same for albums
+  const invalidAlbums = new Set<string>();
   const origins = new Map<string, Origin>();
   const people = new Map<string, Person>();
   const media = new Map<string, MediaRecord>();
   const documents = new Map<string, DocumentRecord>();
   const videos = new Map<string, VideoRecord>();
+  const embeds = new Map<string, EmbedRecord>();
   const themes = new Map<string, ThemeFile>();
   let recommendations: Recommendation[] = [];
   const fonts = new Map<string, FontFileDoc>();
@@ -221,6 +240,7 @@ export function loadContent(docs: Record<string, unknown>, masters: Set<string>,
     // a file left out (dev, loadContentLeavingOut): absent, but an article's place in the structure isn't "missing"
     if (leftOut.has(file)) {
       if (ARTICLE_FILE.test(file)) invalidArticles.add(name);
+      else if (ALBUM_FILE.test(file)) invalidAlbums.add(name);
       continue;
     }
     if (file === '/content/site.json') site = parse(siteSettings, file, data);
@@ -249,13 +269,27 @@ export function loadContent(docs: Record<string, unknown>, masters: Set<string>,
     else if (file === '/private/access.json') grants = parse(accessFile, file, data)?.grants ?? [];
     else if (file === '/private/access-message.json') message = parse(accessMessage, file, data) ?? null;
     else if ((m = /^\/(content|private)\/articles\/[^/]+\.json$/.exec(file))) {
+      // the first build's albums (V43): said plainly, beside the schema's own refusal
+      const old = data as { kind?: unknown; album?: unknown } | null;
+      if (old && (old.kind === 'gallery' || old.album !== undefined)) add(file, 'an article never has an album or the kind gallery: an album is its own file, albums/<id>.json (V43)', old.album !== undefined ? 'album' : 'kind');
       const a = parse(article, file, data);
       if (!a) invalidArticles.add(name);
       if (a && a.id !== name) add(file, `id "${a.id}" must match the file name`, 'id');
       else if (a && articles.has(a.id)) add(file, `article "${a.id}" is in both content/ and private-pages/: an ID is unique across both (V24)`, 'id');
+      else if (a && albums.has(a.id)) add(file, `"${a.id}" is also an album's ID: an ID is unique among albums and articles (V43)`, 'id');
       else if (a) {
-        articles.set(a.id, withAlbum(a));
+        articles.set(a.id, a);
         origins.set(a.id, m[1] === 'private' ? 'private' : 'public');
+      }
+    } else if ((m = /^\/(content|private)\/albums\/[^/]+\.json$/.exec(file))) {
+      const al = parse(albumSchema, file, data);
+      if (!al) invalidAlbums.add(name);
+      if (al && al.id !== name) add(file, `id "${al.id}" must match the file name`, 'id');
+      else if (al && albums.has(al.id)) add(file, `album "${al.id}" is in both content/ and private-pages/: an ID is unique across both (V24)`, 'id');
+      else if (al && articles.has(al.id)) add(file, `"${al.id}" is also an article's ID: an ID is unique among albums and articles (V43)`, 'id');
+      else if (al) {
+        albums.set(al.id, al);
+        origins.set(al.id, m[1] === 'private' ? 'private' : 'public');
       }
     } else if (/^\/content\/people\/[^/]+\.json$/.test(file)) {
       const p = parse(person, file, data);
@@ -288,6 +322,20 @@ export function loadContent(docs: Record<string, unknown>, masters: Set<string>,
         else if (claimMedia(file, mediaKey)) documents.set(mediaKey, { ...d, id: mediaKey, master, origin });
         continue;
       }
+      // a linked video (gallery spec §4.2, V45), with its poster beside it
+      if ((data as { kind?: unknown } | null)?.kind === 'embed') {
+        const e = parse(embedMedia, file, data);
+        if (!e) continue;
+        const posterMaster = file.slice(0, file.lastIndexOf('/') + 1) + e.poster.file;
+        if (e.poster.file.replace(/\.poster\.webp$/, '') !== name) add(file, `the poster "${e.poster.file}" must share the sidecar's name (${name}.poster.webp)`, 'poster.file');
+        else if (!masters.has(posterMaster)) add(file, `its poster ${posterMaster.slice(1)} is missing`, 'poster.file');
+        else if (e.taken && e.taken > today) add(file, `taken on ${e.taken}, a day that hasn't come yet: a date is no later than the day it was saved (V50)`, 'taken');
+        else if (claimMedia(file, mediaKey)) {
+          const { id: video, ...rest } = e;
+          embeds.set(mediaKey, { ...rest, id: mediaKey, video, posterMaster, origin });
+        }
+        continue;
+      }
       // a video file (media.md §12), with its poster beside it
       if ((data as { kind?: unknown } | null)?.kind === 'video') {
         const v = parse(videoMedia, file, data);
@@ -301,6 +349,7 @@ export function loadContent(docs: Record<string, unknown>, masters: Set<string>,
         else if (posterMaster && !masters.has(posterMaster)) add(file, `its poster ${posterMaster.slice(1)} is missing`, 'poster.file');
         else if (v.captions?.some((c) => !c.file.startsWith(`${name}.`))) add(file, `a caption track must share the sidecar's name (${name}.<language>.vtt)`, 'captions');
         else if (v.captions?.some((c) => !masters.has(dir + c.file))) add(file, `its caption track ${(dir + v.captions.find((c) => !masters.has(dir + c.file))!.file).slice(1)} is missing`, 'captions');
+        else if (v.taken && v.taken > today) add(file, `taken on ${v.taken}, a day that hasn't come yet: a date is no later than the day it was saved (V50)`, 'taken');
         else if (claimMedia(file, mediaKey)) videos.set(mediaKey, { ...v, id: mediaKey, master, ...(posterMaster ? { posterMaster } : {}), ...(sizes.has(master) ? { bytes: sizes.get(master) } : {}), origin });
         continue;
       }
@@ -336,7 +385,11 @@ export function loadContent(docs: Record<string, unknown>, masters: Set<string>,
     } else add(file, 'not a resource the content model knows');
   }
   // a left-out article that couldn't even be read (not valid JSON) is in no doc: still not "missing"
-  for (const f of leftOut) if (ARTICLE_FILE.test(f)) invalidArticles.add(f.split('/').pop()!.replace(/\.json$/, ''));
+  for (const f of leftOut) {
+    if (ARTICLE_FILE.test(f)) invalidArticles.add(f.split('/').pop()!.replace(/\.json$/, ''));
+    else if (ALBUM_FILE.test(f)) invalidAlbums.add(f.split('/').pop()!.replace(/\.json$/, ''));
+  }
+
   for (const master of masters) {
     // a font's files are named by its own sidecar (content/fonts/<id>.json), checked below
     if (master.startsWith('/content/fonts/')) {
@@ -360,8 +413,8 @@ export function loadContent(docs: Record<string, unknown>, masters: Set<string>,
     if (!(sidecar in docs)) add(master, `a master without its sidecar (${sidecar.split('/').pop()})`);
     else if (darkPoster && doc?.dark?.animation?.poster !== master.split('/').pop()) add(master, `a dark animation poster its picture doesn't name (add it as "dark.animation" in ${sidecar.split('/').pop()}, or delete it)`);
     else if (dark && doc?.dark?.file !== master.split('/').pop()) add(master, `a dark version its picture doesn't name (add it as "dark" in ${sidecar.split('/').pop()}, or delete it)`);
-    else if (poster && (doc?.kind === 'video' ? doc.poster?.file : doc?.animation?.poster) !== master.split('/').pop())
-      add(master, `a poster its ${doc?.kind === 'video' ? 'video' : 'picture'} doesn't name (add it to ${sidecar.split('/').pop()}, or delete it)`);
+    else if (poster && (doc?.kind === 'video' || doc?.kind === 'embed' ? doc.poster?.file : doc?.animation?.poster) !== master.split('/').pop())
+      add(master, `a poster its ${doc?.kind === 'video' || doc?.kind === 'embed' ? 'video' : 'picture'} doesn't name (add it to ${sidecar.split('/').pop()}, or delete it)`);
   }
   if (!site) add('content/site.json', 'missing');
   if (!structure) add('content/structures/site.json', 'missing');
@@ -385,38 +438,51 @@ export function loadContent(docs: Record<string, unknown>, masters: Set<string>,
 
   // references (V3, V5): media, people; a public page never points at anything private (V25), and a
   // protected page's own `related` names open pages only (V32)
-  const needMedia = (from: string, id: string, origin: Origin = 'public', orVideo = false) => {
+  const needMedia = (from: string, id: string, origin: Origin = 'public', orVideo = false, published = true) => {
     const rec = media.get(id) ?? (orVideo ? videos.get(id) : undefined);
     if (!rec) add(from, orVideo ? `media "${id}" doesn't exist (a picture or a video file)` : `media "${id}" doesn't exist`);
     else if (!PUBLIC.has(rec.visibility)) add(from, `media "${id}" isn't public`);
     else if (rec.origin === 'private' && origin === 'public') add(from, `media "${id}" is private (in private-pages/): an open page can't show it (V25)`);
+    // alt text may wait in the library and in drafts; anything published that shows the picture needs it (V54)
+    else if (published && rec.kind === 'image' && !rec.alt && !rec.decorative) add(from, `the picture "${id}" has no alt text: anything published that shows a picture needs it (or, in an article, marked decorative) (V54)`);
   };
-  // albums (documentation/gallery/spec.md §16): V38 to V50 for each page; V51 for the blocks that show one, below
-  const lookupMedia: MediaLookup = (id) => media.get(id) ?? videos.get(id);
+  // albums (documentation/gallery/spec.md §16): V38 to V55 for each album; V51 for the blocks that show one, below
+  const lookupMedia: MediaLookup = (id) => media.get(id) ?? videos.get(id) ?? embeds.get(id);
   const albumNotes: string[] = [];
-  const checkAlbum = (a: Article, file: string, origin: Origin) => {
-    if (a.seo?.image && isDrawingFile(media.get(a.seo.image)?.file ?? '')) add(file, 'a social image is a picture: a drawing isn\'t shown where the page is shared (V46)', 'seo.image');
-    if (!a.album) return;
-    if (a.kind !== 'gallery') return add(file, `an album belongs to a page of kind gallery, and this one is a ${a.kind} (V43)`, 'album');
-    // a published album with no items is refused, unless it's a gallery page from before albums whose body still shows its pictures
-    for (const i of albumProblems(a.album, lookupMedia, { published: isPublished(a) && !a.body.length })) add(file, i.message, `album.${i.path}`);
-    if (origin === 'private')
-      a.album.items.forEach((item, i) => {
-        const v = item.media ? videos.get(item.media) : undefined;
-        if (v?.bytes && v.bytes > PRIVATE_VIDEO_MAX_BYTES) add(file, `the video "${item.media}" is ${mb(v.bytes)}: a private album's video file is at most ${mb(PRIVATE_VIDEO_MAX_BYTES)}, as it's sealed and fetched whole (V44)`, `album.items.${i}.media`);
-      });
-    for (const w of albumWarnings(a.album, lookupMedia)) albumNotes.push(origin === 'private' ? `a private page's album: ${w.replace(/"[^"]*"/g, 'an item')}` : `${file}: ${w}`);
-  };
+  for (const al of albums.values()) {
+    const origin = origins.get(al.id)!;
+    const file = albumFile(al.id, origin);
+    const published = isAlbumPublished(al);
+    for (const i of albumProblems(al, lookupMedia, { published })) add(file, i.message, i.path);
+    al.items.forEach((item, i) => {
+      if (!isMediaItem(item)) return;
+      const at = `items.${i}.media`;
+      const rec = media.get(item.media) ?? videos.get(item.media) ?? embeds.get(item.media);
+      if (!rec) add(file, `"${item.media}" isn't in the library: an album's item is a picture, a drawing, a video file or a linked video (V38)`, at);
+      else if (!PUBLIC.has(rec.visibility)) add(file, `"${item.media}" isn't public`, at);
+      else if (rec.origin === 'private' && origin === 'public') add(file, `"${item.media}" is private (in private-pages/): an open album never uses a private library item (V52)`, at);
+      else if (origin === 'private' && rec.kind === 'video' && rec.bytes && rec.bytes > PRIVATE_VIDEO_MAX_BYTES)
+        add(file, `the video "${item.media}" is ${mb(rec.bytes)}: a private album's video file is at most ${mb(PRIVATE_VIDEO_MAX_BYTES)}, as it's sealed and fetched whole (V44)`, at);
+    });
+    for (const w of albumWarnings(al, lookupMedia)) albumNotes.push(origin === 'private' ? `a private album: ${w.replace(/"[^"]*"/g, 'an item')}` : `${file}: ${w}`);
+  }
+  // a file is in the library once (V55): the same fingerprint twice is refused on the later one
+  const sidecarOf = (id: string, origin: Origin) => `${origin === 'private' ? 'private' : 'content'}/media/${id}.json`;
+  const library = [...media.values(), ...videos.values(), ...embeds.values()];
+  for (const { ids } of fingerprintClashes(library)) {
+    const [first, ...rest] = ids;
+    for (const id of rest) {
+      const rec = library.find((r) => r.id === id)!;
+      add(sidecarOf(id, rec.origin), `the same file as "${first}" (their fingerprints match): a file is in the library once, so use that one (V55)`, 'fingerprint');
+    }
+  }
   for (const a of articles.values()) {
     const origin = origins.get(a.id)!;
     const file = `${origin === 'private' ? 'private' : 'content'}/articles/${a.id}.json`;
-    // a gallery's or a carousel's item can be a video file too, and so can an album's; every other use is a picture
-    const either = new Set([
-      ...a.body.flatMap((b) => (b.type === 'gallery' || b.type === 'carousel' ? b.items.map((it) => it.media) : [])),
-      ...(a.album?.items ?? []).flatMap((it) => (it.media ? [it.media] : [])),
-    ]);
-    for (const id of mediaUsed(a)) needMedia(file, id, origin, either.has(id));
-    checkAlbum(a, file, origin);
+    // a gallery's or a carousel's item can be a video file too; every other use is a picture
+    const either = new Set(a.body.flatMap((b) => (b.type === 'gallery' || b.type === 'carousel' ? b.items.map((it) => it.media) : [])));
+    for (const id of mediaUsed(a)) needMedia(file, id, origin, either.has(id), isPublished(a));
+    if (a.seo?.image && isDrawingFile(media.get(a.seo.image)?.file ?? '')) add(file, "a social image is a picture: a drawing isn't shown where the page is shared (V46)", 'seo.image');
     a.body.forEach((b, i) => {
       if (b.type !== 'gallery' && b.type !== 'carousel') return;
       b.items.forEach((it, n) => {
@@ -473,19 +539,17 @@ export function loadContent(docs: Record<string, unknown>, masters: Set<string>,
   for (const r of recommendations) if (r.photo) needMedia('content/recommendations.json', r.photo);
   if (site?.socialImage) needMedia('content/site.json', site.socialImage);
   if (site?.socialImage && isDrawingFile(media.get(site.socialImage)?.file ?? '')) add('content/site.json', "a social image is a picture: a drawing isn't shown where the site is shared (V46)", 'socialImage');
-  // an album block (V51): another page's album, open, and published wherever the page showing it is
+  // an album block (V51): an album, open, and published wherever the page showing it is
   for (const a of articles.values()) {
     const file = `${origins.get(a.id) === 'private' ? 'private' : 'content'}/articles/${a.id}.json`;
     a.body.forEach((b, i) => {
       if (b.type !== 'album') return;
       const at = `body.${i}.album`;
-      const target = articles.get(b.album);
-      if (b.album === a.id) add(file, "a page can't show its own album as a block: its album is already on it (V51)", at);
-      else if (!target) {
-        if (!invalidArticles.has(b.album)) add(file, `the album "${b.album}" doesn't exist (V51)`, at);
-      } else if (target.kind !== 'gallery') add(file, `"${b.album}" is a ${target.kind}, not an album: an album block shows a gallery page's album (V51)`, at);
-      else if (origins.get(b.album) === 'private') add(file, `"${b.album}" is a private album: its band would carry its words outside its seal (V51)`, at);
-      else if (isPublished(a) && !isPublished(target)) add(file, `the album "${b.album}" isn't published, and this page is: publish the album first, or take the block out (V51)`, at);
+      const target = albums.get(b.album);
+      if (!target) {
+        if (!invalidAlbums.has(b.album)) add(file, articles.has(b.album) ? `"${b.album}" is an article, not an album: an album block names an album (V51)` : `the album "${b.album}" doesn't exist (V51)`, at);
+      } else if (origins.get(b.album) === 'private') add(file, `"${b.album}" is a private album: its band would carry its words outside its seal (V51)`, at);
+      else if (isPublished(a) && !isAlbumPublished(target)) add(file, `the album "${b.album}" isn't published, and this page is: publish the album first, or take the block out (V51)`, at);
     });
   }
   if (site && !people.has(site.owner)) add('content/site.json', `owner "${site.owner}" isn't in content/people/`, 'owner');
@@ -496,6 +560,10 @@ export function loadContent(docs: Record<string, unknown>, masters: Set<string>,
   const OVERLAY = 'private/structures/overlay.json';
   if (structure) {
     const lookup = (type: string, id: string) => {
+      if (type === 'album') {
+        const al = albums.get(id);
+        return al && { slug: al.slug, title: al.title, published: isAlbumPublished(al) };
+      }
       const a = type === 'article' ? articles.get(id) : undefined;
       return a && { slug: a.slug, title: a.title, navLabel: a.navLabel, published: isPublished(a) };
     };
@@ -512,7 +580,7 @@ export function loadContent(docs: Record<string, unknown>, masters: Set<string>,
       tokens.set(token, nodeId);
     };
     const needPrivate = (id: string, at: string) => {
-      if (!articles.has(id)) return;
+      if (!articles.has(id) && !albums.has(id)) return;
       if (origins.get(id) !== 'private') add(OVERLAY, `"${id}" is in content/: a private page lives in private-pages/ (V23)`, at);
     };
     overlay?.sections.forEach((s, i) =>
@@ -526,14 +594,15 @@ export function loadContent(docs: Record<string, unknown>, masters: Set<string>,
     warnings.push(...merged.warnings);
     const built = buildRoutes(merged.structure, lookup, merged.private);
     const missingOnlyAsInvalid = (e: string) => {
-      const m = /places article "([^"]+)", which doesn't exist$/.exec(e);
-      return !!m && invalidArticles.has(m[1]);
+      const m = /places (article|album) "([^"]+)", which doesn't exist$/.exec(e);
+      return !!m && (m[1] === 'album' ? invalidAlbums : invalidArticles).has(m[2]);
     };
     for (const e of built.errors) if (!missingOnlyAsInvalid(e)) add([...merged.private].some((id) => e.startsWith(`node ${id}:`)) ? OVERLAY : 'content/structures/site.json', e);
     routes = built.routes;
     for (const r of routes) if (r.node.kind === 'item') access.set(r.node.item.id, r.access);
     const placed = canonicalPaths(routes);
     for (const a of articles.values()) if (isPublished(a) && !placed.has(`article/${a.id}`)) warnings.push(`article "${a.id}" is published but the site structure doesn't place it, so it has no page (V12)`);
+    for (const al of albums.values()) if (isAlbumPublished(al) && !placed.has(`album/${al.id}`)) warnings.push(`album "${al.id}" is published but the site structure doesn't place it, so it has no page (V43)`);
 
     // the navigation (V17): every entry points at a node of the tree, or at a real address; never a protected page (V25)
     const STRUCTURE_FILE = 'content/structures/site.json';
@@ -609,13 +678,13 @@ export function loadContent(docs: Record<string, unknown>, masters: Set<string>,
       (g.scope.pages ?? []).forEach((pid, j) => {
         const page = protectedPages.find((p) => p.id === pid);
         // a page left out because it doesn't pass its own check is reported there, not here
-        if (!page && !invalidArticles.has(pid)) add(ACCESS, `"${pid}" isn't a private page (V26)`, `${at}.scope.pages.${j}`);
+        if (!page && !invalidArticles.has(pid) && !invalidAlbums.has(pid)) add(ACCESS, `"${pid}" isn't a private page (V26)`, `${at}.scope.pages.${j}`);
       });
       if (!covers(g, protectedPages).length && isValid(g, now)) warnings.push(`grant ${g.id} opens no page`);
     });
   }
 
-  const index: ContentIndex = { site: site!, structure: structure!, articles, origins, access, people, media, documents, videos, routes, canonical: canonicalPaths(routes), redirects, planet, ways, overlay, grants, accessMessage: message, themes, fonts, recommendations, showcase, topics, warnings, problems: [] };
+  const index: ContentIndex = { site: site!, structure: structure!, articles, albums, origins, access, people, media, documents, videos, embeds, routes, canonical: canonicalPaths(routes), redirects, planet, ways, overlay, grants, accessMessage: message, themes, fonts, recommendations, showcase, topics, warnings, problems: [] };
   // the home page (documentation/home-views/foundation.md §2): what the spine names is open and found word for word;
   // a page already failing its own check isn't reported again through it
   if (site && structure) for (const i of checkHome(index, ways, invalidArticles)) add(i.file, i.message, i.path);
@@ -635,12 +704,14 @@ export function loadContent(docs: Record<string, unknown>, masters: Set<string>,
 
 /** An article's file, in either folder (its key as the source gives it). */
 const ARTICLE_FILE = /^\/(content|private)\/articles\/[^/]+\.json$/;
-/** What can be left out on its own: an article, a piece of media (its sidecar or a file beside it), or the home page's spine or vocabulary (the home is then the Classic hub). */
-const LEAVABLE = /^\/(content|private)\/(articles|media)\/|^\/content\/(showcase|topics)\.json$/;
+/** An album's file, in either folder. */
+const ALBUM_FILE = /^\/(content|private)\/albums\/[^/]+\.json$/;
+/** What can be left out on its own: an article, an album, a piece of media (its sidecar or a file beside it), or the home page's spine or vocabulary (the home is then the Classic hub). */
+const LEAVABLE = /^\/(content|private)\/(articles|albums|media)\/|^\/content\/(showcase|topics)\.json$/;
 
 /**
  * The content as dev reads it (documentation/content/spec.md §5.4): a file that doesn't pass the check is left out
- * rather than failing every page, as long as it's one the rest can do without (an article, a piece of media).
+ * rather than failing every page, as long as it's one the rest can do without (an article, an album, a piece of media).
  * What only it causes goes with it, so it's read again until the rest holds; a problem in the site itself (its
  * settings, structure, people, the private overlay or grants) still fails, as it would every page. The issues of
  * what was left out come back as `problems`. A build never calls this: it uses loadContent, and stops.

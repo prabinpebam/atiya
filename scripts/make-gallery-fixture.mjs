@@ -1,7 +1,8 @@
 /**
  * Makes the gallery fixture's media (gallery plan G1 item 9): every master its sidecars in
  * tests/fixtures/gallery/content/media/articles/fixture-album/ name, drawn from shapes (no text, no fonts,
- * no photographs), and the sidecars' `facts` measured from them as the editor measures an upload; and the
+ * no photographs), and the sidecars' `facts` measured from them as the editor measures an upload (a linked
+ * video's sidecar names only its poster, made here as a picture is); and the
  * upload fixtures in tests/fixtures/gallery/uploads/ (pictures with and without EXIF dates, and one too
  * large to keep at the standard size). Deterministic: the same sharp and ffmpeg give the same bytes, and the
  * files are committed, so builds and tests never make them.
@@ -174,6 +175,11 @@ async function make() {
       for (const c of s.captions ?? []) writeFileSync(join(ALBUM, c.file), VTT);
       continue;
     }
+    if (s.kind === 'embed') {
+      // a linked video's poster: a picture the size of its shape (1280 by 720 when it has none)
+      writeFileSync(join(ALBUM, s.poster.file), await picture(name, { facts: s.shape ?? { width: 1280, height: 720 } }, 1000 + i));
+      continue;
+    }
     if (s.kind !== 'image') continue;
     let bytes;
     if (/\.svg$/.test(s.file)) {
@@ -184,9 +190,7 @@ async function make() {
       bytes = await gif();
       if (s.animation?.poster) writeFileSync(join(ALBUM, s.animation.poster), await webp(sharp(bytes)).toBuffer());
     } else {
-      // a poster for an embed is 1280 by 720; a picture is the size its sidecar says
-      const facts = s.facts ?? { width: 1280, height: 720 };
-      bytes = await picture(name, { ...s, facts }, 1000 + i);
+      bytes = await picture(name, s, 1000 + i);
     }
     writeFileSync(join(ALBUM, s.file), bytes);
   }

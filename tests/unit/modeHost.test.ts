@@ -101,6 +101,6 @@ describe("the mode kit's types follow the site's lists", () => {
     const views: readonly ModeSectionView[] = SECTION_VIEWS;
     const kinds: readonly ModePageKind[] = PAGE_KINDS;
     expect([...views].sort()).toEqual(['albums', 'bento', 'features', 'list', 'tiles']);
-    expect([...kinds].sort()).toEqual(['gallery', 'note', 'page', 'talk']);
+    expect([...kinds].sort()).toEqual(['note', 'page', 'talk']);
   });
 });

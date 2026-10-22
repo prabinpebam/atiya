@@ -1,0 +1,25 @@
+{
+  "id": "fixture-captions",
+  "type": "album",
+  "slug": "fixture-captions",
+  "title": "Doors and windows",
+  "summary": "A made-up album that shows each picture's caption under its cell.",
+  "status": "published",
+  "createdAt": "2026-06-03",
+  "updatedAt": "2026-06-03",
+  "items": [
+    {
+      "id": "door",
+      "media": "articles/fixture-album/p04"
+    },
+    {
+      "id": "top",
+      "media": "articles/fixture-album/p01"
+    },
+    {
+      "id": "noodles",
+      "media": "articles/fixture-album/p06"
+    }
+  ],
+  "captions": true
+}

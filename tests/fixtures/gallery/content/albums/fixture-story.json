@@ -1,0 +1,30 @@
+{
+  "id": "fixture-story",
+  "type": "album",
+  "slug": "fixture-story",
+  "title": "A morning on the lake",
+  "summary": "A made-up album told as a story: every item whole, with its words.",
+  "status": "published",
+  "createdAt": "2026-06-04",
+  "updatedAt": "2026-06-04",
+  "order": "custom",
+  "items": [
+    {
+      "id": "cloud",
+      "media": "articles/fixture-album/p03"
+    },
+    {
+      "id": "flags",
+      "media": "articles/fixture-album/p05"
+    },
+    {
+      "id": "words",
+      "text": "Fixture text card: from the pass, the way down to the lake [as drawn](#item-map)."
+    },
+    {
+      "id": "map",
+      "media": "articles/fixture-album/plan"
+    }
+  ],
+  "layout": "story"
+}

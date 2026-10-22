@@ -5,17 +5,17 @@
  * takes the store's snapshot as written instead of reading the folders again.
  */
 import { currentSnapshot, generation } from './source';
-import { loadContent, loadContentLeavingOut, type ContentIndex, type MediaRecord, type VideoRecord } from './load';
+import { isAlbumPublished, loadContent, loadContentLeavingOut, type ContentIndex, type EmbedRecord, type MediaRecord, type VideoRecord } from './load';
 import { withBase } from '../design/meta';
 import { placeRoutes } from './navigation';
 import { timed } from './timing';
-import { resolveAlbum, type ResolvedItem } from './album';
+import { albumsOrder, resolveAlbum, type MediaLookup, type ResolvedItem } from './album';
 import { BUILTIN_MODES } from '../modes/builtin';
 import type { ModeData } from '../modes/contract';
 import { buildModeData } from '../modes/data';
 import { effectiveWays, isOn, LITTLE_PLANET } from '../modes/ways';
 import type { Route } from './routes';
-import type { Article, PlaceId } from './schema';
+import type { Album, Article, PlaceId } from './schema';
 import { buildEvidence, type EvidenceIndex } from '../home/evidence';
 import { curate, type HomePicks } from '../home/curate';
 import { countsOf, effectiveViews, health, type HealthItem } from '../home/health';
@@ -208,9 +208,44 @@ export function captionHrefs(id: string): { src: string; srclang: string; label:
   return (v.captions ?? []).map((c) => ({ src: withBase(`/media/${dir}${c.file}`), srclang: c.srclang, label: c.label, ...(c.default ? { default: true } : {}) }));
 }
 
-/** A gallery page's album with each item's media looked up (gallery spec §3): undefined for any other page. */
-export function getAlbum(pageId: string): { album: NonNullable<Article['album']>; items: ResolvedItem<MediaRecord, VideoRecord>[] } | undefined {
+/** A linked video (YouTube, Vimeo) in the library (gallery spec §4.2). */
+export function getEmbed(id: string): EmbedRecord {
+  const e = content().embeds.get(id);
+  if (!e) throw new Error(`unknown linked video "${id}"`);
+  return e;
+}
+
+/** Finds a library item (a picture, a video file or a linked video) by its media ID, for the album rules (album.ts). */
+export const albumLookup = (): MediaLookup => {
   const c = content();
-  const a = c.articles.get(pageId);
-  return a?.album ? resolveAlbum(a.album, c.media, c.videos) : undefined;
+  return (id) => c.media.get(id) ?? c.videos.get(id) ?? c.embeds.get(id);
+};
+
+/** Every album (gallery spec §3), drafts and private ones included, by ID order. */
+export const getAlbums = (): Album[] => [...content().albums.values()];
+
+/** An album with its items in the order shown (`albumOrder`), each with its library item looked up: undefined for no such album. */
+export function getAlbum(id: string): { album: Album; items: ResolvedItem<MediaRecord, VideoRecord, EmbedRecord>[] } | undefined {
+  const c = content();
+  const album = c.albums.get(id);
+  return album ? resolveAlbum(album, c.media, c.videos, c.embeds) : undefined;
+}
+
+/** An album's page (without the base): its canonical path once it's published and placed. */
+export const albumPath = (id: string): string | undefined => canonicalPath('album', id);
+
+/**
+ * A section's published albums with their routes, in the section's `albumOrder` (gallery spec §5, `albumsOrder`):
+ * newest first by default; `custom`, the structure's order. Private ones included (their access is the route's).
+ */
+export function sectionAlbums(sectionId: string): { album: Album; route: Route }[] {
+  const c = content();
+  const placed = getRoutes().flatMap((route) => {
+    if (route.parent?.id !== sectionId || route.node.kind !== 'item' || route.node.item.type !== 'album') return [];
+    const album = c.albums.get(route.node.item.id);
+    return album && isAlbumPublished(album) ? [{ album, route, createdAt: album.createdAt, publishedAt: album.publishedAt, items: album.items }] : [];
+  });
+  const section = c.routes.find((r) => r.node.id === sectionId)?.node;
+  const order = section?.kind === 'hub' ? section.albumOrder : undefined;
+  return albumsOrder(placed, order, albumLookup()).map(({ album, route }) => ({ album, route }));
 }

@@ -22,7 +22,7 @@ export const FIXTURES = 'tests/fixtures/private-pages';
 export const GALLERY_FIXTURE = 'tests/fixtures/gallery/content';
 
 /**
- * The public overlay: a folder whose articles and media a build reads beside content/, and whose
+ * The public overlay: a folder whose albums, articles and media a build reads beside content/, and whose
  * sections' pages join the real structure's (src/site/content/overlay.ts). Only a test build has one
  * (`astro build --mode test`, the E2E site); dev and every other build read the real content alone.
  * @param {string} root the project's root, absolute

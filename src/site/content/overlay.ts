@@ -1,7 +1,7 @@
 /**
  * The public overlay (gallery plan G1 item 9): made-up content a test build reads beside the real
  * content, so the E2E tests have an album of every kind without one ever going into content/. Only its
- * articles, their media and its structure's sections are used: a section the real structure has (by ID)
+ * albums, articles, their media and its structure's sections are used: a section the real structure has (by ID)
  * gets the overlay's pages after its own, and a new one joins the home's sections. Its own site settings
  * and people are for the tests that load it alone, and are never read.
  *
@@ -12,7 +12,7 @@
 /** Where an overlay's files go, by their path under its folder: what's added, what's merged, what's left out. */
 export function overlayRole(rel: string): 'add' | 'structure' | 'skip' {
   if (rel === 'structures/site.json') return 'structure';
-  return /^(articles|media)\//.test(rel) ? 'add' : 'skip';
+  return /^(articles|albums|media)\//.test(rel) ? 'add' : 'skip';
 }
 
 interface TreeNode {

@@ -202,7 +202,7 @@ describe('the loader checks what it is given', () => {
   it('names the file and field of each problem', () => {
     const article = base['/content/articles/a.json'];
     expect(problems({ ...base, '/content/articles/a.json': { ...article, colour: 'red' } }).join('\n')).toMatch(/content\/articles\/a\.json: .*colour/);
-    expect(problems({ ...base, '/content/media/articles/a/pic.json': { kind: 'image', file: 'pic.webp', visibility: 'public' } }).join('\n')).toMatch(/pic\.json: alt: an image needs alt text/);
+    expect(problems({ ...base, '/content/media/articles/a/pic.json': { kind: 'image', file: 'pic.webp', visibility: 'public' } }).join('\n')).toMatch(/content\/articles\/a\.json: .*the picture "articles\/a\/pic" has no alt text.*\(V54\)/);
     expect(problems(base, new Set()).join('\n')).toMatch(/its master content\/media\/articles\/a\/pic\.webp is missing/);
     expect(problems(base, new Set([...masters, '/content/media/articles/a/stray.webp'])).join('\n')).toMatch(/stray\.webp: a master without its sidecar/);
     expect(problems({ ...base, '/content/articles/a.json': { ...article, body: [{ type: 'figure', media: 'articles/a/nope' }] } }).join('\n')).toMatch(/media "articles\/a\/nope" doesn't exist/);
@@ -389,42 +389,42 @@ describe('the loader checks what it is given', () => {
   });
 });
 
-describe('albums: the content check (documentation/gallery/spec.md §16, V38 to V51)', () => {
+describe('albums: the content check (documentation/gallery/spec.md §16, V38 to V55)', () => {
   const M = '/content/media/articles/g/';
   const pic = (name: string, extra: Record<string, unknown> = {}) => ({ [`${M}${name}.json`]: { kind: 'image', file: `${name}.webp`, alt: `Picture ${name}.`, visibility: 'public', ...extra } });
   const page = (id: string, extra: Record<string, unknown>) => ({ id, type: 'article', kind: 'note', slug: id, title: id.toUpperCase(), summary: 'S', status: 'published', visibility: 'public', updatedAt: '2026-09-29', locale: 'en', body: [], ...extra });
+  const G = '/content/albums/g.json';
   const base: Record<string, unknown> = {
     '/content/site.json': { name: 'N', description: 'D', owner: 'p', locale: 'en' },
     '/content/people/p.json': { id: 'p', name: 'P' },
     '/content/structures/site.json': {
-      home: { id: 'home', kind: 'hub', slug: '', title: 'Home', children: [{ id: 's', kind: 'hub', slug: 's', title: 'S', view: 'albums', children: [{ id: 'a', kind: 'item', item: { type: 'article', id: 'a' } }, { id: 'g', kind: 'item', item: { type: 'article', id: 'g' } }] }] },
+      home: { id: 'home', kind: 'hub', slug: '', title: 'Home', children: [{ id: 's', kind: 'hub', slug: 's', title: 'S', view: 'albums', children: [{ id: 'a', kind: 'item', item: { type: 'article', id: 'a' } }, { id: 'g', kind: 'item', item: { type: 'album', id: 'g' } }] }] },
     },
-    ...pic('one', { taken: '2026-03-12' }),
+    ...pic('one', { taken: '2026-03-12', place: 'Imphal' }),
     ...pic('two'),
     [`${M}plan.json`]: { kind: 'image', file: 'plan.svg', alt: 'A floor plan.', visibility: 'public' },
     [`${M}clip.json`]: { kind: 'video', file: 'clip.mp4', title: 'A walk', width: 1920, height: 1080, captions: [{ file: 'clip.en.vtt', srclang: 'en', label: 'English' }], visibility: 'public' },
+    [`${M}talk.json`]: { kind: 'embed', provider: 'youtube', id: 'dQw4w9WgXcQ', title: 'A talk', poster: { file: 'talk.poster.webp' }, visibility: 'public' },
     '/content/articles/a.json': page('a', { body: [{ type: 'text', markdown: 'Words.' }] }),
-    '/content/articles/g.json': page('g', {
-      kind: 'gallery',
-      album: {
-        items: [
-          { id: 'one', media: 'articles/g/one', place: 'Imphal' },
-          { id: 'two', media: 'articles/g/two' },
-          { id: 'plan', media: 'articles/g/plan' },
-          { id: 'clip', media: 'articles/g/clip' },
-          { id: 'talk', embed: { provider: 'youtube', id: 'dQw4w9WgXcQ' }, title: 'A talk', poster: 'articles/g/one' },
-        ],
-      },
-    }),
+    [G]: {
+      id: 'g', type: 'album', slug: 'g', title: 'G', status: 'published', createdAt: '2026-09-01', updatedAt: '2026-09-29',
+      items: [
+        { id: 'one', media: 'articles/g/one' },
+        { id: 'two', media: 'articles/g/two' },
+        { id: 'plan', media: 'articles/g/plan' },
+        { id: 'clip', media: 'articles/g/clip' },
+        { id: 'talk', media: 'articles/g/talk' },
+      ],
+    },
   };
-  const masters = new Set([`${M}one.webp`, `${M}two.webp`, `${M}plan.svg`, `${M}clip.mp4`, `${M}clip.en.vtt`]);
+  const masters = new Set([`${M}one.webp`, `${M}two.webp`, `${M}plan.svg`, `${M}clip.mp4`, `${M}clip.en.vtt`, `${M}talk.poster.webp`]);
   type Docs = Record<string, any>;
   const edit = (change: (d: Docs) => void) => {
     const d = structuredClone(base) as Docs;
     change(d);
     return d;
   };
-  const album = (d: Docs) => d['/content/articles/g.json'].album;
+  const album = (d: Docs) => d[G];
   const problems = (change: (d: Docs) => void, m = masters, sizes?: Map<string, number>) => {
     try {
       loadContent(edit(change), m, [], new Set(), sizes);
@@ -434,13 +434,31 @@ describe('albums: the content check (documentation/gallery/spec.md §16, V38 to 
     }
   };
   const warnings = (change: (d: Docs) => void, m = masters) => loadContent(edit(change), m).warnings.join('\n');
+  const toPrivate = (d: Docs) => {
+    d['/private/albums/g.json'] = d[G];
+    delete d[G];
+    d['/content/structures/site.json'].home.children[0].children.pop();
+    d['/private/structures/overlay.json'] = { sections: [{ section: 's', pages: [{ id: 'g', token: 'secretaaa2', item: { type: 'album', id: 'g' } }] }] };
+  };
 
-  it('a good album loads, in a section of the Albums view, with no warning', () => {
+  it('a good album loads from albums/, placed in a section of the Albums view, with no warning', () => {
     const c = loadContent(base, masters);
-    expect(c.articles.get('g')?.album?.items).toHaveLength(5);
+    expect(c.albums.get('g')?.items).toHaveLength(5);
+    expect(c.articles.has('g')).toBe(false);
+    expect(c.routes.find((r) => r.node.id === 'g')?.path).toBe('/s/g/');
+    expect(c.canonical.get('album/g')).toBe('/s/g/');
     expect(c.media.get('articles/g/plan')?.master).toBe(`${M}plan.svg`);
+    expect(c.media.get('articles/g/one')?.place).toBe('Imphal');
     expect(c.videos.get('articles/g/clip')?.captions?.[0].file).toBe('clip.en.vtt');
     expect(c.warnings).toEqual([]);
+  });
+
+  it('a linked video is a library item of its own (§4.2): its sidecar names the provider, the ID and its poster beside it', () => {
+    const c = loadContent(base, masters);
+    expect(c.embeds.get('articles/g/talk')).toMatchObject({ provider: 'youtube', video: 'dQw4w9WgXcQ', title: 'A talk', posterMaster: `${M}talk.poster.webp`, origin: 'public' });
+    expect(c.media.has('articles/g/talk')).toBe(false);
+    expect(problems(() => {}, new Set([...masters].filter((m) => !m.endsWith('talk.poster.webp'))))).toMatch(/talk\.json: poster\.file: its poster .*talk\.poster\.webp is missing/);
+    expect(problems((d) => (d[`${M}talk.json`].poster.file = 'other.poster.webp'), new Set([...masters, `${M}other.poster.webp`]))).toMatch(/must share the sidecar's name/);
   });
 
   it("a video's caption tracks are beside it, and named by it", () => {
@@ -449,38 +467,52 @@ describe('albums: the content check (documentation/gallery/spec.md §16, V38 to 
     expect(problems((d) => (d[`${M}clip.json`].captions[0].file = 'other.en.vtt'), new Set([...masters, `${M}other.en.vtt`]))).toMatch(/must share the sidecar's name/);
   });
 
-  it('V38: a published album has items, each with a unique ID, one of media and embed, a picture or a video file, and alt text', () => {
-    expect(problems((d) => (album(d).items = []))).toMatch(/album\.items: a published album has at least one item.*V38/);
-    expect(problems((d) => ((album(d).items = []), (d['/content/articles/g.json'].status = 'draft')))).toBe('');
-    expect(problems((d) => (album(d).items[1].id = 'one'))).toMatch(/two items have the ID "one".*V38/);
-    expect(problems((d) => (album(d).items[1].embed = { provider: 'youtube', id: 'dQw4w9WgXcQ' }))).toMatch(/exactly one of the two \(V38\)/);
-    expect(problems((d) => (album(d).items[1].id = 'Not An ID'))).toMatch(/V38/);
-    expect(problems((d) => (d[`${M}two.json`] = { kind: 'image', file: 'two.webp', decorative: true, visibility: 'public' }))).toMatch(/needs alt text.*never decorative.*V38/);
+  it('V38: a published album has a picture or a video; items have unique IDs, are a library item or a text card, and use an item once', () => {
+    expect(problems((d) => (album(d).items = []))).toMatch(/albums\/g\.json: items: a published album has at least one picture or video.*V38/);
+    expect(problems((d) => ((album(d).items = []), (album(d).status = 'draft')))).toBe('');
+    expect(problems((d) => (album(d).items[1].id = 'one'))).toMatch(/items\.1\.id: two items have the ID "one".*V38/);
+    expect(problems((d) => (album(d).items[1].media = 'articles/g/one'))).toMatch(/"articles\/g\/one" is in the album twice.*V38/);
+    expect(problems((d) => (album(d).items[1].id = 'Not An ID'))).toMatch(/albums\/g\.json: items\.1/);
+    expect(problems((d) => (album(d).items[1].text = 'Words.'))).toMatch(/albums\/g\.json: items\.1/);
+    expect(problems((d) => album(d).items.push({ id: 'gone', media: 'articles/g/gone' }))).toMatch(/items\.5\.media: "articles\/g\/gone" isn't in the library.*V38/);
     expect(
       problems(
         (d) => ((d[`${M}cv.json`] = { kind: 'document', file: 'cv.pdf', title: 'CV', visibility: 'public' }), album(d).items.push({ id: 'cv', media: 'articles/g/cv' })),
         new Set([...masters, `${M}cv.pdf`]),
       ),
-    ).toMatch(/media "articles\/g\/cv" doesn't exist \(a picture or a video file\)/);
+    ).toMatch(/"articles\/g\/cv" isn't in the library: an album's item is a picture, a drawing, a video file or a linked video \(V38\)/);
   });
 
-  it('V39: tiles name items once, inside the grid, never overlapping', () => {
-    expect(problems((d) => (album(d).showcase = { tiles: [{ item: 'one', x: 0, y: 0, w: 6, h: 4 }, { item: 'two', x: 4, y: 2, w: 6, h: 4 }] }))).toMatch(/album\.showcase\.tiles\.1: the tiles of "one" and "two" overlap \(V39\)/);
-    expect(problems((d) => (album(d).showcase = { tiles: [{ item: 'one', x: 8, y: 0, w: 6, h: 4 }] }))).toMatch(/inside the 12 columns \(V39\)/);
-    expect(problems((d) => (album(d).showcase = { tiles: [{ item: 'nope', x: 0, y: 0, w: 6, h: 4 }] }))).toMatch(/"nope" isn't an item of the album \(V39\)/);
-    expect(problems((d) => (album(d).showcase = { tiles: [] }))).toMatch(/at least one tile.*V39/);
+  it('V39: the cover leads with an item or is its tiles, never both; tiles name items once, inside the grid, never overlapping', () => {
+    expect(problems((d) => (album(d).cover = { lead: 'two' }))).toBe('');
+    expect(problems((d) => (album(d).cover = { lead: 'nope' }))).toMatch(/cover\.lead: "nope" isn't an item of the album \(V39\)/);
+    expect(problems((d) => (album(d).cover = { lead: 'two', tiles: [{ item: 'one', x: 0, y: 0, w: 12, h: 6 }] }))).toMatch(/albums\/g\.json: cover/);
+    expect(problems((d) => (album(d).cover = { tiles: [{ item: 'one', x: 0, y: 0, w: 6, h: 4 }, { item: 'two', x: 4, y: 2, w: 6, h: 4 }] }))).toMatch(/cover\.tiles\.1: the tiles of "one" and "two" overlap \(V39\)/);
+    expect(problems((d) => (album(d).cover = { tiles: [{ item: 'one', x: 8, y: 0, w: 6, h: 4 }] }))).toMatch(/inside the 12 columns \(V39\)/);
+    expect(problems((d) => (album(d).cover = { tiles: [{ item: 'nope', x: 0, y: 0, w: 6, h: 4 }] }))).toMatch(/"nope" isn't an item of the album \(V39\)/);
+    expect(problems((d) => (album(d).cover = { tiles: [] }))).toMatch(/at least one tile.*V39/);
+    const withText = (d: Docs) => ((album(d).order = 'custom'), album(d).items.push({ id: 'words', text: 'Words.' }));
+    expect(problems((d) => (withText(d), (album(d).cover = { lead: 'words' })))).toMatch(/"words" is a text card: the cover is pictures \(V39\)/);
   });
 
-  it('V40: warns, never refuses: a hole, a tall band, a video without captions', () => {
-    expect(warnings((d) => (album(d).showcase = { tiles: [{ item: 'one', x: 0, y: 0, w: 6, h: 10 }] }))).toMatch(/content\/articles\/g\.json: the band has .* empty cells.*V40[\s\S]*10 rows tall.*V40/);
-    expect(warnings((d) => delete d[`${M}clip.json`].captions, new Set([...masters].filter((m) => !m.endsWith('.vtt'))))).toMatch(/"articles\/g\/clip" has no captions.*V40/);
+  it('V40: warns, never refuses: a hole, a tall cover, a video without captions', () => {
+    expect(warnings((d) => (album(d).cover = { tiles: [{ item: 'one', x: 0, y: 0, w: 6, h: 10 }] }))).toMatch(/content\/albums\/g\.json: the cover has .* empty cells.*V40[\s\S]*10 rows tall.*V40/);
+    expect(warnings((d) => delete d[`${M}clip.json`].captions, new Set([...masters].filter((m) => !m.endsWith('.vtt'))))).toMatch(/the video "articles\/g\/clip" has no captions.*V40/);
   });
 
-  it("V41: an item's caption and description, and the album's description, keep to their limits", () => {
-    expect(problems((d) => (album(d).items[0].caption = 'x'.repeat(201)))).toMatch(/caption is at most 200 characters \(V41\)/);
-    expect(problems((d) => (album(d).items[0].description = 'One.\n\nTwo.\n\nThree.\n\nFour.\n\nFive.'))).toMatch(/at most 4 paragraphs or lists \(V41\)/);
+  it("V41: a picture's caption in an album, its description and the album's words keep to their limits; links go to the album's items", () => {
+    expect(problems((d) => (d[`${M}one.json`].caption = 'x'.repeat(201)))).toMatch(/albums\/g\.json: items\.0\.media: the caption of "articles\/g\/one" is 201 characters: in an album, at most 200 \(V41\)/);
+    expect(problems((d) => ((d[`${M}one.json`].caption = 'x'.repeat(201)), (album(d).status = 'draft')))).toBe('');
+    expect(problems((d) => (d[`${M}one.json`].description = 'One.\n\nTwo.\n\nThree.\n\nFour.\n\nFive.'))).toMatch(/one\.json: description: .*at most 4 paragraphs or lists \(V41\)/);
     expect(problems((d) => (album(d).description = 'x'.repeat(1501)))).toMatch(/at most 1500 characters \(V41\)/);
+    expect(problems((d) => (album(d).title = 'x'.repeat(121)))).toMatch(/title is at most 120 characters \(V41\)/);
     expect(problems((d) => (album(d).description = 'The **trip**, in [pictures](https://example.com).'))).toBe('');
+    expect(problems((d) => (album(d).description = 'See [it](#item-one).'))).toBe('');
+    expect(problems((d) => (album(d).description = 'See [it](#item-gone).'))).toMatch(/"#item-gone" goes nowhere.*\(V41\)/);
+    const card = (text: string) => (d: Docs) => ((album(d).order = 'custom'), album(d).items.push({ id: 'words', text }));
+    expect(problems(card('Then [the plan](#item-plan).'))).toBe('');
+    expect(problems(card('See [it](#top).'))).toMatch(/items\.5\.text.*"#top" goes nowhere/s);
+    expect(problems(card('One.\n\nTwo.\n\nThree.\n\nFour.\n\nFive.'))).toMatch(/at most 4 paragraphs or lists \(V41\)/);
   });
 
   it('V42: a drawing is at most 200 KB, its dark version a drawing too, and never animated', () => {
@@ -490,103 +522,127 @@ describe('albums: the content check (documentation/gallery/spec.md §16, V38 to 
     expect(problems((d) => (d[`${M}plan.json`].animation = { poster: 'plan.poster.webp' }), new Set([...masters, `${M}plan.poster.webp`]))).toMatch(/a drawing has no animation.*V42/);
   });
 
-  it('V43: an album only on a gallery page; a gallery page from before albums reads as an empty one', () => {
-    expect(problems((d) => (d['/content/articles/a.json'].album = { items: [] }))).toMatch(/a\.json: album: an album belongs to a page of kind gallery, and this one is a note \(V43\)/);
-    const legacy = edit((d) => (delete d['/content/articles/g.json'].album, (d['/content/articles/g.json'].body = [{ type: 'gallery', items: [{ media: 'articles/g/one' }, { media: 'articles/g/two' }] }])));
-    expect(loadContent(legacy, masters).articles.get('g')?.album).toEqual({ items: [] });
+  it('V43: an album is its own file, its ID unique among albums and articles; an article never has an album or the kind gallery', () => {
+    expect(problems((d) => (d['/content/articles/a.json'].album = { items: [] }))).toMatch(/content\/articles\/a\.json: album: an article never has an album or the kind gallery.*V43/);
+    expect(problems((d) => (d['/content/articles/a.json'].kind = 'gallery'))).toMatch(/content\/articles\/a\.json: kind: an article never has an album or the kind gallery.*V43/);
+    expect(problems((d) => (d['/content/articles/g.json'] = page('g', {})))).toMatch(/"g" is also an (album|article)'s ID: an ID is unique among albums and articles \(V43\)/);
+    expect(problems((d) => (album(d).id = 'h'))).toMatch(/albums\/g\.json: id: id "h" must match the file name/);
+    expect(warnings((d) => d['/content/structures/site.json'].home.children[0].children.pop())).toMatch(/album "g" is published but the site structure doesn't place it.*V43/);
+    expect(problems((d) => d['/content/structures/site.json'].home.children[0].children.push({ id: 'x', kind: 'item', item: { type: 'album', id: 'nope' } }))).toMatch(/"nope", which doesn't exist/);
   });
 
-  it("V44: a private album's videos are at most 10 MB, and an open album shows nothing private (V25)", () => {
-    const toPrivate = (d: Docs) => {
-      d['/private/articles/g.json'] = d['/content/articles/g.json'];
-      delete d['/content/articles/g.json'];
-      d['/content/structures/site.json'].home.children[0].children.pop();
-      d['/private/structures/overlay.json'] = { sections: [{ section: 's', pages: [{ id: 'g', token: 'secretaaa2', item: { type: 'article', id: 'g' } }] }] };
-    };
-    expect(problems(toPrivate)).toBe('');
-    expect(problems(toPrivate, masters, new Map([[`${M}clip.mp4`, 11 * 1024 * 1024]]))).toMatch(/private\/articles\/g\.json: album\.items\.3\.media: .* at most 10 MB.*V44/);
+  it("V44: a private album is read from private-pages/albums/, placed by the overlay; its videos are at most 10 MB", () => {
+    const c = loadContent(edit(toPrivate), masters);
+    expect(c.albums.has('g')).toBe(true);
+    expect(c.origins.get('g')).toBe('private');
+    expect(c.access.get('g')).toBe('private');
+    expect(problems(toPrivate, masters, new Map([[`${M}clip.mp4`, 11 * 1024 * 1024]]))).toMatch(/private\/albums\/g\.json: items\.3\.media: .* at most 10 MB.*V44/);
     expect(problems(() => {}, masters, new Map([[`${M}clip.mp4`, 11 * 1024 * 1024]]))).toBe('');
-    const privatePic = (d: Docs) => {
-      d['/private/media/articles/g/two.json'] = d[`${M}two.json`];
-      delete d[`${M}two.json`];
-    };
-    expect(problems(privatePic, new Set([...[...masters].filter((m) => !m.endsWith('two.webp')), '/private/media/articles/g/two.webp']))).toMatch(/media "articles\/g\/two" is private.*V25/);
+    // the public structure never places it (V23)
+    expect(problems((d) => (toPrivate(d), d['/content/structures/site.json'].home.children[0].children.push({ id: 'g2', kind: 'item', item: { type: 'album', id: 'g' } })))).toMatch(/places "g", which is in private-pages\/.*V23/);
   });
 
-  it("V45: an embed is a provider's, with an ID of its shape, a title and a picture as its poster", () => {
-    expect(problems((d) => (album(d).items[4].embed = { provider: 'vimeo', id: 'abc' }))).toMatch(/isn't a vimeo video's ID \(V45\)/);
-    expect(problems((d) => (album(d).items[4].embed = { provider: 'dailymotion', id: 'x1' }))).toMatch(/album\.items\.4\.embed\.provider/);
-    expect(problems((d) => delete album(d).items[4].title)).toMatch(/needs its title \(V45\)/);
-    expect(problems((d) => delete album(d).items[4].poster)).toMatch(/needs a poster picture \(V45\)/);
-    expect(problems((d) => (album(d).items[4].poster = 'articles/g/plan'))).toMatch(/poster is a picture.*V45/);
-    expect(problems((d) => (album(d).items[4].poster = 'articles/g/clip'))).toMatch(/poster is a picture.*V45/);
-  });
-
-  it("V41: an album's words link on the page only to its own items", () => {
-    const first = (d: Parameters<typeof album>[0]) => album(d).items[0].id;
-    expect(problems((d) => (album(d).description = `See [it](#item-${first(d)}).`))).not.toMatch(/goes nowhere/);
-    expect(problems((d) => (album(d).description = 'See [it](#item-gone).'))).toMatch(/"#item-gone" goes nowhere.*\(V41\)/);
-    expect(problems((d) => (album(d).items[0].description = 'See [it](#top).'))).toMatch(/album\.items\.0\.description.*"#top" goes nowhere/s);
+  it("V45: a linked video is a provider's, with an ID of its shape, a title and its poster", () => {
+    expect(problems((d) => Object.assign(d[`${M}talk.json`], { provider: 'vimeo', id: 'abc' }))).toMatch(/talk\.json: id: the ID isn't of the provider's shape \(V45\)/);
+    expect(problems((d) => (d[`${M}talk.json`].provider = 'dailymotion'))).toMatch(/talk\.json: provider/);
+    expect(problems((d) => delete d[`${M}talk.json`].title)).toMatch(/talk\.json: title/);
+    expect(problems((d) => delete d[`${M}talk.json`].poster)).toMatch(/talk\.json: poster/);
+    expect(problems((d) => (d[`${M}talk.json`].poster.file = 'talk.png'))).toMatch(/<name>\.poster\.webp beside it \(V45\)/);
   });
 
   it("V46: a page's social image is never a drawing", () => {
-    expect(problems((d) => (d['/content/articles/g.json'].seo = { image: 'articles/g/plan' }))).toMatch(/seo\.image: a social image is a picture.*V46/);
-    expect(problems((d) => (d['/content/articles/g.json'].seo = { image: 'articles/g/one' }))).toBe('');
+    expect(problems((d) => (d['/content/articles/a.json'].seo = { image: 'articles/g/plan' }))).toMatch(/seo\.image: a social image is a picture.*V46/);
+    expect(problems((d) => (d['/content/articles/a.json'].seo = { image: 'articles/g/one' }))).toBe('');
   });
 
   it('V47: the phone arrangement names exactly the tiles shown on phones, never overlapping', () => {
     const tiles = [{ item: 'one', x: 0, y: 0, w: 6, h: 4 }, { item: 'two', x: 6, y: 0, w: 6, h: 4 }];
     const good = [{ item: 'one', x: 0, y: 0, w: 6, h: 4 }, { item: 'two', x: 0, y: 4, w: 6, h: 4 }];
-    expect(problems((d) => (album(d).showcase = { tiles, phone: { tiles: good } }))).toBe('');
-    expect(problems((d) => (album(d).showcase = { tiles, phone: { tiles: [good[0]] } }))).toMatch(/"two" is shown on phones but has no place there \(V47\)/);
-    expect(problems((d) => (album(d).showcase = { tiles, phone: { tiles: [good[0], { ...good[1], y: 2 }] } }))).toMatch(/overlap \(V47\)/);
-    expect(problems((d) => (album(d).showcase = { tiles: [{ ...tiles[0], onPhones: false }] }))).toMatch(/at least one tile is shown on phones \(V47\)/);
-    expect(problems((d) => (album(d).showcase = { tiles, phone: { tiles: [{ item: 'one', x: 4, y: 0, w: 4, h: 4 }, good[1]] } }))).toMatch(/inside the 6 columns \(V47\)/);
+    expect(problems((d) => (album(d).cover = { tiles, phone: { tiles: good } }))).toBe('');
+    expect(problems((d) => (album(d).cover = { tiles, phone: { tiles: [good[0]] } }))).toMatch(/"two" is shown on phones but has no place there \(V47\)/);
+    expect(problems((d) => (album(d).cover = { tiles, phone: { tiles: [good[0], { ...good[1], y: 2 }] } }))).toMatch(/overlap \(V47\)/);
+    expect(problems((d) => (album(d).cover = { tiles: [{ ...tiles[0], onPhones: false }] }))).toMatch(/at least one tile is shown on phones \(V47\)/);
+    expect(problems((d) => (album(d).cover = { tiles, phone: { tiles: [{ item: 'one', x: 4, y: 0, w: 4, h: 4 }, good[1]] } }))).toMatch(/inside the 6 columns \(V47\)/);
   });
 
   it('V48: focus on a filled tile, play on a video file or an animated picture, two at most', () => {
-    expect(problems((d) => (album(d).showcase = { tiles: [{ item: 'plan', x: 0, y: 0, w: 12, h: 6, focus: '20% 20%' }] }))).toMatch(/focus point is for a filled tile.*V48/);
-    expect(problems((d) => (album(d).showcase = { tiles: [{ item: 'one', x: 0, y: 0, w: 12, h: 6, play: true }] }))).toMatch(/only a video file or an animated picture can play.*V48/);
-    expect(problems((d) => (album(d).showcase = { tiles: [{ item: 'clip', x: 0, y: 0, w: 12, h: 6, play: true }] }))).toBe('');
-    expect(problems((d) => (album(d).showcase = { tiles: [{ item: 'clip', x: 0, y: 0, w: 12, h: 6, play: true }] }), masters, new Map([[`${M}clip.mp4`, 11 * 1024 * 1024]]))).toMatch(/11 MB.*V48/);
+    expect(problems((d) => (album(d).cover = { tiles: [{ item: 'plan', x: 0, y: 0, w: 12, h: 6, focus: '20% 20%' }] }))).toMatch(/focus point is for a filled tile.*V48/);
+    expect(problems((d) => (album(d).cover = { tiles: [{ item: 'one', x: 0, y: 0, w: 12, h: 6, play: true }] }))).toMatch(/only a video file or an animated picture can play.*V48/);
+    expect(problems((d) => (album(d).cover = { tiles: [{ item: 'talk', x: 0, y: 0, w: 12, h: 6, play: true }] }))).toMatch(/only a video file or an animated picture can play.*V48/);
+    expect(problems((d) => (album(d).cover = { tiles: [{ item: 'clip', x: 0, y: 0, w: 12, h: 6, play: true }] }))).toBe('');
+    expect(problems((d) => (album(d).cover = { tiles: [{ item: 'clip', x: 0, y: 0, w: 12, h: 6, play: true }] }), masters, new Map([[`${M}clip.mp4`, 11 * 1024 * 1024]]))).toMatch(/11 MB.*V48/);
   });
 
-  it('V49: captions only with the grid; never a download or autoplay on an embed; autoplay is for a video file', () => {
+  it('V49: captions only with the grid; a linked video is never downloaded or autoplayed; autoplay is for a video file', () => {
     expect(problems((d) => Object.assign(album(d), { layout: 'story', captions: true }))).toMatch(/V49/);
     expect(problems((d) => Object.assign(album(d), { layout: 'story', download: true }))).toBe('');
-    expect(problems((d) => (album(d).items[4].download = true))).toMatch(/an embed can't be downloaded.*V49/);
+    expect(problems((d) => (album(d).items[4].download = true))).toMatch(/items\.4\.download: a linked video can't be downloaded.*V49/);
+    expect(problems((d) => (album(d).items[4].autoplay = true))).toMatch(/not a linked video.*V49/);
     expect(problems((d) => (album(d).items[0].autoplay = true))).toMatch(/not a picture \(V49\)/);
     expect(problems((d) => (album(d).items[3].loop = true))).toBe('');
   });
 
-  it("V50: a place is one line of at most 80; a picture's date is real and not in the future; large only on a still picture over 2560 px", () => {
-    expect(problems((d) => (album(d).items[0].place = 'x'.repeat(81)))).toMatch(/at most 80 characters \(V50\)/);
-    expect(problems((d) => (album(d).items[0].place = 'Imphal\nManipur'))).toMatch(/one line.*V50/);
+  it("V50: a place is one line of at most 80; a date is real and not in the future; large only on a still picture over 2560 px", () => {
+    expect(problems((d) => (d[`${M}one.json`].place = 'x'.repeat(81)))).toMatch(/one\.json: place: .*at most 80 characters \(V50\)/);
+    expect(problems((d) => (d[`${M}one.json`].place = 'Imphal\nManipur'))).toMatch(/one line.*V50/);
     expect(problems((d) => (d[`${M}one.json`].taken = '2026-02-30'))).toMatch(/one\.json: taken: a real date/);
     expect(problems((d) => (d[`${M}one.json`].taken = '2999-01-01'))).toMatch(/hasn't come yet.*V50/);
+    expect(problems((d) => (d[`${M}talk.json`].taken = '2999-01-01'))).toMatch(/talk\.json: taken: .*hasn't come yet.*V50/);
     const facts = (width: number) => ({ width, height: 2000, bg: 'rgb(0 0 0)', bytes: 900_000 });
     expect(problems((d) => Object.assign(d[`${M}one.json`], { large: true, facts: facts(3600) }))).toBe('');
     expect(problems((d) => Object.assign(d[`${M}one.json`], { large: true, facts: facts(2400) }))).toMatch(/more than 2560 px.*V50/);
     expect(problems((d) => Object.assign(d[`${M}plan.json`], { large: true }))).toMatch(/only a still picture is kept large.*V50/);
   });
 
-  it('V51: an album block shows an open gallery page, not its own, published wherever its page is', () => {
-    const block = (d: Docs, on: string, albumId: string) => d[`/content/articles/${on}.json`].body.push({ type: 'album', album: albumId, width: 'full' });
-    expect(problems((d) => block(d, 'a', 'g'))).toBe('');
-    expect(problems((d) => block(d, 'a', 'a'))).toMatch(/a page can't show its own album.*V51/);
-    expect(problems((d) => block(d, 'g', 'g'))).toMatch(/a page can't show its own album.*V51/);
-    expect(problems((d) => block(d, 'g', 'a'))).toMatch(/"a" is a note, not an album.*V51/);
-    expect(problems((d) => block(d, 'a', 'nope'))).toMatch(/the album "nope" doesn't exist \(V51\)/);
-    expect(problems((d) => (block(d, 'a', 'g'), (d['/content/articles/g.json'].status = 'draft')))).toMatch(/a\.json: body\.1\.album: the album "g" isn't published.*V51/);
-    expect(problems((d) => (block(d, 'a', 'g'), (d['/content/articles/a.json'].status = 'draft'), (d['/content/articles/g.json'].status = 'draft')))).toBe('');
-    const privateAlbum = (d: Docs) => {
-      block(d, 'a', 'g');
-      d['/private/articles/g.json'] = d['/content/articles/g.json'];
-      delete d['/content/articles/g.json'];
-      d['/content/structures/site.json'].home.children[0].children.pop();
-      d['/private/structures/overlay.json'] = { sections: [{ section: 's', pages: [{ id: 'g', token: 'secretaaa2', item: { type: 'article', id: 'g' } }] }] };
+  it('V51: an album block names an open album, published wherever its page is', () => {
+    const block = (d: Docs, albumId: string) => d['/content/articles/a.json'].body.push({ type: 'album', album: albumId, width: 'full' });
+    expect(problems((d) => block(d, 'g'))).toBe('');
+    expect(problems((d) => block(d, 'a'))).toMatch(/"a" is an article, not an album.*V51/);
+    expect(problems((d) => block(d, 'nope'))).toMatch(/the album "nope" doesn't exist \(V51\)/);
+    expect(problems((d) => (block(d, 'g'), (album(d).status = 'draft')))).toMatch(/a\.json: body\.1\.album: the album "g" isn't published.*V51/);
+    expect(problems((d) => (block(d, 'g'), (d['/content/articles/a.json'].status = 'draft'), (album(d).status = 'draft')))).toBe('');
+    expect(problems((d) => (block(d, 'g'), toPrivate(d)))).toMatch(/"g" is a private album.*V51/);
+  });
+
+  it('V52: an open album never uses a private library item; a private one may', () => {
+    const privatePic = (d: Docs) => {
+      d['/private/media/articles/g/two.json'] = d[`${M}two.json`];
+      delete d[`${M}two.json`];
     };
-    expect(problems(privateAlbum)).toMatch(/"g" is a private album.*V51/);
+    const files = new Set([...[...masters].filter((m) => !m.endsWith('two.webp')), '/private/media/articles/g/two.webp']);
+    expect(problems(privatePic, files)).toMatch(/albums\/g\.json: items\.1\.media: "articles\/g\/two" is private.*V52/);
+    expect(problems((d) => (privatePic(d), toPrivate(d)), files)).toBe('');
+  });
+
+  it("V53: a text card keeps the owner's order; a gallery's order of albums is for a section of the Albums view", () => {
+    const card = (d: Docs) => album(d).items.splice(2, 0, { id: 'words', text: 'Between the pictures.' });
+    expect(problems(card)).toMatch(/albums\/g\.json: order: the album has a text card: its order is your own \("custom"\).*V53/);
+    expect(problems((d) => (card(d), (album(d).order = 'newest')))).toMatch(/V53/);
+    expect(problems((d) => (card(d), (album(d).order = 'custom')))).toBe('');
+    expect(problems((d) => (album(d).order = 'newest'))).toBe('');
+    const section = (d: Docs) => d['/content/structures/site.json'].home.children[0];
+    for (const order of ['newest', 'oldest', 'custom']) expect(problems((d) => (section(d).albumOrder = order)), order).toBe('');
+    expect(problems((d) => (section(d).albumOrder = 'random'))).toMatch(/structures\/site\.json: home\.children\.0/);
+    expect(problems((d) => ((section(d).albumOrder = 'oldest'), (section(d).view = 'list')))).toMatch(/an order of albums is for a section whose view is Albums \(V53\)/);
+  });
+
+  it('V54: alt text may wait in the library and in drafts; a published album needs it on every picture, never decorative', () => {
+    const noAlt = (d: Docs) => delete d[`${M}two.json`].alt;
+    expect(problems(noAlt)).toMatch(/albums\/g\.json: items\.1\.media: the picture "articles\/g\/two" needs alt text.*V54/);
+    expect(problems((d) => (noAlt(d), (album(d).status = 'draft')))).toBe('');
+    expect(problems((d) => (noAlt(d), album(d).items.splice(1, 1)))).toBe('');
+    expect(problems((d) => (d[`${M}two.json`] = { kind: 'image', file: 'two.webp', decorative: true, visibility: 'public' }))).toMatch(/needs alt text.*never decorative.*V54/);
+    // a published article showing it needs it too, or marks it decorative
+    const shown = (d: Docs) => (noAlt(d), album(d).items.splice(1, 1), (d['/content/articles/a.json'].body = [{ type: 'figure', media: 'articles/g/two' }]));
+    expect(problems(shown)).toMatch(/content\/articles\/a\.json: the picture "articles\/g\/two" has no alt text.*V54/);
+    expect(problems((d) => (shown(d), (d[`${M}two.json`].decorative = true)))).toBe('');
+  });
+
+  it('V55: a file is in the library once: the same fingerprint twice is refused', () => {
+    const fp = 'a'.repeat(64);
+    expect(problems((d) => (d[`${M}one.json`].fingerprint = fp))).toBe('');
+    expect(problems((d) => ((d[`${M}one.json`].fingerprint = fp), (d[`${M}two.json`].fingerprint = fp)))).toMatch(/content\/media\/articles\/g\/two\.json: fingerprint: the same file as "articles\/g\/one".*V55/);
+    expect(problems((d) => (d[`${M}one.json`].fingerprint = 'ABC'))).toMatch(/one\.json: fingerprint: .*V55/);
   });
 });
 
@@ -881,14 +937,12 @@ describe('a page opens as its kind reads', () => {
     { type: 'gallery', items: [{ media: 'a/two' }, { media: 'a/three' }, { media: 'a/one' }] },
   ] as const;
 
-  it('an article measures its reading time, a gallery its pictures (each once), a page nothing', () => {
+  it('an article measures its reading time, a page nothing; a page counts its pictures (each once); there is no kind gallery (V43)', () => {
     const a = article.parse({ ...base, kind: 'note', body: [words] });
     expect(pageMeasure(a)).toBe('2 min read');
-    const g = article.parse({ ...base, kind: 'gallery', body: pictures });
-    expect(pictureCount(g)).toBe(3);
-    expect(pageMeasure(g)).toBe('3 pictures');
-    expect(pageMeasure(article.parse({ ...base, kind: 'gallery', body: [pictures[0]] }))).toBe('1 picture');
+    expect(pictureCount(article.parse({ ...base, kind: 'note', body: pictures }))).toBe(3);
     expect(pageMeasure(article.parse({ ...base, kind: 'page', body: [words] }))).toBeUndefined();
+    expect(article.safeParse({ ...base, kind: 'gallery', body: pictures }).success).toBe(false);
   });
 });
 

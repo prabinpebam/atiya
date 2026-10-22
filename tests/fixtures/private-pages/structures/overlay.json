@@ -78,7 +78,7 @@
           "id": "fx-private-album",
           "token": "albumeee66",
           "item": {
-            "type": "article",
+            "type": "album",
             "id": "fx-private-album"
           }
         }

@@ -1,0 +1,16 @@
+{
+  "kind": "embed",
+  "provider": "vimeo",
+  "id": "76979871",
+  "title": "A short film",
+  "shape": {
+    "width": 1280,
+    "height": 720
+  },
+  "duration": 150,
+  "poster": {
+    "file": "short.poster.webp"
+  },
+  "alt": "A title card: the short film.",
+  "visibility": "public"
+}
