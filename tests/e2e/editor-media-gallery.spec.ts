@@ -226,4 +226,21 @@ test.describe('editor: gallery uploads', () => {
     await expect(status(page)).toHaveText(/^Saved\b/, { timeout: 15_000 });
     expect(readJson(file).focus).toBe(found);
   });
+
+  test('the date taken: changed in the details and saved; cleared, it goes from the sidecar', async ({ page }) => {
+    const id = 'articles/fixture-album/p01';
+    const file = join(FIXTURE, 'content/media/articles/fixture-album/p01.json');
+    await page.goto(`/_edit/media/?id=${id}`);
+    const details = page.locator('[data-editor-media-details]');
+    const taken = details.getByLabel('Date taken');
+    await expect(taken).toHaveValue('2026-03-11');
+    await taken.fill('2025-12-24');
+    await details.getByRole('button', { name: 'Save the details' }).click();
+    await expect(status(page)).toHaveText(/^Saved\b/, { timeout: 15_000 });
+    expect(readJson(file).taken).toBe('2025-12-24');
+    await taken.fill('');
+    await details.getByRole('button', { name: 'Save the details' }).click();
+    await expect(status(page)).toHaveText(/^Saved\b/, { timeout: 15_000 });
+    await expect.poll(() => 'taken' in readJson(file)).toBe(false);
+  });
 });

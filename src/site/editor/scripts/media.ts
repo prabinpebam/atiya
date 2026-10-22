@@ -195,14 +195,14 @@ export function initMediaDetails(root: HTMLElement, signal: AbortSignal) {
       if (/^(image|picture|photo) of\b/i.test(alt)) return say(form, 'Start the alt text with what it shows, not "image of".');
       // a copy of what's on disk, so its keys keep their order (and the diff shows only what changed)
       const next: ImageMedia = { ...state.sidecar, file: state.sidecar.file };
-      const put = <K extends 'alt' | 'caption' | 'credit' | 'source' | 'focus'>(k: K, v: string) => {
+      const put = <K extends 'alt' | 'caption' | 'credit' | 'source' | 'focus' | 'taken'>(k: K, v: string) => {
         if (v) next[k] = v;
         else delete next[k];
       };
       put('alt', alt);
       if (decorative) next.decorative = true;
       else delete next.decorative;
-      for (const k of ['caption', 'credit', 'source', 'focus'] as const) put(k, text(k));
+      for (const k of ['caption', 'credit', 'source', 'focus', 'taken'] as const) put(k, text(k));
       const licence = { ...state.sidecar.licence, name: text('licence.name'), url: text('licence.url') || undefined };
       if (licence.name) next.licence = JSON.parse(JSON.stringify(licence));
       else if (licence.url) return say(form, 'Name the licence, or leave its address empty.');
