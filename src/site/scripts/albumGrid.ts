@@ -15,6 +15,8 @@ export interface AlbumCellPicture extends PictureSource {
   alt: string;
   /** Its full size, which the link opens without scripts (a picture's) and the lightbox shows. */
   full: string;
+  /** The size the lightbox's stage shows when `full` is the larger one kept for zooming (a picture kept large). */
+  stage?: string;
   /** Its thumbnail, for the lightbox's filmstrip. */
   thumb: string;
   /** An animated picture's still first frame, shown under reduced motion. */
@@ -40,7 +42,7 @@ export interface AlbumCell {
   /** What the cell shows: the picture, or a video's or an embed's poster (none: a quiet placeholder of its shape). */
   picture?: AlbumCellPicture;
   /** A video file: its address (the link's target without scripts). */
-  video?: { src: string; type: 'video/mp4' | 'video/webm' };
+  video?: { src: string; type: 'video/mp4' | 'video/webm'; tracks?: { src: string; srclang: string; label: string; default?: boolean }[]; loop?: boolean };
   /** A YouTube or Vimeo video. */
   embed?: { provider: 'youtube' | 'vimeo'; id: string };
   /** A video's or an embed's title. */

@@ -25,6 +25,24 @@ import {
   WARM_WHOLE,
   HISTORY_KEY,
   type LightboxItem,
+  albumUrlOf,
+  bandFallback,
+  bandGroup,
+  fromAlbum,
+  infoKept,
+  itemAddress,
+  largestWidth,
+  lengthWords,
+  pendingItem,
+  posterOf,
+  seeAllWords,
+  fileSlug,
+  stageKind,
+  stageOf,
+  stillOf,
+  takenLine,
+  tracksFrom,
+  watchOn,
 } from '../../src/site/scripts/lightboxRules';
 
 const item = (over: Partial<LightboxItem> = {}): LightboxItem => ({ href: '/a.webp', thumb: '/a-t.webp', caption: '', alt: '', shadow: false, kind: 'picture', ...over });
@@ -204,5 +222,127 @@ describe('lightbox rules: words', () => {
     expect(downloadName('summer-sketches', 'k2', '/media/k2.mp4')).toBe('summer-sketches-k2.mp4');
     expect(downloadName('summer-sketches', 'k2', 'blob:https://x.test/1234')).toBe('summer-sketches-k2');
     expect(downloadName('summer-sketches', 'k2', 'blob:https://x.test/1234', 'webp')).toBe('summer-sketches-k2.webp');
+  });
+});
+
+describe('the stage', () => {
+  it('shows the stage size of a large picture, its dark version while dark', () => {
+    const big = item({ href: '/big-3840.webp', stage: '/big-2560.webp', hrefDark: '/big.dark.webp' });
+    expect(stageOf(big, false)).toBe('/big-2560.webp');
+    expect(stageOf(big, true)).toBe('/big.dark.webp');
+    expect(stageOf(item(), false)).toBe('/a.webp');
+  });
+
+  it('picks posters and stills by the theme', () => {
+    const v = item({ poster: '/p.webp', posterDark: '/p.dark.webp', still: '/s.webp' });
+    expect(posterOf(v, true)).toBe('/p.dark.webp');
+    expect(posterOf(v, false)).toBe('/p.webp');
+    expect(stillOf(v, true)).toBe('/s.webp');
+    expect(posterOf(item(), false)).toBeUndefined();
+  });
+
+  it('shows what it cannot play as a picture, and a pending place as pending', () => {
+    expect(stageKind(item({ kind: 'video' }))).toBe('picture');
+    expect(stageKind(item({ kind: 'video', videoType: 'video/mp4' }))).toBe('video');
+    expect(stageKind(item({ kind: 'embed' }))).toBe('picture');
+    expect(stageKind(item({ kind: 'embed', embedSrc: 'https://www.youtube-nocookie.com/embed/x' }))).toBe('embed');
+    expect(stageKind(item({ kind: 'drawing' }))).toBe('drawing');
+    expect(stageKind(pendingItem())).toBe('pending');
+  });
+
+  it('zooms up to the kept-large width, else the full width', () => {
+    expect(largestWidth({ width: 5000, stage: '/s.webp' })).toBe(3840);
+    expect(largestWidth({ width: 5000 })).toBe(2560);
+    expect(largestWidth({ width: 1200 })).toBe(1200);
+    expect(largestWidth({})).toBe(0);
+  });
+
+  it('reads caption tracks, and ignores what is not a list of tracks', () => {
+    expect(tracksFrom('[{"src":"/c.vtt","srclang":"en","label":"English","default":true}]')).toEqual([{ src: '/c.vtt', srclang: 'en', label: 'English', default: true }]);
+    expect(tracksFrom('{"src":"/c.vtt"}')).toBeUndefined();
+    expect(tracksFrom('[{"src":1}]')).toBeUndefined();
+    expect(tracksFrom('not json')).toBeUndefined();
+    expect(tracksFrom(undefined)).toBeUndefined();
+  });
+
+  it('reads an album link’s new facts', () => {
+    const it2 = itemFrom({
+      href: '/v.mp4',
+      data: { kind: 'video', videoType: 'video/mp4', loop: '', duration: '94', tracks: '[{"src":"/c.vtt","srclang":"en","label":"English"}]', poster: '/p.webp', stage: '/s.webp', embedSrc: '' },
+      cellId: 'item-clip',
+      cellWidth: '1920',
+      cellHeight: '1080',
+      words: { credit: 'Me' },
+    });
+    expect(it2).toMatchObject({ kind: 'video', videoType: 'video/mp4', loop: true, duration: 94, poster: '/p.webp', stage: '/s.webp', id: 'clip', width: 1920, height: 1080, words: { credit: 'Me' } });
+    expect(it2.tracks).toHaveLength(1);
+    expect(it2.embedSrc).toBeUndefined();
+    expect(itemFrom({ href: '/a.webp', data: { duration: 'x' } }).duration).toBeUndefined();
+  });
+
+  it('never warms a pending place', () => {
+    expect(warmable(pendingItem(), '/a.webp')).toBe(false);
+  });
+});
+
+describe('a band’s group', () => {
+  const a = item({ href: '/a.webp', id: 'a', albumTitle: 'Spring' });
+  const b = item({ href: '/b.webp', id: 'b' });
+  const c = item({ href: '/c.webp', id: 'c' });
+
+  it('places its tiles in the whole album, with placeholders between', () => {
+    const g = bandGroup([{ item: a, index: 0 }, { item: b, index: 3 }, { item: c, index: 6 }], 1, 7);
+    expect(g.items).toHaveLength(7);
+    expect(g.index).toBe(3);
+    expect(g.items[0]).toBe(a);
+    expect(g.items[3]).toBe(b);
+    expect(g.items[1].pending).toBe(true);
+    expect(g.items[1].albumTitle).toBe('Spring');
+  });
+
+  it('falls back to the tiles in album order without a count or a place, or with a place past the count', () => {
+    const members = [{ item: c, index: 6 }, { item: a, index: 0 }, { item: b, index: 3 }];
+    expect(bandGroup(members, 0, undefined)).toEqual({ items: [a, b, c], index: 2 });
+    expect(bandGroup([{ item: a }, { item: b, index: 1 }], 1, 5)).toEqual({ items: [a, b], index: 1 });
+    expect(bandGroup([{ item: a, index: 9 }], 0, 3).items).toEqual([a]);
+    expect(bandFallback([{ item: b }, { item: a }], 1)).toEqual({ items: [b, a], index: 1 });
+  });
+});
+
+describe('addresses and words', () => {
+  it('names the album page, its file name’s slug (from its title, never its address) and an item’s address', () => {
+    expect(albumUrlOf('/atiya/gallery/spring/#item-p01')).toBe('/atiya/gallery/spring/');
+    expect(fileSlug('A spring in the hills')).toBe('a-spring-in-the-hills');
+    expect(fileSlug('Dzükou, in June!')).toBe('dzukou-in-june');
+    expect(fileSlug('  ')).toBe('album');
+    expect(fileSlug(undefined)).toBe('album');
+    expect(itemAddress('https://example.com/gallery/spring/#item-a', 'p02')).toBe('https://example.com/gallery/spring/#item-p02');
+    expect(seeAllWords(21)).toBe('See all 21 in the album');
+  });
+
+  it('keeps the info panel open only when it was left open', () => {
+    expect(infoKept('open')).toBe(true);
+    expect(infoKept('closed')).toBe(false);
+    expect(infoKept(null)).toBe(false);
+  });
+
+  it('writes the day taken and the place', () => {
+    expect(takenLine('12 March 2026', 'Shillong')).toBe('Taken 12 March 2026, Shillong');
+    expect(takenLine('12 March 2026', undefined)).toBe('Taken 12 March 2026');
+    expect(takenLine(undefined, 'Shillong')).toBe('Taken in Shillong');
+    expect(takenLine(undefined, undefined)).toBe('');
+  });
+
+  it('names the album, the provider and the length', () => {
+    expect(fromAlbum('Spring')).toBe('From the album: Spring');
+    expect(watchOn('https://www.youtube.com/watch?v=x')).toBe('Watch on YouTube');
+    expect(watchOn('https://youtu.be/x')).toBe('Watch on YouTube');
+    expect(watchOn('https://vimeo.com/1')).toBe('Watch on Vimeo');
+    expect(watchOn('https://example.com/v')).toBe('Watch at the source');
+    expect(watchOn('nonsense')).toBe('Watch at the source');
+    expect(lengthWords(94)).toBe('Length 1:34');
+    expect(lengthWords(3725)).toBe('Length 1:02:05');
+    expect(lengthWords(0)).toBe('');
+    expect(lengthWords(undefined)).toBe('');
   });
 });

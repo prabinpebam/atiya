@@ -7,7 +7,7 @@
  * sends them once, as `web_vitals`, when the page is hidden or left.
  */
 import posthog from 'posthog-js/dist/module.no-external';
-import { linkKind, mediaId, sanitize, type CaptureEvent } from './telemetrySanitize';
+import { lightboxProps, linkKind, sanitize, videoProps, type CaptureEvent } from './telemetrySanitize';
 import { pageKind, vitalsProps, watchVitals } from './webVitals';
 import type { PageFacts, Queued } from './telemetryRules';
 
@@ -56,8 +56,11 @@ export function connect(o: { test: boolean; testHost: string; base: string; page
         const k = linkKind(q.href, q.here, o.base);
         if (k) posthog.capture('access_link', k, { transport: 'sendBeacon' });
       } else if (q.kind === 'video') {
-        const id = q.open ? mediaId(q.src, o.base) : null;
-        posthog.capture('video_played', id ? { media: id } : { place: q.place });
+        const props = videoProps(q, o.base);
+        if (props) posthog.capture('video_played', props);
+      } else if (q.kind === 'lightbox') {
+        const props = lightboxProps(q.detail, !!document.querySelector('main.index'));
+        if (props) posthog.capture('lightbox_opened', props);
       } else posthog.capture(q.event, q.props, q.beacon ? { transport: 'sendBeacon' } : undefined);
     },
   };

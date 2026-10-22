@@ -103,11 +103,15 @@ const shown = sealing
 const recommendations = node?.kind === 'hub' ? await withPhotos(recommendationBand(node.recommendations, getRecommendations(), shown.map((s) => s.node ?? ''))) : undefined;
 // the articles this page shows (dev only): a change to any other article's own files doesn't reload it (report R10)
 const shows = import.meta.env.DEV ? (article ? [article.id, ...relatedIds] : node?.kind === 'hub' ? children.map((r) => (r.node as { item: { id: string } }).item.id) : undefined) : undefined;
-// the Albums view (documentation/gallery/spec.md §5): each open album page a band; an album with nothing in it is a draft, never shown
+// the Albums view (documentation/gallery/spec.md §5): each album page a band; an album with nothing in it is a draft, never shown.
+// A build bands its open pages here and seals each private one's band in its card's place (§12); the dev server shows every one in its place
+const albumRoute = (r: Route) => ({ node: r.node.id, page: (r.node as { item: { id: string } }).item.id, href: withBase(r.path) });
 const albums =
   node?.kind === 'hub' && node.view === 'albums'
-    ? await bandsOf(children.filter((r) => r.access === 'open').map((r) => ({ node: r.node.id, page: (r.node as { item: { id: string } }).item.id, href: withBase(r.path) })))
+    ? await bandsOf(children.filter((r) => !sealing || r.access === 'open').map(albumRoute))
     : undefined;
+const privateBands = albums && sealing ? await bandsOf(children.filter((r) => r.access === 'private').map(albumRoute)) : undefined;
+const sealedPages = privateBands ? privatePages.filter((l) => !privateBands.hidden.has(l.id)).map((l) => ({ ...l, band: privateBands.bands[l.id] })) : privatePages;
 ---
 
 {
@@ -128,7 +132,7 @@ const albums =
         action={action}
         crumbs={crumbs}
         stories={albums ? shown.filter((s) => !albums.hidden.has(s.node ?? '')) : shown}
-        privatePages={sealing ? privatePages : []}
+        privatePages={sealing ? sealedPages : []}
         signIn={privatePages.length ? signInHref(route!.path) : undefined}
         ask={privatePages.length ? contact : undefined}
         view={node.view}

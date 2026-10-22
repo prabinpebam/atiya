@@ -20,6 +20,7 @@ import AlbumBand from '../components/compounds/AlbumBand.astro';
 import PlaceBar, { type PlanetFrame } from '../components/compounds/PlaceBar.astro';
 import Recommendations, { type RecommendationCard } from '../components/compounds/Recommendations.astro';
 import Dialog from '../components/compounds/Dialog.astro';
+import Lightbox from '../components/compounds/Lightbox.astro';
 import Heading from '../components/fundamentals/Heading.astro';
 import Text from '../components/fundamentals/Text.astro';
 import Button from '../components/fundamentals/Button.astro';
@@ -55,9 +56,10 @@ interface Props {
   /**
    * Its sealed private pages (documentation/access/spec.md §2.1), each with the open page it follows (null:
    * the start). The page seals each card and holds it after the list until a signed-in reader's grant opens
-   * it. Only a build passes them; the dev server shows them among `stories`.
+   * it. Only a build passes them; the dev server shows them among `stories`. In the albums view, a private
+   * album page's `band` is sealed in its card's place (documentation/gallery/spec.md §12).
    */
-  privatePages?: { id: string; after: string | null; story: Story }[];
+  privatePages?: { id: string; after: string | null; story: Story; band?: Omit<ComponentProps<typeof AlbumBand>, 'rule' | 'priority' | 'headingLevel'> }[];
   /** Where to sign in to see the private pages (the Sign in page, with the way back). */
   signIn?: string;
   /**
@@ -170,7 +172,11 @@ const open = (mark: string) => `<!--sealed:card:${mark}-->`;
             {sealed.map((l) => (
               <Fragment>
                 <Fragment set:html={open(`${l.id}:${l.after ?? ''}`)} />
-                {view === 'bento' ? (
+                {view === 'albums' && l.band ? (
+                  <div class="album" data-node={l.id}>
+                    <AlbumBand {...l.band} rule={l.after !== null} />
+                  </div>
+                ) : view === 'bento' ? (
                   <div class="cell" data-node={l.id}>
                     <StoryCard {...l.story} variant={undefined} shared="shared" />
                   </div>
@@ -227,6 +233,7 @@ const open = (mark: string) => `<!--sealed:card:${mark}-->`;
         </Dialog>
       )
     }
+    {view === 'albums' && (Object.keys(albums).length > 0 || sealed.some((l) => l.band)) && <Lightbox />}
   </main>
   {!frame && <SiteFooter more={footer} />}
 </PageShell>

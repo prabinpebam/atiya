@@ -899,8 +899,10 @@ describe('the real content is three levels, with its navigation and redirects', 
     expect(section).toMatchObject({
       path: '/gallery/',
       label: 'Gallery',
-      node: { id: 'talks', kind: 'hub', slug: 'gallery', title: 'Gallery', summary: 'A visual way to explore my work.', view: 'albums', children: [] },
+      node: { id: 'talks', kind: 'hub', slug: 'gallery', title: 'Gallery', summary: 'A visual way to explore my work.', view: 'albums' },
     });
+    // no open albums yet; the private fixture (tests/fixtures/private-pages) places a private one here
+    expect(c.routes.filter((r) => r.parent === section?.node && r.access === 'open')).toEqual([]);
     expect(c.routes.some((r) => r.path === '/talks/')).toBe(false);
     const nav = siteNav(c.structure, c.routes, section);
     expect(nav).toContainEqual({ label: 'Gallery', href: '/gallery/', current: true });

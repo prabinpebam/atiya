@@ -34,6 +34,31 @@ export function mediaId(src: string, base: string): string | null {
   return /^[\w.-]+$/.test(id) ? id : null;
 }
 
+const LIGHTBOX_PLACES = ['album', 'section', 'article', 'block'];
+const LIGHTBOX_KINDS = ['picture', 'animated', 'drawing', 'video', 'embed'];
+
+/**
+ * `lightbox_opened`'s properties (gallery spec §14), from the lightbox's `site:lightbox` detail: where it opened
+ * (`album`, `section`, `article` or `block`) and the kind of item, never which; null for anything else. A band's
+ * tile (`band`) opens it on a section's page (`index`) or in an article's album block; `page` is an article.
+ */
+export function lightboxProps(detail: unknown, index: boolean): { place: string; kind: string } | null {
+  const d = (detail ?? {}) as { place?: unknown; kind?: unknown };
+  const place = d.place === 'band' ? (index ? 'section' : 'block') : d.place === 'page' ? 'article' : d.place;
+  return typeof place === 'string' && typeof d.kind === 'string' && LIGHTBOX_PLACES.includes(place) && LIGHTBOX_KINDS.includes(d.kind) ? { place, kind: d.kind } : null;
+}
+
+/**
+ * `video_played`'s properties: nothing for a band's tile playing on its own, only the place `lightbox` from the
+ * lightbox's player (gallery spec §14), else an open page's published file's media ID or where it played.
+ */
+export function videoProps(q: { v?: Pick<Element, 'closest'>; src: string; place: string; open: boolean }, base: string): { media: string } | { place: string } | null {
+  if (q.v?.closest('[data-band-motion]')) return null;
+  if (q.v?.closest('[data-lightbox-dialog]')) return { place: 'lightbox' };
+  const id = q.open ? mediaId(q.src, base) : null;
+  return id ? { media: id } : { place: q.place };
+}
+
 /** The neutral title an allowlisted page view carries. */
 export function neutralTitle(access: string | undefined, signIn: boolean): string {
   return access === 'private' ? 'Private page' : signIn ? 'Sign in' : 'Page';
@@ -88,6 +113,7 @@ export const ALLOWLIST: Record<string, readonly string[]> = {
   access_agreed: ['grant'],
   access_link: ['kind', 'domain'],
   video_played: ['place'],
+  lightbox_opened: ['place', 'kind'],
   web_vitals: ['kind', 'lcp', 'lcp_rating', 'inp', 'inp_rating', 'cls', 'cls_rating'],
 };
 

@@ -1,0 +1,20 @@
+{
+  "kind": "video",
+  "file": "reel.mp4",
+  "title": "Fixture album video: the kite reel unwinding",
+  "width": 320,
+  "height": 180,
+  "duration": 2,
+  "poster": {
+    "file": "reel.poster.webp"
+  },
+  "visibility": "public",
+  "captions": [
+    {
+      "file": "reel.en.vtt",
+      "default": true,
+      "label": "English",
+      "srclang": "en"
+    }
+  ]
+}

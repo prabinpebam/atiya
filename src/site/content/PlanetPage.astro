@@ -17,6 +17,7 @@ import { withPhotos } from './recommendationsBand';
 import { albumOf, cardPicture, measureOf, openingOf, relatedOf } from './opening';
 import { withBase } from '../design/meta';
 import { searchCopy } from './limits';
+import { bandsOf } from './bands';
 import type { Place } from './schema';
 import type { PlanetFrame } from '../components/compounds/PlaceBar.astro';
 
@@ -66,6 +67,9 @@ const stories = current
         return { node: r.node.id, href: pageHref(a.id), title: a.title, dek: a.summary, meta: measureOf(a), picture: await cardPicture(a) };
       }),
     );
+// a section in the Albums view shows its album pages as bands here too, each opening in this building (gallery spec §13)
+const albums =
+  !current && sectionNode?.view === 'albums' ? await bandsOf(pages.map(({ article: a, route: r }) => ({ node: r.node.id, page: a.id, href: pageHref(a.id), site: withBase(r.path) }))) : undefined;
 // the section's recommendations, in the same place as on the site (recommendations.md §3)
 const recommendations = !current && sectionNode ? await withPhotos(recommendationBand(sectionNode.recommendations, getRecommendations(), stories.map((s) => s.node))) : undefined;
 ---
@@ -81,8 +85,9 @@ const recommendations = !current && sectionNode ? await withPhotos(recommendatio
       description={sectionNode?.summary ?? place.summary}
       heading={place.title}
       standfirst={sectionNode?.summary ?? place.summary}
-      stories={stories}
+      stories={albums ? stories.filter((s) => !albums.hidden.has(s.node)) : stories}
       view={sectionNode?.view}
+      albums={albums?.bands}
       invited={invited}
       signIn={invited ? signIn : undefined}
       ask={invited && contactPath ? withBase(contactPath) : undefined}

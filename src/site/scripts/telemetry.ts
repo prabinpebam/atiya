@@ -2,7 +2,7 @@
  * Telemetry (documentation/access/spec.md §9): PostHog, only in a production build given a project key,
  * never in dev or edit mode, and not at all where the visitor opted out (Global Privacy Control, Do Not
  * Track, or `?telemetry=off` on this device). This part runs on every page and stays small: it hears the
- * sign-in runtime's `site:access` events, links followed on allowlisted pages and videos played, and queues
+ * sign-in runtime's `site:access` events, links followed on allowlisted pages, videos played and the lightbox opened, and queues
  * them; PostHog, the rules for what it may send and the field data (scripts/telemetryClient.ts) are fetched on idle. A test
  * build sends to a fake host, and only when a test asks (`localStorage['site.test.telemetry']`). A person's other counting
  * tools (desktop spec §9.5: GoatCounter, Umami, Google Analytics, Clarity) are fetched on idle the same way, from
@@ -114,10 +114,12 @@ function startPostHog(after: Promise<unknown> | undefined) {
   d.addEventListener(
     'play',
     (e) => {
-      if (e.target instanceof HTMLVideoElement) push({ kind: 'video', src: e.target.currentSrc, place: location.pathname.slice(base.length), open: pageFacts().mode === 'open' });
+      if (e.target instanceof HTMLVideoElement) push({ kind: 'video', v: e.target, src: e.target.currentSrc, place: location.pathname.slice(base.length), open: pageFacts().mode === 'open' });
     },
     true,
   );
+  // the lightbox's `site:lightbox` (a capture on window hears it sent to the document too); the client keeps only its place and kind
+  window.addEventListener('site:lightbox', (e) => push({ kind: 'lightbox', detail: (e as CustomEvent).detail }), true);
   d.addEventListener('astro:after-swap', () => {
     shared = false;
     push({ kind: 'pageview' });

@@ -40,6 +40,8 @@ export interface BandTile {
   length?: string;
   /** For the lightbox (G4): the item's full-size file, its dark version, its caption and its alt text. */
   full?: { src: string; dark?: string; thumb?: string; thumbDark?: string; caption?: string; alt?: string };
+  /** The item's place in the album (0-based), so the lightbox's counter reads "7 of 21" before the album arrives. */
+  index?: number;
 }
 
 /** What can sit in a tile. */

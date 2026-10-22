@@ -94,6 +94,8 @@
     "user": "user",
     "video": "video",
     "views": "table-cells-large",
-    "work": "briefcase"
+    "work": "briefcase",
+    "zoom-in": "magnifying-glass-plus",
+    "zoom-out": "magnifying-glass-minus"
   }
 }

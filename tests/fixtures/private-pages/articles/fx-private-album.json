@@ -1,0 +1,61 @@
+{
+  "id": "fx-private-album",
+  "type": "article",
+  "kind": "gallery",
+  "slug": "fx-private-album",
+  "title": "Fixture private album: kites over the tidewater flats",
+  "summary": "Fixture summary: three windy afternoons of kites on the tidewater flats.",
+  "status": "published",
+  "visibility": "public",
+  "publishedAt": "2026-10-06",
+  "updatedAt": "2026-10-06",
+  "locale": "en",
+  "body": [],
+  "album": {
+    "description": "Fixture album introduction: the kites went up before the tide came back across the flats.",
+    "items": [
+      {
+        "id": "kite",
+        "media": "articles/fx-private-album/kite",
+        "place": "Fixture place: the tidewater flats"
+      },
+      {
+        "id": "reel",
+        "media": "articles/fx-private-album/reel",
+        "loop": true
+      },
+      {
+        "id": "shore",
+        "media": "articles/fx-private-album/shore",
+        "caption": "Fixture album caption: lines drying after the last launch."
+      }
+    ],
+    "showcase": {
+      "tiles": [
+        {
+          "item": "kite",
+          "x": 0,
+          "y": 0,
+          "w": 8,
+          "h": 4
+        },
+        {
+          "item": "reel",
+          "x": 8,
+          "y": 0,
+          "w": 4,
+          "h": 2,
+          "play": true
+        },
+        {
+          "item": "shore",
+          "x": 8,
+          "y": 2,
+          "w": 4,
+          "h": 2
+        }
+      ]
+    },
+    "download": true
+  }
+}

@@ -6,7 +6,7 @@
 import { describe, expect, it } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { optOut } from '../../src/site/scripts/telemetryRules';
-import { ALLOWLIST, linkKind, maskTokens, mediaId, neutralTitle, sanitize as sanitizeAt, type CaptureEvent } from '../../src/site/scripts/telemetrySanitize';
+import { ALLOWLIST, lightboxProps, linkKind, maskTokens, mediaId, neutralTitle, sanitize as sanitizeAt, videoProps, type CaptureEvent } from '../../src/site/scripts/telemetrySanitize';
 import { addInteraction, clsOf, inpOf, lcpOf, pageKind, rating, rounded, VITALS_PROPS, vitalsProps } from '../../src/site/scripts/webVitals';
 import type { PageFacts } from '../../src/site/scripts/telemetryRules';
 
@@ -177,8 +177,29 @@ describe('before_send', () => {
   });
 
   it('the allowlist is the spec\'s', () => {
-    expect(Object.keys(ALLOWLIST).sort()).toEqual(['$identify', '$pageview', 'access_agreed', 'access_failed', 'access_link', 'access_opened', 'access_signed_in', 'access_signed_out', 'video_played', 'web_vitals'].sort());
+    expect(Object.keys(ALLOWLIST).sort()).toEqual(['$identify', '$pageview', 'access_agreed', 'access_failed', 'access_link', 'access_opened', 'access_signed_in', 'access_signed_out', 'lightbox_opened', 'video_played', 'web_vitals'].sort());
     expect(ALLOWLIST.web_vitals).toEqual([...VITALS_PROPS]);
+    expect(ALLOWLIST.lightbox_opened).toEqual(['place', 'kind']);
+  });
+
+  it("lightbox_opened says where and what kind, never which (gallery spec §14)", () => {
+    expect(lightboxProps({ place: 'album', kind: 'video', id: 'reel', title: 'Secret' }, false)).toEqual({ place: 'album', kind: 'video' });
+    expect(lightboxProps({ place: 'band', kind: 'picture' }, true)).toEqual({ place: 'section', kind: 'picture' });
+    expect(lightboxProps({ place: 'band', kind: 'animated' }, false)).toEqual({ place: 'block', kind: 'animated' });
+    expect(lightboxProps({ place: 'page', kind: 'drawing' }, false)).toEqual({ place: 'article', kind: 'drawing' });
+    for (const place of ['section', 'article', 'block']) expect(lightboxProps({ place, kind: 'embed' }, false)).toEqual({ place, kind: 'embed' });
+    for (const d of [undefined, null, {}, { place: 'album' }, { place: '/gallery/fx-private-album/', kind: 'picture' }, { place: 'album', kind: 'fixture-album' }, { place: 1, kind: 'picture' }]) expect(lightboxProps(d, true)).toBeNull();
+    const e = sanitize({ event: 'lightbox_opened', properties: { ...device, place: 'album', kind: 'picture', item: 'p01', album: 'Secret' } }, locked)!;
+    expect(e.properties).toEqual({ ...device, place: 'album', kind: 'picture' });
+  });
+
+  it("video_played: nothing for a band's tile playing on its own, only the place from the lightbox", () => {
+    const at = (sel: string | null) => ({ closest: (s: string) => (s === sel ? ({} as Element) : null) });
+    const q = { src: '/atiya/media/clip.mp4', place: '/gallery/fixture-album/', open: true };
+    expect(videoProps({ ...q, v: at('[data-band-motion]') }, '/atiya')).toBeNull();
+    expect(videoProps({ ...q, v: at('[data-lightbox-dialog]') }, '/atiya')).toEqual({ place: 'lightbox' });
+    expect(videoProps({ ...q, v: at(null) }, '/atiya')).toEqual({ media: 'clip' });
+    expect(videoProps({ ...q, open: false }, '/atiya')).toEqual({ place: '/gallery/fixture-album/' });
   });
 
   for (const [name, page] of [

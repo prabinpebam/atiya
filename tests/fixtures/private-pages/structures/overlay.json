@@ -70,6 +70,19 @@
           }
         }
       ]
+    },
+    {
+      "section": "talks",
+      "pages": [
+        {
+          "id": "fx-private-album",
+          "token": "albumeee66",
+          "item": {
+            "type": "article",
+            "id": "fx-private-album"
+          }
+        }
+      ]
     }
   ]
 }

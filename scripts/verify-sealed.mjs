@@ -128,10 +128,22 @@ export function protectedTerms(privateRoot) {
       for (const k of ['caption', 'credit', 'title']) add('a caption', b[k], 6);
       for (const i of b.items ?? []) for (const k of ['caption', 'alt']) add('a caption', i[k], 6);
     }
+    // a private album's words: its introduction, and each item's own caption, title, place, credit and description (gallery spec §12)
+    if (a.album) {
+      if (a.album.description) runs('a sentence', a.album.description);
+      for (const i of a.album.items ?? []) {
+        for (const k of ['caption', 'title', 'place', 'credit']) add('a caption', i[k], 6);
+        if (i.description) runs('a sentence', i.description);
+      }
+    }
   }
   for (const f of walk(join(privateRoot, 'media')).filter((p) => p.endsWith('.json'))) {
     const m = json(f);
     for (const k of ['alt', 'caption', 'credit', 'title']) add('an alt text or caption', m[k], 6);
+  }
+  // a private video's caption tracks: each cue's lines (not the header, a cue's number or its timing)
+  for (const f of walk(join(privateRoot, 'media')).filter((p) => p.endsWith('.vtt'))) {
+    for (const l of readFileSync(f, 'utf8').split(/\r?\n/)) if (l.trim() && !/^WEBVTT|-->|^\d+$|^(NOTE|STYLE|REGION)\b/.test(l.trim())) add('an alt text or caption', l, 6);
   }
   const overlayFile = join(privateRoot, 'structures', 'overlay.json');
   if (existsSync(overlayFile)) {
@@ -246,9 +258,13 @@ export function verifySealed({ dist, summary = readJson(SUMMARY), provenance = r
   }
 
   // 2. structure
+  // a private file's address anywhere a page can be read (a link's data-full, a band's data-src, a srcset, a download):
+  // the sealer swaps every one in a sealed region for its sealed copy, so one left is outside a seal (gallery spec §12)
+  const privateUrls = [...new Set(provenance.filter((e) => e.kind === 'asset' && !publicUrls.has(String(e.url))).map((e) => String(e.url)))];
   for (const f of html) {
     const text = readFileSync(f, 'utf8');
     const route = '/' + rel(f).replace(/index\.html$/, '');
+    if (privateUrls.some((u) => text.includes(u))) report("an address of a private page's file is readable", rel(f));
     if (text.includes('<!--sealed:') || text.includes('<!--/sealed:')) report('a seal marker was left', rel(f));
     if (text.includes('data-page-title')) report("a protected page's title holder is readable", rel(f));
     const build = /<meta name="site-build" content="([^"]+)">/.exec(text)?.[1];

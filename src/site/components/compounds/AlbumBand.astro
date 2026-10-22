@@ -28,6 +28,8 @@ interface Props {
   title: string;
   /** The album page's address. */
   href: string;
+  /** The album page's address on the site, when `href` is another (a building's on the planet): the lightbox's Copy link gives it. */
+  site?: string;
   /** What it holds, in words ("17 pictures, 3 videos, 1 drawing"). */
   counts: string;
   /** When its pictures were taken ("June to August 2024"). */
@@ -46,7 +48,7 @@ interface Props {
   headingLevel?: 2 | 3 | 4 | 5;
 }
 
-const { id, title, href, counts, dates, summary, tiles, total, priority = false, rule = false, headingLevel = 2 } = Astro.props;
+const { id, title, href, site, counts, dates, summary, tiles, total, priority = false, rule = false, headingLevel = 2 } = Astro.props;
 const headId = `album-band-${stableId(Astro, 'AlbumBand')}`;
 const plays = tiles.some((t) => t.motion);
 const more = seeAll(total, tiles.length, title);
@@ -66,7 +68,7 @@ const bgOf = (t: BandTile) => {
     </div>
   )
 }
-<article class="album-band" aria-labelledby={headId} data-album-band data-album-id={id} data-plays={plays ? '' : undefined}>
+<article class="album-band" aria-labelledby={headId} data-album-band data-album-id={id} data-album-site={site ?? href} data-plays={plays ? '' : undefined}>
   <header class="head">
     <Heading level={headingLevel} size="h2" id={headId}><a class="title" href={href}>{title}</a></Heading>
     <div class="facts" data-band-counts>

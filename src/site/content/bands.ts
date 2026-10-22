@@ -15,6 +15,8 @@ export interface Band {
   id: string;
   title: string;
   href: string;
+  /** The album page's address on the site (its href may be a building's on the planet): what Copy link gives. */
+  site: string;
   counts: string;
   dates?: string;
   summary?: string;
@@ -37,10 +39,10 @@ const stillOf = (pic: Picture, animated: boolean): BandTile['still'] => ({
 });
 
 /**
- * The band of the album page `pageId` (its address `href`), or undefined when it isn't an album or holds
- * nothing it can show.
+ * The band of the album page `pageId` (its address `href`, and on the site `site`), or undefined when it isn't an
+ * album or holds nothing it can show.
  */
-export async function bandOf(pageId: string, href: string): Promise<Band | undefined> {
+export async function bandOf(pageId: string, href: string, site = href): Promise<Band | undefined> {
   const article = getArticle(pageId);
   const resolved = getAlbum(pageId);
   if (!article || !resolved) return undefined;
@@ -71,6 +73,7 @@ export async function bandOf(pageId: string, href: string): Promise<Band | undef
       const p = phone.get(t.item);
       const base = {
         id: r.item.id,
+        index: shown.indexOf(r),
         kind,
         href: `${href}#item-${r.item.id}`,
         place: { x: t.x, y: t.y, w: t.w, h: t.h },
@@ -115,6 +118,7 @@ export async function bandOf(pageId: string, href: string): Promise<Band | undef
     id: pageId,
     title: article.title,
     href,
+    site,
     counts: countWords(albumCounts(album.items, lookup)),
     dates: dateSpan(albumDates(album, lookup)),
     summary: article.summary,
@@ -127,12 +131,12 @@ export async function bandOf(pageId: string, href: string): Promise<Band | undef
  * A section's bands for its Albums view, by node (§5), from its pages' routes and their addresses: and the
  * album pages with nothing to show, which are drafts and never shown.
  */
-export async function bandsOf(pages: readonly { node: string; page: string; href: string }[]): Promise<{ bands: Record<string, Band>; hidden: Set<string> }> {
+export async function bandsOf(pages: readonly { node: string; page: string; href: string; site?: string }[]): Promise<{ bands: Record<string, Band>; hidden: Set<string> }> {
   const bands: Record<string, Band> = {};
   const hidden = new Set<string>();
   for (const p of pages) {
     if (!getArticle(p.page)?.album) continue;
-    const band = await bandOf(p.page, p.href);
+    const band = await bandOf(p.page, p.href, p.site);
     if (band) bands[p.node] = band;
     else hidden.add(p.node);
   }

@@ -68,7 +68,7 @@ describe('the access model', () => {
     expect(privateNode(overlay, 'fx-private-one')).toMatchObject({ section: 'writing', node: { token: 'privone222' } });
     expect(privateNode(overlay, 'khonjel')).toBeUndefined();
     const off = unplacePrivate(overlay, 'fx-private-delta');
-    expect(off.sections.map((s) => s.section)).toEqual(['side-projects', 'writing']);
+    expect(off.sections.map((s) => s.section)).toEqual(['side-projects', 'writing', 'talks']);
     const back = placePrivate(off, 'work', { id: 'fx-private-delta', token: 'deltaddd55', item: { type: 'article', id: 'fx-private-delta' } }, ['fx-private-delta']);
     expect(back.sections.find((s) => s.section === 'work')?.pages.map((p) => p.id)).toEqual(['fx-private-delta']);
   });

@@ -19,12 +19,48 @@ const pictures = SAMPLES.slice(0, 4);
   </div>
 </Example>
 
+<Example title="An album" layout="block" description="An album page's cells (data-lightbox='album'): the lightbox names the album, gives each item its address (#item-…), and offers the info panel (Info or I), Copy link and, where it's allowed, Download.">
+  <ul class="story-grid story-album">
+    {
+      pictures.map((item, i) => (
+        <li id={`item-story-${i + 1}`} data-width={item.width} data-height={item.height}>
+          <a
+            class="story-link"
+            href={item.full}
+            data-lightbox="album"
+            data-kind="picture"
+            data-item-id={`story-${i + 1}`}
+            data-album-title="Sample album"
+            data-caption={item.caption}
+            data-thumb={item.thumb}
+            data-alt={item.alt}
+            data-download={i === 0 ? item.full : undefined}
+          >
+            <Image src={item.src} srcset={item.srcset} alt={item.alt} width={item.width} height={item.height} ratio="4/3" />
+          </a>
+          <template data-album-words>
+            <p data-words="caption">{item.caption}</p>
+            {i === 0 && <div data-words="description"><p>A longer description, read in the info panel beside the picture.</p></div>}
+            {i === 0 && <p data-words="credit">Sample credit</p>}
+          </template>
+        </li>
+      ))
+    }
+  </ul>
+</Example>
+
 <Lightbox />
 
 <style>
   .story-grid {
     display: grid;
     gap: var(--space-3);
+  }
+
+  .story-album {
+    margin: 0;
+    padding: 0;
+    list-style: none;
   }
 
   .story-link {

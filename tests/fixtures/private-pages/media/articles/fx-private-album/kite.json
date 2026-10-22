@@ -1,0 +1,10 @@
+{
+  "kind": "image",
+  "file": "kite.webp",
+  "alt": "Fixture album picture: a red box kite climbing over wet sand.",
+  "caption": "Fixture album caption: the red box kite on its first climb.",
+  "visibility": "public",
+  "dark": {
+    "file": "kite.dark.webp"
+  }
+}

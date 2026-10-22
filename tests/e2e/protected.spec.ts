@@ -5,7 +5,7 @@
  * magic link; a magic link opens its page, lists it in its section and leaves no secret behind; pictures, the lightbox and videos work once open; sign-out
  * leaves nothing in any tab; every failure has its message; and it's accessible and fast enough.
  */
-import { expect, test, type Page, type Response } from '@playwright/test';
+import { expect, test, type Locator, type Page, type Response } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
@@ -21,7 +21,7 @@ const ALL = code('gfixall22');
 const ONE = code('gfixone22');
 const LINK = `/writing/privone222/#a=gfixlink2.${grants.find((g) => g.id === 'gfixlink2')!.secret.key}`;
 const title = (id: string) => (JSON.parse(readFileSync(join(FIX, 'articles', `${id}.json`), 'utf8')) as { title: string }).title;
-const TITLES = ['fx-private-alpha', 'fx-private-beta', 'fx-private-gamma', 'fx-private-delta', 'fx-private-one', 'fx-private-two'].map((id) => [id, title(id)] as const);
+const TITLES = ['fx-private-alpha', 'fx-private-beta', 'fx-private-gamma', 'fx-private-delta', 'fx-private-one', 'fx-private-two', 'fx-private-album'].map((id) => [id, title(id)] as const);
 const SECTION = '/side-projects/';
 const ALPHA = '/side-projects/alphaaaaa2/';
 const BETA = '/side-projects/betabbbbb3/';
@@ -330,7 +330,7 @@ test.describe('protected content', () => {
     await expect(done.locator('[data-unlock-until]')).toHaveText('You’re signed in until you close this tab.');
     await expect(page.locator('[data-unlock-form]')).toBeHidden();
     // the sections where shared work is listed (the open sections holding private pages)
-    await expect(done.getByRole('navigation', { name: 'Where shared work is listed' }).getByRole('link')).toHaveText(['Work', 'Writing', 'Side projects']);
+    await expect(done.getByRole('navigation', { name: 'Where shared work is listed' }).getByRole('link')).toHaveText(['Work', 'Writing', 'Gallery', 'Side projects']);
     expect(await titlesIn(page)).toEqual([]);
     // coming back: signed in from the first paint, no form flashing
     await page.reload();
@@ -390,6 +390,7 @@ const ALLOWED: Record<string, string[]> = {
   access_agreed: ['grant'],
   access_link: ['kind', 'domain'],
   video_played: ['place'],
+  lightbox_opened: ['place', 'kind'],
   web_vitals: ['kind', 'lcp', 'lcp_rating', 'inp', 'inp_rating', 'cls', 'cls_rating'],
 };
 
@@ -541,6 +542,203 @@ test.describe('protected content: telemetry (QB6)', () => {
       expect(t.raw).toEqual([]);
     });
   }
+});
+
+/**
+ * A private album (documentation/gallery/spec.md §12; plan DoD 24, 26): the made-up fx-private-album, in the
+ * Gallery section (the made-up public album's section in the test build), shared with gfixall22 and not with
+ * gfixone22. Its band is sealed in its place in the Albums view and opened there; its page is sealed; every file
+ * a tile, a cell or the lightbox reads (pictures, the playing tile's video, its captions, downloads) is a
+ * decrypted blob. The build's leak check (verify-sealed.mjs, run by the test server) has passed before any of this.
+ */
+const GALLERY = '/gallery/';
+const TOKEN = 'albumeee66';
+const ALBUM = `/gallery/${TOKEN}/`;
+/** The lightbox's info panel, where Download lives, opened (it stays as the reader left it). */
+async function openInfo(dialog: Locator) {
+  const info = dialog.locator('[data-lightbox-info]');
+  if ((await info.getAttribute('aria-pressed')) !== 'true') await info.click();
+  await expect(info).toHaveAttribute('aria-pressed', 'true');
+}
+type FixtureAlbum = { title: string; summary: string; album: { description: string; items: { id: string; caption?: string; place?: string }[] } };
+const fixtureAlbum = JSON.parse(readFileSync(join(FIX, 'articles', 'fx-private-album.json'), 'utf8')) as FixtureAlbum;
+/** Every word of the private album only it holds: its title, summary and introduction, its items' captions and places, and its caption track. */
+const ALBUM_WORDS = [
+  fixtureAlbum.title,
+  fixtureAlbum.summary,
+  fixtureAlbum.album.description,
+  ...fixtureAlbum.album.items.flatMap((i) => [i.caption, i.place].filter((w): w is string => !!w)),
+  'the reel unwinds in the wind',
+];
+/** What would name the album or one of its items: its page's ID, its token, its files' folder, its items' anchors. */
+const ALBUM_NAMES = ['fx-private-album', 'albumeee66', ...fixtureAlbum.album.items.map((i) => `item-${i.id}`)];
+const privateBand = (page: Page) => page.locator('[data-cards] > [data-node="fx-private-album"][data-shared] [data-album-band]');
+
+test.describe('protected content: a private album', () => {
+  test.beforeEach(({ page }) => preAgree(page));
+
+  test('signed out or uncovered: its band stays sealed in the Albums view, its page is gated, and nothing of it is readable', async ({ page }) => {
+    const bodies: string[] = [];
+    page.on('response', async (r: Response) => {
+      if (/text|json|javascript/.test(r.headers()['content-type'] ?? '')) bodies.push(await r.text().catch(() => ''));
+    });
+    await page.goto(GALLERY);
+    // the open album shows as a band; the private one is a sealed card, with the section's sign-in line
+    await expect(page.locator('[data-cards] [data-album-band][data-album-id="fixture-album"]')).toBeVisible();
+    await expect(page.locator('[data-sealed-cards] template[data-sealed="card"]')).toHaveCount(1);
+    await expect(page.locator('[data-sign-in-line]')).toBeVisible();
+    expect(await cards(page)).not.toContain('fx-private-album');
+    await expect(page.locator('[data-shared]')).toHaveCount(0);
+    // its page: the gate, never its title
+    await page.goto(ALBUM);
+    await expect(page.locator('[data-access-gate]')).toBeVisible();
+    await expect(page.locator('[data-album-cell]')).toHaveCount(0);
+    expect(await titlesIn(page)).toEqual([]);
+    // a code that doesn't cover it: the section lists nothing more, and the page says it isn't shared
+    await page.goto(`/sign-in/?return=${encodeURIComponent(GALLERY)}`);
+    await signIn(page, ONE);
+    await page.waitForURL(`**${GALLERY}`);
+    await expect(page.locator('[data-sign-in-line]')).toContainText("Your access doesn't include it.");
+    await expect(page.locator('[data-shared]')).toHaveCount(0);
+    expect(await cards(page)).not.toContain('fx-private-album');
+    await page.goto(ALBUM);
+    await expect(page.locator('[data-access-gate] [data-unlock-status]')).toHaveText("This page isn't shared with your access. Get in touch if you'd like to see it.");
+    await expect(page.locator('[data-album-cell]')).toHaveCount(0);
+    expect(await titlesIn(page)).toEqual([]);
+    // nothing of it in any response: no word, no ID, no file's folder (the section's page carries no token either)
+    const all = bodies.join('\n');
+    for (const words of ALBUM_WORDS) expect(all.includes(words), words).toBe(false);
+    expect(all).not.toContain('fx-private-album');
+    expect(all).not.toContain('/media/articles/fx-private-album');
+    const section = await (await page.request.get(GALLERY)).text();
+    expect(section).not.toContain('albumeee66');
+  });
+
+  test('a covered reader: the band opens in its place with its pictures, its playing tile and the lightbox; the page opens with every item, its video and downloads', async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 900 });
+    await page.goto(`/sign-in/?return=${encodeURIComponent(GALLERY)}`);
+    await signIn(page, ALL);
+    await page.waitForURL(`**${GALLERY}`);
+    // the band, decrypted in its card's place: after the open album, in the section's order
+    const band = privateBand(page);
+    await expect(band).toBeVisible();
+    await expect(band.getByRole('heading', { name: fixtureAlbum.title })).toBeVisible();
+    const order = await cards(page);
+    expect(order.indexOf('fx-private-album')).toBeGreaterThan(order.indexOf('fixture-album'));
+    await expect(page.locator('[data-sign-in-line]')).toBeHidden();
+    expect(await titlesIn(page)).toEqual(['fx-private-album']);
+    // its tiles' pictures: decrypted to blobs, and drawn
+    await band.scrollIntoViewIfNeeded();
+    const still = band.locator('[data-tile][data-item-id="kite"] img').first();
+    await expect(still).toHaveAttribute('src', /^blob:/);
+    await expect.poll(() => still.evaluate((i: HTMLImageElement) => i.naturalWidth)).toBeGreaterThan(0);
+    // the tile that plays: its file decrypted before the band sets it up, so it loads a blob, never the sealed file
+    await expect(band).toHaveAttribute('data-plays', '');
+    const reel = band.locator('[data-tile][data-item-id="reel"]');
+    await expect(reel).toHaveAttribute('data-play', '');
+    await expect(reel.locator('video[data-band-motion]')).toHaveAttribute('data-src', /^blob:/);
+    await expect(reel.locator('video[data-band-motion]')).toHaveAttribute('src', /^blob:/, { timeout: 15_000 });
+    // a tile opens the lightbox, its picture a blob
+    await band.locator('a[data-lightbox="band"][data-item-id="kite"]').click();
+    const dialog = page.locator('[data-lightbox-dialog]');
+    await expect(dialog).toBeVisible();
+    await expect(dialog.locator('[data-lightbox-image]')).toHaveAttribute('src', /^blob:/);
+    await expect.poll(() => dialog.locator('[data-lightbox-image]').evaluate((i: HTMLImageElement) => i.naturalWidth)).toBeGreaterThan(0);
+    await page.keyboard.press('Escape');
+    await expect(dialog).toBeHidden();
+
+    // the album page: opened in place, every item in order, each picture a blob
+    await page.goto(ALBUM);
+    await expect(page.locator('h1')).toHaveText(fixtureAlbum.title);
+    await expect(page.locator('[data-access-gate]')).toBeHidden();
+    await expect(page.locator('li[data-album-cell]')).toHaveCount(3);
+    expect(await page.locator('li[data-album-cell]').evaluateAll((l) => l.map((e) => e.id))).toEqual(['item-kite', 'item-reel', 'item-shore']);
+    const first = page.locator('li#item-kite[data-album-cell] img').first();
+    await expect(first).toHaveAttribute('src', /^blob:/);
+    await expect.poll(() => first.evaluate((i: HTMLImageElement) => i.naturalWidth)).toBeGreaterThan(0);
+    expect(await titlesIn(page)).toEqual(['fx-private-album']);
+    // a picture in the lightbox, with its download: a decrypted file, named for the album and the item
+    await page.locator('li#item-kite a[data-lightbox="album"]').click();
+    await expect(dialog).toBeVisible();
+    await expect(dialog.locator('[data-lightbox-image]')).toHaveAttribute('src', /^blob:/);
+    await openInfo(dialog);
+    const download = dialog.locator('[data-lightbox-download]');
+    await expect(download).toBeVisible();
+    await expect(download).toHaveAttribute('href', /^blob:/);
+    const [file] = await Promise.all([page.waitForEvent('download'), download.click()]);
+    expect(file.suggestedFilename()).toMatch(/kite/);
+    // named for the album's title, never its address: no part of the private token
+    for (const part of [TOKEN, TOKEN.slice(0, 8), TOKEN.slice(-5)]) expect(file.suggestedFilename()).not.toContain(part);
+    await page.keyboard.press('Escape');
+    await expect(dialog).toBeHidden();
+    // the video in the lightbox: its file and its caption track decrypted
+    await page.locator('li#item-reel a[data-lightbox="album"]').click();
+    await expect(dialog).toBeVisible();
+    const video = dialog.locator('[data-lightbox-player] video');
+    await expect(video.locator('source')).toHaveAttribute('src', /^blob:/);
+    await expect(video.locator('track')).toHaveAttribute('src', /^blob:/);
+    // nothing on the page still points at a sealed file once the lightbox has opened its group
+    const sealed = await page.locator('a[data-lightbox="album"]').evaluateAll((l) => l.filter((a) => [...a.attributes].some((x) => x.value.includes('/_sealed/'))).length);
+    expect(sealed).toBe(0);
+  });
+
+  test('telemetry: the lightbox says where it opened and what kind, never which; nothing for a band playing or a download; no ID, title or token leaves', async ({ page }) => {
+    const t = await capture(page);
+    await page.setViewportSize({ width: 1280, height: 900 });
+    await page.goto(`/sign-in/?return=${encodeURIComponent(GALLERY)}`);
+    await signIn(page, ALL);
+    await page.waitForURL(`**${GALLERY}`);
+    const band = privateBand(page);
+    await expect(band).toBeVisible();
+    await expect.poll(() => t.sent.find((e) => e.event === 'access_opened')?.properties, { timeout: 15_000 }).toMatchObject({ grant: 'gfixall22', place: GALLERY, cards: 1 });
+    // the band's tile that plays, in view for a while: no event
+    await band.scrollIntoViewIfNeeded();
+    await page.waitForTimeout(2000);
+    // a band's tile in the lightbox: the section, a picture
+    await band.locator('a[data-lightbox="band"][data-item-id="kite"]').click();
+    const dialog = page.locator('[data-lightbox-dialog]');
+    await expect(dialog).toBeVisible();
+    await expect.poll(() => t.sent.find((e) => e.event === 'lightbox_opened')?.properties, { timeout: 15_000 }).toMatchObject({ place: 'section', kind: 'picture' });
+    await page.keyboard.press('Escape');
+    // the album page: a picture and its download, then the video
+    await page.goto(ALBUM);
+    await expect(page.locator('h1')).toHaveText(fixtureAlbum.title);
+    await page.locator('li#item-kite a[data-lightbox="album"]').click();
+    await expect(dialog).toBeVisible();
+    await expect.poll(() => t.sent.some((e) => e.event === 'lightbox_opened' && e.properties.place === 'album' && e.properties.kind === 'picture'), { timeout: 15_000 }).toBe(true);
+    await openInfo(dialog);
+    const download = dialog.locator('[data-lightbox-download]');
+    await expect(download).toBeVisible();
+    await expect(download).toHaveAttribute('href', /^blob:/);
+    await Promise.all([page.waitForEvent('download'), download.click()]);
+    await page.keyboard.press('Escape');
+    await expect(dialog).toBeHidden();
+    await page.locator('li#item-reel a[data-lightbox="album"]').click();
+    await expect(dialog).toBeVisible();
+    await expect.poll(() => t.sent.some((e) => e.event === 'lightbox_opened' && e.properties.place === 'album' && e.properties.kind === 'video'), { timeout: 15_000 }).toBe(true);
+    await page.waitForTimeout(1500);
+
+    // the lightbox's events carry their place and kind only; a video that played says only that it played in the lightbox
+    for (const e of t.sent.filter((x) => x.event === 'lightbox_opened')) {
+      const own = Object.keys(e.properties).filter((k) => !k.startsWith('$') && !['token', 'distinct_id'].includes(k));
+      expect(own.sort()).toEqual(['kind', 'place']);
+    }
+    for (const e of t.sent.filter((x) => x.event === 'video_played')) expect(e.properties.place).toBe('lightbox');
+    // nothing for downloading, zooming or a band's tile playing: only the events the allowlist names
+    for (const e of t.sent) expect(Object.keys(ALLOWED), e.event).toContain(e.event);
+    // the private album's page is its section's, then private
+    expect(t.sent.some((e) => e.event === '$pageview' && e.at === '/gallery/private/' && e.properties.$title === 'Private page')).toBe(true);
+    // pages showing shared cards and the private page sent only the allowlist
+    for (const e of t.sent.filter((x) => x.at === GALLERY || x.at === '/gallery/private/' || x.at === '/sign-in/')) {
+      const own = Object.keys(e.properties).filter((k) => !k.startsWith('$') && !['token', 'distinct_id'].includes(k));
+      expect(own.filter((k) => !ALLOWED[e.event].includes(k)), e.event).toEqual([]);
+    }
+    // nothing that names the album or an item, and none of its words, in any request
+    const all = `${t.raw.join('\n')}\n${JSON.stringify(t.sent)}`;
+    for (const words of ALBUM_WORDS) expect(all.includes(words), words).toBe(false);
+    for (const name of ALBUM_NAMES) expect(all, name).not.toContain(name);
+    for (const id of fixtureAlbum.album.items.map((i) => i.id)) expect(all, id).not.toMatch(new RegExp(`["/=#]${id}["/&.]`));
+  });
 });
 
 /** The contact service, faked: every agreement it's sent, answered as asked (CORS as the platform's). */

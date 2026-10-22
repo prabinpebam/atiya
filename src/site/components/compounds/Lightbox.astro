@@ -1,20 +1,32 @@
 ---
 /**
- * The page’s one image lightbox: a native modal dialog with a smoke scrim (paper-white in light mode,
- * black in dark), previous and next controls, a live counter, captions and a filmstrip. Figures,
- * galleries and carousels only provide links (`a[data-lightbox]`); its script is `scripts/lightbox.ts`,
- * with its rules pure in `lightboxRules.ts` and `zoomRules.ts`.
+ * The page’s one lightbox: a native modal dialog with a smoke scrim (paper-white in light mode, black in
+ * dark), previous and next controls, a live counter, captions and a filmstrip. Figures, galleries,
+ * carousels, album pages and bands only provide links (`a[data-lightbox]`). For an album it also shows the
+ * album's title, every kind of item on the stage (a picture, an animated picture with Pause, a drawing, a
+ * video file with its captions, an embed after Play), the info panel (Info, I), Copy link, Download where
+ * it's allowed, and zoom where there's more to see. Its script (`scripts/lightbox.ts` and its parts, loaded
+ * when a link is first pointed at, focused or pressed) keeps its rules pure in `lightboxRules.ts` and
+ * `zoomRules.ts`.
  * @tier compound
  * @a11y Uses <dialog>.showModal(), so focus is trapped, the page behind is inert and Escape closes it.
  * @a11y The opener keeps focus history; closing returns focus to the thumbnail that opened it.
  * @a11y Opening adds a history entry (the item's address on an album page), so Back closes it; none in the planet's frame.
  * @a11y The counter is announced politely; the filmstrip is one Tab stop (a roving tab index) of named buttons.
- * @key Left / Right: previous / next image (in the filmstrip, the focus follows)
- * @key Home / End: first / last image
- * @key Escape or Back: closes the lightbox
+ * @a11y Zoom has buttons beside every gesture, and its level is announced; Copy link says it copied, or shows the address selected.
+ * @key Left / Right: previous / next item (in the filmstrip, the focus follows); pans while zoomed
+ * @key Home / End: first / last item
+ * @key I: opens or closes the info panel (an album)
+ * @key + / − / 0: zooms in, out, back to the whole item (where zoom is offered); Up / Down pan while zoomed
+ * @key Escape or Back: back to the whole item first if zoomed, then closes the lightbox
  */
 import IconButton from '../fundamentals/IconButton.astro';
+import Button from '../fundamentals/Button.astro';
 import Caption from '../fundamentals/Caption.astro';
+import Icon from '../fundamentals/Icon.astro';
+import Link from '../fundamentals/Link.astro';
+import Prose from '../fundamentals/Prose.astro';
+import TextField from '../fundamentals/TextField.astro';
 
 interface Props {
   /** A page-unique id for the dialog. */
@@ -26,23 +38,65 @@ const { id = 'site-lightbox' } = Astro.props;
 
 <dialog class="lightbox" id={id} aria-label="Image viewer" data-lightbox-dialog>
   <div class="smoke" aria-hidden="true"></div>
-  <div class="shell">
+  <div class="shell" data-lightbox-shell>
     <div class="topbar">
-      <p class="counter" aria-live="polite" aria-atomic="true" data-lightbox-counter>1 of 1</p>
-      <IconButton label="Close" icon="close" variant="secondary" tooltip="none" data-lightbox-close="" />
-    </div>
-    <div class="stage-row">
-      <span class="side"><IconButton label="Previous image" icon="chevron-left" variant="secondary" size="lg" tooltip="none" data-lightbox-prev="" /></span>
-      <div class="stage" data-lightbox-stage>
-        <img class="stage-image" alt="" data-lightbox-image />
+      <div class="heading">
+        <p class="album-title" data-lightbox-title hidden></p>
+        <p class="counter" aria-live="polite" aria-atomic="true" data-lightbox-counter>1 of 1</p>
       </div>
-      <span class="side"><IconButton label="Next image" icon="chevron-right" variant="secondary" size="lg" tooltip="none" data-lightbox-next="" /></span>
+      <div class="tools">
+        <span data-lightbox-zoom hidden>
+          <IconButton label="Zoom out" icon="zoom-out" variant="secondary" tooltip="none" data-lightbox-zoom-out="" />
+          <IconButton label="Zoom in" icon="zoom-in" variant="secondary" tooltip="none" data-lightbox-zoom-in="" />
+        </span>
+        <span data-lightbox-album-tools hidden>
+          <IconButton label="Info" icon="info" variant="secondary" pressed={false} tooltip="none" data-lightbox-info="" />
+          <IconButton label="Copy link" icon="link" variant="secondary" tooltip="none" data-lightbox-copy="" />
+        </span>
+        <IconButton label="Close" icon="close" variant="secondary" tooltip="none" data-lightbox-close="" />
+      </div>
+    </div>
+    <div class="body">
+      <div class="stage-row">
+        <span class="side"><IconButton label="Previous image" icon="chevron-left" variant="secondary" size="lg" tooltip="none" data-lightbox-prev="" /></span>
+        <div class="stage" data-lightbox-stage>
+          <img class="stage-image" alt="" data-lightbox-image />
+          <div class="player" data-lightbox-player hidden></div>
+          <span class="facade" data-lightbox-facade hidden>
+            <Button variant="primary" icon="play" data-lightbox-play-embed="">Play video</Button>
+          </span>
+          <span class="motion" data-lightbox-motion hidden>
+            <span><IconButton label="Pause" icon="pause" variant="overlay" tooltip="none" data-lightbox-pause="" /></span>
+            <span hidden><IconButton label="Play" icon="play" variant="overlay" tooltip="none" data-lightbox-resume="" /></span>
+          </span>
+        </div>
+        <span class="side"><IconButton label="Next image" icon="chevron-right" variant="secondary" size="lg" tooltip="none" data-lightbox-next="" /></span>
+      </div>
+      <aside class="panel" aria-label="About this item" tabindex="-1" data-lightbox-panel data-scrollbar hidden>
+        <p class="info-caption" data-info="caption"></p>
+        <div data-info-description hidden><Prose size="compact"><div data-info="description"></div></Prose></div>
+        <p data-info="taken"></p>
+        <p data-info="credit"></p>
+        <p data-info="length"></p>
+        <p hidden><Link href="#" data-info="watch">Watch at the source</Link></p>
+        <span hidden><Button href="#" size="sm" icon="download" data-lightbox-download="">Download</Button></span>
+        <p data-info="album"></p>
+        <p hidden><Link href="#" variant="standalone" data-lightbox-open-album="">Open the album</Link></p>
+        <span><Button size="sm" variant="quiet" icon="copy" data-lightbox-copy="">Copy a link to this</Button></span>
+        <div data-lightbox-copy-field hidden><TextField label="Link to this item" /></div>
+      </aside>
     </div>
     <div class="caption-wrap" data-lightbox-caption-wrap>
       <Caption as="p" align="center"><span data-lightbox-caption></span></Caption>
+      <span data-lightbox-more-wrap hidden><Button size="sm" variant="quiet" data-lightbox-more="">More</Button></span>
     </div>
     <div class="filmstrip" role="group" aria-label="Pictures" data-lightbox-strip data-scrollbar></div>
   </div>
+  <template data-lightbox-badges>
+    <span class="badge" aria-hidden="true" data-badge="video"><Icon name="play" size="text" /></span>
+    <span class="badge" aria-hidden="true" data-badge="animated"><Icon name="animated" size="text" /></span>
+  </template>
+  <p class="sr-only" role="status" data-lightbox-status></p>
 </dialog>
 
 <style>
@@ -96,11 +150,30 @@ const { id = 'site-lightbox' } = Astro.props;
     padding: var(--space-6);
   }
 
-  .topbar {
+  .topbar,
+  .tools,
+  .tools > span:not([hidden]) {
     display: flex;
     align-items: center;
+    gap: var(--space-2);
+  }
+
+  .topbar {
     justify-content: space-between;
     gap: var(--space-4);
+  }
+
+  .heading {
+    min-width: 0;
+  }
+
+  .album-title {
+    margin: 0;
+    overflow: hidden;
+    color: var(--color-text-muted);
+    font: var(--type-label);
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
   .counter {
@@ -112,6 +185,15 @@ const { id = 'site-lightbox' } = Astro.props;
     line-height: var(--leading-ui);
   }
 
+  /* the stage, and the info panel beside it on a wide screen or over its foot on a phone */
+  .body {
+    position: relative;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--space-4);
+    min-height: 0;
+  }
+
   .stage-row {
     display: grid;
     grid-template-columns: auto minmax(0, 1fr) auto;
@@ -121,6 +203,7 @@ const { id = 'site-lightbox' } = Astro.props;
   }
 
   .stage {
+    position: relative;
     display: grid;
     grid-template: minmax(0, 1fr) / minmax(0, 1fr);
     place-items: center;
@@ -130,6 +213,11 @@ const { id = 'site-lightbox' } = Astro.props;
     touch-action: pan-y;
   }
 
+  .stage > * {
+    grid-area: 1 / 1;
+  }
+
+  /* zoom moves the item by a transform the script sets (--zoom-scale, --zoom-x, --zoom-y) */
   .stage-image {
     width: auto;
     height: auto;
@@ -138,7 +226,33 @@ const { id = 'site-lightbox' } = Astro.props;
     border-radius: var(--radius-md);
     object-fit: contain;
     opacity: 1;
-    transition: opacity var(--duration-slow) var(--ease-standard);
+    transform: translate(var(--zoom-x), var(--zoom-y)) scale(var(--zoom-scale));
+    transition:
+      opacity var(--duration-slow) var(--ease-standard),
+      transform var(--duration-base) var(--ease-standard);
+  }
+
+  .stage[data-zoomed] {
+    overflow: hidden;
+    cursor: grab;
+  }
+
+  .stage[data-zoomed][data-gesture] {
+    cursor: grabbing;
+  }
+
+  .stage[data-gesture] .stage-image {
+    transition: none;
+  }
+
+  /* a drawing is as large as the stage allows (the script measures it); without a dark version, it's on paper in the dark */
+  .stage[data-kind='drawing'] .stage-image {
+    width: var(--fit-w);
+    height: var(--fit-h);
+  }
+
+  .stage[data-paper] .stage-image {
+    background: light-dark(transparent, var(--c-lightbox-drawing-paper));
   }
 
   /* only a picture whose drop shadow option is on (its link's data-shadow) keeps it here,
@@ -156,12 +270,73 @@ const { id = 'site-lightbox' } = Astro.props;
     opacity: 0;
   }
 
-  .caption-wrap[hidden] {
-    display: none;
+  .player:not([hidden]),
+  .facade:not([hidden]) {
+    display: grid;
+    place-items: center;
+    width: 100%;
+    height: 100%;
+  }
+
+  :global(.lightbox [data-lightbox-player] video),
+  :global(.lightbox [data-lightbox-player] iframe) {
+    max-width: 100%;
+    max-height: 100%;
+    border: 0;
+    border-radius: var(--radius-md);
+  }
+
+  :global(.lightbox [data-lightbox-player] iframe) {
+    width: 100%;
+    aspect-ratio: 16 / 9;
+  }
+
+  .motion {
+    z-index: var(--layer-raised);
+    place-self: end start;
+    margin: var(--space-3);
+  }
+
+  .panel:not([hidden]) {
+    position: absolute;
+    inset-inline: 0;
+    inset-block-end: 0;
+    z-index: var(--layer-raised);
+    display: grid;
+    align-content: start;
+    gap: var(--space-3);
+    max-height: 50%;
+    padding: var(--space-4);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    border-radius: var(--radius-md);
+    background: var(--color-bg-raised);
+    box-shadow: var(--shadow-md);
+  }
+
+  .panel p {
+    margin: 0;
+    color: var(--color-text-muted);
+    font: var(--type-hint);
+  }
+
+  .panel .info-caption {
+    color: var(--color-text);
+    font: var(--type-control);
+    text-wrap: pretty;
+  }
+
+  .caption-wrap:not([hidden]) {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    justify-content: center;
+    gap: var(--space-2);
   }
 
   .filmstrip {
     display: flex;
+    align-items: center;
     gap: var(--space-2);
     overflow-x: auto;
     overscroll-behavior-x: contain;
@@ -169,6 +344,7 @@ const { id = 'site-lightbox' } = Astro.props;
   }
 
   :global(.lightbox [data-lightbox-thumb]) {
+    position: relative;
     flex: none;
     display: grid;
     place-items: center;
@@ -192,19 +368,43 @@ const { id = 'site-lightbox' } = Astro.props;
     object-fit: cover;
   }
 
+  :global(.lightbox [data-lightbox-see-all]) {
+    flex: none;
+    padding-inline: var(--space-3);
+    color: var(--color-accent);
+    font: var(--type-label);
+  }
+
+  /* a thumbnail's kind, on the image shade the album page's badges use */
+  .badge {
+    position: absolute;
+    inset-block-end: var(--space-1);
+    inset-inline-start: var(--space-1);
+    display: inline-flex;
+    padding: var(--space-1);
+    border-radius: var(--radius-pill);
+    background: var(--color-image-shade);
+    color: var(--color-on-image);
+  }
+
   @keyframes drift {
     50% {
       transform: translate3d(var(--space-8), calc(var(--space-6) * -1), 0) scale(var(--c-lightbox-drift-scale));
     }
   }
 
-  @media (max-width: 40rem) {
-    .lightbox {
-      width: 100dvw;
-      height: 100dvh;
-      max-height: 100dvh;
+  @media (min-width: 56rem) {
+    .shell[data-info-open] .body {
+      grid-template-columns: minmax(0, 1fr) var(--c-lightbox-info-width);
     }
 
+    .panel:not([hidden]) {
+      position: static;
+      max-height: 100%;
+    }
+  }
+
+  @media (max-width: 40rem) {
     .shell {
       padding: var(--space-3);
     }
@@ -228,7 +428,34 @@ const { id = 'site-lightbox' } = Astro.props;
 
 <script>
   import { each } from '../../scripts/page';
-  import { setupLightbox } from '../../scripts/lightbox';
+  import type { LightboxApi } from '../../scripts/lightbox';
 
-  each<HTMLDialogElement>('[data-lightbox-dialog]', setupLightbox);
+  // the lightbox's code loads when a link is first pointed at, focused or pressed (or the page opens at an item)
+  each<HTMLDialogElement>('[data-lightbox-dialog]', (dialog, signal) => {
+    let loading: Promise<LightboxApi | undefined> | undefined;
+    const load = () => (loading ??= import('../../scripts/lightbox').then((m) => m.setupLightbox(dialog, signal)));
+    const linkOf = (event: Event) => {
+      const link = event.target instanceof Element ? event.target.closest<HTMLAnchorElement>('a[data-lightbox]') : null;
+      return link && !dialog.contains(link) ? link : null;
+    };
+    const warm = (event: Event) => {
+      const link = linkOf(event);
+      if (link) void load().then((api) => api?.warm(link));
+    };
+    document.addEventListener('pointerover', warm, { signal, passive: true });
+    document.addEventListener('focusin', warm, { signal });
+    document.addEventListener(
+      'click',
+      (event) => {
+        const link = linkOf(event);
+        if (!link || event.defaultPrevented || typeof dialog.showModal !== 'function') return;
+        if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+        event.preventDefault();
+        const follow = () => location.assign(link.href);
+        load().then((api) => (api ? api.open(link, true) : follow()), follow);
+      },
+      { signal, capture: true },
+    );
+    if (location.hash.startsWith('#item-')) void load();
+  });
 </script>

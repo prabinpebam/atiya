@@ -2812,6 +2812,98 @@ test.describe('planet', () => {
     await expect(page.locator('.game-region')).toBeFocused();
   });
 
+  // the Gallery's albums on the planet (documentation/gallery/spec.md §13; plan DoD 25), on the test build's
+  // made-up album (tests/fixtures/gallery/): the Amphitheater shows the Gallery section
+  const ALBUM_TITLE = 'A spring in the hills';
+  const ALBUM_VIEWER = `${ALBUM_TITLE}, album viewer`;
+
+  test("reading on the planet: albums show as bands in the Amphitheater, an album page opens in the building, its lightbox adds no history, and Copy link gives the site's address", async ({ page, context }) => {
+    await context.grantPermissions(['clipboard-read', 'clipboard-write']);
+    await page.goto('/');
+    await openPlanet(page, '/play/?at=amphitheater&open=1');
+    const frame = page.frameLocator('[data-testid="reading-frame"]');
+    await expect(frame.getByRole('heading', { level: 1, name: 'Amphitheater' })).toBeVisible();
+    await expect(page.getByTestId('reading-frame')).toHaveAttribute('data-ready', '');
+    // the Albums view: the album page as a band, its title and tiles opening in this building
+    const band = frame.locator('[data-album-band][data-album-id="fixture-album"]');
+    await expect(band).toBeVisible();
+    await expect(band.getByRole('link', { name: ALBUM_TITLE, exact: true })).toHaveAttribute('href', '/play/amphitheater/fixture-album/');
+    await expect(band.locator('a[data-lightbox="band"]').first()).toHaveAttribute('href', /^\/play\/amphitheater\/fixture-album\/#item-/);
+    // a private album is never on the planet (V28), not even sealed
+    await expect(frame.locator('[data-node="fx-private-album"]')).toHaveCount(0);
+    await expect(frame.locator('template[data-sealed]')).toHaveCount(0);
+    const entries = await page.evaluate(() => history.length);
+    const doc = () => page.frames().find((f) => /\/play\/amphitheater\//.test(f.url()))!;
+
+    // a band's tile opens the lightbox in the frame, without an entry in the history or a change of address
+    const tile = band.locator('a[data-lightbox="band"][data-item-id="p02"]');
+    await tile.scrollIntoViewIfNeeded();
+    await tile.click();
+    const viewer = frame.getByRole('dialog', { name: ALBUM_VIEWER });
+    await expect(viewer).toBeVisible();
+    await expect(viewer.locator('[data-lightbox-counter]')).toHaveText(/^2 of \d+$/);
+    expect(await page.evaluate(() => history.length)).toBe(entries);
+    await expect(page).toHaveURL(/\?at=amphitheater&open=1$/);
+    expect(new URL(doc().url()).hash).toBe('');
+    await page.keyboard.press('Escape');
+    await expect(viewer).toBeHidden();
+    await expect(page.getByTestId('landmark-dialog')).toBeVisible();
+
+    // the album page, in the building: the frame's router swaps it in, the address says which page
+    await band.getByRole('link', { name: ALBUM_TITLE, exact: true }).click();
+    await expect(frame.getByRole('heading', { level: 1, name: ALBUM_TITLE })).toBeVisible();
+    await expect(page).toHaveURL(/\?at=amphitheater&open=1&page=fixture-album$/);
+    expect(new URL(doc().url()).pathname).toBe('/play/amphitheater/fixture-album/');
+    await expect(frame.getByRole('link', { name: 'Open classic page' })).toHaveAttribute('href', '/gallery/fixture-album/');
+    await expect(frame.locator('li[data-album-cell]').first()).toBeVisible();
+
+    // its lightbox: moving through it changes neither the history nor any address (no #item- in the frame)
+    const before = await page.evaluate(() => history.length);
+    const top = page.url();
+    const cell = frame.locator('#item-p02 a[data-lightbox="album"]');
+    await cell.scrollIntoViewIfNeeded();
+    await cell.click();
+    await expect(viewer).toBeVisible();
+    await expect(viewer.locator('[data-lightbox-counter]')).toHaveText(/^2 of \d+$/);
+    await page.keyboard.press('ArrowRight');
+    await expect(viewer.locator('[data-lightbox-counter]')).toHaveText(/^3 of \d+$/);
+    expect(await page.evaluate(() => history.length)).toBe(before);
+    expect(page.url()).toBe(top);
+    expect(new URL(doc().url()).hash).toBe('');
+    // Copy link: the item's address on the site, never the planet's
+    await viewer.getByRole('button', { name: 'Copy link' }).click();
+    await expect(viewer.locator('[data-lightbox-status]')).toHaveText('Link copied');
+    const copied = await doc().evaluate(() => navigator.clipboard.readText());
+    expect(copied).toMatch(/\/gallery\/fixture-album\/#item-p03$/);
+    expect(copied).not.toContain('/play/');
+    // Esc closes the lightbox first, then Space the overlay
+    await page.keyboard.press('Escape');
+    await expect(viewer).toBeHidden();
+    await expect(page.getByTestId('landmark-dialog')).toBeVisible();
+    await page.keyboard.press('Space');
+    await expect(page.getByTestId('landmark-dialog')).toBeHidden();
+  });
+
+  // Waiting on the lightbox (gallery spec §13): a band's lightbox in the frame takes its album's address from the
+  // tile's link (/play/amphitheater/…), so its Copy link names the planet's address; it must name the site's.
+  test("reading on the planet: albums, a band's Copy link in the frame gives the site's address", async ({ page, context }) => {
+    await context.grantPermissions(['clipboard-read', 'clipboard-write']);
+    await page.goto('/');
+    await openPlanet(page, '/play/?at=amphitheater&open=1');
+    const frame = page.frameLocator('[data-testid="reading-frame"]');
+    const tile = frame.locator('[data-album-band][data-album-id="fixture-album"] a[data-lightbox="band"][data-item-id="p02"]');
+    await tile.scrollIntoViewIfNeeded();
+    await tile.click();
+    const viewer = frame.getByRole('dialog', { name: ALBUM_VIEWER });
+    await expect(viewer).toBeVisible();
+    await viewer.getByRole('button', { name: 'Copy link' }).click();
+    await expect(viewer.locator('[data-lightbox-status]')).toHaveText('Link copied');
+    const doc = page.frames().find((f) => /\/play\/amphitheater\//.test(f.url()))!;
+    const copied = await doc.evaluate(() => navigator.clipboard.readText());
+    expect(copied).toMatch(/\/gallery\/fixture-album\/#item-p02$/);
+    expect(copied).not.toContain('/play/');
+  });
+
   test('a link to another building says where it is and stays put; in dark mode the smoke is dark and passes axe', async ({ page }) => {
     await page.addInitScript(() => localStorage.setItem('site.theme', 'dark'));
     await openPlanet(page, '/play/?at=workshop&open=1');

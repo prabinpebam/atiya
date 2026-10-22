@@ -119,7 +119,24 @@ const blobs = new Set<string>();
 const mediaKeys = new Map<string, { key: string; type: string }>();
 const nameOfUrl = (url: string) => /\/_sealed\/[\w-]+\/([\w-]+)\.bin$/.exec(url)?.[1];
 
-async function decryptMedia(url: string): Promise<string | null> {
+// each file once, however many attributes name it (a picture's full size is often its download too)
+const opened = new Map<string, Promise<string | null>>();
+function decryptMedia(url: string): Promise<string | null> {
+  let p = opened.get(url);
+  if (!p) {
+    p = decryptFile(url)
+      .catch(() => null)
+      .then((u) => {
+      // a failed one may be tried again
+      if (!u) opened.delete(url);
+      return u;
+    });
+    opened.set(url, p);
+  }
+  return p;
+}
+
+async function decryptFile(url: string): Promise<string | null> {
   const name = nameOfUrl(url);
   const m = name && mediaKeys.get(name);
   if (!name || !m) return null;
@@ -229,28 +246,72 @@ function watchMedia(root: ParentNode, media: Payload['media']) {
   els.forEach((el) => seen.observe(el));
 }
 
+/** Where a sealed file can wait in a link for the lightbox (its full size, stage, poster, still, download, captions). */
+const LINK_FILES = ['href', 'data-full', 'data-full-dark', 'data-thumb', 'data-thumb-dark', 'data-poster', 'data-poster-dark', 'data-still', 'data-still-dark', 'data-stage', 'data-download', 'data-tracks'] as const;
+const sealedIn = (v: string | null | undefined): v is string => !!v && v.includes('/_sealed/');
+const sealedLink = (a: Element) => LINK_FILES.some((attr) => sealedIn(a.getAttribute(attr)));
+const SEALED_URL = /[^\s"',]*\/_sealed\/[\w-]+\/[\w-]+\.bin/g;
+
+/** One attribute's sealed files, decrypted in place: of a srcset, only the width this screen needs. */
+async function unsealAttr(el: Element, attr: string) {
+  const v = el.getAttribute(attr);
+  if (!sealedIn(v)) return;
+  if (/\s\d+w\s*(,|$)/.test(v)) {
+    const pick = pickFromSrcset(v, innerWidth * (devicePixelRatio || 1));
+    const w = v.split(',').map((c) => c.trim().split(/\s+/)).find((c) => c[0] === pick)?.[1] ?? '';
+    const u = pick && (await decryptMedia(pick));
+    if (u) el.setAttribute(attr, `${u} ${w}`.trim());
+    return;
+  }
+  let out = v;
+  for (const url of new Set(v.match(SEALED_URL) ?? [])) {
+    const u = await decryptMedia(url);
+    if (u) out = out.split(url).join(u);
+  }
+  el.setAttribute(attr, out);
+}
+
 /** A link to a sealed file (the lightbox's full size, a video's download): decrypted on the first click, with its group. */
 document.addEventListener(
   'click',
   (e) => {
-    const link = (e.target as Element | null)?.closest<HTMLAnchorElement>('a[href*="/_sealed/"]');
-    if (!link) return;
+    const link = (e.target as Element | null)?.closest<HTMLAnchorElement>('a[href]');
+    if (!link || !sealedLink(link)) return;
     e.preventDefault();
     e.stopImmediatePropagation();
-    const group = link.dataset.lightbox ? [...document.querySelectorAll<HTMLAnchorElement>(`a[data-lightbox="${CSS.escape(link.dataset.lightbox)}"]`)] : [link];
-    void Promise.all(
-      group.flatMap((a) =>
-        (['href', 'data-full-dark', 'data-thumb', 'data-thumb-dark'] as const).map(async (attr) => {
-          const v = a.getAttribute(attr);
-          if (!v || !v.includes('/_sealed/')) return;
-          const u = await decryptMedia(v);
-          if (u) a.setAttribute(attr, u);
-        }),
-      ),
-    ).then(() => link.click());
+    // a band's group is its own tiles; any other, every link of its group on the page
+    const scope = (link.dataset.lightbox === 'band' && link.closest('[data-album-band]')) || document;
+    const group = link.dataset.lightbox ? [...scope.querySelectorAll<HTMLAnchorElement>(`a[data-lightbox="${CSS.escape(link.dataset.lightbox)}"]`)] : [link];
+    void Promise.all(group.flatMap((a) => LINK_FILES.map((attr) => unsealAttr(a, attr)))).then(() => {
+      // only once nothing in it is sealed (a file that failed would bring it straight back here)
+      if (!sealedLink(link)) link.click();
+    });
   },
   true,
 );
+
+/**
+ * A sealed band's tiles that play (gallery spec §12): their files decrypted before the band's script sets them
+ * up, so a tile never fetches a sealed file as a video or a picture. The band waits without `data-plays`.
+ */
+async function unsealMotion(card: Element) {
+  const bands = [...card.querySelectorAll<HTMLElement>('[data-album-band][data-plays]')].filter((b) => b.querySelector('[data-band-motion] [data-src*="/_sealed/"], [data-band-motion][data-src*="/_sealed/"], [data-band-motion] [data-srcset*="/_sealed/"]'));
+  if (!bands.length) return;
+  bands.forEach((b) => b.removeAttribute('data-plays'));
+  await Promise.all(
+    bands.flatMap((b) =>
+      [...b.querySelectorAll('[data-band-motion], [data-band-motion] [data-src], [data-band-motion] [data-srcset]')].flatMap((el) => [unsealAttr(el, 'data-src'), unsealAttr(el, 'data-srcset')]),
+    ),
+  );
+  // a tile whose file couldn't be decrypted keeps its still
+  for (const b of bands) {
+    b.querySelectorAll('[data-band-motion]').forEach((m) => {
+      if ([m, ...m.querySelectorAll('[data-src], [data-srcset]')].some((el) => sealedIn(el.getAttribute('data-src')) || sealedIn(el.getAttribute('data-srcset')))) m.closest('[data-tile]')?.removeAttribute('data-play');
+    });
+    b.setAttribute('data-plays', '');
+  }
+  document.dispatchEvent(new Event('astro:page-load'));
+}
 
 // ---------- cards and pages ----------
 
@@ -300,11 +361,14 @@ async function openCards(keys: KeyringBody['keys'], grant: string) {
     activateScripts(card);
     syncDarkSources(card, parseTheme(html.dataset.theme));
     watchMedia(card, p.media);
+    void unsealMotion(card);
     tpl.remove();
     added++;
   }
   if (added) {
     document.querySelector<HTMLElement>('[data-cards-empty]')?.setAttribute('hidden', '');
+    // every component's script sets up the new cards (a private album's band), as on an open page
+    document.dispatchEvent(new Event('astro:page-load'));
     say('cards', null, { cards: added });
     tell('access_opened', { grant, place: location.pathname.slice(base.length), cards: added });
   }

@@ -48,7 +48,7 @@ test.describe('gallery', () => {
 
   // The lightbox opens a band's tile on its whole album; wiring it for an album block is the lightbox's phase
   // (gallery.spec.ts holds its own behaviour). Turn this on with it.
-  test.fixme('an album in another page: a tile opens the lightbox on the whole album', async ({ page }) => {
+  test('an album in another page: a tile opens the lightbox on the whole album', async ({ page }) => {
     await page.goto(PAGE);
     const first = band(page).locator('[data-tile] a').first();
     await first.click();

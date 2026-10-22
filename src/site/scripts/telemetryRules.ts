@@ -20,8 +20,10 @@ export type Queued =
   | { kind: 'allowlist' }
   /** A link followed on an allowlisted page: the client sends it as `access_link`. */
   | { kind: 'link'; href: string; here: string }
-  /** A video started: the client sends it as `video_played`. */
-  | { kind: 'video'; src: string; place: string; open: boolean };
+  /** A video started: the client sends it as `video_played` (nothing for a band's tile playing on its own; only the place `lightbox` from the lightbox's player). */
+  | { kind: 'video'; v?: Element; src: string; place: string; open: boolean }
+  /** The lightbox opened (its `site:lightbox` event's detail): the client sends its place and kind as `lightbox_opened`. */
+  | { kind: 'lightbox'; detail: unknown };
 
 /** What this page is, as `before_send` needs it. */
 export interface PageFacts {

@@ -155,7 +155,9 @@
     "c.keywords.query-stack": {"v":"52rem"},
     "c.library.nav-max": {"v":"17rem"},
     "c.library.nav-min": {"v":"14rem"},
+    "c.lightbox.drawing-paper": {"v":"var(--color-on-image)"},
     "c.lightbox.drift-scale": {"v":"1.04"},
+    "c.lightbox.info-width": {"v":"22rem"},
     "c.lightbox.thumb": {"v":"4.5rem"},
     "c.lightbox.thumb-on": {"v":"var(--color-highlight)"},
     "c.link.icon-gap": {"v":"0.3em"},
@@ -509,6 +511,18 @@
           null,
           {
             "v": "40rem"
+          }
+        ],
+        "c.lightbox.drawing-paper": [
+          null,
+          {
+            "v": "var(--color-on-image)"
+          }
+        ],
+        "c.lightbox.info-width": [
+          null,
+          {
+            "v": "22rem"
           }
         ]
       }
