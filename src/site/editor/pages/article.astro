@@ -17,13 +17,6 @@ import ArticleForm from '../components/ArticleForm.astro';
 import ContentIssues from '../components/ContentIssues.astro';
 import SharingPanel from '../components/SharingPanel.astro';
 import CropDialog from '../components/CropDialog.astro';
-import AlbumItems from '../components/AlbumItems.astro';
-import AlbumItemDetails from '../components/AlbumItemDetails.astro';
-import AlbumSettings from '../components/AlbumSettings.astro';
-import AlbumAddForms from '../components/AlbumAddForms.astro';
-import AlbumArranger from '../components/AlbumArranger.astro';
-import { albumItemsView } from '../server/albumItems';
-import { albumArrangerView } from '../server/albumArranger';
 import Dialog from '../../components/compounds/Dialog.astro';
 import IconButton from '../../components/fundamentals/IconButton.astro';
 import Button from '../../components/fundamentals/Button.astro';
@@ -114,23 +107,11 @@ const links = loaded.ok ? [...loaded.index.articles.values()].filter((a) => load
 // the album block's chooser (gallery spec §7.2): the site's albums, each this page can't show said with why (V51)
 const albums = loaded.ok
   ? albumChoices(
-      [...loaded.index.articles.values()].filter((a) => a.kind === 'gallery').map((a) => ({ id: a.id, title: a.title, published: isPublished(a), private: loaded.index.origins.get(a.id) === 'private', items: a.album?.items.length ?? 0 })),
+      [...loaded.index.albums.values()].map((a) => ({ id: a.id, title: a.title, published: a.status === 'published', private: loaded.index.origins.get(a.id) === 'private', items: a.items.length })),
       { id, published },
     )
   : [];
 const publicPath = route?.published ? withBase(route.path) : null;
-// an album's three views (gallery spec §9.1): Page is the studio; Items and Up front are their own screens
-const gallery = article.kind === 'gallery';
-const askedView = Astro.url.searchParams.get('view');
-const view = gallery && (askedView === 'items' || askedView === 'front') ? askedView : 'page';
-const VIEWS = [
-  { id: 'page', label: 'Page' },
-  { id: 'items', label: 'Items' },
-  { id: 'front', label: 'Up front' },
-] as const;
-const albumView = loaded.ok && view === 'items' && !fragment ? await albumItemsView(loaded.index, owner, article.album ?? { items: [] }, access === 'private', Astro.url.searchParams.get('item')) : null;
-// Up front (gallery spec §9.3): the band arranger, for the wide band or the phone's (?show=phone), with a chosen tile (?tile=)
-const arranger = loaded.ok && view === 'front' && !fragment ? await albumArrangerView(loaded.index, owner, article.album ?? { items: [] }, Astro.url.searchParams.get('show') === 'phone' ? 'phone' : 'wide', Astro.url.searchParams.get('tile')) : null;
 const state = {
   owner,
   id,
@@ -156,13 +137,12 @@ const json = JSON.stringify(state).replace(/</g, '\\u003c');
     {access === 'private' && <Tag size="sm" tone="highlight" icon="key">Private</Tag>}
   </Fragment>
   <Fragment slot="tools">
-    {gallery && VIEWS.map((v) => <Link href={`${Astro.url.pathname}${v.id === 'page' ? '' : `?view=${v.id}`}`} variant="quiet" current={view === v.id} data-album-view={v.id}>{v.label}</Link>)}
-    {view !== 'front' && <IconButton label="Undo" icon="undo" size="sm" data-editor-undo="" />}
-    {view !== 'front' && <IconButton label="Redo" icon="redo" size="sm" data-editor-redo="" />}
-    {view === 'page' && <IconButton label="Desktop width" icon="desktop" size="sm" pressed={true} data-editor-device="desktop" />}
-    {view === 'page' && <IconButton label="Tablet width" icon="tablet" size="sm" pressed={false} data-editor-device="tablet" />}
-    {view === 'page' && <IconButton label="Phone width" icon="phone" size="sm" pressed={false} data-editor-device="phone" />}
-    {view === 'page' && <IconButton label="Preview without the editor" icon="preview" size="sm" pressed={false} data-editor-preview="" />}
+    <IconButton label="Undo" icon="undo" size="sm" data-editor-undo="" />
+    <IconButton label="Redo" icon="redo" size="sm" data-editor-redo="" />
+    <IconButton label="Desktop width" icon="desktop" size="sm" pressed={true} data-editor-device="desktop" />
+    <IconButton label="Tablet width" icon="tablet" size="sm" pressed={false} data-editor-device="tablet" />
+    <IconButton label="Phone width" icon="phone" size="sm" pressed={false} data-editor-device="phone" />
+    <IconButton label="Preview without the editor" icon="preview" size="sm" pressed={false} data-editor-preview="" />
     {publicPath && <IconButton label="View on the site" icon="external" size="sm" href={publicPath} />}
     {!publicPath && route && <IconButton label="Preview it as a page (on this computer only)" icon="external" size="sm" href={withBase(route.path)} />}
   </Fragment>
@@ -170,47 +150,6 @@ const json = JSON.stringify(state).replace(/</g, '\\u003c');
     loaded.ok && fragment ? (
       // a swap of the counts, or of the picker's next page: only what was asked for
       picker && <MediaGrid mode="pick" media={picker} owner={owner} paging={pickerPaging} />
-    ) : loaded.ok && view !== 'page' ? (
-      <>
-        {albumView ? (
-          <AlbumItems cards={albumView.cards} chosen={albumView.chosen?.id} counts={albumView.counts} weight={albumView.weight} sortable={albumView.sortable} full={albumView.full}>
-            <Fragment slot="details">
-              <AlbumItemDetails card={albumView.chosen} />
-            </Fragment>
-          </AlbumItems>
-        ) : (
-          arranger && <AlbumArranger view={arranger} />
-        )}
-        <script is:inline type="application/json" data-region="state" data-editor-state set:html={json} />
-        <Dialog id="editor-picker" title="Add pictures and videos" size="lg">
-          <MediaGrid mode="pick" media={[]} owner={owner} paging={pickerPaging} pending />
-          <Fragment slot="actions">
-            <span data-editor-media-count>
-              <Text as="span" variant="small" tone="muted">
-                Choose them
-              </Text>
-            </span>
-            <Button variant="primary" icon="check" data-editor-media-use disabled>
-              Add them
-            </Button>
-          </Fragment>
-        </Dialog>
-        <Dialog id="album-upload" title="Upload to the album" size="lg">
-          <AlbumAddForms kind="upload" />
-        </Dialog>
-        <Dialog id="album-link" title="Add a YouTube or Vimeo video">
-          <AlbumAddForms kind="link" />
-        </Dialog>
-        <Dialog id="editor-insert-link" title="Link" size="sm">
-          <InsertForms kind="link" articles={links} />
-        </Dialog>
-        <Dialog id="editor-conflict" title="This album changed elsewhere" size="sm">
-          <Text variant="ui">Its file was changed outside this editor (by hand, or in another tab) since you opened it. Reload it to carry on from what's there now; nothing you did after that was saved.</Text>
-          <Fragment slot="actions">
-            <Button variant="primary" icon="restore" href={`${Astro.url.pathname}?view=${view}`}>Reload it</Button>
-          </Fragment>
-        </Dialog>
-      </>
     ) : loaded.ok ? (
       <Studio>
         {draw('outline') && <Outline slot="outline" blocks={blocks} icons={ICON} />}
@@ -225,13 +164,7 @@ const json = JSON.stringify(state).replace(/</g, '\\u003c');
                 </BlockForm>
               ))}
             </Fragment>
-            <PageForm slot="page" article={article} media={thumbs} sections={sectionOptions(loaded.index)} section={section} access={protectable ? access : undefined} privateSetup={privateSetup} place={place} published={published} path={route?.path ?? null}>
-              {gallery && (
-                <Fragment slot="album">
-                  <AlbumSettings album={article.album} />
-                </Fragment>
-              )}
-            </PageForm>
+            <PageForm slot="page" article={article} media={thumbs} sections={sectionOptions(loaded.index)} section={section} access={protectable ? access : undefined} privateSetup={privateSetup}             place={place} published={published} path={route?.path ?? null} />
             {review && <AiReview slot="review" id={id} view={review} />}
           </Inspector>
         )}

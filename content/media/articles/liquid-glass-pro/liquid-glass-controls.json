@@ -3,5 +3,6 @@
   "file": "liquid-glass-controls.webp",
   "alt": "Close view of the Liquid glass plugin interface with refraction controls, effect controls and blue action buttons",
   "caption": "The panel can create a new glass element, apply the effect to a selected shape, or update existing elements.",
+  "fingerprint": "0c10a7d702dc0b2a075ca1513f3dbe8fcb4c2d3a9d8edfeb011227e21cae27e7",
   "visibility": "public"
 }

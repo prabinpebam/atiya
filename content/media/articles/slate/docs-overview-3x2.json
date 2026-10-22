@@ -2,6 +2,7 @@
   "kind": "image",
   "alt": "The Atiya docs overview in the Slate reader, with grouped navigation on the left, a document map in the article, and an on-this-page outline on the right.",
   "caption": "A real Slate host: this site's documentation, organized as a navigable source of truth.",
+  "fingerprint": "6a0c5111571809681e93a1f25cc97b4cc5a605f33328211ff06f858acdf9ad1d",
   "visibility": "public",
   "file": "docs-overview-3x2.webp",
   "crop": {

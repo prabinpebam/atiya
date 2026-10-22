@@ -140,6 +140,14 @@ export function placePages(placeId: string): { article: Article; route: Route }[
     return article ? [{ article, route }] : [];
   });
 }
+/**
+ * A building's albums (documentation/gallery/spec.md §13): its section's published open albums, in the section's
+ * `albumOrder`. A private album is never on the planet (V28).
+ */
+export function placeAlbums(placeId: string): { album: Album; route: Route }[] {
+  const site = getPlanet()?.places.find((p) => p.id === placeId)?.site;
+  return site ? sectionAlbums(site).filter((a) => a.route.access === 'open') : [];
+}
 export const getArticle = (id: string) => content().articles.get(id);
 /** The site's recommendations, in their order (hidden ones too: `recommendationBand` leaves them out). */
 export const getRecommendations = () => content().recommendations;

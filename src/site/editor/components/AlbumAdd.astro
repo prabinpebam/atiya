@@ -1,0 +1,46 @@
+---
+/**
+ * The album editor's ways to add (documentation/gallery/spec.md §9.4), each in its own dialog: files from the
+ * computer (or dropped anywhere on the grid) with the other ways beside them, a text card (a few words between the
+ * pictures), or a YouTube or Vimeo link, taken into the library as a linked video and added to the album. The album
+ * editor's script reads and sends them.
+ * @tier editor
+ * @a11y A labelled form; every field's hint says what it takes, and a refusal is said in the status line.
+ */
+import TextField from '../../components/fundamentals/TextField.astro';
+import FileField from '../../components/fundamentals/FileField.astro';
+import Button from '../../components/fundamentals/Button.astro';
+import ActionBar from '../../components/compounds/ActionBar.astro';
+import Form from '../kit/Form.astro';
+
+interface Props {
+  /** What it adds: files (and the other ways), a text card, or a video link. */
+  kind: 'files' | 'text' | 'link';
+  /** The text card's words, when editing one. */
+  value?: string;
+}
+
+const { kind, value = '' } = Astro.props;
+---
+
+{
+  kind === 'files' ? (
+    <Form as="div" data-album-add="files">
+      <FileField label="Pictures and videos" accept="image/*,video/*,.heic,.heif" multiple hint="Each goes into your library and into this album; you can also drop files anywhere on the album." data-album-upload="" />
+      <ActionBar gap="sm">
+        <Button variant="secondary" icon="image" data-album-library="">From your library</Button>
+        <Button variant="secondary" icon="paragraph" data-album-text="">Text card</Button>
+        <Button variant="secondary" icon="video" data-album-link="">Video link</Button>
+              </ActionBar>
+    </Form>
+  ) : kind === 'text' ? (
+    <Form data-album-add="text">
+      <TextField label="Words" value={value} multiline rows={4} maxlength={1000} hint="Shown as a card between the pictures. Markdown: **bold**, *italic* and [links](https://…)." data-album-add-field="" />
+    </Form>
+  ) : (
+    <Form data-album-add="link">
+      <TextField label="Video address" type="url" value={value} hint="A YouTube or Vimeo address. It goes in your library too." data-album-add-field="" />
+    </Form>
+  )
+}
+

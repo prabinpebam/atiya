@@ -1,12 +1,12 @@
 /**
- * An album's band on a section's Albums view (documentation/gallery/spec.md §5, §6), worked out from the album page
- * for the AlbumBand compound: its counts and dates in words, its tiles up front in reading order with their
- * places on the wide and the phone grid, their pictures, posters and names, and which of them play.
- * An album with nothing to show has no band (§5: it's never shown).
+ * An album's band (documentation/gallery/spec.md §5, §6), worked out for the AlbumBand compound: its counts and
+ * dates in words, its cover's tiles in reading order with their places on the wide and the phone grid, their
+ * pictures, posters and names (from the library items' sidecars), and which of them play. An album with nothing
+ * to show has no band (§5: it's never shown).
  */
-import { albumCounts, albumDates, countWords, dateSpan, displayFor, phoneOf, readingOrder, showcaseOf, type AlbumMedia, type MediaLookup } from './album';
-import { getAlbum, getArticle } from './repository';
-import { picture, video, type Picture } from './pictures';
+import { albumCounts, albumDates, countWords, coverOf, dateSpan, displayFor, phoneOf, readingOrder } from './album';
+import { albumLookup, getAlbum } from './repository';
+import { embedPoster, picture, video, type Picture } from './pictures';
 import { lengthOf, playing, tileName, type BandTile } from '../scripts/albumBandRules';
 import type { PictureSource } from '../design/pictures';
 
@@ -39,37 +39,31 @@ const stillOf = (pic: Picture, animated: boolean): BandTile['still'] => ({
 });
 
 /**
- * The band of the album page `pageId` (its address `href`, and on the site `site`), or undefined when it isn't an
- * album or holds nothing it can show.
+ * The band of the album `albumId` (its page's address `href`, and on the site `site`), or undefined when there's
+ * no such album or it holds nothing it can show. Text cards are never in a band, nor counted in its items.
  */
-export async function bandOf(pageId: string, href: string, site = href): Promise<Band | undefined> {
-  const article = getArticle(pageId);
-  const resolved = getAlbum(pageId);
-  if (!article || !resolved) return undefined;
+export async function bandOf(albumId: string, href: string, site = href): Promise<Band | undefined> {
+  const resolved = getAlbum(albumId);
+  if (!resolved) return undefined;
   const { album, items } = resolved;
-  const shown = items.filter((r) => r.kind);
+  const shown = items.filter((r) => r.kind && r.kind !== 'text' && 'media' in r.item);
   if (shown.length === 0) return undefined;
+  const lookup = albumLookup();
   const byId = new Map(shown.map((r) => [r.item.id, r]));
-  const media = new Map<string, AlbumMedia>();
-  for (const r of items) {
-    const m = r.image ?? r.video;
-    if (r.item.media && m) media.set(r.item.media, m);
-  }
-  const lookup: MediaLookup = (id) => media.get(id);
-  const phone = new Map(phoneOf(album).map((p) => [p.item, p]));
-  const up = readingOrder(showcaseOf(album)).filter((t) => byId.has(t.item));
+  const phone = new Map(phoneOf(album, lookup).map((p) => [p.item, p]));
+  const up = readingOrder(coverOf(album, lookup)).filter((t) => byId.has(t.item));
   const plays = playing(
     up.map((t) => {
       const r = byId.get(t.item)!;
-      const m = r.image ?? r.video;
-      return { kind: r.kind, play: t.play, bytes: m?.bytes ?? (r.image?.facts?.bytes) };
+      return { kind: r.kind as BandTile['kind'], play: t.play, bytes: r.image?.bytes ?? r.image?.facts?.bytes ?? r.video?.bytes };
     }),
   );
 
   const tiles = await Promise.all(
     up.map(async (t, i): Promise<BandTile> => {
       const r = byId.get(t.item)!;
-      const kind = r.kind!;
+      const kind = r.kind as BandTile['kind'];
+      const media = 'media' in r.item ? r.item.media : '';
       const p = phone.get(t.item);
       const base = {
         id: r.item.id,
@@ -81,64 +75,63 @@ export async function bandOf(pageId: string, href: string, site = href): Promise
         display: displayFor(t, kind),
       };
       if (kind === 'video') {
-        const v = await video(r.item.media!, 'gallery');
-        const duration = v.duration;
+        const v = await video(media, 'gallery');
         return {
           ...base,
-          name: tileName({ kind, title: r.item.title ?? v.title, duration }),
+          name: tileName({ kind, title: v.title, duration: v.duration }),
           still: v.poster ? source(v.poster) : undefined,
           motion: plays.has(i) ? { kind: 'video', src: v.src, type: v.type } : undefined,
-          length: lengthOf(duration)?.clock,
+          length: lengthOf(v.duration)?.clock,
         };
       }
       if (kind === 'embed') {
-        const poster = r.item.poster ? await picture(r.item.poster, 'gallery') : undefined;
+        const e = r.embed!;
+        const poster = await embedPoster(media, 'gallery');
         return {
           ...base,
-          name: tileName({ kind, title: r.item.title, duration: r.item.duration }),
-          focus: t.focus ?? poster?.focus,
-          still: poster ? stillOf(poster, false) : undefined,
-          length: lengthOf(r.item.duration)?.clock,
+          name: tileName({ kind, title: e.title, duration: e.duration }),
+          focus: t.focus ?? poster.focus,
+          still: stillOf(poster, false),
+          length: lengthOf(e.duration)?.clock,
         };
       }
-      const pic = await picture(r.item.media!, 'gallery');
+      const pic = await picture(media, 'gallery');
       const animated = kind === 'animated';
       return {
         ...base,
-        name: tileName({ kind, alt: pic.alt, title: r.item.title }),
+        name: tileName({ kind, alt: pic.alt }),
         focus: t.focus ?? pic.focus,
         still: stillOf(pic, animated),
         motion: animated && plays.has(i) ? { kind: 'animated', src: pic.src, srcset: pic.srcset, dark: pic.dark ? pic.dark.srcset || pic.dark.src : undefined } : undefined,
-        full: { src: pic.full, dark: pic.dark?.full, thumb: pic.thumb, thumbDark: pic.dark?.thumb, caption: r.item.caption ?? pic.caption, alt: pic.alt },
+        full: { src: pic.full, dark: pic.dark?.full, thumb: pic.thumb, thumbDark: pic.dark?.thumb, caption: pic.caption, alt: pic.alt },
       };
     }),
   );
 
   return {
-    id: pageId,
-    title: article.title,
+    id: album.id,
+    title: album.title,
     href,
     site,
     counts: countWords(albumCounts(album.items, lookup)),
     dates: dateSpan(albumDates(album, lookup)),
-    summary: article.summary,
+    summary: album.summary,
     tiles,
     total: shown.length,
   };
 }
 
 /**
- * A section's bands for its Albums view, by node (§5), from its pages' routes and their addresses: and the
- * album pages with nothing to show, which are drafts and never shown.
+ * A section's bands for its Albums view, by node (§5), from its albums' routes and their addresses: and the
+ * albums with nothing to show, which are never shown.
  */
-export async function bandsOf(pages: readonly { node: string; page: string; href: string; site?: string }[]): Promise<{ bands: Record<string, Band>; hidden: Set<string> }> {
+export async function bandsOf(albums: readonly { node: string; album: string; href: string; site?: string }[]): Promise<{ bands: Record<string, Band>; hidden: Set<string> }> {
   const bands: Record<string, Band> = {};
   const hidden = new Set<string>();
-  for (const p of pages) {
-    if (!getArticle(p.page)?.album) continue;
-    const band = await bandOf(p.page, p.href, p.site);
-    if (band) bands[p.node] = band;
-    else hidden.add(p.node);
+  for (const a of albums) {
+    const band = await bandOf(a.album, a.href, a.site);
+    if (band) bands[a.node] = band;
+    else hidden.add(a.node);
   }
   return { bands, hidden };
 }

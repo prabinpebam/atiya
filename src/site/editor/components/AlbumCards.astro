@@ -1,0 +1,195 @@
+---
+/**
+ * The Albums screen's grid (documentation/gallery/spec.md §9.1): every album as a card, drafts first, then in the
+ * gallery's order, each its cover picture, title, count, span of dates and tags (Draft, Private, and its section
+ * when it isn't the gallery). A search by title and a filter (Drafts, Private, a section) narrow it as typed;
+ * each card opens its album, and its own buttons open it on the site, copy its address and delete it.
+ * @tier editor
+ * @a11y The cards are a list; each card is one link (its title) with its buttons beside it, named for the album.
+ * Filtering says how many show in a polite live region.
+ */
+import TextField from '../../components/fundamentals/TextField.astro';
+import Select from '../../components/fundamentals/Select.astro';
+import Image from '../../components/fundamentals/Image.astro';
+import Icon from '../../components/fundamentals/Icon.astro';
+import IconButton from '../../components/fundamentals/IconButton.astro';
+import Tag from '../../components/fundamentals/Tag.astro';
+import Text from '../../components/fundamentals/Text.astro';
+
+/** An album as its card shows it. */
+export interface AlbumCardView {
+  /** The album's ID. */
+  id: string;
+  /** Its title. */
+  title: string;
+  /** Its editor. */
+  href: string;
+  /** Its page on the site (published), else null. */
+  path: string | null;
+  /** Its cover picture's thumbnail, or none yet. */
+  cover: { thumb: string; alt: string; bg?: string; width: number; height: number } | null;
+  /** "12 pictures, 1 video" (empty: no items yet). */
+  count: string;
+  /** The span of the days its pictures were taken. */
+  dates?: string;
+  /** A draft. */
+  draft: boolean;
+  /** A private album. */
+  private: boolean;
+  /** The section it's in. */
+  section: { id: string; title: string } | null;
+  /** Its section isn't the gallery's: its tag shows. */
+  elsewhere: boolean;
+}
+
+interface Props {
+  /** The albums, in the order shown. */
+  cards: AlbumCardView[];
+  /** The sections albums can be in, for the filter. */
+  sections: { value: string; label: string }[];
+}
+
+const { cards, sections } = Astro.props;
+const filters = [
+  { value: 'all', label: 'All albums' },
+  { value: 'drafts', label: 'Drafts' },
+  { value: 'private', label: 'Private' },
+  ...sections.map((s) => ({ value: `section:${s.value}`, label: `In ${s.label}` })),
+];
+---
+
+<div class="albums" data-albums>
+  <div class="find">
+    <TextField label="Find an album" type="search" icon="search" data-albums-search="" />
+    <Select label="Show" options={filters} value="all" data-albums-filter="" />
+  </div>
+  <p class="found" role="status" data-albums-found>{cards.length === 1 ? '1 album' : `${cards.length} albums`}</p>
+  {
+    cards.length ? (
+      <ul class="cards">
+        {cards.map((c) => (
+          <li class="card" data-card data-album-card={c.id} data-title={c.title.toLowerCase()} data-draft={c.draft ? '' : undefined} data-private={c.private ? '' : undefined} data-section={c.section?.id ?? ''}>
+            <div class="cover">
+              {c.cover ? (
+                <Image src={c.cover.thumb} alt="" width={c.cover.width} height={c.cover.height} ratio="4/3" display="fit" rounded={false} bg={c.cover.bg ? { light: c.cover.bg } : undefined} />
+              ) : (
+                <span class="blank">
+                  <Icon name="gallery" size="lg" />
+                </span>
+              )}
+            </div>
+            <div class="words">
+              <a class="title" href={c.href} data-card-link>
+                {c.title}
+              </a>
+              <Text variant="small" tone="muted">
+                {[c.count || 'No items yet', c.dates].filter(Boolean).join(' · ')}
+              </Text>
+              <span class="tags">
+                {c.draft && <Tag size="sm">Draft</Tag>}
+                {c.private && (
+                  <Tag size="sm" tone="highlight" icon="key">
+                    Private
+                  </Tag>
+                )}
+                {c.elsewhere && c.section && <Tag size="sm" icon="sections">{c.section.title}</Tag>}
+              </span>
+            </div>
+            <div class="actions">
+              {c.path && <IconButton label={`Open ${c.title} on the site`} icon="external" size="sm" href={c.path} />}
+              {c.path && <IconButton label={`Copy the address of ${c.title}`} icon="copy" size="sm" data-albums-copy={c.path} />}
+              <IconButton label={`Delete ${c.title}`} icon="delete" size="sm" data-albums-delete={c.id} data-albums-title={c.title} data-albums-count={c.count} />
+            </div>
+          </li>
+        ))}
+      </ul>
+    ) : (
+      <Text tone="muted">No albums yet. New album makes one, ready to fill.</Text>
+    )
+  }
+</div>
+
+<script>
+  import { each } from '../../scripts/page';
+  import { initAlbums } from '../scripts/albums';
+
+  each<HTMLElement>('[data-albums]', (root, signal) => initAlbums(root, signal));
+</script>
+
+<style>
+  .albums {
+    display: grid;
+    gap: var(--space-4);
+  }
+
+  .find {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-3);
+    align-items: end;
+  }
+
+  .found {
+    margin: 0;
+    font: var(--type-hint);
+    color: var(--color-text-muted);
+  }
+
+  .cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(var(--c-editor-album-cards-min), 1fr));
+    gap: var(--space-5);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .card {
+    display: grid;
+    grid-template-rows: auto 1fr;
+    overflow: hidden;
+    border: var(--border-hairline) solid var(--color-border);
+    border-radius: var(--radius-md);
+    background: var(--color-bg-raised);
+  }
+
+  .card[hidden] {
+    display: none;
+  }
+
+  .cover {
+    background: var(--color-bg-sunk);
+  }
+
+  .blank {
+    display: grid;
+    place-items: center;
+    aspect-ratio: 4 / 3;
+    color: var(--color-text-muted);
+  }
+
+  .words {
+    display: grid;
+    gap: var(--space-1);
+    padding: var(--space-3) var(--space-4) 0;
+  }
+
+  .title {
+    font: var(--type-label);
+    color: var(--color-text);
+  }
+
+  .tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-1);
+  }
+
+  .actions {
+    position: relative;
+    display: flex;
+    justify-content: end;
+    gap: var(--space-1);
+    padding: var(--space-1) var(--space-2) var(--space-2);
+  }
+</style>

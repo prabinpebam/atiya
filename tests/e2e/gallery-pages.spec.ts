@@ -7,10 +7,14 @@ import { expect, test, type Page } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 import { readFileSync } from 'node:fs';
 
-const ALBUM = JSON.parse(readFileSync('tests/fixtures/gallery/content/articles/fixture-album.json', 'utf8')) as {
-  album: { items: { id: string }[]; showcase: { tiles: { item: string; x: number; y: number; w: number; h: number; onPhones?: boolean }[] } };
+const ALBUM = JSON.parse(readFileSync('tests/fixtures/gallery/content/albums/fixture-album.json', 'utf8')) as {
+  items: { id: string; media: string }[];
+  cover: { tiles: { item: string; x: number; y: number; w: number; h: number; onPhones?: boolean }[] };
 };
-const TILES = ALBUM.album.showcase.tiles;
+const TILES = ALBUM.cover.tiles;
+/** The album's items as its page shows them: its default order, oldest taken first (from the sidecars), the undated after. */
+const takenOf = (media: string) => (JSON.parse(readFileSync(`tests/fixtures/gallery/content/media/${media}.json`, 'utf8')) as { taken?: string }).taken;
+const ORDER = [...ALBUM.items.filter((i) => takenOf(i.media)).sort((a, b) => takenOf(a.media)!.localeCompare(takenOf(b.media)!)), ...ALBUM.items.filter((i) => !takenOf(i.media))];
 const band = (page: Page) => page.locator('[data-album-band][data-album-id="fixture-album"]');
 
 const noSeriousViolations = async (page: Page) => {
@@ -131,15 +135,15 @@ test.describe('gallery', () => {
     await page.setViewportSize({ width: 1280, height: 900 });
     await page.goto('/gallery/fixture-album/');
     const cells = page.locator('li[data-album-cell]');
-    await expect(cells).toHaveCount(ALBUM.album.items.length);
-    expect(await cells.evaluateAll((els) => els.map((e) => e.id))).toEqual(ALBUM.album.items.map((i) => `item-${i.id}`));
+    await expect(cells).toHaveCount(ALBUM.items.length);
+    expect(await cells.evaluateAll((els) => els.map((e) => e.id))).toEqual(ORDER.map((i) => `item-${i.id}`));
     for (const link of await page.locator('li[data-album-cell] a[data-lightbox="album"]').all()) await expect(link).toHaveAccessibleName(/\S/);
     await expect(page.locator('main header').first()).toContainText(/\d+ pictures?/);
     await expect(page.locator('main header').first()).toContainText(/20\d\d/);
     await noSeriousViolations(page);
   });
 
-  test('captions under the grid\'s cells when the album asks: its own or its picture\'s, under the picture, each row level, room kept for one without', async ({ page }) => {
+  test('captions under the grid\'s cells when the album asks: its picture\'s, under the picture, each row level, room kept for one without', async ({ page }) => {
     await page.setViewportSize({ width: 1280, height: 900 });
     // the fixture album doesn't ask: no caption under its cells
     await page.goto('/gallery/fixture-album/');
@@ -151,8 +155,9 @@ test.describe('gallery', () => {
     await expect(page.locator('.album-grid[data-layout="grid"][data-captions]')).toBeVisible();
     await expect(page.locator('[data-justified][data-ready]')).toBeAttached();
     const cells = page.locator('li[data-album-cell]');
-    expect(await cells.evaluateAll((els) => els.map((e) => e.id))).toEqual(['item-door', 'item-top', 'item-noodles']);
-    // the item's own caption, else its picture's; an item without one keeps its room
+    // in the album's order: oldest taken first
+    expect(await cells.evaluateAll((els) => els.map((e) => e.id))).toEqual(['item-top', 'item-door', 'item-noodles']);
+    // the picture's caption, from its sidecar; an item without one keeps its room
     await expect(page.locator('#item-door [data-cell-caption]')).toHaveText('A red door, freshly painted.');
     await expect(page.locator('#item-top [data-cell-caption]')).toHaveText('The view from the top, kept large.');
     await expect(page.locator('#item-noodles [data-cell-caption]')).toHaveText('');
@@ -173,7 +178,7 @@ test.describe('gallery', () => {
     await noSeriousViolations(page);
   });
 
-  test('a Story shows every item whole, one after another, with its words under it; no captions under cells', async ({ page }) => {
+  test('a Story shows every item whole, one after another, with its words under it, and its text card in place; no captions under cells', async ({ page }) => {
     await page.setViewportSize({ width: 1280, height: 900 });
     await page.goto('/gallery/fixture-story/');
     await expect(page.locator('.album-grid[data-layout="story"]')).toBeVisible();
@@ -203,11 +208,19 @@ test.describe('gallery', () => {
     await expect(words('cloud')).toContainText('Loktak Lake');
     await expect(words('cloud').locator('time')).toContainText(/Taken \w/);
     await expect(words('flags')).toContainText('Prayer flags over the pass on the way down.');
-    await expect(words('map')).toContainText('The way round the lake, drawn from memory.');
+    await expect(words('map')).toContainText('The plan, drawn to scale.');
     for (const id of ['cloud', 'flags', 'map']) {
       const [pic, text] = await Promise.all([page.locator(`#item-${id} a[data-lightbox="album"]`).boundingBox(), words(id).boundingBox()]);
       expect(text!.y, `${id}'s words are under it`).toBeGreaterThanOrEqual(pic!.y + pic!.height - 1);
     }
+    // the text card breaks the run where it stands, its words and link drawn; it never opens the lightbox
+    const card = page.locator('#item-words[data-album-text]');
+    await expect(card).toContainText('Fixture text card: from the pass, the way down to the lake');
+    await expect(card.getByRole('link', { name: 'as drawn' })).toHaveAttribute('href', '#item-map');
+    await expect(card.locator('[data-lightbox]')).toHaveCount(0);
+    const [flags, text, map] = await Promise.all([page.locator('#item-flags').boundingBox(), card.boundingBox(), page.locator('#item-map').boundingBox()]);
+    expect(text!.y, 'after the item before it').toBeGreaterThanOrEqual(flags!.y + flags!.height - 1);
+    expect(map!.y, 'before the item after it').toBeGreaterThanOrEqual(text!.y + text!.height - 1);
     await noSeriousViolations(page);
   });
 });
@@ -217,7 +230,7 @@ test.describe('gallery: without scripts', () => {
   test('without scripts every album item is a working link: a picture to its file, a video to its file, an embed to its page', async ({ page, request }) => {
     await page.goto('/gallery/fixture-album/');
     const links = page.locator('li[data-album-cell] a[data-lightbox="album"]');
-    await expect(links).toHaveCount(ALBUM.album.items.length);
+    await expect(links).toHaveCount(ALBUM.items.length);
     const hrefs = await links.evaluateAll((els) => els.map((e) => ({ kind: (e as HTMLElement).dataset.kind, href: (e as HTMLAnchorElement).href })));
     for (const { kind, href } of hrefs) {
       expect(href, `${kind} has a link`).not.toMatch(/#$/);

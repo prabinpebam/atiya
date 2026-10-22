@@ -3,5 +3,6 @@
   "file": "docs-page.webp",
   "alt": "A Slate documentation page for the site design system, showing breadcrumbs, status metadata, a table of contents, and long-form content in the reader.",
   "caption": "Slate keeps long reference pages readable with route state, navigation, search, and a generated table of contents.",
+  "fingerprint": "f8fb7bd48a582dc3a5ca083982b4a35eefe5f4f78d59485de84c08c95641ca3d",
   "visibility": "public"
 }

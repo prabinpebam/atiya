@@ -1,0 +1,35 @@
+---
+/** Edit mode's Albums screen (documentation/gallery/spec.md §9.1). Dev only: injected by integrations/editor.mjs. */
+import EditorLayout from '../EditorLayout.astro';
+import AlbumCards from '../components/AlbumCards.astro';
+import ContentIssues from '../components/ContentIssues.astro';
+import Button from '../../components/fundamentals/Button.astro';
+import Dialog from '../../components/compounds/Dialog.astro';
+import { load } from '../server/screens';
+import { albumCards } from '../server/albumScreens';
+import { albumSections } from '../server/albums';
+
+export const prerender = false;
+
+const loaded = load();
+const cards = loaded.ok ? await albumCards(loaded.index) : [];
+const sections = loaded.ok ? albumSections(loaded.index.structure).map((s) => ({ value: s.value, label: s.label })) : [];
+---
+
+<EditorLayout
+  title="Albums"
+  screen="albums"
+  heading="Albums"
+  intro="Your photo albums: drafts first, then in the gallery's order. New album makes an untitled one at once, ready to fill; its pictures stay in your library whatever happens to the album."
+>
+  <Fragment slot="tools">
+    <Button variant="primary" size="sm" icon="plus" data-albums-new="">New album</Button>
+  </Fragment>
+  {loaded.ok ? <AlbumCards cards={cards} sections={sections} /> : <ContentIssues issues={loaded.issues} />}
+  <Dialog id="album-delete" title="Delete the album" size="sm">
+    <p data-album-delete-words>Delete the album? Its pictures stay in your library.</p>
+    <Fragment slot="actions">
+      <Button variant="primary" icon="delete" data-album-delete-confirm="">Delete album</Button>
+    </Fragment>
+  </Dialog>
+</EditorLayout>

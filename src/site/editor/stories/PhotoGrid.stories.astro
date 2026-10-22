@@ -1,0 +1,17 @@
+---
+import Example from '../../library/Example.astro';
+import PhotoGrid from '../kit/PhotoGrid.astro';
+import { PHOTO_CELLS } from './samples';
+---
+
+<Example title="In date order" description="A header for each day taken; every kind of item, a text card among them, one picture needing alt text and one whose file is gone." layout="block">
+  <PhotoGrid label="Items in Kitchen garden" cells={PHOTO_CELLS} days />
+</Example>
+
+<Example title="In your own order" description="No day headers: the order is yours, changed by dragging." layout="block">
+  <PhotoGrid label="Items in Kitchen garden" cells={PHOTO_CELLS} />
+</Example>
+
+<Example title="An empty album" description="The whole grid is a drop target, saying what it takes." layout="block">
+  <PhotoGrid label="Items in Untitled album" cells={[]} />
+</Example>

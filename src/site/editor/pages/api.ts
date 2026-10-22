@@ -4,13 +4,13 @@
  * { ok, versions } or { ok: false, issues } with 409 (a conflict) or 422 (the contract's refusal).
  */
 import type { APIRoute } from 'astro';
-import type { Article, ImageMedia, SiteSettings, Person, PlanetStructure, SiteStructure, ThemeFile, VideoMedia } from '../../content/schema';
+import type { Album, Article, ImageMedia, SiteSettings, Person, PlanetStructure, SiteStructure, ThemeFile, VideoMedia } from '../../content/schema';
 import { asTab, commit, jsonBytes, readDoc, type Result } from '../server/store';
 import { createArticle, deleteArticle, duplicateArticle, saveArticle, PLANET, STRUCTURE, planetKey } from '../server/articles';
 import { cropMedia, cropSource, deleteMedia, findFocus, makeStandard, parseUploadCrop, removeDark, replaceMaster, saveSidecar, setDark, upload, uploadVideo } from '../server/media';
 import { isVideoFile } from '../model/upload';
 import { measureVideo } from '../server/videoShape';
-import { addEmbed } from '../server/albumEmbed';
+import { addLinkedVideo } from '../server/albumEmbed';
 import { changes, discard, publish, push } from '../server/git';
 import { changeAddress, createGrant, deleteGrant, extendGrant, moveSectionPages, rescopeGrant, setPageAccess, setSectionOrder, shareMessage, sharingView, updateGrant, withdrawGrant, type GrantEdit, type NewGrant, type PageAccess } from '../server/access';
 import { content } from '../../content/repository';
@@ -173,6 +173,7 @@ const handle: APIRoute = async ({ request, params, url }) => {
       const index = content();
       const route = index.routes.find((r) => r.path === at);
       if (route?.node.kind === 'item' && route.node.item.type === 'article') return json({ label: 'Edit this page', href: `/_edit/articles/${route.node.item.id}/` });
+      if (route?.node.kind === 'item' && route.node.item.type === 'album') return json({ label: 'Edit this album', href: `/_edit/albums/${route.node.item.id}/` });
       if (route?.node.kind === 'hub' && route.path !== '/') return json({ label: 'Edit this section', href: '/_edit/sections/' });
       return json({ label: 'Edit mode', href: '/_edit/' });
     }
@@ -219,8 +220,6 @@ const handle: APIRoute = async ({ request, params, url }) => {
         return result(await saveArticle({ id, article: b.article, section: b.section, ifMatch: b.ifMatch ?? {} }));
       }
       if (method === 'POST' && id && parts[2] === 'duplicate') return result(await duplicateArticle(id));
-      // an album's YouTube or Vimeo video, by its address: its title, shape and poster (gallery spec §9.2)
-      if (method === 'POST' && id && parts[2] === 'embed') return result(await addEmbed(id, String((await body<{ url?: string }>(request)).url ?? '')));
       // its access (documentation/access/spec.md §8.2): open or private, and a private page's address
       if (method === 'PUT' && id && parts[2] === 'access') {
         const b = await body<{ access: PageAccess; section?: string }>(request);
@@ -231,6 +230,23 @@ const handle: APIRoute = async ({ request, params, url }) => {
       if (method === 'DELETE' && id) {
         const b = request.headers.get('content-type')?.includes('json') ? await body<{ ifMatch?: Record<string, string | null> }>(request) : {};
         return result(await deleteArticle(id, url.searchParams.get('media') === '1', b.ifMatch ?? {}));
+      }
+    }
+
+    // ---------- albums (documentation/gallery/spec.md §9.1, §9.7) ----------
+    if (parts[0] === 'albums') {
+      const { createAlbum, deleteAlbum, moveAlbum, saveAlbum } = await import('../server/albums');
+      const id = parts[1];
+      if (id && !ID.test(id)) return json({ ok: false }, 404);
+      if (method === 'POST' && !id) return result(await createAlbum(await body(request)));
+      if (method === 'PUT' && id && parts.length === 2) {
+        const b = await body<{ album: Album; ifMatch: Record<string, string | null> }>(request);
+        return result(await saveAlbum({ id, album: b.album, ifMatch: b.ifMatch ?? {} }));
+      }
+      if (method === 'PUT' && id && parts[2] === 'section') return result(await moveAlbum(id, (await body<{ section: string }>(request)).section));
+      if (method === 'DELETE' && id) {
+        const b = request.headers.get('content-type')?.includes('json') ? await body<{ ifMatch?: Record<string, string | null> }>(request) : {};
+        return result(await deleteAlbum(id, b.ifMatch ?? {}));
       }
     }
 
@@ -339,6 +355,12 @@ const handle: APIRoute = async ({ request, params, url }) => {
     }
 
     // ---------- media ----------
+    // a YouTube or Vimeo address made a linked video in the library, or the one already there (gallery spec §4.2, §9.4)
+    if (method === 'POST' && path === 'linked-video') {
+      const b = await body<{ url?: unknown; album?: unknown; private?: unknown }>(request).catch(() => ({}) as { url?: unknown; album?: unknown; private?: unknown });
+      const r = await addLinkedVideo({ url: String(b.url ?? ''), ...(typeof b.album === 'string' && b.album ? { album: b.album } : {}), ...(b.private === true ? { private: true } : {}) });
+      return r.ok ? json({ ok: true, versions: r.versions, id: r.id, existing: r.existing, title: r.title }) : json({ ok: false, error: r.issues[0]?.message ?? 'not linked', issues: r.issues }, r.status);
+    }
     if (parts[0] === 'media') {
       const id = parts.slice(1).join('/');
       if (method === 'GET' && !id) {

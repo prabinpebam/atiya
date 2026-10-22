@@ -1,0 +1,13 @@
+---
+import Example from '../../library/Example.astro';
+import AlbumCards from '../components/AlbumCards.astro';
+import { ALBUM_CARDS, ALBUM_SECTIONS } from './samples';
+---
+
+<Example title="Every album" description="Drafts first, then in the gallery's order: a cover, the title, the count and dates, and tags for a draft, a private album and one in another section." layout="block">
+  <AlbumCards cards={ALBUM_CARDS} sections={ALBUM_SECTIONS} />
+</Example>
+
+<Example title="No albums yet" description="What the screen says before the first album." layout="block">
+  <AlbumCards cards={[]} sections={ALBUM_SECTIONS} />
+</Example>

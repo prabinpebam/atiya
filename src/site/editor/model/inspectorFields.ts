@@ -36,7 +36,6 @@ export const videoUrl = (b: Extract<Block, { type: 'video' }>): string => (!b.em
 export const PAGE_KINDS: Choice[] = [
   { value: 'note', label: 'Article', description: 'A story, a note or an essay' },
   { value: 'page', label: 'Page', description: 'About, Contact and the like' },
-  { value: 'gallery', label: 'Album', description: 'Pictures and videos in an order, with words' },
 ];
 
 /** A quote's styles, as a new quote's form and a quote's settings offer them. */

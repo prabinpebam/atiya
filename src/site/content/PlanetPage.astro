@@ -2,35 +2,53 @@
 /**
  * A building's list, or one of its pages, read on the planet (documentation/sections/spec.md §6.1): the
  * site's own layouts, opening and blocks in the planet's frame, so a page reads the same in both places.
- * A building shows its section of the site (§5.2): the list is the section's published open pages in the
- * section's view and words, with the section's invited-readers panel when it has private pages (never on
- * the planet, V28) and the contact form in the building showing the Contact page; a page has Previous and
- * Next through the building's pages, in its order, and nothing that leads to another building (§6.4).
+ * A building shows its section of the site (§5.2): the list is the section's published open pages and
+ * albums in the section's view and words, with the section's invited-readers panel when it has private pages
+ * (never on the planet, V28) and the contact form in the building showing the Contact page; a page or an album
+ * has Previous and Next through the building's pages, in its order, and nothing that leads to another
+ * building (§6.4). An album reads in its building as on the site (documentation/gallery/spec.md §13).
  */
 import ArticleLayout from '../layouts/ArticleLayout.astro';
+import AlbumLayout from '../layouts/AlbumLayout.astro';
 import IndexLayout from '../layouts/IndexLayout.astro';
 import Contact from './Contact.astro';
 import Blocks from './Blocks.astro';
-import { getOpenRoutes, getPlanet, getRecommendations, getRoutes, getSite, placePages, placeSection } from './repository';
+import { getOpenRoutes, getPlanet, getRecommendations, getRoutes, getSite, placeAlbums, placePages, placeSection } from './repository';
 import { recommendationBand } from './recommendations';
 import { withPhotos } from './recommendationsBand';
-import { albumOf, cardPicture, measureOf, openingOf, relatedOf } from './opening';
+import { albumCardOf, albumMeasureOf, albumOf, albumOpening, cardPicture, measureOf, openingOf, relatedOf } from './opening';
 import { withBase } from '../design/meta';
 import { searchCopy } from './limits';
 import { bandsOf } from './bands';
-import type { Place } from './schema';
+import type { Album, Article, Place } from './schema';
+import type { Route } from './routes';
 import type { PlanetFrame } from '../components/compounds/PlaceBar.astro';
 
 interface Props {
   /** The building. */
   place: Place;
-  /** One of its pages; left out, its list. */
+  /** One of its pages or albums; left out, its list. */
   pageId?: string;
 }
 
+/** One of a building's pages: an article or an album. */
+type Entry = { id: string; title: string; route: Route; article?: Article; album?: Album };
+
+/** A building's pages and albums, in its section's order (an Albums view's albums in its albumOrder: gallery spec §5). */
+const entriesOf = (placeId: string): Entry[] => {
+  const routes = getRoutes();
+  const articles: Entry[] = placePages(placeId).map(({ article, route }) => ({ id: article.id, title: article.title, route, article }));
+  const albums: Entry[] = placeAlbums(placeId).map(({ album, route }) => ({ id: album.id, title: album.title, route, album }));
+  const all = [...articles, ...albums].sort((a, b) => routes.indexOf(a.route) - routes.indexOf(b.route));
+  const node = placeSection(placeId)?.node;
+  if (node?.kind !== 'hub' || node.view !== 'albums') return all;
+  let k = 0;
+  return all.map((e) => (e.album ? albums[k++]! : e));
+};
+
 const { place, pageId } = Astro.props;
 const site = getSite();
-const pages = placePages(place.id);
+const pages = entriesOf(place.id);
 const listHref = withBase(`/play/${place.id}/`);
 const pageHref = (id: string) => withBase(`/play/${place.id}/${id}/`);
 const section = placeSection(place.id);
@@ -44,41 +62,50 @@ const isContact = !!sectionNode && sectionNode.id === site.contactPage;
 const privacyRoute = getOpenRoutes().find((r) => r.node.id === site.privacyPage);
 // the privacy note reads in this building when it's one of its pages, else on the site (in a new tab)
 const privacyHere = pages.find((p) => p.route === privacyRoute);
-const privacy = withBase(privacyHere ? `/play/${place.id}/${privacyHere.article.id}/` : (privacyRoute?.path ?? '/'));
+const privacy = withBase(privacyHere ? `/play/${place.id}/${privacyHere.id}/` : (privacyRoute?.path ?? '/'));
 // every page on the planet, by its address on the site: the frame's script sends each link where it belongs
 const map: PlanetFrame['map'] = Object.fromEntries(
-  (getPlanet()?.places ?? []).flatMap((p) => placePages(p.id).map(({ article, route }) => [withBase(route.path), { place: p.id, title: p.title, href: withBase(`/play/${p.id}/${article.id}/`) }])),
+  (getPlanet()?.places ?? []).flatMap((p) => entriesOf(p.id).map(({ id, route }) => [withBase(route.path), { place: p.id, title: p.title, href: withBase(`/play/${p.id}/${id}/`) }])),
 );
-const i = pageId ? pages.findIndex((p) => p.article.id === pageId) : -1;
+const i = pageId ? pages.findIndex((p) => p.id === pageId) : -1;
 const current = i >= 0 ? pages[i] : undefined;
 const frame: PlanetFrame = current
-  ? { place: { id: place.id, title: place.title }, page: { id: current.article.id, index: i, count: pages.length }, contentsHref: listHref, siteHref: withBase(current.route.path), map, canonical: current.route.path }
+  ? { place: { id: place.id, title: place.title }, page: { id: current.id, index: i, count: pages.length }, contentsHref: listHref, siteHref: withBase(current.route.path), map, canonical: current.route.path }
   : { place: { id: place.id, title: place.title }, siteHref: withBase(sectionPath ?? '/#sections'), map, canonical: sectionPath ?? '/' };
-const header = current && (await openingOf(current.article, { label: place.title, href: listHref }));
-// a gallery page's album, read in its building as on the site (gallery spec §7)
-const album = current?.article.album ? await albumOf(current.article) : undefined;
-// what to read next, from this building (a page read on the planet stays in its building: §6.4)
-const related = current && (await relatedOf(current.article, place.id, pages.map((p) => ({ article: p.article, href: pageHref(p.article.id), section: place.id }))));
-const link = (k: number) => (pages[k] ? { href: pageHref(pages[k].article.id), title: pages[k].article.title } : undefined);
+const topic = { label: place.title, href: listHref };
+const article = current?.article;
+const header = article && (await openingOf(article, topic));
+// an album, read in its building as on the site (gallery spec §13)
+const album = current?.album;
+const albumView = album && (await albumOf(album.id));
+// what to read next, from this building's articles (a page read on the planet stays in its building: §6.4)
+const related = article && (await relatedOf(article, place.id, pages.flatMap((p) => (p.article ? [{ article: p.article, href: pageHref(p.id), section: place.id }] : []))));
+const link = (k: number) => (pages[k] ? { href: pageHref(pages[k].id), title: pages[k].title } : undefined);
 const stories = current
   ? []
   : await Promise.all(
-      pages.map(async ({ article: a, route: r }) => {
-        return { node: r.node.id, href: pageHref(a.id), title: a.title, dek: a.summary, meta: measureOf(a), picture: await cardPicture(a) };
-      }),
+      pages.map(async ({ id, route: r, article: a, album: al }) =>
+        al
+          ? { node: r.node.id, href: pageHref(id), title: al.title, dek: al.summary, meta: albumMeasureOf(al), picture: await albumCardOf(al) }
+          : { node: r.node.id, href: pageHref(id), title: a!.title, dek: a!.summary, meta: measureOf(a!), picture: await cardPicture(a!) },
+      ),
     );
-// a section in the Albums view shows its album pages as bands here too, each opening in this building (gallery spec §13)
+// a section in the Albums view shows its albums as bands here too, each opening in this building (gallery spec §13)
 const albums =
-  !current && sectionNode?.view === 'albums' ? await bandsOf(pages.map(({ article: a, route: r }) => ({ node: r.node.id, page: a.id, href: pageHref(a.id), site: withBase(r.path) }))) : undefined;
+  !current && sectionNode?.view === 'albums'
+    ? await bandsOf(pages.flatMap(({ id, route: r, album: al }) => (al ? [{ node: r.node.id, album: id, href: pageHref(id), site: withBase(r.path) }] : [])))
+    : undefined;
 // the section's recommendations, in the same place as on the site (recommendations.md §3)
 const recommendations = !current && sectionNode ? await withPhotos(recommendationBand(sectionNode.recommendations, getRecommendations(), stories.map((s) => s.node))) : undefined;
 ---
 
 {
-  current && header ? (
-    <ArticleLayout title={`${current.article.title} — ${place.title}`} description={current.article.seo?.description ?? searchCopy(current.article.summary)} header={header} prev={link(i - 1)} next={link(i + 1)} frame={frame} related={related} album={album}>
-      <Blocks blocks={current.article.body} />
+  article && header ? (
+    <ArticleLayout title={`${article.title} — ${place.title}`} description={article.seo?.description ?? searchCopy(article.summary)} header={header} prev={link(i - 1)} next={link(i + 1)} frame={frame} related={related}>
+      <Blocks blocks={article.body} />
     </ArticleLayout>
+  ) : album && albumView ? (
+    <AlbumLayout title={`${album.title} — ${place.title}`} description={album.summary ? searchCopy(album.summary) : undefined} header={albumOpening(album, topic)} album={albumView} prev={link(i - 1)} next={link(i + 1)} frame={frame} />
   ) : (
     <IndexLayout
       title={`${place.title} — ${site.name}`}

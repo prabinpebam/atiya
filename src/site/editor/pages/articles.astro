@@ -1,5 +1,5 @@
 ---
-/** Edit mode's pages: articles, pages and galleries (documentation/editor/spec.md §4). Dev only: injected by integrations/editor.mjs. */
+/** Edit mode's pages: articles and pages (documentation/editor/spec.md §4). Dev only: injected by integrations/editor.mjs. */
 import EditorLayout from '../EditorLayout.astro';
 import ArticleTable from '../components/ArticleTable.astro';
 import ArticleForm from '../components/ArticleForm.astro';
@@ -20,10 +20,9 @@ const protectable = hasPrivate(privateRoot());
 const privateSetup = privateSetupHref(SITE_FEATURES.managed, protectable);
 ---
 
-<EditorLayout title="Pages" screen="articles" heading="Pages" intro="Everything on the site with its own address, newest first: articles, pages (About, Contact) and galleries, open and private together. A private page opens only for the readers you share it with.">
+<EditorLayout title="Pages" screen="articles" heading="Pages" intro="Everything on the site with its own address, newest first: articles and pages (About, Contact), open and private together. A private page opens only for the readers you share it with.">
   <Fragment slot="actions">
     <Button variant="secondary" icon="page" data-dialog-open="new-page">New page</Button>
-    <Button variant="secondary" icon="gallery" data-dialog-open="new-album">New album</Button>
     <Button variant="primary" icon="plus" data-dialog-open="new-article">New article</Button>
   </Fragment>
   {
@@ -36,9 +35,6 @@ const privateSetup = privateSetupHref(SITE_FEATURES.managed, protectable);
         <Dialog id="new-page" title="New page" size="md">
           <ArticleForm mode="new" kind="page" section={home} sections={sectionOptions(loaded.index)} protectable={protectable} privateSetup={privateSetup} />
         </Dialog>
-        <Dialog id="new-album" title="New album" size="md">
-          <ArticleForm mode="new" kind="gallery" sections={sectionOptions(loaded.index)} protectable={protectable} privateSetup={privateSetup} />
-        </Dialog>
         <Dialog id="delete-article" title="Delete this draft?" size="sm">
           <ArticleForm mode="delete" />
         </Dialog>
@@ -47,5 +43,5 @@ const privateSetup = privateSetupHref(SITE_FEATURES.managed, protectable);
       <ContentIssues issues={loaded.issues} />
     )
   }
-  {wants && <span hidden data-editor-autopen={wants === 'page' ? 'new-page' : wants === 'album' ? 'new-album' : 'new-article'} />}
+  {wants && <span hidden data-editor-autopen={wants === 'page' ? 'new-page' : 'new-article'} />}
 </EditorLayout>

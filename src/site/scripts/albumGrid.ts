@@ -65,6 +65,35 @@ export interface AlbumCell {
   download?: string;
 }
 
+/** A text card (spec §7.4): words between the album's items, at the text width; the grid's rows end before it and start again after it. Never in the lightbox. */
+export interface AlbumTextCard {
+  /** The card's ID: its address on the page (`#item-<id>`). */
+  id: string;
+  kind: 'text';
+  /** Its words, as HTML (its Markdown, rendered). */
+  html: string;
+}
+
+/** One of an album's entries on its page: an item's cell, or a text card. */
+export type AlbumEntry = AlbumCell | AlbumTextCard;
+
+/** Whether an entry is a text card. */
+export const isTextCard = (e: AlbumEntry): e is AlbumTextCard => e.kind === 'text';
+
+/** An album's entries as runs: the cells between text cards (each run its own grid), and the text cards between them. */
+export function entryRuns(entries: readonly AlbumEntry[]): ({ text: AlbumTextCard } | { cells: AlbumCell[] })[] {
+  const runs: ({ text: AlbumTextCard } | { cells: AlbumCell[] })[] = [];
+  for (const e of entries) {
+    if (isTextCard(e)) runs.push({ text: e });
+    else {
+      const last = runs.at(-1);
+      if (last && 'cells' in last) last.cells.push(e);
+      else runs.push({ cells: [e] });
+    }
+  }
+  return runs;
+}
+
 /** A length on a poster: 140 → "2:20", 3725 → "1:02:05". */
 export function clockOf(seconds: number | undefined): string | undefined {
   if (!seconds || seconds < 0) return undefined;

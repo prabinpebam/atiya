@@ -1,0 +1,337 @@
+---
+/**
+ * An album's items as a photo app shows them (documentation/gallery/spec.md §9.2, §9.3): square thumbnails, each
+ * picture whole on its own edge colour, with its kind's badge, a Needs alt text mark and a check circle; text cards
+ * as full rows with their words; and, in a sorted album, the days they were taken as headers. Empty, it's one
+ * large drop target. The album editor's script selects, moves, opens and uploads through the data attributes
+ * (data-photo-grid, data-item, data-open-item, data-photo-upload); the grid itself draws, never decides.
+ * @tier kit
+ * @a11y A multi-selectable listbox named by `label`: each item is an option, selected with aria-selected; the
+ * days are labelled groups. One option takes the Tab stop (a roving tabindex), and the arrows move between them.
+ * @a11y A thumbnail's name is its alt text (or its kind and file when it has none), with what it's marked (Cover,
+ * Needs alt text) in words, never by colour alone.
+ * @key Arrows: move the focus through the grid (the album editor's script)
+ * @key Space: selects or deselects the focused item
+ * @key Enter: opens the focused item
+ */
+import Image from '../../components/fundamentals/Image.astro';
+import Icon from '../../components/fundamentals/Icon.astro';
+import Tag from '../../components/fundamentals/Tag.astro';
+import Text from '../../components/fundamentals/Text.astro';
+import Progress from '../../components/fundamentals/Progress.astro';
+import { stableId } from '../../design/stableId';
+
+/** One cell of the grid. */
+export interface PhotoCell {
+  /** The item's ID in its album. */
+  id: string;
+  /** What it is: a picture, a drawing, an animation, a video file, a linked video, a text card, or a library item that's gone. */
+  kind: 'picture' | 'drawing' | 'animated' | 'video' | 'embed' | 'text' | 'missing';
+  /** Its thumbnail (none: a plain tile). */
+  thumb?: string;
+  /** Its alt text (or a video's title). */
+  alt?: string;
+  /** The picture's own edge colour, behind it. */
+  bg?: string;
+  /** The thumbnail's shape (px). */
+  width?: number;
+  /** The thumbnail's height (px). */
+  height?: number;
+  /** A picture without alt text. */
+  needsAlt?: boolean;
+  /** A text card's words. */
+  text?: string;
+  /** The day it was taken (YYYY-MM-DD): its day header in a sorted album. */
+  taken?: string;
+  /** It's the cover picture. */
+  cover?: boolean;
+  /** Its library item's ID (for its name when it has no alt text). */
+  media?: string;
+}
+
+interface Props {
+  /** The grid's name ("Items in Summer sketches"). */
+  label: string;
+  /** The items in the order shown. */
+  cells: PhotoCell[];
+  /** Headers for the days taken (a sorted album). */
+  days?: boolean;
+  /** The words of the empty album's drop target. */
+  empty?: string;
+  /** Data attributes pass through to the grid. */
+  [data: `data-${string}`]: string | undefined;
+}
+
+const { label, cells, days = false, empty = 'Drop pictures and videos here, or add from your library', ...rest } = Astro.props;
+const id = `photo-grid-${stableId(Astro, 'PhotoGrid')}`;
+const BADGE: Partial<Record<PhotoCell['kind'], { icon: 'video' | 'link' | 'animated' | 'pen'; words: string }>> = {
+  video: { icon: 'video', words: 'Video' },
+  embed: { icon: 'link', words: 'Linked video' },
+  animated: { icon: 'animated', words: 'Animation' },
+  drawing: { icon: 'pen', words: 'Drawing' },
+};
+const dayWords = (d?: string) => (d ? new Date(`${d}T12:00:00Z`).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' }) : 'No date');
+// the days in the order shown: a run of items taken the same day is one group
+const groups: { day?: string; cells: PhotoCell[] }[] = [];
+for (const c of cells) {
+  const last = groups[groups.length - 1];
+  if (days && last && last.day === c.taken) last.cells.push(c);
+  else if (!days && last) last.cells.push(c);
+  else groups.push({ ...(days ? { day: c.taken } : {}), cells: [c] });
+}
+const nameOf = (c: PhotoCell) => {
+  if (c.kind === 'text') return `Text: ${c.text ?? ''}`;
+  if (c.kind === 'missing') return `Missing from the library: ${c.media ?? c.id}`;
+  const what = BADGE[c.kind]?.words;
+  const words = c.alt || `${what ?? 'Picture'} ${c.media?.split('/').pop() ?? c.id}, no alt text`;
+  return [what && c.alt ? `${what}: ${words}` : words, c.cover && 'cover picture'].filter(Boolean).join(', ');
+};
+const first = cells[0]?.id;
+---
+
+<div class="photo-grid" id={id} role="listbox" aria-multiselectable="true" aria-label={label} data-photo-grid data-empty={cells.length ? undefined : ''} {...rest}>
+  {
+    !cells.length && (
+      <div class="empty" data-photo-empty>
+        <Icon name="upload" size="lg" />
+        <Text variant="ui" tone="muted">{empty}</Text>
+      </div>
+    )
+  }
+  {!cells.length && (
+    <div class="day" role="none">
+      <ul class="cells" role="none" data-photo-cells />
+    </div>
+  )}
+  {
+    groups.map((g, gi) => (
+      <div class="day" role={days ? 'group' : 'none'} aria-labelledby={days ? `${id}-day-${gi}` : undefined} data-photo-day={g.day ?? ''}>
+        {days && (
+          <p class="day-label" id={`${id}-day-${gi}`}>
+            {dayWords(g.day)}
+          </p>
+        )}
+        <ul class="cells" role="none" data-photo-cells>
+          {g.cells.map((c) => (
+            <li
+              class="cell"
+              role="option"
+              aria-selected="false"
+              aria-label={nameOf(c)}
+              tabindex={c.id === first ? '0' : '-1'}
+              draggable="true"
+              data-item={c.id}
+              data-kind={c.kind}
+              data-open-item=""
+              data-taken={c.taken}
+            >
+              {c.kind === 'text' ? (
+                <span class="text">
+                  <Icon name="paragraph" />
+                  <Text as="span" variant="ui">{c.text}</Text>
+                </span>
+              ) : c.thumb ? (
+                <Image src={c.thumb} alt="" width={c.width ?? 1} height={c.height ?? 1} ratio="1/1" display="fit" rounded={false} bg={c.bg ? { light: c.bg } : undefined} />
+              ) : (
+                <span class="blank">
+                  <Icon name={c.kind === 'missing' ? 'error' : 'image'} size="lg" />
+                </span>
+              )}
+              <span class="check" aria-hidden="true">
+                <Icon name="check" />
+              </span>
+              <span class="marks" aria-hidden="true">
+                {BADGE[c.kind] && (
+                  <span class="badge">
+                    <Icon name={BADGE[c.kind]!.icon} />
+                  </span>
+                )}
+                {c.cover && <Tag size="sm" tone="highlight">Cover</Tag>}
+                {c.needsAlt && <Tag size="sm" tone="negative" icon="error">Needs alt text</Tag>}
+              </span>
+            </li>
+          ))}
+        </ul>
+      </div>
+    ))
+  }
+  <template data-photo-upload>
+    <li class="cell uploading" role="option" aria-selected="false" tabindex="-1" data-upload="">
+      <span class="blank">
+        <Icon name="upload" size="lg" />
+      </span>
+      <span class="progress">
+        <span class="upload-name" data-upload-name>file</span>
+        <Progress label="Uploading" hideLabel size="sm" value={0} data-upload-progress="" />
+        <span class="upload-why" data-upload-why hidden>why</span>
+      </span>
+    </li>
+  </template>
+</div>
+
+<style>
+  .photo-grid {
+    display: grid;
+    gap: var(--space-4);
+    min-block-size: calc(var(--c-editor-photo-cell) * 2);
+  }
+
+  .empty {
+    display: grid;
+    place-items: center;
+    align-content: center;
+    gap: var(--space-2);
+    min-block-size: calc(var(--c-editor-photo-cell) * 3);
+    padding: var(--space-6);
+    border: var(--border-control) dashed var(--color-border-strong);
+    border-radius: var(--radius-lg);
+    color: var(--color-text-muted);
+    text-align: center;
+  }
+
+  .photo-grid[data-dropping] .empty,
+  .photo-grid[data-dropping] .cells {
+    outline: var(--border-strong) dashed var(--color-accent);
+    outline-offset: var(--space-1);
+  }
+
+  .day-label {
+    margin: 0 0 var(--space-2);
+    font: var(--type-label);
+    color: var(--color-text-muted);
+  }
+
+  .cells {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(var(--c-editor-photo-cell), 1fr));
+    gap: var(--space-1);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .cell {
+    position: relative;
+    aspect-ratio: 1;
+    overflow: hidden;
+    border-radius: var(--radius-sm);
+    background: var(--color-bg-sunk);
+    cursor: default;
+  }
+
+  .cell[data-kind='text'] {
+    grid-column: 1 / -1;
+    aspect-ratio: auto;
+    min-block-size: var(--size-touch);
+    padding: var(--space-3) var(--space-4);
+    border-inline-start: var(--border-strong) solid var(--color-rule-strong);
+  }
+
+  .text {
+    display: flex;
+    gap: var(--space-2);
+    align-items: start;
+  }
+
+  .blank {
+    display: grid;
+    place-items: center;
+    block-size: 100%;
+    color: var(--color-text-muted);
+  }
+
+  .cell[aria-selected='true'] {
+    outline: var(--border-strong) solid var(--color-accent);
+    outline-offset: calc(-1 * var(--border-strong));
+  }
+
+  .cell[data-dragging] {
+    opacity: var(--opacity-disabled);
+  }
+
+  .cell[data-drop='before'] {
+    box-shadow: calc(-1 * var(--border-strong)) 0 0 0 var(--color-accent);
+  }
+
+  .check {
+    position: absolute;
+    inset: var(--space-1) auto auto var(--space-1);
+    display: grid;
+    place-items: center;
+    inline-size: var(--size-icon-lg);
+    block-size: var(--size-icon-lg);
+    border: var(--border-control) solid var(--color-on-image);
+    border-radius: var(--radius-round);
+    background: var(--color-image-shade);
+    color: transparent;
+    opacity: 0;
+  }
+
+  .cell:focus-visible .check,
+  .cell[aria-selected='true'] .check,
+  .photo-grid[data-selecting] .check {
+    opacity: 1;
+  }
+
+  .cell[aria-selected='true'] .check {
+    border-color: var(--color-accent);
+    background: var(--color-accent);
+    color: var(--color-on-accent);
+  }
+
+  @media (hover: hover) {
+    .cell:hover .check {
+      opacity: 1;
+    }
+  }
+
+  .cell:active .check {
+    opacity: 1;
+  }
+
+  .cell[data-kind='text'] .check {
+    inset: var(--space-1) var(--space-1) auto auto;
+  }
+
+  .marks {
+    position: absolute;
+    inset: auto var(--space-1) var(--space-1) var(--space-1);
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-1);
+    align-items: end;
+    justify-content: end;
+  }
+
+  .badge {
+    display: grid;
+    place-items: center;
+    padding: var(--space-0-5);
+    border-radius: var(--radius-xs);
+    background: var(--color-image-shade);
+    color: var(--color-on-image);
+  }
+
+  .progress {
+    position: absolute;
+    inset: auto var(--space-2) var(--space-2) var(--space-2);
+    display: grid;
+    gap: var(--space-1);
+    overflow-wrap: anywhere;
+    font: var(--type-hint);
+  }
+
+  .upload-why {
+    color: var(--color-negative);
+  }
+
+  .uploading[data-failed] .blank {
+    color: var(--color-negative);
+  }
+
+  @media (forced-colors: active) {
+    .cell[aria-selected='true'] {
+      outline-color: Highlight;
+    }
+  }
+</style>

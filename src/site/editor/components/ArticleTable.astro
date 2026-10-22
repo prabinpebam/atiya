@@ -48,7 +48,6 @@ const tone = (r: ArticleRow) => (r.published ? 'positive' : r.status === 'draft'
         { value: 'all', label: 'Every kind' },
         { value: 'note', label: 'Articles' },
         { value: 'page', label: 'Pages' },
-        { value: 'gallery', label: 'Galleries' },
         { value: 'talk', label: 'Talks' },
       ]}
       data-editor-filter="kind"
@@ -87,7 +86,7 @@ const tone = (r: ArticleRow) => (r.published ? 'positive' : r.status === 'draft'
                 {r.title}
               </Link>
             </th>
-            <td>{r.kind === 'page' ? 'Page' : r.kind === 'gallery' ? 'Gallery' : r.kind === 'talk' ? 'Talk' : 'Article'}</td>
+            <td>{r.kind === 'page' ? 'Page' : r.kind === 'talk' ? 'Talk' : 'Article'}</td>
             <td>{r.section?.title ?? <Text as="span" variant="small" tone="muted">Not on the site</Text>}</td>
             <td>
               <span class="tags">

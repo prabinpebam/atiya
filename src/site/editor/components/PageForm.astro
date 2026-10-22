@@ -72,9 +72,7 @@ const usesFor = (shape: 'wide' | 'square') => {
 };
 const face = thumbOf(article.portrait);
 const STATUS = statusChoices(article.status);
-// an album's kind stays (its items are its own), and a page becomes one only by New album (gallery spec §9.1)
-const album = article.kind === 'gallery';
-const KINDS: Choice[] = article.kind === 'talk' ? [{ value: 'talk', label: 'Talk' }] : album ? PAGE_KINDS.filter((k) => k.value === 'gallery') : PAGE_KINDS.filter((k) => k.value !== 'gallery');
+const KINDS: Choice[] = article.kind === 'talk' ? [{ value: 'talk', label: 'Talk' }] : PAGE_KINDS;
 const VISIBILITY: Choice[] = [{ value: 'public', label: 'Public' }, { value: 'publicRedacted', label: 'Public, with details removed' }, { value: 'summaryOnly', label: 'Summary only' }];
 ---
 
@@ -85,13 +83,6 @@ const VISIBILITY: Choice[] = [{ value: 'public', label: 'Public' }, { value: 'pu
         <NavRow pick="basics">Title and summary</NavRow>
         <NavRow pick="publishing" detail={STATUS.find((s) => s.value === article.status)?.label}>Publishing</NavRow>
       </NavGroup>
-      {
-        album && (
-          <NavGroup label="Album">
-            <NavRow pick="album">Album settings</NavRow>
-          </NavGroup>
-        )
-      }
       <NavGroup label="Pictures">
         <NavRow pick="lead" detail={article.hero ? lead?.alt || 'Chosen' : 'None'}>Lead picture</NavRow>
         <NavRow pick="thumbnail" detail={article.thumbnail ? card?.alt || 'Chosen' : article.hero ? 'The lead picture' : 'None'}>Thumbnail</NavRow>
@@ -110,7 +101,7 @@ const VISIBILITY: Choice[] = [{ value: 'public', label: 'Public' }, { value: 'pu
       <TextField label="Menu label" name="navLabel" id="page-navLabel" value={article.navLabel ?? ''} optional hint="A shorter name for menus and breadcrumbs." />
       <TextField label="Slug" name="slug" id="page-slug" value={article.slug} required hint={privatePage ? 'Kept for when it’s public: a private page’s address is a code.' : path ? `Its address: ${path}. Changed, the old address simply goes.` : 'Its address once it has a section.'} />
       <TextField label="Summary" name="summary" id="page-summary" value={article.summary} multiline rows={3} required hint="At most 240 characters: the standfirst and the card's line. Search results show about the first 160, cut at a word." data-editor-count="240" />
-      <Select label="Kind" name="kind" id="page-kind" value={article.kind} disabled={article.kind === 'talk' || album} options={KINDS} />
+      <Select label="Kind" name="kind" id="page-kind" value={article.kind} disabled={article.kind === 'talk'} options={KINDS} />
     </Pane>
 
     <Pane name="publishing" title="Publishing" titleId="page-s-publishing">
@@ -143,14 +134,6 @@ const VISIBILITY: Choice[] = [{ value: 'public', label: 'Public' }, { value: 'pu
         <Text variant="small" tone="muted">{onPlanet(privatePage, place, published)}</Text>
       </div>
     </Pane>
-
-    {
-      album && (
-        <Pane name="album" title="Album settings" titleId="page-s-album">
-          <slot name="album" />
-        </Pane>
-      )
-    }
 
     <Pane name="lead" title="Lead picture" titleId="page-s-lead">
       <PictureField thumb={lead} ratio="4/3" words={article.hero ? lead?.alt || 'No alt text' : 'None'} note={specTip(PICTURE_SPECS.lead)} fit={lead ? pictureNote(PICTURE_SPECS.lead, lead.width, lead.height) : undefined} data-editor-picture="lead">

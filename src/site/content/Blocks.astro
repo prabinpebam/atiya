@@ -24,7 +24,7 @@ import { headingIds } from './load';
 import { albumHeadingLevel } from './albumBlock';
 import { bandOf, type Band } from './bands';
 import { picture, video, type Picture, type VideoFile } from './pictures';
-import { canonicalPath, documentHref, isVideoMedia } from './repository';
+import { albumPath, canonicalPath, documentHref, isVideoMedia } from './repository';
 import type { Block } from './schema';
 
 interface Props {
@@ -110,7 +110,7 @@ const views: View[] = await Promise.all(
       case 'album': {
         // another page's album, as its band (gallery spec §7.2): See all goes to the album's page; a draft album
         // has no address yet, so in edit mode's canvas its links stay on the page
-        const path = canonicalPath('article', b.album);
+        const path = albumPath(b.album);
         const band = path || editable ? await bandOf(b.album, path ? withBase(path) : '#') : undefined;
         return { b, level: albumHeadingLevel(blocks, n), ...(band ? { band } : {}) };
       }

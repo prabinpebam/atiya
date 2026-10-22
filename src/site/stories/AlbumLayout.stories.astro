@@ -1,0 +1,48 @@
+---
+import AlbumLayout from '../layouts/AlbumLayout.astro';
+import { SAMPLES, PORTRAIT_SAMPLES } from '../design/samples';
+import { withBase } from '../design/meta';
+import type { AlbumEntry } from '../scripts/albumGrid';
+
+const nav = [
+  { label: 'Work', href: withBase('/work/') },
+  { label: 'Gallery', href: withBase('/gallery/'), current: true },
+  { label: 'About', href: withBase('/contact/') },
+];
+const items: AlbumEntry[] = [...PORTRAIT_SAMPLES.slice(0, 1), ...SAMPLES.slice(0, 3)].map((s) => ({
+  id: `layout-${s.slug}`,
+  kind: 'picture' as const,
+  width: s.width,
+  height: s.height,
+  picture: { src: s.src, srcset: s.srcset, alt: s.alt, width: s.width, height: s.height, full: s.full, thumb: s.thumb },
+  caption: s.caption,
+}));
+items.push({ id: 'layout-note', kind: 'text', html: '<p>Then the path turned north, to the water.</p>' });
+items.push(
+  ...SAMPLES.slice(3, 6).map((s) => ({
+    id: `layout-${s.slug}`,
+    kind: 'picture' as const,
+    width: s.width,
+    height: s.height,
+    picture: { src: s.src, srcset: s.srcset, alt: s.alt, width: s.width, height: s.height, full: s.full, thumb: s.thumb },
+    caption: s.caption,
+  })),
+);
+---
+
+<AlbumLayout
+  title="A walk round the planet — Prabin Pebam"
+  description="A morning's walk, from the plaza to the lighthouse."
+  nav={nav}
+  action={{ label: 'Explore in 3D', href: withBase('/play/'), icon: 'planet' }}
+  crumbs={{ trail: [{ label: 'Gallery', href: withBase('/gallery/') }], current: 'A walk round the planet' }}
+  header={{
+    title: 'A walk round the planet',
+    standfirst: "A morning's walk, from the plaza to the lighthouse.",
+    topic: { label: 'Gallery', href: withBase('/gallery/') },
+    readingTime: `${items.length - 1} pictures`,
+    dates: 'March 2026',
+  }}
+  album={{ title: 'A walk round the planet', items, introduction: '<p>Made-up pictures for the design library: the planet, seen on foot.</p>' }}
+  next={{ href: withBase('/gallery/'), title: 'The workshop at night' }}
+/>

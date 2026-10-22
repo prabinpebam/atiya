@@ -14,6 +14,9 @@ import type { ArticleRow, ListedPage } from '../server/screens';
 import type { AiService } from '../server/aiSettings';
 import type { Runner } from '../model/aiServices';
 import { reviewView } from '../model/aiReview';
+import type { AlbumCardView } from '../components/AlbumCards.astro';
+import type { CoverTileView } from '../components/AlbumCover.astro';
+import type { PhotoCell } from '../kit/PhotoGrid.astro';
 
 const pond = sample('pond');
 const bridge = sample('bridge');
@@ -91,7 +94,7 @@ export const OUTLINE_ICONS = { text: 'paragraph', heading: 'heading', figure: 'i
 /** Pages as the Pages screen and the dashboard list them. */
 export const ARTICLE_ROWS: ArticleRow[] = [
   { id: 'a-walk-round-the-pond', title: 'A walk round the pond', kind: 'note', status: 'draft', published: false, updatedAt: '2026-10-12', section: { id: 'writing', title: 'Writing' }, path: null, access: 'open' },
-  { id: 'the-bridge', title: 'The bridge', kind: 'gallery', status: 'published', published: true, updatedAt: '2026-09-30', section: { id: 'work', title: 'Work' }, path: '/work/the-bridge/', access: 'open' },
+  { id: 'the-bridge', title: 'The bridge', kind: 'note', status: 'published', published: true, updatedAt: '2026-09-30', section: { id: 'work', title: 'Work' }, path: '/work/the-bridge/', access: 'open' },
   { id: 'a-case-for-later', title: 'A case for later', kind: 'page', status: 'published', published: true, updatedAt: '2026-09-02', section: { id: 'work', title: 'Work' }, path: '/work/x7k2/', access: 'private' },
 ];
 
@@ -287,38 +290,41 @@ export const ALBUM_CHOICES = [
   { id: 'the-bridge-album', title: 'The bridge, in pictures', detail: 'This page: its album is already on it', disabled: true },
 ];
 
-/** What the Items view knows of a sample picture (made up). */
-const albumFacts = (s: ReturnType<typeof sample>, extra: Partial<import('../model/album').ItemFacts> = {}): import('../model/album').ItemFacts => ({ kind: 'picture', thumb: s.thumb, width: s.width, height: s.height, alt: s.alt, ...extra });
+// ---------- the Albums screen and the album editor (gallery spec §9) ----------
+const albumCover = (s: ReturnType<typeof sample>) => ({ thumb: s.thumb, alt: s.alt, width: s.width, height: s.height });
 
-/** An album's cards as the Items view draws them (made up): a captioned picture up front, one showing its alt text dimmed, a video file, an embed with its poster, and one whose picture has gone. */
-export const ALBUM_CARDS: import('../model/album').AlbumCard[] = [
-  { id: 'pond', kind: 'picture', thumb: pond.thumb, width: pond.width, height: pond.height, label: 'The pond at first light', dimmed: false, upFront: true, item: { id: 'pond', media: 'samples/pond', caption: 'The pond at first light', place: 'The east meadow' }, facts: albumFacts(pond, { taken: '2026-05-02', caption: 'Still water' }) },
-  { id: 'bridge', kind: 'picture', thumb: bridge.thumb, width: bridge.width, height: bridge.height, label: bridge.alt, dimmed: true, upFront: true, item: { id: 'bridge', media: 'samples/bridge' }, facts: albumFacts(bridge, { taken: '2026-05-03', large: true, focus: '50% 40%' }) },
-  { id: 'workshop', kind: 'video', thumb: workshop.thumb, width: workshop.width, height: workshop.height, label: 'Planing the bench', dimmed: false, upFront: false, item: { id: 'workshop', media: 'samples/workshop-film', caption: 'Planing the bench', autoplay: true, loop: true }, facts: albumFacts(workshop, { kind: 'video', alt: 'In the workshop', taken: '2026-05-04' }) },
-  { id: 'harbour', kind: 'embed', thumb: plaza.thumb, width: 16, height: 9, label: 'A walk round the harbour', dimmed: false, upFront: false, item: { id: 'harbour', embed: { provider: 'youtube', id: 'abc123XYZ_0' }, poster: 'samples/plaza', title: 'A walk round the harbour', duration: 140 }, facts: albumFacts(plaza) },
-  { id: 'lost', kind: 'missing', width: 4, height: 3, label: 'lost', dimmed: true, upFront: false, item: { id: 'lost', media: 'samples/gone' } },
+/** The Albums screen's cards: a draft, a published one, a private one and an empty one. */
+export const ALBUM_CARDS: AlbumCardView[] = [
+  { id: 'kitchen-garden', title: 'Kitchen garden', href: '#kitchen-garden', path: null, cover: albumCover(workshop), count: '8 pictures', dates: '3 to 9 May 2026', draft: true, private: false, section: { id: 'gallery', title: 'Gallery' }, elsewhere: false },
+  { id: 'harbour-walks', title: 'Harbour walks', href: '#harbour-walks', path: '/gallery/harbour-walks/', cover: albumCover(pond), count: '22 pictures, 2 videos', dates: 'Spring 2026', draft: false, private: false, section: { id: 'gallery', title: 'Gallery' }, elsewhere: false },
+  { id: 'family-trip', title: 'Our trip north', href: '#family-trip', path: null, cover: albumCover(bridge), count: '40 pictures', dates: 'August 2025', draft: false, private: true, section: { id: 'work', title: 'Work' }, elsewhere: true },
+  { id: 'untitled-album', title: 'Untitled album', href: '#untitled-album', path: null, cover: null, count: '', draft: true, private: false, section: null, elsewhere: false },
 ];
 
-/** A made-up album's settings: a story, its description, dates hidden and downloads allowed. */
-export const ALBUM_SAMPLE = { layout: 'story', dates: false, download: true, description: 'A spring of walks round the pond and the bridge, **one morning at a time**.', items: ALBUM_CARDS.map((c) => c.item) } as import('../../content/schema').Album;
+/** Album sections, for the Albums screen's filter and an album's settings. */
+export const ALBUM_SECTIONS = [
+  { value: 'gallery', label: 'Gallery', description: 'Shows albums' },
+  { value: 'work', label: 'Work', description: 'A section of pages' },
+];
 
-/** A made-up band for the arranger: the pond large on the left, the bridge and the workshop's film beside it, a hole left free; the harbour and the lost picture wait in the tray. */
-export const ARRANGER_ALBUM = {
-  ...ALBUM_SAMPLE,
-  showcase: {
-    tiles: [
-      { item: 'pond', x: 0, y: 0, w: 6, h: 4, focus: '50% 30%' },
-      { item: 'bridge', x: 6, y: 0, w: 6, h: 2 },
-      { item: 'workshop', x: 6, y: 2, w: 3, h: 2, play: true },
-    ],
-  },
-} as import('../../content/schema').Album;
+const cell = (id: string, s: ReturnType<typeof sample>, more: Partial<PhotoCell> = {}): PhotoCell => ({ id, kind: 'picture', media: `samples/${s.slug}`, thumb: s.thumb, alt: s.alt, width: s.width, height: s.height, ...more });
 
-/** The same band with the owner's own arrangement for phones (made up): the pond across, the two others side by side under it. */
-export const ARRANGER_PHONE_ALBUM = {
-  ...ARRANGER_ALBUM,
-  showcase: {
-    ...ARRANGER_ALBUM.showcase!,
-    phone: { tiles: [{ item: 'pond', x: 0, y: 0, w: 6, h: 3 }, { item: 'bridge', x: 0, y: 3, w: 3, h: 2 }, { item: 'workshop', x: 3, y: 3, w: 3, h: 2 }] },
-  },
-} as import('../../content/schema').Album;
+/** The album editor's cells: every kind, a picture without alt text, the cover's lead and two days taken. */
+export const PHOTO_CELLS: PhotoCell[] = [
+  cell('i1', pond, { taken: '2026-05-03', cover: true }),
+  cell('i2', bridge, { taken: '2026-05-03', needsAlt: true, alt: '' }),
+  { id: 'i3', kind: 'text', text: 'The second day: rain all morning, then the light came back.' },
+  cell('i4', workshop, { taken: '2026-05-04', kind: 'drawing' }),
+  cell('i5', plaza, { taken: '2026-05-04', kind: 'animated' }),
+  cell('i6', pond, { taken: '2026-05-04', kind: 'video' }),
+  cell('i7', bridge, { taken: '2026-05-04', kind: 'embed' }),
+  { id: 'i8', kind: 'missing', media: 'samples/gone' },
+];
+
+/** The cover band as it stands: a lead picture and three beside it (12 columns). */
+export const COVER_TILES: CoverTileView[] = [
+  { item: 'i1', x: 0, y: 0, w: 6, h: 4, thumb: pond.thumb, width: pond.width, height: pond.height },
+  { item: 'i2', x: 6, y: 0, w: 3, h: 2, thumb: bridge.thumb, width: bridge.width, height: bridge.height },
+  { item: 'i4', x: 9, y: 0, w: 3, h: 2, thumb: workshop.thumb, width: workshop.width, height: workshop.height },
+  { item: 'i5', x: 6, y: 2, w: 6, h: 2, thumb: plaza.thumb, width: plaza.width, height: plaza.height },
+];

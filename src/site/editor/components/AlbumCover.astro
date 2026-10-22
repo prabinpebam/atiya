@@ -1,0 +1,88 @@
+---
+/**
+ * An album's cover as its band will look (documentation/gallery/spec.md §9.2, §9.6), read only: its tiles on the
+ * band's 12 columns of square cells, labelled Automatic (worked out from the cover picture and the album's first
+ * items) or Arranged. Set as cover picture, in the selection bar, changes the lead; Edit cover, which arranges the
+ * band in place, comes with phase A4.
+ * @tier editor
+ * @a11y A labelled group: its pictures are decorative here (they're the album's items, named in the grid), and its
+ * label says whether it's automatic or arranged.
+ */
+import Image from '../../components/fundamentals/Image.astro';
+import Text from '../../components/fundamentals/Text.astro';
+import Tag from '../../components/fundamentals/Tag.astro';
+import ActionBar from '../../components/compounds/ActionBar.astro';
+
+/** A tile of the band, with its thumbnail. */
+export interface CoverTileView {
+  /** Its item's ID. */
+  item: string;
+  /** Its column (0 to 11). */
+  x: number;
+  /** Its row. */
+  y: number;
+  /** Its width in cells. */
+  w: number;
+  /** Its height in cells. */
+  h: number;
+  /** Its thumbnail (none: a plain cell). */
+  thumb: string;
+  /** The thumbnail's edge colour. */
+  bg?: string;
+  /** The thumbnail's width (px). */
+  width: number;
+  /** The thumbnail's height (px). */
+  height: number;
+}
+
+interface Props {
+  /** The band's tiles. */
+  tiles: CoverTileView[];
+  /** Arranged by hand (else automatic). */
+  arranged: boolean;
+}
+
+const { tiles, arranged } = Astro.props;
+---
+
+<section class="cover" aria-label={`Cover, ${arranged ? 'arranged' : 'automatic'}`} data-region="album-cover">
+  <ActionBar gap="sm">
+    <Text as="span" variant="label">Cover</Text>
+    <Tag size="sm">{arranged ? 'Arranged' : 'Automatic'}</Tag>
+    <Text as="span" variant="small" tone="muted">Select a picture and choose Set as cover picture. Edit cover, to arrange the band, comes later.</Text>
+  </ActionBar>
+  {
+    tiles.length ? (
+      <div class="band">
+        {tiles.map((t) => (
+          <div class="tile" style={`grid-area: ${t.y + 1} / ${t.x + 1} / span ${t.h} / span ${t.w}`}>
+            {t.thumb && <Image src={t.thumb} alt="" width={t.width} height={t.height} display="fill" fill rounded={false} bg={t.bg ? { light: t.bg } : undefined} />}
+          </div>
+        ))}
+      </div>
+    ) : (
+      <Text variant="small" tone="muted">The cover fills itself once the album has pictures.</Text>
+    )
+  }
+</section>
+
+<style>
+  .cover {
+    display: grid;
+    gap: var(--space-2);
+    container-type: inline-size;
+  }
+
+  .band {
+    display: grid;
+    grid-template-columns: repeat(12, 1fr);
+    grid-auto-rows: calc((100cqi - 11 * var(--space-1)) / 12);
+    gap: var(--space-1);
+  }
+
+  .tile {
+    overflow: hidden;
+    border-radius: var(--radius-sm);
+    background: var(--color-bg-sunk);
+  }
+</style>

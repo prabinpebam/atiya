@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { badgeOf, cellHref, cellName, clockOf, levelRows, PROVIDER_NAMES, spokenLength } from '../../src/site/scripts/albumGrid';
+import { badgeOf, cellHref, cellName, clockOf, entryRuns, isTextCard, levelRows, PROVIDER_NAMES, spokenLength, type AlbumCell } from '../../src/site/scripts/albumGrid';
 import { albumCells, albumDateWords, albumMeasure, cellPicture, EMBED_SHAPE, itemFragment } from '../../src/site/content/albumPage';
 import { renderMarkdown } from '../../src/site/content/markdown';
 import { resolveAlbum, type AlbumMedia } from '../../src/site/content/album';
@@ -8,38 +8,44 @@ import { justifyGallery } from '../../src/site/scripts/justifiedGallery';
 import type { Picture, VideoFile } from '../../src/site/content/pictures';
 import type { Album } from '../../src/site/content/schema';
 
-const image = (file: string, extra: Partial<Extract<AlbumMedia, { kind: 'image' }>> = {}): AlbumMedia => ({ kind: 'image', file, alt: file, facts: { width: 1200, height: 800, bytes: 1 }, ...extra });
-const MEDIA = new Map<string, AlbumMedia>([
-  ['gallery/a/plaza', image('plaza.webp', { taken: '2026-03-12' })],
+type Words = { caption?: string; description?: string; place?: string; taken?: string; credit?: string };
+const image = (file: string, extra: Partial<Extract<AlbumMedia, { kind: 'image' }>> & Words = {}) => ({ kind: 'image' as const, file, alt: file, facts: { width: 1200, height: 800, bytes: 1 }, ...extra });
+// an item's words are its library item's (spec §3.3): the sidecar holds them, never the album
+const MEDIA = new Map([
+  ['gallery/a/plaza', image('plaza.webp', { taken: '2026-03-12', caption: 'The plaza.', description: 'Where **every** path begins.', place: 'The plaza' })],
   ['gallery/a/loop', image('loop.gif', { animation: {}, taken: '2026-05-02T10:00:00Z' })],
   ['gallery/a/mark', image('mark.svg')],
-  ['gallery/a/poster', image('poster.webp')],
 ]);
-const VIDEOS = new Map<string, AlbumMedia>([['gallery/a/tour', { kind: 'video', file: 'tour.mp4', width: 960, height: 540 }]]);
-const lookup = (id: string) => MEDIA.get(id) ?? VIDEOS.get(id);
+const VIDEOS = new Map([['gallery/a/tour', { kind: 'video' as const, file: 'tour.mp4', width: 960, height: 540, caption: 'Its own caption', credit: 'Someone' }]]);
+const EMBEDS = new Map([
+  ['gallery/a/talk', { kind: 'embed' as const, provider: 'youtube' as const, video: 'abc123', title: 'A talk', duration: 3725 }],
+  ['gallery/a/short', { kind: 'embed' as const, provider: 'youtube' as const, video: 'x', title: 'Short', shape: { width: 1080, height: 1920 } }],
+]);
+const lookup = (id: string): AlbumMedia | undefined => MEDIA.get(id) ?? VIDEOS.get(id) ?? EMBEDS.get(id);
 
 const pic = (id: string, extra: Partial<Picture> = {}): Picture => ({ src: `/${id}-800.webp`, srcset: `/${id}-800.webp 800w`, alt: `Alt of ${id}`, width: 1200, height: 800, full: `/${id}-1600.webp`, thumb: `/${id}-thumb.webp`, bg: '#abcdef', ...extra });
 const vid = (id: string): VideoFile => ({ src: `/media/${id}.mp4`, type: 'video/mp4', width: 960, height: 540, title: 'The tour', duration: 140, caption: 'Its own caption', credit: 'Someone', poster: { src: `/${id}-poster.webp`, srcset: '', width: 960, height: 540, thumb: `/${id}-poster-thumb.webp` } });
 const sources = {
   pictureOf: async (id: string) => (id.endsWith('mark') ? pic(id, { drawing: true }) : id.endsWith('loop') ? pic(id, { poster: `/${id}-still.webp` }) : pic(id, { focus: '50% 30%', largest: { src: `/${id}-2400.webp`, width: 2400 }, dark: { src: '/d.webp', srcset: '', width: 1200, height: 800, full: '/d-1600.webp', thumb: '/d-thumb.webp', bg: '#000000' } })),
   videoOf: async (id: string) => vid(id),
+  posterOf: async (id: string) => pic(`${id}-poster`, { alt: 'Poster' }),
 };
 
 const ALBUM: Album = {
   description: 'A walk.',
   items: [
-    { id: 'plaza', media: 'gallery/a/plaza', caption: 'The plaza.', description: 'Where **every** path begins.', place: 'The plaza' },
+    { id: 'plaza', media: 'gallery/a/plaza' },
     { id: 'loop', media: 'gallery/a/loop', download: false },
     { id: 'mark', media: 'gallery/a/mark' },
     { id: 'tour', media: 'gallery/a/tour' },
-    { id: 'talk', embed: { provider: 'youtube', id: 'abc123' }, title: 'A talk', poster: 'gallery/a/poster', duration: 3725 },
+    { id: 'talk', media: 'gallery/a/talk' },
     { id: 'gone', media: 'gallery/a/missing' },
   ],
   download: true,
 } as Album;
 
-const cellsOf = (album: Album) => albumCells(album, resolveAlbum(album, MEDIA, VIDEOS).items, sources);
-
+const entriesOf = (album: Album) => albumCells(album, resolveAlbum(album, MEDIA, VIDEOS, EMBEDS).items, sources);
+const cellsOf = async (album: Album) => (await entriesOf(album)).filter((e): e is AlbumCell => !isTextCard(e));
 describe('album page: lengths and names', () => {
   it('writes a length as a clock and in words', () => {
     expect(clockOf(140)).toBe('2:20');
@@ -157,10 +163,19 @@ describe('album page: cells', () => {
   it('shows an embed by its poster, 16:9 unless its shape is given, never offered for download', async () => {
     const talk = (await cellsOf(ALBUM))[4]!;
     expect(talk).toMatchObject({ ...EMBED_SHAPE, embed: { provider: 'youtube', id: 'abc123' }, title: 'A talk', duration: 3725 });
-    expect(talk.picture).toMatchObject({ src: '/gallery/a/poster-800.webp', alt: '' });
+    expect(talk.picture).toMatchObject({ src: '/gallery/a/talk-poster-800.webp', alt: '' });
     expect(talk.download).toBeUndefined();
-    const shaped = { ...ALBUM, items: [{ id: 'short', embed: { provider: 'youtube', id: 'x', width: 1080, height: 1920 }, title: 'Short', poster: 'gallery/a/poster' }] } as Album;
+    const shaped = { ...ALBUM, items: [{ id: 'short', media: 'gallery/a/short' }] } as Album;
     expect((await cellsOf(shaped))[0]).toMatchObject({ width: 1080, height: 1920 });
+  });
+
+  it('keeps a text card in its place as words, and the cells between text cards as runs', async () => {
+    const album = { ...ALBUM, order: 'custom', items: [ALBUM.items[0]!, { id: 'note', text: 'Then **the** walk.' }, ALBUM.items[2]!, ALBUM.items[3]!] } as Album;
+    const entries = await entriesOf(album);
+    expect(entries.map((e) => [e.id, e.kind])).toEqual([['plaza', 'picture'], ['note', 'text'], ['mark', 'drawing'], ['tour', 'video']]);
+    const note = entries[1]!;
+    expect(isTextCard(note) && note.html).toContain('<strong>the</strong>');
+    expect(entryRuns(entries).map((r) => ('text' in r ? 'text' : r.cells.map((c) => c.id).join(',')))).toEqual(['plaza', 'text', 'mark,tour']);
   });
 
   it('leaves the dates and downloads out when the album hides them', async () => {
@@ -198,3 +213,4 @@ describe('album page: links to its own items', () => {
     expect(() => renderMarkdown('See [the plan](#item-plan).')).toThrow(/links may only go/);
   });
 });
+

@@ -4,5 +4,6 @@
   "alt": "The Cloner Pro panel with x and y counts, spacing, clone mode, colour, scale, position, rotation and Perlin noise parameters.",
   "caption": "The controls mirror the Cinema 4D-style idea: clone first, then drive variation with effectors.",
   "focus": "50% 35%",
+  "fingerprint": "c586ce078239af79cc29d8ef0e8ce1170a9a59c260b8d46055f20f1f9158f3ed",
   "visibility": "public"
 }

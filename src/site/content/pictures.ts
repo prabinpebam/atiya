@@ -13,7 +13,7 @@ import { getImage } from 'astro:assets';
 import type { ImageMetadata } from 'astro';
 import { statSync } from 'node:fs';
 import { pathToFileURL, fileURLToPath } from 'node:url';
-import { getMedia, getVideo, videoHref } from './repository';
+import { getEmbed, getMedia, getVideo, videoHref } from './repository';
 import { fileOf } from './source';
 import { pictureFacts, type SidecarFacts } from './pictureFacts';
 import { timedAsync } from './timing';
@@ -229,6 +229,13 @@ export async function picture(id: string, slot: Slot): Promise<Picture> {
     credit: m.credit,
     ...(dark ? { dark } : {}),
   };
+}
+
+/** A linked video's poster (gallery spec §4.2): the frame kept beside its sidecar, at the slot's widths, named by the video's title. */
+export async function embedPoster(id: string, slot: Slot): Promise<Picture> {
+  const e = getEmbed(id);
+  const light = await sized(e.posterMaster, slot);
+  return { ...light, alt: e.alt ?? '', caption: e.caption, credit: e.credit };
 }
 
 /** A video file as the page shows it (media.md §12): its address and type, its size, its words and its poster at the slot's widths. */

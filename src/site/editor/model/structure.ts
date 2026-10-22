@@ -114,7 +114,7 @@ export function place(structure: SiteStructure, hubId: string, item: ItemRef, no
  * gets a node with its `nodeId`.
  */
 export function placeAll(structure: SiteStructure, hubId: string, items: { item: ItemRef; nodeId: string }[], index?: number): SiteStructure {
-  const nodes: ItemNode[] = items.map(({ item, nodeId }) => nodeOf(structure, item) ?? { id: nodeId, kind: 'item', item: { type: 'article', id: item.id } });
+  const nodes: ItemNode[] = items.map(({ item, nodeId }) => nodeOf(structure, item) ?? ({ id: nodeId, kind: 'item', item: { type: item.type, id: item.id } } as ItemNode));
   const without = items.reduce((s, { item }) => detach(s, item), structure);
   return mapHubs(without, (h) => {
     if (h.id !== hubId) return h;

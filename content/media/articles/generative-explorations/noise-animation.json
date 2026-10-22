@@ -4,5 +4,6 @@
   "alt": "An animated noise canvas with white stippled Perlin patterns on black, beside controls for animation speed, noise layers and ripple effects.",
   "caption": "Noise Animation combines layered Perlin noise, stippling, displacement and ripples.",
   "focus": "38% 50%",
+  "fingerprint": "af66fbaf7769f3deb717f8722b6de9af51a2332400764ca258b763d9f98d3df9",
   "visibility": "public"
 }

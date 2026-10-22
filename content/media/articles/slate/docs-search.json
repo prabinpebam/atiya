@@ -3,5 +3,6 @@
   "file": "docs-search.webp",
   "alt": "The Slate reader with the search box open for the word tokens, showing matched documents and highlighted terms above the docs overview.",
   "caption": "Search is built into the static reader, so published docs stay easy to traverse.",
+  "fingerprint": "4e061fd74add084041ce7193f6ca96a39fde997c05a6d09dfbb294d3bfafb839",
   "visibility": "public"
 }

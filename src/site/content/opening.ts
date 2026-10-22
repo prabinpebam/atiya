@@ -1,34 +1,35 @@
 /**
  * A page's opening, as its kind reads (documentation/sections/spec.md §3.3): an article carries its
  * topic (its section, or the building it's read in on the planet), its byline, its date and its reading
- * time; a page opens with its words only; a gallery counts its pictures. The site's Page and the planet's
- * frame both open a page with it, so a page reads the same in both (§6.1).
+ * time; a page opens with its words only; an album (its own resource: documentation/gallery/spec.md §7) counts
+ * its items and gives the span of their dates. The site's Page and the planet's frame both open a page with it,
+ * so a page reads the same in both (§6.1).
  */
-import { canonicalPath, captionHrefs, content, documentHref, getAlbum, getPerson, getSite } from './repository';
-import { picture, video } from './pictures';
-import { cardPicture as albumCardPicture, type MediaLookup } from './album';
+import { albumLookup, canonicalPath, captionHrefs, documentHref, getAlbum, getPerson, getSite } from './repository';
+import { embedPoster, picture, video } from './pictures';
+import { coverPicture } from './album';
 import { albumCells, albumDateWords, albumMeasure, itemFragment } from './albumPage';
 import { renderMarkdown } from './markdown';
 import { withBase } from '../design/meta';
-import type { AlbumCell } from '../scripts/albumGrid';
+import type { AlbumEntry } from '../scripts/albumGrid';
 import { pageMeasure } from './reading';
 import { rankRelated } from '../scripts/related';
-import type { Article, PictureDisplay } from './schema';
+import type { Album, Article, PictureDisplay } from './schema';
 import type { PictureSource } from '../design/pictures';
 import { thumbnailFor } from '../design/pictures';
 
-/** Any piece of media by its ID: a picture or a video file (an album's items are either). */
-const mediaLookup: MediaLookup = (id) => content().media.get(id) ?? content().videos.get(id);
+/** A page's measure (reading.ts). */
+export const measureOf = (a: Article): string | undefined => pageMeasure(a);
 
-/** A page's measure (reading.ts), and an album's counts in words ("18 pictures, 2 videos") for a page that holds one (gallery spec §7). */
-export const measureOf = (a: Article): string | undefined => (a.album ? albumMeasure(a.album, mediaLookup) || undefined : pageMeasure(a));
+/** An album's measure on its cards and in its opening: its counts in words ("18 pictures, 2 videos"; gallery spec §7). */
+export const albumMeasureOf = (album: Album): string | undefined => albumMeasure(album, albumLookup()) || undefined;
 
 /** A picture's dark mode version, as the components take it. */
 const darkOf = (p: { dark?: { src: string; srcset: string; width: number; height: number; thumb: string; bg: string } }) => (p.dark ? { src: p.dark.src, srcset: p.dark.srcset, width: p.dark.width, height: p.dark.height, bg: p.dark.bg } : undefined);
 
-/** A page's picture on cards: its thumbnail, or else its lead picture (an album's: its first raster item; gallery spec §5), shown as the page asks (whole by default; documentation/content/media.md §9), with its own square for a list's rows when it has one (§9.4). */
+/** A page's picture on cards: its thumbnail, or else its lead picture, shown as the page asks (whole by default; documentation/content/media.md §9), with its own square for a list's rows when it has one (§9.4). */
 export async function cardPicture(a: Article) {
-  const id = thumbnailFor(a, 'thumbnail') ?? (a.album ? albumCardPicture(a, mediaLookup) : undefined);
+  const id = thumbnailFor(a, 'thumbnail');
   if (!id) return undefined;
   const p = await picture(id, 'card');
   const dark = darkOf(p);
@@ -54,7 +55,7 @@ export interface Opening {
   portrait?: { src: string; srcset?: string; alt: string; width: number; height: number; focus?: string; dark?: PictureSource };
 }
 
-/** A story (an article, a talk) opens with a byline; a page and a gallery with their words only. (A drop cap is a paragraph's own choice.) */
+/** A story (an article, a talk) opens with a byline; a page with its words only. (A drop cap is a paragraph's own choice.) */
 export const storyKind = (a: Pick<Article, 'kind'>) => a.kind === 'note' || a.kind === 'talk';
 
 /**
@@ -88,26 +89,76 @@ export async function openingOf(article: Article, topic?: { label: string; href:
   return {
     title: article.title,
     standfirst: article.summary,
-    // an article carries its topic, byline and date; a page and a gallery open with their words only
+    // an article carries its topic, byline and date; a page opens with its words only
     topic: story ? topic : undefined,
     author: story ? { name: owner.name, avatar: avatar?.thumb, ...(avatar?.dark ? { avatarDark: avatar.dark.thumb } : {}) } : undefined,
     date: story ? article.publishedAt : undefined,
     readingTime: measureOf(article),
-    ...(article.album ? { dates: albumDateWords(article.album, mediaLookup, article.publishedAt) } : {}),
     picture: lead ? { ...lead, display: article.hero?.display ?? 'fill', background: !!article.hero?.background, rounded: article.hero?.rounded !== false, shadow: !!article.hero?.shadow, dark: darkOf(lead) } : undefined,
     ...(portrait ? { portrait: { src: portrait.src, srcset: portrait.srcset, alt: portrait.alt, width: portrait.width, height: portrait.height, focus: portrait.focus, dark: darkOf(portrait) } } : {}),
   };
 }
 
 
-/** An album page's album, as ArticleLayout draws it (gallery spec §7): its introduction and every item as a cell. */
+/**
+ * An album's picture on cards (gallery spec §3.6): its cover picture (a video's or a linked video's poster),
+ * shown whole. Undefined for an album with nothing to show.
+ */
+export async function albumCardOf(album: Album) {
+  const cover = coverPicture(album, albumLookup());
+  if (!cover) return undefined;
+  if (cover.kind === 'video') {
+    const v = await video(cover.media, 'card');
+    const p = v.poster;
+    return p ? { src: p.src, srcset: p.srcset, alt: '', width: p.width, height: p.height, display: 'fit' as const, background: false, rounded: true, shadow: false } : undefined;
+  }
+  const p = cover.kind === 'embed' ? await embedPoster(cover.media, 'card') : await picture(cover.media, 'card');
+  const dark = darkOf(p);
+  return { src: p.src, srcset: p.srcset, alt: cover.kind === 'embed' ? '' : p.alt, width: p.width, height: p.height, bg: p.bg, display: 'fit' as const, background: false, rounded: true, shadow: false, ...(dark ? { dark } : {}) };
+}
+
+/**
+ * An album's social picture (gallery spec §14): its cover picture, never a drawing, at the wide width; undefined
+ * for an album with nothing to show.
+ */
+export async function albumSocialOf(album: Album): Promise<{ src: string; alt: string } | undefined> {
+  const cover = coverPicture(album, albumLookup(), { social: true });
+  if (!cover) return undefined;
+  if (cover.kind === 'video') {
+    const v = await video(cover.media, 'wide');
+    return v.poster ? { src: v.poster.src, alt: v.title } : undefined;
+  }
+  if (cover.kind === 'embed') {
+    const p = await embedPoster(cover.media, 'wide');
+    return { src: p.src, alt: p.alt };
+  }
+  const p = await picture(cover.media, 'wide');
+  // an animated picture's still frame, so the card shows a picture
+  return { src: p.poster ?? p.src, alt: p.alt };
+}
+
+/** An album's opening (gallery spec §7): its title, its summary as the standfirst, its counts and the span of its dates; no byline. */
+export function albumOpening(album: Album, topic?: { label: string; href: string }): Opening {
+  const lookup = albumLookup();
+  const dates = albumDateWords(album, lookup, album.publishedAt ?? album.createdAt);
+  return {
+    title: album.title,
+    ...(album.summary ? { standfirst: album.summary } : {}),
+    ...(topic ? { topic } : {}),
+    readingTime: albumMeasure(album, lookup) || undefined,
+    ...(dates ? { dates } : {}),
+  };
+}
+
+/** An album, as AlbumLayout draws it (gallery spec §7): its introduction and every item as a cell, its text cards between them. */
 export interface AlbumView {
+  id: string;
   title: string;
   /** The album's introduction, as HTML. */
   introduction?: string;
   layout: 'grid' | 'story';
   captions: boolean;
-  items: AlbumCell[];
+  items: AlbumEntry[];
 }
 
 /** A `ref:` link in an album's words, as the body's blocks resolve it (Blocks.astro). */
@@ -118,18 +169,19 @@ const resolveRef = (ref: string) => {
   return path && withBase(path);
 };
 
-/** The album a page holds, ready for its page (undefined for a page without one). A Story's pictures are drawn at the wide width, a Grid's at the gallery's. */
-export async function albumOf(article: Article): Promise<AlbumView | undefined> {
-  const resolved = getAlbum(article.id);
+/** An album, ready for its page (undefined for no such album). A Story's pictures are drawn at the wide width, a Grid's at the gallery's. */
+export async function albumOf(albumId: string): Promise<AlbumView | undefined> {
+  const resolved = getAlbum(albumId);
   if (!resolved) return undefined;
   const { album, items } = resolved;
   const layout = album.layout ?? 'grid';
   const slot = layout === 'story' ? 'wide' : 'gallery';
   return {
-    title: article.title,
+    id: album.id,
+    title: album.title,
     ...(album.description ? { introduction: renderMarkdown(album.description, { resolveRef, fragment: itemFragment(album) }) } : {}),
     layout,
     captions: album.captions === true,
-    items: await albumCells(album, items, { pictureOf: (id) => picture(id, slot), videoOf: (id) => video(id, slot), resolveRef, tracksOf: captionHrefs }),
+    items: await albumCells(album, items, { pictureOf: (id) => picture(id, slot), videoOf: (id) => video(id, slot), posterOf: (id) => embedPoster(id, slot), resolveRef, tracksOf: captionHrefs }),
   };
 }

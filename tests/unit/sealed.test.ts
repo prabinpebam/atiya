@@ -160,7 +160,7 @@ describe('the leak check', () => {
     ['a grant recipient', (d) => append(d, 'index.html', 'Fixture Reader Withdrawn'), /protected words: a recipient/],
     ['a token in a script', (d) => append(d, '_astro/app.js', 'go("deltaddd55")'), /protected words: a token/],
     // a private album (gallery spec §12): its words, and its files' addresses in the attributes a band, a grid and the lightbox's links carry
-    ['an album caption', (d) => append(d, 'index.html', '<figcaption>Fixture album caption: lines drying after the last launch.</figcaption>'), /protected words: a caption/],
+    ['an album caption', (d) => append(d, 'index.html', '<figcaption>Fixture album caption: lines drying after the last launch.</figcaption>'), /protected words: an alt text or caption/],
     ['an album introduction', (d) => append(d, 'index.html', '<p>the kites went up before the tide came back across the flats</p>'), /protected words: a sentence/],
     ['a caption track', (d) => append(d, 'index.html', '<p>Fixture caption track: the reel unwinds in the wind.</p>'), /protected words: an alt text or caption/],
     ["a private file's address in a link", (d) => append(d, 'index.html', `<a href="/x/" data-full="${ASSET}">x</a>`), /an address of a private page's file is readable/],

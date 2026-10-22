@@ -8,6 +8,7 @@ export { articleOf, pageShows } from '../../scripts/liveContent';
 
 const isMedia = (k: string) => /^\/(content|private)\/media\//.test(k);
 const isArticle = (k: string) => /^\/(content|private)\/articles\//.test(k);
+const isAlbum = (k: string) => /^\/(content|private)\/albums\//.test(k);
 const isStructure = (k: string) => /^\/(content|private)\/structures\//.test(k);
 const isAccess = (k: string) => /^\/private\/access(-message)?\.json$/.test(k);
 const isPeople = (k: string) => /^\/content\/people\//.test(k);
@@ -29,6 +30,10 @@ const SHOWS: Record<string, (key: string) => boolean> = {
   media: (k) => isMedia(k) || isArticle(k) || isSettings(k),
   settings: (k) => isSettings(k) || isMedia(k) || isArticle(k) || isStructure(k),
   access: (k) => isAccess(k) || isArticle(k) || isStructure(k),
+  // the albums' cards: their files, the sections they're in and their cover pictures
+  albums: (k) => isAlbum(k) || isStructure(k) || isMedia(k),
+  // the album: its file, its pictures (their words and dates) and its section
+  album: (k) => isAlbum(k) || isStructure(k) || isMedia(k),
 };
 
 /** Whether a screen shows anything of the changed files (an unknown screen always does). */

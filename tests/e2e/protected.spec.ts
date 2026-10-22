@@ -560,18 +560,23 @@ async function openInfo(dialog: Locator) {
   if ((await info.getAttribute('aria-pressed')) !== 'true') await info.click();
   await expect(info).toHaveAttribute('aria-pressed', 'true');
 }
-type FixtureAlbum = { title: string; summary: string; album: { description: string; items: { id: string; caption?: string; place?: string }[] } };
-const fixtureAlbum = JSON.parse(readFileSync(join(FIX, 'articles', 'fx-private-album.json'), 'utf8')) as FixtureAlbum;
-/** Every word of the private album only it holds: its title, summary and introduction, its items' captions and places, and its caption track. */
+type FixtureAlbum = { title: string; summary: string; description: string; items: { id: string; media: string }[] };
+const fixtureAlbum = JSON.parse(readFileSync(join(FIX, 'albums', 'fx-private-album.json'), 'utf8')) as FixtureAlbum;
+/** An item's words live on its picture's sidecar, never on the album. */
+const sidecarOf = (media: string) => JSON.parse(readFileSync(join(FIX, 'media', `${media}.json`), 'utf8')) as { caption?: string; place?: string; description?: string; title?: string };
+/** Every word of the private album only it holds: its title, summary and introduction, its pictures' captions and places, and its caption track. */
 const ALBUM_WORDS = [
   fixtureAlbum.title,
   fixtureAlbum.summary,
-  fixtureAlbum.album.description,
-  ...fixtureAlbum.album.items.flatMap((i) => [i.caption, i.place].filter((w): w is string => !!w)),
+  fixtureAlbum.description,
+  ...fixtureAlbum.items.flatMap((i) => {
+    const s = sidecarOf(i.media);
+    return [s.caption, s.place, s.description].filter((w): w is string => !!w);
+  }),
   'the reel unwinds in the wind',
 ];
 /** What would name the album or one of its items: its page's ID, its token, its files' folder, its items' anchors. */
-const ALBUM_NAMES = ['fx-private-album', 'albumeee66', ...fixtureAlbum.album.items.map((i) => `item-${i.id}`)];
+const ALBUM_NAMES = ['fx-private-album', 'albumeee66', ...fixtureAlbum.items.map((i) => `item-${i.id}`)];
 const privateBand = (page: Page) => page.locator('[data-cards] > [data-node="fx-private-album"][data-shared] [data-album-band]');
 
 test.describe('protected content: a private album', () => {
@@ -619,12 +624,13 @@ test.describe('protected content: a private album', () => {
     await page.goto(`/sign-in/?return=${encodeURIComponent(GALLERY)}`);
     await signIn(page, ALL);
     await page.waitForURL(`**${GALLERY}`);
-    // the band, decrypted in its card's place: after the open album, in the section's order
+    // the band, decrypted in its card's place: in the section's order, newest first (the private album has no taken
+    // dates, so its day is the day it was published, after every open album's)
     const band = privateBand(page);
     await expect(band).toBeVisible();
     await expect(band.getByRole('heading', { name: fixtureAlbum.title })).toBeVisible();
     const order = await cards(page);
-    expect(order.indexOf('fx-private-album')).toBeGreaterThan(order.indexOf('fixture-album'));
+    expect(order.indexOf('fx-private-album')).toBeLessThan(order.indexOf('fixture-album'));
     await expect(page.locator('[data-sign-in-line]')).toBeHidden();
     expect(await titlesIn(page)).toEqual(['fx-private-album']);
     // its tiles' pictures: decrypted to blobs, and drawn
@@ -737,7 +743,7 @@ test.describe('protected content: a private album', () => {
     const all = `${t.raw.join('\n')}\n${JSON.stringify(t.sent)}`;
     for (const words of ALBUM_WORDS) expect(all.includes(words), words).toBe(false);
     for (const name of ALBUM_NAMES) expect(all, name).not.toContain(name);
-    for (const id of fixtureAlbum.album.items.map((i) => i.id)) expect(all, id).not.toMatch(new RegExp(`["/=#]${id}["/&.]`));
+    for (const id of fixtureAlbum.items.map((i) => i.id)) expect(all, id).not.toMatch(new RegExp(`["/=#]${id}["/&.]`));
   });
 });
 

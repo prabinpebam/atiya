@@ -4,5 +4,6 @@
   "alt": "Watai endpoint setup screen with fields for an Azure OpenAI resource name or base URL and an API key",
   "caption": "The setup starts with the user's own Azure OpenAI endpoint and key.",
   "focus": "50% 52%",
+  "fingerprint": "c6963fff36f0bd2e7cc2bea237fbfd7977db37a45e15cbc6117ffd64ef086904",
   "visibility": "public"
 }

@@ -1,13 +1,13 @@
 ---
 import Example from '../../library/Example.astro';
 import AlbumSettings from '../components/AlbumSettings.astro';
-import { ALBUM_SAMPLE } from './samples';
+import { ALBUM_SECTIONS } from './samples';
 ---
 
-<Example title="A new album" description="Every setting at its default: a grid, dates shown, captions off, no downloads." layout="block">
-  <AlbumSettings />
+<Example title="A grid, published" description="Its section and address, who can see it, its layout and what readers get." layout="block">
+  <AlbumSettings layout="grid" captions dates download={false} large={false} section="gallery" sections={ALBUM_SECTIONS} private={false} path="/gallery/harbour-walks/" />
 </Example>
 
-<Example title="A story" description="The story layout, its description and downloads allowed." layout="block">
-  <AlbumSettings album={ALBUM_SAMPLE} />
+<Example title="A story, private, not in a section" description="Captions don't apply to a story; a private album says who can see it." layout="block">
+  <AlbumSettings layout="story" captions={false} dates={false} download large section={null} sections={ALBUM_SECTIONS} private path={null} />
 </Example>

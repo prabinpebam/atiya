@@ -1,0 +1,65 @@
+---
+/**
+ * An album's words and facts at the top of its editor (documentation/gallery/spec.md §9.2): the title, the short
+ * description and the introduction, typed in place and saved as they're typed; then the facts worked out from its
+ * items (the counts, the span of dates, and how many pictures need alt text).
+ * @tier editor
+ * @a11y Each field is labelled; the facts are a polite live region, so a change in the counts is heard.
+ */
+import TextField from '../../components/fundamentals/TextField.astro';
+import Text from '../../components/fundamentals/Text.astro';
+import Tag from '../../components/fundamentals/Tag.astro';
+
+interface Props {
+  /** The album's title. */
+  title: string;
+  /** Its short description. */
+  summary?: string;
+  /** Its introduction (rich text, as Markdown). */
+  description?: string;
+  /** Its counts in words ("12 pictures, 1 video"; empty: nothing yet). */
+  count: string;
+  /** The span of the days its pictures were taken. */
+  dates?: string;
+  /** How many pictures need alt text. */
+  needAlt: number;
+  /** A draft, or on the site. */
+  status: 'draft' | 'published';
+}
+
+const { title, summary = '', description = '', count, dates, needAlt, status } = Astro.props;
+---
+
+<div class="words" data-album-words>
+  <TextField label="Title" value={title} maxlength={120} data-album-field="title" />
+  <TextField label="Short description" value={summary} multiline rows={2} maxlength={240} optional hint="Under its band, and on its cards." data-album-field="summary" />
+  <TextField label="Introduction" value={description} multiline rows={4} maxlength={1500} optional hint="At the top of its page. Markdown: **bold**, *italic* and [links](https://…)." data-album-field="description" />
+  <p class="facts" role="status" data-region="album-facts">
+    <Tag size="sm" tone={status === 'published' ? 'positive' : 'neutral'}>{status === 'published' ? 'Published' : 'Draft'}</Tag>
+    <Text as="span" variant="small" tone="muted">
+      {[count || 'Nothing in it yet', dates].filter(Boolean).join(' · ')}
+    </Text>
+    {
+      needAlt > 0 && (
+        <Tag size="sm" tone="negative" icon="error">
+          {needAlt === 1 ? '1 needs alt text' : `${needAlt} need alt text`}
+        </Tag>
+      )
+    }
+  </p>
+</div>
+
+<style>
+  .words {
+    display: grid;
+    gap: var(--space-3);
+  }
+
+  .facts {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+    align-items: center;
+    margin: 0;
+  }
+</style>

@@ -99,6 +99,7 @@
     "c.dropcap.lift": {"v":"0.06em"},
     "c.dropcap.size": {"v":"4.35em"},
     "c.editor-ai-prompt.width": {"v":"34rem"},
+    "c.editor-album-cards.min": {"v":"15rem"},
     "c.editor-context.menu": {"v":"14rem"},
     "c.editor-crop.handle": {"v":"0.875rem"},
     "c.editor-crop.stage": {"v":"32rem"},
@@ -119,6 +120,7 @@
     "c.editor.inspector-max": {"v":"60rem"},
     "c.editor.inspector-nav": {"v":"13rem"},
     "c.editor.outline": {"v":"17rem"},
+    "c.editor.photo-cell": {"v":"8rem"},
     "c.editor.scope-list": {"v":"26rem"},
     "c.editor.section-list": {"v":"18rem"},
     "c.editor.thumb": {"v":"9rem"},
@@ -511,6 +513,18 @@
           null,
           {
             "v": "40rem"
+          }
+        ],
+        "c.editor-album-cards.min": [
+          null,
+          {
+            "v": "15rem"
+          }
+        ],
+        "c.editor.photo-cell": [
+          null,
+          {
+            "v": "8rem"
           }
         ],
         "c.lightbox.drawing-paper": [

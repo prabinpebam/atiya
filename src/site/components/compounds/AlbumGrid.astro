@@ -7,10 +7,12 @@
  * badge, an animated picture plays (its still under reduced motion), and a drawing sits whole. Each
  * item's words for the lightbox (caption, description, credit, date, place) wait in a template beside it.
  * In the Grid, an album may show each caption under its cell, at most two lines, its rows kept level.
+ * A text card (spec §7.4) sits between the items at the text width: the Grid's rows end before it and
+ * start again after it, and it's never in the lightbox.
  * @tier compound
  * @a11y Every item is a real link: a picture to its full size, a video to its file, an embed to its page at the provider, so the album works without scripts.
  * @a11y A link is named by its picture's alt text (", animated" after an animated one's), or "Video: <title>" and its length; badges are hidden from assistive technology, their words in the name.
- * @a11y Items keep album order in the source, so Tab, reading order and the lightbox follow the album.
+ * @a11y Items keep album order in the source, so Tab, reading order and the lightbox follow the album; a text card is plain words in that order, not a link.
  * @a11y The words in the template are inert until the lightbox shows them, so nothing is read out twice.
  * @key Enter: opens the focused item in the lightbox (without scripts, follows its link)
  */
@@ -23,11 +25,11 @@ import { sizes } from '../../design/responsive';
 import { linkAttrs, NEW_TAB_NOTE } from '../../design/links';
 import { pageUrl, playerUrl } from '../../design/videoProviders';
 import { ALBUM_GROUP } from '../../scripts/lightboxRules';
-import { badgeOf, cellHref, cellName, type AlbumCell } from '../../scripts/albumGrid';
+import { badgeOf, cellHref, cellName, entryRuns, isTextCard, type AlbumEntry } from '../../scripts/albumGrid';
 
 interface Props {
-  /** The album's items, in album order (content/albumPage.ts `albumCells` makes them). */
-  items: AlbumCell[];
+  /** The album's items and text cards, in album order (content/albumPage.ts `albumCells` makes them). */
+  items: AlbumEntry[];
   /** The album's title: the lightbox's name. */
   title: string;
   /** grid: justified rows at the wide width; story: one item after another, each with its words. */
@@ -40,12 +42,25 @@ const { items, title, layout = 'grid', captions = false } = Astro.props;
 const story = layout === 'story';
 const underCells = !story && captions;
 const cellSizes = story ? sizes(['wide', '96vw'], 'wide') : sizes(['sm', '50vw'], '33vw');
+// the items alone (never the text cards): their names count among them, and the first is fetched first
+const cells = items.filter((e) => !isTextCard(e));
+const runs = entryRuns(items);
 ---
 
 <div class="album-grid" data-layout={layout} data-captions={underCells ? '' : undefined}>
+  {
+    runs.map((run) =>
+      'text' in run ? (
+        <div class="text" id={`item-${run.text.id}`} data-album-text>
+          <Prose>
+            <Fragment set:html={run.text.html} />
+          </Prose>
+        </div>
+      ) : (
   <ol class="list" role="list" data-justified={story ? undefined : ''}>
     {
-      items.map((cell, i) => {
+      run.cells.map((cell) => {
+        const i = cells.indexOf(cell);
         const p = cell.picture;
         const href = cellHref(cell, pageUrl);
         const policy = linkAttrs(href, Astro.url.hostname);
@@ -61,7 +76,7 @@ const cellSizes = story ? sizes(['wide', '96vw'], 'wide') : sizes(['sm', '50vw']
                 href={href}
                 target={policy.target}
                 rel={policy.rel}
-                aria-label={`${cellName(cell, i, items.length)}${policy.newTab ? NEW_TAB_NOTE : ''}`}
+                aria-label={`${cellName(cell, i, cells.length)}${policy.newTab ? NEW_TAB_NOTE : ''}`}
                 data-lightbox={ALBUM_GROUP}
                 data-kind={cell.kind}
                 data-item-id={cell.id}
@@ -159,11 +174,22 @@ const cellSizes = story ? sizes(['wide', '96vw'], 'wide') : sizes(['sm', '50vw']
       })
     }
   </ol>
+      ),
+    )
+  }
 </div>
 
 <style>
   .album-grid {
     container-type: inline-size;
+    display: grid;
+    gap: var(--space-section);
+  }
+
+  /* a text card: words between the items, at the text width */
+  .text {
+    justify-self: center;
+    width: min(100%, var(--size-measure));
   }
 
   .list {
@@ -360,3 +386,4 @@ const cellSizes = story ? sizes(['wide', '96vw'], 'wide') : sizes(['sm', '50vw']
     schedule();
   });
 </script>
+

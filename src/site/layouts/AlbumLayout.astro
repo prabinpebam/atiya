@@ -1,0 +1,171 @@
+---
+/**
+ * An album's own page (documentation/gallery/spec.md §7): the opening (its title, its summary as the standfirst,
+ * its counts and the span of its dates, no lead picture: the items are the pictures), its introduction at the
+ * text width, then every item, in the album's order, in the justified Grid or as a Story at the wide width, its
+ * text cards breaking the grid; then the page's end, the way on and back to the top. The items open in the
+ * lightbox. On the planet, the building's frame replaces the site's chrome (documentation/sections/spec.md §6.1).
+ * @tier layout
+ * @a11y One h1 (the album's title) and one main landmark with id="main"; breadcrumbs above, the way on and Back to top after, which moves the focus to the top.
+ * @a11y Every item is a link in album order, so Tab, reading order and the lightbox follow the album.
+ */
+import PageShell from '../components/compounds/PageShell.astro';
+import SiteHeader, { type NavItem } from '../components/compounds/SiteHeader.astro';
+import SiteFooter from '../components/compounds/SiteFooter.astro';
+import Breadcrumbs from '../components/compounds/Breadcrumbs.astro';
+import ArticleHeader from '../components/compounds/ArticleHeader.astro';
+import NextPrev from '../components/compounds/NextPrev.astro';
+import Lightbox from '../components/compounds/Lightbox.astro';
+import PlaceBar, { type PlanetFrame } from '../components/compounds/PlaceBar.astro';
+import AlbumGrid from '../components/compounds/AlbumGrid.astro';
+import UnlockPanel from '../components/compounds/UnlockPanel.astro';
+import Prose from '../components/fundamentals/Prose.astro';
+import BackToTop from '../components/fundamentals/BackToTop.astro';
+import type { IconName } from '../design/icons';
+import type { ComponentProps } from 'astro/types';
+
+interface Props {
+  /** The document title. */
+  title: string;
+  /** The search and social-card summary: the album's summary. */
+  description?: string;
+  /** The social card's picture: the album's cover picture (gallery spec §14), as an absolute address. */
+  image?: string;
+  /** What the social card's picture shows. */
+  imageAlt?: string;
+  /** The site's sections, for the header. */
+  nav?: NavItem[];
+  /** Links the content adds to the footer (the Privacy page: footerLinks in content/navigation.ts). */
+  footer?: { label: string; href: string }[];
+  /** The header's one action. */
+  action?: { label: string; href: string; icon?: IconName; data?: Record<`data-${string}`, string> };
+  /** The trail from the top to this page. */
+  crumbs?: { trail: { label: string; href: string }[]; current: string };
+  /** The opening (ArticleHeader's props: the album's title, summary, counts and span of dates). */
+  header: ComponentProps<typeof ArticleHeader>;
+  /** The album: its introduction (HTML, from its Markdown) and every item and text card, in a Grid or as a Story. */
+  album: ComponentProps<typeof AlbumGrid> & { introduction?: string };
+  /** The page before this one in its section. */
+  prev?: { href: string; title: string };
+  /** The page after this one in its section. */
+  next?: { href: string; title: string };
+  /** Read on the planet: the building's frame (its bar, over the smoke) replaces the site's header, footer and breadcrumbs. */
+  frame?: PlanetFrame;
+  /**
+   * A private album (gallery spec §12): a build seals the page between comment markers the sealer replaces,
+   * and shows the sign-in panel in its place; the dev server shows it open (its header's Private tag says so).
+   */
+  sealed?: { access: 'private'; id: string; contact: string; privacy?: string };
+  /** The albums the page shows (dev only): a change to another album's files doesn't reload it. */
+  shows?: string[];
+}
+
+const { title, description, image, imageAlt, nav, footer, action, crumbs, header, album, prev, next, frame, sealed, shows } = Astro.props;
+const sealing = !!sealed && import.meta.env.PROD;
+---
+
+<PageShell title={title} description={description} image={image} imageAlt={imageAlt} frame={frame ? 'planet' : 'site'} canonical={frame?.canonical} sealed={sealed?.access} shows={shows} preload={header.standfirst ? ['display', 'display-italic', 'text', 'ui'] : ['display', 'text', 'ui']}>
+  {frame ? <PlaceBar frame={frame} /> : <SiteHeader nav={nav} action={action} access />}
+  <main id="main" class="page" tabindex="-1">
+    {
+      sealing && (
+        <div class="gate" data-access-gate={sealed!.access}>
+          <UnlockPanel contact={sealed!.contact} privacy={sealed!.privacy} />
+        </div>
+      )
+    }
+    {sealing && <Fragment set:html={`<!--sealed:main:${sealed!.id}-->`} />}
+    {sealed && <span hidden data-page-title>{title}</span>}
+    <div class="album" data-album>
+      {
+        crumbs && !frame && (
+          <div class="crumbs">
+            <Breadcrumbs trail={crumbs.trail} current={crumbs.current} />
+          </div>
+        )
+      }
+      <ArticleHeader {...header} />
+      {
+        album.introduction && (
+          <Prose breakout>
+            <Fragment set:html={album.introduction} />
+          </Prose>
+        )
+      }
+      <div class="items">
+        <AlbumGrid items={album.items} title={album.title} layout={album.layout} captions={album.captions} />
+      </div>
+    </div>
+    {
+      (prev || next) && (
+        <div class="more">
+          <NextPrev prev={prev} next={next} />
+        </div>
+      )
+    }
+    <div class="end">
+      <p class="top">
+        <BackToTop />
+      </p>
+    </div>
+    <Lightbox />
+    {sealing && <Fragment set:html="<!--/sealed:main-->" />}
+  </main>
+  {!frame && <SiteFooter more={footer} />}
+  <slot name="page-end" />
+</PageShell>
+
+<style>
+  .page {
+    flex: 1 0 auto;
+    outline: none;
+  }
+
+  /* a sealed album's sign-in panel, where the album will be once it's open */
+  .gate {
+    width: min(var(--size-popout), 100% - 2 * var(--space-gutter));
+    margin: var(--space-section) auto;
+  }
+
+  .gate[hidden] {
+    display: none;
+  }
+
+  /* the opening, the introduction in the reading column, the items at the wide width */
+  .album {
+    display: grid;
+    gap: var(--space-block);
+  }
+
+  /* the crumbs and the way on line up with the reading column's start */
+  .crumbs,
+  .more {
+    width: min(var(--size-popout), 100% - max(var(--space-gutter), (100% - var(--size-measure)) / 2) - var(--space-gutter));
+    margin-inline-start: max(var(--space-gutter), (100% - var(--size-measure)) / 2);
+  }
+
+  .crumbs {
+    margin-block: var(--space-6) calc(var(--space-section) * -1 + var(--space-8));
+  }
+
+  .items {
+    width: min(var(--size-wide), 100% - 2 * var(--space-gutter));
+    margin-inline: auto;
+  }
+
+  .more {
+    margin-block-start: var(--space-section);
+  }
+
+  .end {
+    display: grid;
+    width: min(var(--size-popout), 100% - 2 * var(--space-gutter));
+    margin: var(--space-section) auto var(--space-10);
+  }
+
+  .top {
+    display: flex;
+    justify-content: center;
+    margin: 0;
+  }
+</style>

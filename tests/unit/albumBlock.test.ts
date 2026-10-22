@@ -9,8 +9,7 @@ import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { albumHeadingLevel } from '../../src/site/content/albumBlock';
 import { ALBUM_WIDTHS, albumChoices, albumLifecycleRefusal, albumUnavailable, showingPages, titles, type AlbumFacts } from '../../src/site/editor/model/albumBlock';
-import { albumRefusal, deleteArticle, saveArticle } from '../../src/site/editor/server/articles';
-import { setPageAccess } from '../../src/site/editor/server/access';
+import { albumRefusal, createAlbum, deleteAlbum, saveAlbum } from '../../src/site/editor/server/albums';
 import { jsonBytes, readDoc } from '../../src/site/editor/server/store';
 import type { Block } from '../../src/site/content/schema';
 
@@ -108,7 +107,8 @@ describe('edit mode’s server keeps a placed album shown', () => {
     writeFileSync(abs, jsonBytes(value));
   };
   const page = (id: string, over: Record<string, unknown> = {}) => ({ id, type: 'article', kind: 'note', slug: id, title: id.toUpperCase(), summary: 'S', status: 'published', visibility: 'public', updatedAt: '2026-09-30', publishedAt: '2026-09-30', locale: 'en', body: [], ...over });
-  const node = (id: string) => ({ id, kind: 'item', item: { type: 'article', id } });
+  const node = (id: string, type = 'article') => ({ id, kind: 'item', item: { type, id } });
+  const anAlbum = (id: string, over: Record<string, unknown> = {}) => ({ id, type: 'album', slug: id, title: id.toUpperCase(), status: 'published', createdAt: '2026-09-30', updatedAt: '2026-09-30', publishedAt: '2026-09-30', items: [], ...over });
 
   beforeEach(() => {
     // a scratch folder in the repository's gitignored test-results/, removed after each test
@@ -119,9 +119,9 @@ describe('edit mode’s server keeps a placed album shown', () => {
     process.env.PRIVATE_ROOT = join(dir, 'private-pages');
     put('/content/site.json', { name: 'N', description: 'D', owner: 'p', locale: 'en' });
     put('/content/people/p.json', { id: 'p', name: 'P' });
-    put('/content/structures/site.json', { home: { id: 'home', kind: 'hub', slug: '', title: 'Home', children: [{ id: 's', kind: 'hub', slug: 's', title: 'S', children: [node('trip'), node('essay'), node('spare')] }] } });
-    put('/content/articles/trip.json', page('trip', { kind: 'gallery', title: 'The trip', album: { items: [] } }));
-    put('/content/articles/spare.json', page('spare', { kind: 'gallery', title: 'Spare', status: 'draft', album: { items: [] } }));
+    put('/content/structures/site.json', { home: { id: 'home', kind: 'hub', slug: '', title: 'Home', children: [{ id: 's', kind: 'hub', slug: 's', title: 'S', view: 'albums', children: [node('trip', 'album'), node('essay'), node('spare', 'album')] }] } });
+    put('/content/albums/trip.json', anAlbum('trip', { title: 'The trip' }));
+    put('/content/albums/spare.json', anAlbum('spare', { title: 'Spare', status: 'draft', publishedAt: undefined }));
     put('/content/articles/essay.json', page('essay', { title: 'An essay', body: [{ type: 'text', markdown: 'Words.' }, { type: 'album', album: 'trip' }] }));
   });
   afterEach(() => {
@@ -139,23 +139,29 @@ describe('edit mode’s server keeps a placed album shown', () => {
   });
 
   it('refuses taking it back to draft, with the page, on its status', async () => {
-    const key = '/content/articles/trip.json';
+    const key = '/content/albums/trip.json';
     const a = readDoc<Record<string, unknown>>(key)!;
-    const r = await saveArticle({ id: 'trip', article: { ...a.value, status: 'draft' } as never, ifMatch: { [key]: a.version } });
-    expect(r).toMatchObject({ ok: false, status: 422, issues: [{ file: 'content/articles/trip.json', path: 'status' }] });
+    const r = await saveAlbum({ id: 'trip', album: { ...a.value, status: 'draft' } as never, ifMatch: { [key]: a.version } });
+    expect(r).toMatchObject({ ok: false, status: 422, issues: [{ file: 'content/albums/trip.json', path: 'status' }] });
     expect(r.ok ? '' : r.issues[0]!.message).toMatch(/can't go back to a draft: "An essay" is published and shows it/);
     expect(readDoc<{ status: string }>(key)!.value.status).toBe('published');
   });
 
-  it('refuses making it private, with the page, on its access', async () => {
-    const r = await setPageAccess('trip', 'private');
-    expect(r).toMatchObject({ ok: false, status: 422, issues: [{ path: 'access' }] });
-    expect(r.ok ? '' : r.issues[0]!.message).toMatch(/can't be made private: "An essay" shows it/);
+  it('makes a new album in the section that shows albums, its node and its file in one save, and deletes it again', async () => {
+    put('/content/albums/trip.json', anAlbum('trip', { title: 'The trip', status: 'draft', publishedAt: undefined }));
+    put('/content/articles/essay.json', page('essay', { title: 'An essay', status: 'draft', publishedAt: undefined, body: [{ type: 'album', album: 'trip' }] }));
+    const r = await createAlbum({});
+    expect(r).toMatchObject({ ok: true, id: 'untitled-album' });
+    expect(readDoc<{ title: string; status: string }>('/content/albums/untitled-album.json')!.value).toMatchObject({ title: 'Untitled album', status: 'draft' });
+    expect(JSON.stringify(readDoc('/content/structures/site.json')!.value)).toContain('"type":"album","id":"untitled-album"');
+    expect((await deleteAlbum('untitled-album')).ok).toBe(true);
+    expect(readDoc('/content/albums/untitled-album.json')).toBeNull();
+    expect(JSON.stringify(readDoc('/content/structures/site.json')!.value)).not.toContain('untitled-album');
   });
 
   it('refuses deleting a draft album a draft page shows, with the page', async () => {
     put('/content/articles/essay.json', page('essay', { title: 'An essay', status: 'draft', body: [{ type: 'album', album: 'spare' }] }));
-    const r = await deleteArticle('spare', false, {});
+    const r = await deleteAlbum('spare');
     expect(r).toMatchObject({ ok: false, status: 422 });
     expect(r.ok ? '' : r.issues[0]!.message).toMatch(/can't be deleted: "An essay" shows it\. Take its album block out of it first/);
   });

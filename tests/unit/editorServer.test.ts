@@ -7,6 +7,7 @@
  */
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { execFileSync } from 'node:child_process';
+import { createHash } from 'node:crypto';
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
@@ -16,6 +17,7 @@ import { jsonBytes, readDoc } from '../../src/site/editor/server/store';
 import { createArticle, deleteArticle, saveArticle } from '../../src/site/editor/server/articles';
 import { cropMedia, cropSource, deleteMedia, findFocus, makeStandard, MAX_BYTES, MAX_SIDE, MAX_UPLOAD, parseUploadCrop, removeDark, replaceMaster, saveSidecar, setDark, upload, uploadVideo } from '../../src/site/editor/server/media';
 import { MAX_GIF_BYTES, MAX_VIDEO_BYTES } from '../../src/site/editor/model/upload';
+import { addLinkedVideo, ONLY_PROVIDERS, standInFetch } from '../../src/site/editor/server/albumEmbed';
 import { byteRange } from '../../integrations/content-files.mjs';
 import { asCommitted, changes, committedJson, discard, pendingCount, publish, push } from '../../src/site/editor/server/git';
 import { chosenFiles, messageFor, pageOf, pageScope, privateNote, saveLabel } from '../../src/site/editor/model/selection';
@@ -163,13 +165,15 @@ describe('uploads', () => {
       alt: 'An orange field',
       // its size and background, measured as it's saved (documentation/content/media.md §9.3)
       facts: { width: meta.width, height: meta.height, bg: expect.stringMatching(/^rgb\(\d+ \d+ \d+\)$/), bytes: master.length },
+      // the SHA-256 of the file as uploaded, before it was converted (gallery spec §3.8)
+      fingerprint: createHash('sha256').update(big).digest('hex'),
       visibility: 'public',
     });
   });
 
   it('keep transparency (lossless), never overwrite a name in use, and take decorative in place of alt text', async () => {
     const first = await upload({ file: { name: 'logo.png', bytes: await png(400, 300, true) }, owner: 'shared', decorative: true });
-    const second = await upload({ file: { name: 'logo.png', bytes: await png(400, 300, true) }, owner: 'shared', decorative: true });
+    const second = await upload({ file: { name: 'logo.png', bytes: await png(401, 300, true) }, owner: 'shared', decorative: true });
     expect(first).toMatchObject({ ok: true, id: 'shared/logo' });
     expect(second).toMatchObject({ ok: true, id: 'shared/logo-2' });
     expect((await sharp(readFileSync(join(content, 'media/shared/logo.webp'))).metadata()).hasAlpha).toBe(true);
@@ -315,8 +319,8 @@ describe('gallery uploads: drawings, refused formats, the date taken, the focus 
     // a HEIC turned into a PNG in the browser: the browser read the date first
     await upload({ file: { name: 'phone.png', bytes: await png(20, 20) }, owner: 'shared', alt: 'P', taken: '2020-01-02' });
     expect(readDoc<{ taken?: string }>('/content/media/shared/phone.json')!.value.taken).toBe('2020-01-02');
-    await upload({ file: { name: 'later.png', bytes: await png(20, 20) }, owner: 'shared', alt: 'L', taken: '2999-01-01' });
-    await upload({ file: { name: 'nonsense.png', bytes: await png(20, 20) }, owner: 'shared', alt: 'N', taken: '2023-02-30' });
+    await upload({ file: { name: 'later.png', bytes: await png(21, 20) }, owner: 'shared', alt: 'L', taken: '2999-01-01' });
+    await upload({ file: { name: 'nonsense.png', bytes: await png(22, 20) }, owner: 'shared', alt: 'N', taken: '2023-02-30' });
     expect(readDoc('/content/media/shared/later.json')!.value).not.toHaveProperty('taken');
     expect(readDoc('/content/media/shared/nonsense.json')!.value).not.toHaveProperty('taken');
   });
@@ -471,7 +475,7 @@ describe('video files (documentation/content/media.md §12)', () => {
     expect(r).toMatchObject({ ok: true, id: 'articles/a/product-demo' });
     expect(readFileSync(join(content, 'media/articles/a/product-demo.webm'))).toEqual(webm);
     expect((await sharp(readFileSync(join(content, 'media/articles/a/product-demo.poster.webp'))).metadata()).format).toBe('webp');
-    expect(JSON.parse(readFileSync(join(content, 'media/articles/a/product-demo.json'), 'utf8'))).toEqual({ kind: 'video', file: 'product-demo.webm', title: 'The product demo', width: 1280, height: 720, duration: 12.35, poster: { file: 'product-demo.poster.webp' }, caption: 'Shot in Hyderabad.', visibility: 'public' });
+    expect(JSON.parse(readFileSync(join(content, 'media/articles/a/product-demo.json'), 'utf8'))).toEqual({ kind: 'video', file: 'product-demo.webm', title: 'The product demo', width: 1280, height: 720, duration: 12.35, poster: { file: 'product-demo.poster.webp' }, caption: 'Shot in Hyderabad.', fingerprint: createHash('sha256').update(webm).digest('hex'), visibility: 'public' });
     // a video block shows it, and while it does it can't be deleted; its details save, its files and size kept
     put('/content/articles/a.json', article({ body: [{ type: 'video', media: 'articles/a/product-demo' }] }));
     const v = readDoc<Record<string, unknown>>('/content/media/articles/a/product-demo.json')!;
@@ -502,6 +506,101 @@ describe('video files (documentation/content/media.md §12)', () => {
     expect(byteRange('bytes=-200', 1000)).toEqual({ start: 800, end: 999 });
     expect(byteRange('bytes=900-5000', 1000)).toEqual({ start: 900, end: 999 });
     expect(byteRange('bytes=1000-', 1000)).toBe(false);
+  });
+});
+
+describe('the library: one item per file, a video file\u2019s date and linked videos (gallery spec §3.8, §4.2, §9.4, V45, V50, V55)', () => {
+  const sha = (b: Buffer) => createHash('sha256').update(b).digest('hex');
+  const MAC_EPOCH = 2082844800;
+  const mp4 = (iso: string) => {
+    const box = (type: string, body: Buffer) => {
+      const head = Buffer.alloc(8);
+      head.writeUInt32BE(8 + body.length);
+      head.write(type, 4, 'latin1');
+      return Buffer.concat([head, body]);
+    };
+    const t = Buffer.alloc(8);
+    t.writeUInt32BE(Date.parse(`${iso}T10:00:00Z`) / 1000 + MAC_EPOCH, 4);
+    return Buffer.concat([box('ftyp', Buffer.from('isom\0\0\0\0isom', 'latin1')), box('moov', box('mvhd', Buffer.concat([t, Buffer.alloc(92)])))]);
+  };
+
+  it('dropping the same file again answers the item already there, wherever it is, and writes nothing', async () => {
+    const bytes = await png(300, 200);
+    expect(await upload({ file: { name: 'beach.png', bytes }, owner: 'shared', alt: 'A beach' })).toMatchObject({ ok: true, id: 'shared/beach' });
+    expect(readDoc<{ fingerprint?: string }>('/content/media/shared/beach.json')!.value.fingerprint).toBe(sha(bytes));
+    const again = await upload({ file: { name: 'beach again.png', bytes }, owner: 'library' });
+    expect(again).toEqual({ ok: true, versions: {}, id: 'shared/beach', existing: true, origin: 'public', kind: 'image' });
+    expect(existsSync(join(content, 'media/library'))).toBe(false);
+    // a video file the same way
+    const clip = mp4('2021-07-14');
+    expect(await uploadVideo({ file: { name: 'clip.mp4', bytes: clip }, owner: 'library', title: 'A clip', width: 640, height: 360 })).toMatchObject({ ok: true, id: 'library/clip' });
+    expect(await uploadVideo({ file: { name: 'other.mp4', bytes: clip }, owner: 'albums/trip', title: 'Again', width: 640, height: 360 })).toMatchObject({ ok: true, id: 'library/clip', existing: true, kind: 'video' });
+    expect(existsSync(join(content, 'media/albums/trip'))).toBe(false);
+  });
+
+  it('a crop copy carries no fingerprint (it isn\u2019t the file as uploaded), and Replace takes the new file\u2019s', async () => {
+    const first = await png(400, 300);
+    await upload({ file: { name: 'cover.png', bytes: first }, owner: 'shared', alt: 'A cover' });
+    const r = await cropMedia('shared/cover', { x: 0, y: 0, width: 200, height: 200 }, { copy: true });
+    expect(r).toMatchObject({ ok: true });
+    expect(readDoc(`/content/media/${r.id}.json`)!.value).not.toHaveProperty('fingerprint');
+    const next = await png(500, 300);
+    expect(await replaceMaster('shared/cover', next, { name: 'cover.png' })).toMatchObject({ ok: true });
+    expect(readDoc<{ fingerprint?: string }>('/content/media/shared/cover.json')!.value.fingerprint).toBe(sha(next));
+    // a new file another item was made from isn't fingerprinted twice (V55)
+    const other = await png(600, 300);
+    await upload({ file: { name: 'other.png', bytes: other }, owner: 'shared', alt: 'Other' });
+    expect(await replaceMaster('shared/cover', other, { name: 'cover.png' })).toMatchObject({ ok: true });
+    expect(readDoc('/content/media/shared/cover.json')!.value).not.toHaveProperty('fingerprint');
+  });
+
+  it('a picture for the library or an album may wait for its words; one for a page may not', async () => {
+    expect(await upload({ file: { name: 'a.png', bytes: await png(30, 20) }, owner: 'library' })).toMatchObject({ ok: true, id: 'library/a' });
+    expect(readDoc('/content/media/library/a.json')!.value).not.toHaveProperty('alt');
+    expect(await upload({ file: { name: 'b.png', bytes: await png(31, 20) }, owner: 'albums/trip' })).toMatchObject({ ok: true, id: 'albums/trip/b' });
+    expect(existsSync(join(content, 'media/albums/trip/b.webp'))).toBe(true);
+    expect(await upload({ file: { name: 'c.png', bytes: await png(32, 20) }, owner: 'articles/a' })).toMatchObject({ ok: false, status: 422 });
+    expect(await upload({ file: { name: 'd.png', bytes: await png(33, 20) }, owner: 'albums/Not An Id' })).toMatchObject({ ok: false, status: 422 });
+  });
+
+  it('reads the day an MP4 was made from its movie header, never a day after today', async () => {
+    await uploadVideo({ file: { name: 'made.mp4', bytes: mp4('2021-07-14') }, owner: 'library', title: 'Made', width: 640, height: 360 });
+    expect(readDoc<{ taken?: string; fingerprint?: string }>('/content/media/library/made.json')!.value).toMatchObject({ taken: '2021-07-14', fingerprint: sha(mp4('2021-07-14')) });
+    // a v0 header holds 32 bits: 2039 is as far as it reaches
+    await uploadVideo({ file: { name: 'later.mp4', bytes: mp4('2039-01-01') }, owner: 'library', title: 'Later', width: 640, height: 360 });
+    expect(readDoc('/content/media/library/later.json')!.value).not.toHaveProperty('taken');
+  });
+
+  it('links a YouTube or Vimeo video as a library item with a poster of its own, asking the provider once', async () => {
+    const get = vi.fn((u: string | URL | Request) => standInFetch(String(u))) as unknown as typeof fetch;
+    const r = await addLinkedVideo({ url: 'https://youtu.be/dQw4w9WgXcQ' }, get);
+    expect(r).toMatchObject({ ok: true, id: 'library/a-stand-in-video', existing: false, title: 'A stand-in video' });
+    expect(readDoc('/content/media/library/a-stand-in-video.json')!.value).toEqual({ kind: 'embed', provider: 'youtube', id: 'dQw4w9WgXcQ', title: 'A stand-in video', shape: { width: 1280, height: 720 }, poster: { file: 'a-stand-in-video.poster.webp' }, visibility: 'public' });
+    expect((await sharp(readFileSync(join(content, 'media/library/a-stand-in-video.poster.webp'))).metadata()).format).toBe('webp');
+    const asked = (get as unknown as ReturnType<typeof vi.fn>).mock.calls.map((c) => new URL(String(c[0])).hostname);
+    expect(asked.every((h) => ['www.youtube.com', 'youtube.com', 'i.ytimg.com'].includes(h))).toBe(true);
+    // the same video again, by another address: the item already there, nothing asked
+    const calls = (get as unknown as ReturnType<typeof vi.fn>).mock.calls.length;
+    expect(await addLinkedVideo({ url: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ', album: 'trip' }, get)).toEqual({ ok: true, versions: {}, id: 'library/a-stand-in-video', existing: true, title: 'A stand-in video' });
+    expect((get as unknown as ReturnType<typeof vi.fn>).mock.calls.length).toBe(calls);
+    // a Vimeo one for an album goes in the album's folder, with its length
+    expect(await addLinkedVideo({ url: 'https://vimeo.com/76979871', album: 'trip' }, get)).toMatchObject({ ok: true, id: 'albums/trip/a-stand-in-video', existing: false });
+    expect(readDoc('/content/media/albums/trip/a-stand-in-video.json')!.value).toMatchObject({ provider: 'vimeo', id: '76979871', duration: 90 });
+    // and a linked video is deleted with its poster
+    expect(await deleteMedia('albums/trip/a-stand-in-video')).toMatchObject({ ok: true });
+    for (const f of ['a-stand-in-video.json', 'a-stand-in-video.poster.webp']) expect(existsSync(join(content, 'media/albums/trip', f))).toBe(false);
+  });
+
+  it('refuses any other address, and a provider that fails, saying what to do and writing nothing', async () => {
+    const get = vi.fn(standInFetch) as unknown as typeof fetch;
+    for (const url of ['https://example.com/video.mp4', 'https://www.dailymotion.com/video/x7tgad0', 'not an address', '']) {
+      expect(await addLinkedVideo({ url }, get)).toEqual({ ok: false, status: 422, issues: [{ file: 'content/media', path: 'url', message: ONLY_PROVIDERS }] });
+    }
+    expect((get as unknown as ReturnType<typeof vi.fn>).mock.calls.length).toBe(0);
+    expect(await addLinkedVideo({ url: 'https://youtu.be/dQw4w9WgXcQ', album: '../x' }, get)).toMatchObject({ ok: false, status: 422 });
+    const down = (async () => new Response('', { status: 404 })) as unknown as typeof fetch;
+    expect(JSON.stringify(await addLinkedVideo({ url: 'https://youtu.be/dQw4w9WgXcQ' }, down))).toMatch(/YouTube didn't answer for that video \(404\)/);
+    expect(existsSync(join(content, 'media/library'))).toBe(false);
   });
 });
 

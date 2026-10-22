@@ -4,5 +4,6 @@
   "alt": "An abstract temporary drawing converted into white stipple dots on a dark canvas, with controls for stipple count, iterations and sampling.",
   "caption": "Stipple Art turns an uploaded image into a field of weighted Voronoi dots.",
   "focus": "35% 50%",
+  "fingerprint": "d49eef8ba210e9e6a4c00bd3bd1f19ef9164b3f6ecac55e0b072804bf6c338c2",
   "visibility": "public"
 }

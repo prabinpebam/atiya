@@ -16,9 +16,12 @@
  * Gallery (gallery spec §4): an SVG can be kept as a drawing (cleaned by `sanitizeSvg`, `<name>.svg`, its
  * dark version `<name>.dark.svg`); JPEG XL, camera RAW and PSD are refused with what to do; an upload's
  * date taken (EXIF) and focus point (the attention measure) go into its sidecar; a picture can be kept
- * large (up to 3840 px, `large`), and made standard again.
+ * large (up to 3840 px, `large`), and made standard again. Every upload's fingerprint (the SHA-256 of the file
+ * as uploaded, V55) goes into its sidecar, and a file already in the library isn't saved again: the upload
+ * answers the item there (`existing`). A video file's date comes from its own header (`creation_time`).
+ * Uploads can go to an album's folder (`albums/<id>`) or the library's (`library`), where alt text may wait.
  */
-import { imageMedia, isDrawingFile, isRealDate, videoMedia, type ImageMedia, type VideoMedia } from '../../content/schema';
+import { imageMedia, isDrawingFile, isRealDate, videoMedia, type EmbedMedia, type ImageMedia, type VideoMedia } from '../../content/schema';
 import { commit, jsonBytes, readDoc, readFile, versionOf, type Change, type Result } from './store';
 import { fileOf, readSnapshot } from '../../content/source';
 import { measureFacts, type SidecarFacts } from '../../content/pictureFacts';
@@ -28,6 +31,8 @@ import { ratioLabel, type Rect } from '../model/crop';
 import { MAX_LARGE_SIDE, MAX_PICTURE_BYTES, focusPercent, joinFocus, pictureSizeIssue, refusedFormat, videoSizeIssue } from '../model/upload';
 import { takenOf } from '../model/exif';
 import { sanitizeSvg } from '../model/svgSanitize';
+import { videoTakenOf } from '../model/videoDate';
+import { findByFingerprint, fingerprintOf, type LibraryMatch } from './libraryIndex';
 
 export const MAX_BYTES = 1.5 * 1024 * 1024;
 export const MAX_SIDE = 2560;
@@ -37,16 +42,31 @@ export const MAX_SIDE = 2560;
  */
 export const MAX_LARGE_BYTES = 3.5 * 1024 * 1024;
 export const MAX_UPLOAD = MAX_PICTURE_BYTES;
-const OWNER = /^(shared|site|articles\/[a-z0-9]+(?:-[a-z0-9]+)*|people\/[a-z0-9]+(?:-[a-z0-9]+)*)$/;
+const OWNER = /^(shared|site|library|(?:articles|albums|people)\/[a-z0-9]+(?:-[a-z0-9]+)*)$/;
+const OWNERS_WORDS = 'shared, site, library, articles/<id>, albums/<id> or people/<id>';
 const MEDIA_ID = /^[a-z0-9-]+(?:\/[a-z0-9-]+)+$/;
+/** Folders whose uploads may wait for their alt text (gallery spec §9.4: words come after, in the viewer). */
+const WORDS_LATER = /^(library|albums\/.+)$/;
 
 /** Where a picture's or video's files are: private-pages/ for a private page's media, else content/. */
 const baseOf = (id: string) => (existsSync(fileOf(`/private/media/${id}.json`)) ? '/private/media/' : '/content/media/');
-/** The folder an upload goes to: a private page's own folder is in private-pages/. */
-function folderOf(owner: string): string {
-  const page = /^articles\/(.+)$/.exec(owner)?.[1];
-  return `${page && existsSync(fileOf(`/private/articles/${page}.json`)) ? '/private/media/' : '/content/media/'}${owner}/`;
+/** The folder an upload goes to: a private page's or a private album's own folder is in private-pages/. */
+export function folderOf(owner: string): string {
+  const page = /^(articles|albums)\/(.+)$/.exec(owner);
+  return `${page && existsSync(fileOf(`/private/${page[1]}/${page[2]}.json`)) ? '/private/media/' : '/content/media/'}${owner}/`;
 }
+
+/**
+ * The library item made from the same file (gallery spec §9.4, V55): the fingerprint is the SHA-256 of the file
+ * as it was uploaded, before it's converted, so dropping it again finds the item instead of making a copy.
+ */
+function sameFile(bytes: Buffer): { fingerprint: string; existing: LibraryMatch | null } {
+  const fingerprint = fingerprintOf(bytes);
+  return { fingerprint, existing: findByFingerprint(fingerprint) };
+}
+
+/** What an upload of a file already in the library answers: the item there, and nothing written. */
+const alreadyThere = (m: LibraryMatch) => ({ ok: true as const, versions: {}, id: m.id, existing: true as const, origin: m.origin, kind: m.kind });
 
 const refuse = (file: string, message: string, path?: string): Result => ({ ok: false, status: 422, issues: [{ file, message, ...(path ? { path } : {}) }] });
 
@@ -273,8 +293,8 @@ const DRAWING_UNCROPPED = "a drawing is kept as a vector, so it can't be cropped
  * its facts, the day it was taken (its EXIF date) and, for a raster picture, its focus point (the attention
  * measure). Answers its id and, for a drawing, what the cleaning removed.
  */
-export async function upload(u: Upload): Promise<Result & { id?: string; removed?: string[] }> {
-  if (!OWNER.test(u.owner)) return refuse('content/media', `"${u.owner}" isn't a media folder (shared, site, articles/<id> or people/<id>)`, 'owner');
+export async function upload(u: Upload): Promise<Result & { id?: string; removed?: string[]; existing?: true; origin?: LibraryMatch['origin']; kind?: LibraryMatch['kind'] }> {
+  if (!OWNER.test(u.owner)) return refuse('content/media', `"${u.owner}" isn't a media folder (${OWNERS_WORDS})`, 'owner');
   const refused = refusedPicture(u.file.name, u.file.bytes);
   if (refused) return refuse('content/media', refused, 'file');
   const drawing = u.svgAs === 'drawing' && isSvg(u.file.bytes, u.file.name);
@@ -284,6 +304,9 @@ export async function upload(u: Upload): Promise<Result & { id?: string; removed
   if (tooBig) return refuse('content/media', tooBig, 'file');
   if (gif && u.crop) return refuse('content/media', GIF_UNCROPPED, 'crop');
   if (drawing && u.crop) return refuse('content/media', DRAWING_UNCROPPED, 'crop');
+  // the same file uploaded again is the item already in the library (a crop chosen before the upload is another picture)
+  const same = sameFile(u.file.bytes);
+  if (same.existing && !u.crop) return alreadyThere(same.existing);
   const snap = readSnapshot();
   const folder = folderOf(u.owner);
   const taken = new Set([...snap.masters, ...Object.keys(snap.docs)].filter((k) => k.startsWith(folder)).map((k) => k.slice(folder.length).replace(/(?:\.dark(?:\.poster)?|\.poster)?\.\w+$/, '')));
@@ -307,12 +330,13 @@ export async function upload(u: Upload): Promise<Result & { id?: string; removed
     kind: 'image',
     file: `${name}.${master.ext}`,
     ...(master.poster ? { animation: { poster: `${name}.poster.webp` } } : {}),
-    ...(u.decorative ? { decorative: true } : { alt: (u.alt ?? '').trim() }),
+    ...(u.decorative ? { decorative: true } : (u.alt ?? '').trim() || !WORDS_LATER.test(u.owner) ? { alt: (u.alt ?? '').trim() } : {}),
     ...(u.caption?.trim() ? { caption: u.caption.trim() } : {}),
     ...(focus ? { focus } : {}),
     ...(await factsOf(master.bytes)),
     ...(day ? { taken: day } : {}),
     ...(master.large ? { large: true as const } : {}),
+    ...(u.crop ? {} : { fingerprint: same.fingerprint }),
     visibility: 'public',
   };
   const parsed = imageMedia.safeParse(sidecar);
@@ -347,19 +371,25 @@ export async function saveSidecar(id: string, sidecar: ImageMedia | VideoMedia, 
       ...(v.duration ? { duration: v.duration } : {}),
       ...(v.poster ? { poster: v.poster } : {}),
       ...(s.caption?.trim() ? { caption: s.caption.trim() } : {}),
+      // its words in the library (gallery spec §3.4): kept when the form doesn't send them
+      ...(('description' in s ? s.description : v.description)?.trim() ? { description: ('description' in s ? s.description : v.description)!.trim() } : {}),
+      ...(('place' in s ? s.place : v.place)?.trim() ? { place: ('place' in s ? s.place : v.place)!.trim() } : {}),
+      ...(('taken' in s ? s.taken : v.taken) ? { taken: ('taken' in s ? s.taken : v.taken)! } : {}),
       ...(s.credit?.trim() ? { credit: s.credit.trim() } : {}),
       ...(s.licence?.name ? { licence: s.licence } : {}),
       ...(s.source ? { source: s.source } : {}),
+      // the file's fingerprint is its upload's (V55)
+      ...(v.fingerprint ? { fingerprint: v.fingerprint } : {}),
       visibility: s.visibility ?? v.visibility,
     };
     return commit({ changes: [{ key, bytes: jsonBytes(next) }], ifMatch: { [key]: ifMatch[key] ?? null } });
   }
   const image = current.value as ImageMedia;
   // the master's file name is fixed (replacing a picture keeps its id and file), and its dark version, its
-  // facts and whether it's kept large are set only with the masters (upload, Replace, setDark, Make it
+  // facts, whether it's kept large and its fingerprint are set only with the masters (upload, Replace, setDark, Make it
   // standard): the details form never changes them
-  const { dark: _ignoredDark, animation: _ignoredAnimation, facts: _ignoredFacts, large: _ignoredLarge, ...rest } = sidecar as ImageMedia;
-  const next: ImageMedia = { ...rest, kind: 'image', file: image.file, ...(image.animation ? { animation: image.animation } : {}), ...(image.dark ? { dark: image.dark } : {}), ...(image.facts ? { facts: image.facts } : {}), ...(image.large ? { large: true as const } : {}) };
+  const { dark: _ignoredDark, animation: _ignoredAnimation, facts: _ignoredFacts, large: _ignoredLarge, fingerprint: _ignoredFingerprint, ...rest } = sidecar as ImageMedia;
+  const next: ImageMedia = { ...rest, kind: 'image', file: image.file, ...(image.animation ? { animation: image.animation } : {}), ...(image.dark ? { dark: image.dark } : {}), ...(image.facts ? { facts: image.facts } : {}), ...(image.large ? { large: true as const } : {}), ...(image.fingerprint ? { fingerprint: image.fingerprint } : {}) };
   return commit({ changes: [{ key, bytes: jsonBytes(next) }], ifMatch: { [key]: ifMatch[key] ?? null } });
 }
 
@@ -415,13 +445,18 @@ async function remux(bytes: Buffer, ext: string): Promise<Buffer | null> {
   }
 }
 
-export async function uploadVideo(u: VideoUpload): Promise<Result & { id?: string }> {
-  if (!OWNER.test(u.owner)) return refuse('content/media', `"${u.owner}" isn't a media folder (shared, site, articles/<id> or people/<id>)`, 'owner');
+export async function uploadVideo(u: VideoUpload): Promise<Result & { id?: string; existing?: true; origin?: LibraryMatch['origin']; kind?: LibraryMatch['kind'] }> {
+  if (!OWNER.test(u.owner)) return refuse('content/media', `"${u.owner}" isn't a media folder (${OWNERS_WORDS})`, 'owner');
   const tooBig = videoSizeIssue(u.file.bytes.length);
   if (tooBig) return refuse('content/media', tooBig, 'file');
   const ext = /\.([a-z0-9]+)$/i.exec(u.file.name)?.[1]?.toLowerCase() ?? '';
   if (!['mp4', 'm4v', 'webm', 'mov'].includes(ext)) return refuse('content/media', `${u.file.name} is a video the site can't show: save it as an MP4 (H.264) or a WebM`, 'file');
   if (!(u.width >= 1 && u.height >= 1)) return refuse('content/media', "its size wasn't read: choose it again", 'file');
+  // the file as it was uploaded, before it's rewritten: its fingerprint and the day it was made
+  const same = sameFile(u.file.bytes);
+  if (same.existing) return alreadyThere(same.existing);
+  const made = videoTakenOf(new Uint8Array(u.file.bytes.buffer, u.file.bytes.byteOffset, u.file.bytes.length));
+  const day = made && isRealDate(made) && made <= today() ? made : undefined;
   let bytes = u.file.bytes;
   let out: 'mp4' | 'webm' = ext === 'webm' ? 'webm' : 'mp4';
   if (ext !== 'webm') {
@@ -454,6 +489,8 @@ export async function uploadVideo(u: VideoUpload): Promise<Result & { id?: strin
     ...(u.duration && u.duration > 0 ? { duration: Math.round(u.duration * 100) / 100 } : {}),
     ...(poster ? { poster: { file: `${name}.poster.webp` } } : {}),
     ...(u.caption?.trim() ? { caption: u.caption.trim() } : {}),
+    ...(day ? { taken: day } : {}),
+    fingerprint: same.fingerprint,
     visibility: 'public',
   };
   const parsed = videoMedia.safeParse(sidecar);
@@ -507,9 +544,12 @@ export async function replaceMaster(id: string, bytes: Buffer, opts: { name?: st
   const masterKey = key.replace(/[^/]+\.json$/, file);
   const posterKey = `${baseOf(id)}${id.slice(0, id.lastIndexOf('/'))}/${posterFileOf(id)}`;
   const oldPosterKey = posterKeyOf(id, sc.value);
-  const { animation: _animation, facts: _facts, large: _large, ...rest } = sc.value;
+  const { animation: _animation, facts: _facts, large: _large, fingerprint: _fingerprint, ...rest } = sc.value;
   const day = drawing || rest.taken ? undefined : takenFor(bytes);
-  const next: ImageMedia = { ...rest, file, ...(master.poster ? { animation: { poster: posterFileOf(id) } } : {}), ...(await factsOf(master.bytes)), ...(day ? { taken: day } : {}), ...(master.large ? { large: true as const } : {}) };
+  // its new file's fingerprint, unless another library item already holds it (that one answers for the file, V55)
+  const same = sameFile(bytes);
+  const fingerprint = !same.existing || same.existing.id === id ? same.fingerprint : undefined;
+  const next: ImageMedia = { ...rest, file, ...(master.poster ? { animation: { poster: posterFileOf(id) } } : {}), ...(await factsOf(master.bytes)), ...(day ? { taken: day } : {}), ...(master.large ? { large: true as const } : {}), ...(fingerprint ? { fingerprint } : {}) };
   const changes: Change[] = [
     { key: masterKey, bytes: master.bytes },
     { key, bytes: jsonBytes(next) },
@@ -757,8 +797,8 @@ export async function cropMedia(id: string, rect: Rect, opts: { copy?: boolean }
   const taken = new Set([...snap.masters, ...Object.keys(snap.docs)].filter((k) => k.startsWith(folder)).map((k) => k.slice(folder.length).replace(/(?:\.dark(?:\.poster)?|\.poster)?\.\w+$/, '')));
   const shape = ratioLabel(r.width, r.height);
   const name = unique(`${src.id.slice(owner.length + 1)}-${/^\d+:\d+$/.test(shape) ? shape.replace(':', 'x') : 'crop'}`, taken);
-  // a cropped copy is a standard picture (cut to at most 2560 px), even of a large one
-  const { file: _file, focus: _focus, crop: _crop, dark: _dark, facts: _facts, large: _large, ...details } = src.sidecar;
+  // a cropped copy is a standard picture (cut to at most 2560 px), even of a large one, and isn't its original's file (no fingerprint)
+  const { file: _file, focus: _focus, crop: _crop, dark: _dark, facts: _facts, large: _large, fingerprint: _fingerprint, ...details } = src.sidecar;
   const newId = `${owner}/${name}`;
   const sidecar: ImageMedia = { ...details, kind: 'image', file: `${name}.webp`, crop, ...(await factsOf(master.bytes)), ...(darkMaster ? { dark: { file: darkFileOf(newId), ...(await factsOf(darkMaster.bytes)) } } : {}) };
   const changes: Change[] = [
@@ -774,12 +814,16 @@ export async function cropMedia(id: string, rect: Rect, opts: { copy?: boolean }
   return res.ok ? { ...res, id: newId, width: master.width, height: master.height } : res;
 }
 
-/** Deletes a picture (its sidecar, master and dark version) or a video (its sidecar, file and poster). The content check refuses it while anything refers to it. */
+/** Deletes a picture (its sidecar, master and dark version), a video (its sidecar, file and poster) or a linked video (its sidecar and poster). The content check refuses it while anything refers to it. */
 export async function deleteMedia(id: string): Promise<Result> {
   if (!MEDIA_ID.test(id)) return refuse('content/media', 'not a media id');
   const key = `${baseOf(id)}${id}.json`;
-  const sc = readDoc<ImageMedia | VideoMedia>(key);
+  const sc = readDoc<ImageMedia | VideoMedia | EmbedMedia>(key);
   if (!sc) return refuse(key.slice(1), "doesn't exist");
+  if (sc.value.kind === 'embed') {
+    const posterKey = key.replace(/[^/]+\.json$/, sc.value.poster.file);
+    return commit({ changes: [{ key, bytes: null }, { key: posterKey, bytes: null }], ifMatch: { [key]: sc.version, [posterKey]: versionOf(readFile(posterKey)) } });
+  }
   const masterKey = key.replace(/[^/]+\.json$/, sc.value.file);
   const extraKeys =
     sc.value.kind === 'video'

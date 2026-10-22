@@ -1,19 +1,20 @@
 ---
 /**
  * A page the site structure places (documentation/sections/spec.md §3): a page, opened as its kind reads
- * (an article's byline, date and reading time; a page's title only; a gallery's number of pictures), or a
- * section, listing its published pages in its view. The navigation is the structure's (§4). The public
+ * (an article's byline, date and reading time; a page's title only), an album (its own layout, AlbumLayout:
+ * documentation/gallery/spec.md §7), or a section, listing its published pages and albums in its view. The navigation is the structure's (§4). The public
  * route renders it; so does edit mode's canvas, with `editable`, which adds only what the canvas needs
  * to find each block (a comment before it) and passes the page-end slot through for its overlay.
  */
 import ArticleLayout from '../layouts/ArticleLayout.astro';
+import AlbumLayout from '../layouts/AlbumLayout.astro';
 import IndexLayout from '../layouts/IndexLayout.astro';
 import Contact from './Contact.astro';
 import Blocks from './Blocks.astro';
-import { getArticle, getOpenRoutes, getPlanet, getRecommendations, getRoutes, getSite, getStructure } from './repository';
+import { getAlbum, getArticle, getOpenRoutes, getPlanet, getRecommendations, getRoutes, getSite, getStructure, sectionAlbums } from './repository';
 import { recommendationBand } from './recommendations';
 import { withPhotos } from './recommendationsBand';
-import { albumOf, cardPicture, measureOf, openingOf, relatedOf } from './opening';
+import { albumCardOf, albumMeasureOf, albumOf, albumOpening, albumSocialOf, cardPicture, measureOf, openingOf, relatedOf } from './opening';
 import { exploreAction, footerLinks, siteNav } from './navigation';
 import { withBase } from '../design/meta';
 import { searchCopy } from './limits';
@@ -39,7 +40,9 @@ const footer = footerLinks(getSite(), getRoutes());
 const action = exploreAction(route, getPlanet());
 const node = route?.node;
 const article = Astro.props.article ?? (node?.kind === 'item' && node.item.type === 'article' ? getArticle(node.item.id) : undefined);
-const title = route?.title ?? article?.title ?? site.name;
+// an album placed here (documentation/gallery/spec.md §7): its own resource, drawn by AlbumLayout
+const album = node?.kind === 'item' && node.item.type === 'album' ? getAlbum(node.item.id)?.album : undefined;
+const title = route?.title ?? article?.title ?? album?.title ?? site.name;
 const docTitle = `${title} — ${site.name}`;
 // the trail from the home page to the hub above (the IA shows it from the second level down)
 const crumbs = route && route.ancestors.length > 1 ? { trail: route.ancestors.map((c) => ({ label: c.label, href: withBase(c.path) })), current: route.title } : undefined;
@@ -51,7 +54,8 @@ const privacy = withBase(getOpenRoutes().find((r) => r.node.id === site.privacyP
 const signInHref = (from: string) => withBase(`/sign-in/?return=${encodeURIComponent(withBase(from))}`);
 // a private page: sealed in a build, open with its ribbon in dev; the build's sealer finds it in the provenance record
 const access = route?.access ?? 'open';
-const sealed = article && route && access !== 'open' && !editable ? { access, id: article.id, contact, privacy } : undefined;
+const itemId = article?.id ?? album?.id;
+const sealed = itemId && route && access !== 'open' && !editable ? { access, id: itemId, contact, privacy } : undefined;
 if (sealed && import.meta.env.PROD) {
   const { recordProvenance } = await import('./provenance');
   recordProvenance({ kind: 'page', route: route!.path, access: sealed.access, id: sealed.id });
@@ -60,12 +64,22 @@ if (sealed && import.meta.env.PROD) {
 let header: ComponentProps<typeof ArticleLayout>['header'] | undefined;
 let related: ComponentProps<typeof ArticleLayout>['related'];
 let relatedIds: string[] = [];
-// a gallery page's album: its introduction and every item, before its own words (gallery spec §7)
-const album = article?.album ? await albumOf(article) : undefined;
+// its section (a page's parent is always one: V22)
+const section = route && route.ancestors.length > 1 ? route.ancestors.at(-1) : undefined;
+const topic = section && { label: section.label, href: withBase(section.path) };
+// an album's page: its opening, every item, its social picture (its cover: spec §14) and the way on, its section's albums before and after it
+const albumView = album ? await albumOf(album.id) : undefined;
+const albumHeader = album ? albumOpening(album, topic) : undefined;
+// a private album's head names nothing (PageShell), and its cover is never made into a public file
+const social = album && !sealed ? await albumSocialOf(album) : undefined;
+const socialImage = social && new URL(social.src, Astro.site ?? Astro.url).href;
+const neighbours = album && route?.parent && access === 'open' ? sectionAlbums(route.parent.id).filter((a) => a.route.access === 'open') : [];
+const at = album ? neighbours.findIndex((a) => a.album.id === album.id) : -1;
+const near = (i: number) => (at >= 0 && neighbours[i] ? { href: withBase(neighbours[i]!.route.path), title: neighbours[i]!.album.title } : undefined);
+const prev = near(at - 1);
+const next = near(at + 1);
 if (article) {
-  // its section (a page's parent is always one: V22)
-  const section = route && route.ancestors.length > 1 ? route.ancestors.at(-1) : undefined;
-  header = await openingOf(article, section && { label: section.label, href: withBase(section.path) });
+  header = await openingOf(article, topic);
   // what to read next: every other published open story on the site (§3.7); a private page never names another (V32)
   const pool = getOpenRoutes()
     .filter((r) => r.node.kind === 'item' && r.node.item.type === 'article')
@@ -75,12 +89,23 @@ if (article) {
   relatedIds = (related?.stories ?? []).map((s) => byHref.get((s as { href?: string }).href ?? '')).filter((id): id is string => !!id);
 }
 
-// a hub lists what it places (published): its open pages as story cards, its private ones sealed (§2.1)
+// a hub lists what it places (published): its open pages and albums as story cards, its private ones sealed (§2.1);
+// an album's card is its cover picture, title, summary and counts (gallery spec §3.6)
+const itemOf = (r: Route) => (r.node as { item: { type: string; id: string } }).item;
 const story = async (r: Route) => {
-  const a = getArticle((r.node as { item: { id: string } }).item.id)!;
+  const { type, id } = itemOf(r);
+  if (type === 'album') {
+    const al = getAlbum(id)!.album;
+    return { node: r.node.id, href: withBase(r.path), title: al.title, dek: al.summary, meta: albumMeasureOf(al), picture: await albumCardOf(al) };
+  }
+  const a = getArticle(id)!;
   return { node: r.node.id, href: withBase(r.path), title: a.title, dek: a.summary, meta: measureOf(a), picture: await cardPicture(a) };
 };
-const children = node?.kind === 'hub' ? getRoutes().filter((r) => r.parent === node && r.node.kind === 'item' && r.node.item.type === 'article') : [];
+const placed = node?.kind === 'hub' ? getRoutes().filter((r) => r.parent === node && r.node.kind === 'item' && (r.node.item.type === 'article' || r.node.item.type === 'album')) : [];
+// the Albums view orders its albums by the section's albumOrder (spec §5): they take the albums' places, in that order
+const albumOrder = node?.kind === 'hub' && node.view === 'albums' ? sectionAlbums(node.id).map((a) => a.route) : [];
+let nextAlbum = 0;
+const children = albumOrder.length ? placed.map((r) => (itemOf(r).type === 'album' ? (albumOrder[nextAlbum++] ?? r) : r)) : placed;
 const stories = await Promise.all(children.filter((r) => r.access === 'open').map(story));
 const privatePages = await Promise.all(
   children.flatMap((r, i) => {
@@ -102,24 +127,44 @@ const shown = sealing
 // the section's recommendations, where its settings place them among the pages it shows (recommendations.md §3)
 const recommendations = node?.kind === 'hub' ? await withPhotos(recommendationBand(node.recommendations, getRecommendations(), shown.map((s) => s.node ?? ''))) : undefined;
 // the articles this page shows (dev only): a change to any other article's own files doesn't reload it (report R10)
-const shows = import.meta.env.DEV ? (article ? [article.id, ...relatedIds] : node?.kind === 'hub' ? children.map((r) => (r.node as { item: { id: string } }).item.id) : undefined) : undefined;
-// the Albums view (documentation/gallery/spec.md §5): each album page a band; an album with nothing in it is a draft, never shown.
-// A build bands its open pages here and seals each private one's band in its card's place (§12); the dev server shows every one in its place
-const albumRoute = (r: Route) => ({ node: r.node.id, page: (r.node as { item: { id: string } }).item.id, href: withBase(r.path) });
+const shows = import.meta.env.DEV ? (article ? [article.id, ...relatedIds] : album ? [album.id] : node?.kind === 'hub' ? children.map((r) => itemOf(r).id) : undefined) : undefined;
+// the Albums view (documentation/gallery/spec.md §5): each album a band; an album with nothing to show is never shown.
+// A build bands its open albums here and seals each private one's band in its card's place (§12); the dev server shows every one in its place
+const isAlbum = (r: Route) => itemOf(r).type === 'album';
+const albumRoute = (r: Route) => ({ node: r.node.id, album: itemOf(r).id, href: withBase(r.path) });
 const albums =
   node?.kind === 'hub' && node.view === 'albums'
-    ? await bandsOf(children.filter((r) => !sealing || r.access === 'open').map(albumRoute))
+    ? await bandsOf(children.filter((r) => isAlbum(r) && (!sealing || r.access === 'open')).map(albumRoute))
     : undefined;
-const privateBands = albums && sealing ? await bandsOf(children.filter((r) => r.access === 'private').map(albumRoute)) : undefined;
+const privateBands = albums && sealing ? await bandsOf(children.filter((r) => isAlbum(r) && r.access === 'private').map(albumRoute)) : undefined;
 const sealedPages = privateBands ? privatePages.filter((l) => !privateBands.hidden.has(l.id)).map((l) => ({ ...l, band: privateBands.bands[l.id] })) : privatePages;
 ---
 
 {
   article && header ? (
-    <ArticleLayout title={docTitle} description={article.seo?.description ?? searchCopy(article.summary)} nav={nav} footer={footer} action={action} crumbs={crumbs} header={{ ...header, isPrivate: access === 'private', draft: import.meta.env.DEV && !editable && !!route && !route.published }} related={related} sealed={sealed} shows={shows} album={album}>
+    <ArticleLayout title={docTitle} description={article.seo?.description ?? searchCopy(article.summary)} nav={nav} footer={footer} action={action} crumbs={crumbs} header={{ ...header, isPrivate: access === 'private', draft: import.meta.env.DEV && !editable && !!route && !route.published }} related={related} sealed={sealed} shows={shows}>
       <Blocks blocks={article.body} editable={editable} />
       <slot name="page-end" slot="page-end" />
     </ArticleLayout>
+  ) : album && albumHeader && albumView ? (
+    <AlbumLayout
+      title={docTitle}
+      description={album.summary ? searchCopy(album.summary) : undefined}
+      image={socialImage}
+      imageAlt={social?.alt || undefined}
+      nav={nav}
+      footer={footer}
+      action={action}
+      crumbs={crumbs}
+      header={{ ...albumHeader, isPrivate: access === 'private', draft: import.meta.env.DEV && !editable && !!route && !route.published }}
+      album={albumView}
+      prev={prev}
+      next={next}
+      sealed={sealed}
+      shows={shows}
+    >
+      <slot name="page-end" slot="page-end" />
+    </AlbumLayout>
   ) : (
     node?.kind === 'hub' && (
       <IndexLayout

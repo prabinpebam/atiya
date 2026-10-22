@@ -28,7 +28,7 @@ Throughout, every choice is automatic first and his to override ([spec §18](spe
 3. **The repository and the loader:** read `albums/` (and, through the private root, `private-pages/albums/`), resolve album nodes, and hand albums to every reader of items: cards, Related, the home views, search and the planet's frame. `loadContentLeavingOut` leaves out a broken album like a broken article.
 4. **The site:** `AlbumLayout` draws the album page (the opening, the introduction, `AlbumGrid` with text cards, the end); `IndexLayout`'s `albums` view reads album files in `albumsOrder`; `ArticleLayout` loses its album branch; an album's card and social picture are its cover picture; the album block names an album ID (V51).
 5. **The library:** linked videos made sidecars, with their posters as the site's own pictures; the fingerprint written for every upload, and for the library's existing items by a one-off script; a video file's date from its `creation_time`.
-6. **The fixtures** rewritten as album files (`fixture-album`, `fixture-captions`, `fixture-story`, the private `fx-private-album`), their items' words moved into their pictures' sidecars; their pictures stay where they are (media IDs never change).
+6. **The fixtures** rewritten as album files (`fixture-album`, `fixture-captions`, `fixture-story`, the private one), their items' words moved into their pictures' sidecars; their pictures stay where they are (media IDs never change).
 7. **The first build's model removed:** the article's `album` field, an item's own words and `embed`, `showcase`. Edit mode's Items and Up front views keep working on the fixtures until A2 replaces them, then go.
 
 ### A2: the Albums screen and the album editor (U9, U11)

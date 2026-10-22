@@ -42,7 +42,7 @@ interface Props {
   /** The document title: the screen's name. */
   title: string;
   /** Which screen, for the navigation's current item. */
-  screen: 'dashboard' | 'articles' | 'article' | 'sections' | 'navigation' | 'planet' | 'ways' | 'media' | 'settings' | 'access' | 'ai' | 'publish' | 'tests' | 'theme' | 'recommendations' | 'library';
+  screen: 'dashboard' | 'articles' | 'article' | 'sections' | 'navigation' | 'planet' | 'ways' | 'media' | 'albums' | 'album' | 'settings' | 'access' | 'ai' | 'publish' | 'tests' | 'theme' | 'recommendations' | 'library';
   /** Show the side navigation (the article editor hides it for its studio). */
   nav?: boolean;
   /** Docked beside the site in Atiya Studio (the themes panel): no top bar of its own, the screen fills the view. */
@@ -85,7 +85,7 @@ const groups = (['Content', 'Site', 'Checks'] as const)
       .map((s) => ({
         label: s.label,
         href: to(s.path),
-        current: screen === s.id || (s.id === 'articles' && screen === 'article'),
+        current: screen === s.id || (s.id === 'articles' && screen === 'article') || (s.id === 'albums' && screen === 'album'),
         ...(s.id === 'publish' ? { note: unknown ? 'Not checked' : pending ? `${pending} to save` : undefined } : {}),
       })),
   }))

@@ -3,6 +3,7 @@
   "file": "design-library-overview.webp",
   "alt": "The Liquid Glass design library home section with catalog stats and a draggable glass lens demo",
   "caption": "The hosted design library uses the live glass engine, not flat mockups.",
+  "fingerprint": "34c155f963a93f54961e8de1bce27b3529e8e550aeaecba06a5c39449a1f9455",
   "visibility": "public",
   "dark": {
     "file": "design-library-overview.dark.webp"

@@ -4,7 +4,7 @@ import AlbumGrid from '../components/compounds/AlbumGrid.astro';
 import Lightbox from '../components/compounds/Lightbox.astro';
 import { withBase } from '../design/meta';
 import { PORTRAIT_SAMPLES, SAMPLE_VIDEO, SAMPLES } from '../design/samples';
-import type { AlbumCell } from '../scripts/albumGrid';
+import type { AlbumCell, AlbumEntry, AlbumTextCard } from '../scripts/albumGrid';
 
 const [tall] = PORTRAIT_SAMPLES;
 const cellOf = (s: (typeof SAMPLES)[number], extra: Partial<AlbumCell> = {}): AlbumCell => ({
@@ -37,6 +37,14 @@ const story: AlbumCell[] = [
   cellOf(tall!, { id: 'story-lighthouse', place: 'The hilltop' }),
   { ...tour, id: 'story-tour' },
 ];
+// text cards break the grid: its rows end before one and start again after it
+const note = (id: string, html: string): AlbumTextCard => ({ id, kind: 'text', html });
+const broken: AlbumEntry[] = [
+  ...gridOf('before').slice(0, 3),
+  note('text-afternoon', '<h2>The afternoon</h2><p>After lunch, the walk turned north, past the pond and up to the lighthouse.</p>'),
+  ...gridOf('after').slice(3),
+];
+const storyNotes: AlbumEntry[] = [story[0]!, note('story-text', '<p>The path climbs from here: the lighthouse is an hour away.</p>'), ...story.slice(1)];
 ---
 
 <Example title="The Grid" layout="block" description="Every item in album order, in justified rows at the wide width; a portrait may take two rows. Without scripts, rows that wrap.">
@@ -53,6 +61,14 @@ const story: AlbumCell[] = [
 
 <Example title="The Story" layout="block" description="One item after another at the wide width, a portrait no taller than the screen, each with its caption, description, credit, date and place at the text width.">
   <AlbumGrid items={story} title="A day on the planet" layout="story" />
+</Example>
+
+<Example title="Text cards in the Grid" layout="block" description="A text card between the items, as prose at the text width: the rows end before it and start again after it. It's not a link, and the lightbox skips it.">
+  <AlbumGrid items={broken} title="A walk with notes" />
+</Example>
+
+<Example title="Text cards in the Story" layout="block" description="A text card between the Story's items, as prose at the text width.">
+  <AlbumGrid items={storyNotes} title="A day on the planet, with notes" layout="story" />
 </Example>
 
 <Lightbox />

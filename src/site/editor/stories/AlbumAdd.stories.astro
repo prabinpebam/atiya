@@ -1,0 +1,16 @@
+---
+import Example from '../../library/Example.astro';
+import AlbumAdd from '../components/AlbumAdd.astro';
+---
+
+<Example title="Add files" description="The Add dialog: files from the computer, and the other ways beside them." layout="block">
+  <AlbumAdd kind="files" />
+</Example>
+
+<Example title="A text card" description="A few words between the pictures." layout="block">
+  <AlbumAdd kind="text" value="The second day: rain all morning." />
+</Example>
+
+<Example title="A video link" description="A YouTube or Vimeo address." layout="block">
+  <AlbumAdd kind="link" />
+</Example>

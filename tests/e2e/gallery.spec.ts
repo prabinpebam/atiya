@@ -10,6 +10,8 @@ import AxeBuilder from '@axe-core/playwright';
 const ALBUM = '/gallery/fixture-album/';
 const TITLE = 'A spring in the hills';
 const VIEWER = `${TITLE}, album viewer`;
+// The fixture album is in its default order, oldest taken first, the undated after in the file's order:
+// p01 to p06, p12, p13, anim, plan (10th), p07, clip (12th), p08 to p11, p14 to p16, talk, short (21st).
 
 const noSeriousViolations = async (page: Page) => {
   const results = await new AxeBuilder({ page }).analyze();
@@ -276,7 +278,7 @@ test.describe('gallery: lightbox', () => {
     // moving on removes the player
     await page.keyboard.press('i');
     await page.keyboard.press('ArrowRight');
-    await expect(counter(dialog)).toHaveText('11 of 21');
+    await expect(counter(dialog)).toHaveText('13 of 21');
     await expect(video).toHaveCount(0);
   });
 
@@ -349,6 +351,22 @@ test.describe('gallery: lightbox', () => {
     await expect(link).toBeFocused();
   });
 
+  test('text cards stay on the page: the lightbox, its counter and filmstrip go through the items alone', async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 900 });
+    await page.goto('/gallery/fixture-story/');
+    const link = cellLink(page, 'flags');
+    await link.scrollIntoViewIfNeeded();
+    await link.click();
+    const dialog = page.getByRole('dialog', { name: 'A morning on the lake, album viewer' });
+    await expect(dialog).toBeVisible();
+    await expect(counter(dialog)).toHaveText('2 of 3');
+    await expect(thumbs(dialog)).toHaveCount(3);
+    // the next item is the map, past the text card
+    await page.keyboard.press('ArrowRight');
+    await expect(counter(dialog)).toHaveText('3 of 3');
+    await expect(page).toHaveURL(/#item-map$/);
+  });
+
   test('addresses: #item-<id> as it moves, Back closes, a loaded address opens there and closing leaves the cell; Copy link', async ({ page, context }) => {
     await page.setViewportSize({ width: 1280, height: 900 });
     await context.grantPermissions(['clipboard-read', 'clipboard-write']);
@@ -367,7 +385,7 @@ test.describe('gallery: lightbox', () => {
     await page.goto(`${ALBUM}#item-plan`);
     const opened = viewer(page);
     await expect(opened).toBeVisible();
-    await expect(counter(opened)).toHaveText('7 of 21');
+    await expect(counter(opened)).toHaveText('10 of 21');
     await opened.getByRole('button', { name: 'Copy link' }).click();
     await expect(status(opened)).toHaveText('Link copied');
     expect(await page.evaluate(() => navigator.clipboard.readText())).toMatch(new RegExp(`${ALBUM}#item-plan$`));
@@ -388,8 +406,8 @@ test.describe('gallery: lightbox', () => {
     const [file] = await Promise.all([page.waitForEvent('download'), download.click()]);
     expect(file.suggestedFilename()).toBe('a-spring-in-the-hills-p01.webp');
     // p05 says no
-    await thumbs(dialog).nth(5).click();
-    await expect(counter(dialog)).toHaveText('6 of 21');
+    await thumbs(dialog).nth(4).click();
+    await expect(counter(dialog)).toHaveText('5 of 21');
     await expect(download).toBeHidden();
     await page.keyboard.press('End');
     await page.keyboard.press('ArrowLeft');

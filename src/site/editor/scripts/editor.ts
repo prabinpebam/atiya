@@ -19,7 +19,6 @@ import { applyTableOperation, type TableCell, type TableOperation } from '../mod
 import { LAYOUT_CHOICES, startWidth } from '../model/collection';
 import { followMove, followRemove, itemKey } from '../model/inspector';
 import { tooLong } from '../model/limits';
-import { applyAlbumField } from '../model/album';
 import { applySections, chooseSection, followSection, initSections, revealField } from './inspector';
 import { initRichFields } from './richtext';
 import { richMarkdown } from '../model/richText';
@@ -996,8 +995,6 @@ export function initEditor(root: HTMLElement, signal: AbortSignal) {
       return void moveProtected('private', String(value), 'Moved to another section');
     }
     if (t.name === '__section') return change(doc, ALL, { section: (value as string | undefined) ?? null });
-    // the album's settings (gallery spec §9.1): a default chosen again is taken out of the file
-    if (t.name.startsWith('album.')) return change(applyAlbumField(doc, t.name, value), { canvas: true, inspector: !!t.closest('[data-refresh]') });
     // a table's cells: the inspector's text back into its columns and rows (model/table.ts)
     if (kind === 'table-cells') {
       const parsed = textToTable(t.value);

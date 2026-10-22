@@ -128,18 +128,21 @@ export function protectedTerms(privateRoot) {
       for (const k of ['caption', 'credit', 'title']) add('a caption', b[k], 6);
       for (const i of b.items ?? []) for (const k of ['caption', 'alt']) add('a caption', i[k], 6);
     }
-    // a private album's words: its introduction, and each item's own caption, title, place, credit and description (gallery spec §12)
-    if (a.album) {
-      if (a.album.description) runs('a sentence', a.album.description);
-      for (const i of a.album.items ?? []) {
-        for (const k of ['caption', 'title', 'place', 'credit']) add('a caption', i[k], 6);
-        if (i.description) runs('a sentence', i.description);
-      }
-    }
+  }
+  // a private album (gallery spec §3, §12): its ID, slug, title and summary, its introduction and its text cards' words;
+  // its items' words are their library items' sidecars, below
+  for (const f of walk(join(privateRoot, 'albums')).filter((p) => p.endsWith('.json'))) {
+    const a = json(f);
+    add('an ID or slug', a.id, 4);
+    add('an ID or slug', a.slug, 4);
+    for (const k of ['title', 'summary']) add('a title or summary', a[k], 3);
+    if (a.description) runs('a sentence', a.description);
+    for (const i of a.items ?? []) if (typeof i.text === 'string') runs('a sentence', i.text);
   }
   for (const f of walk(join(privateRoot, 'media')).filter((p) => p.endsWith('.json'))) {
     const m = json(f);
-    for (const k of ['alt', 'caption', 'credit', 'title']) add('an alt text or caption', m[k], 6);
+    for (const k of ['alt', 'caption', 'credit', 'title', 'place']) add('an alt text or caption', m[k], 6);
+    if (typeof m.description === 'string') runs('a sentence', m.description);
   }
   // a private video's caption tracks: each cue's lines (not the header, a cue's number or its timing)
   for (const f of walk(join(privateRoot, 'media')).filter((p) => p.endsWith('.vtt'))) {

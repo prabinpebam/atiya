@@ -9,6 +9,7 @@
   --c-editor-inspector-nav: 13rem;
   --c-editor-canvas-min: 24rem;
   --c-editor-thumb: 9rem;
+  --c-editor-photo-cell: 8rem;
   --c-editor-section-list: 18rem;
   --c-editor-scope-list: 26rem;
   --c-editor-upload-preview: 14rem;
@@ -24,6 +25,7 @@
   --c-editor-crop-stage: 32rem;
   --c-editor-crop-veil: 0.72;
   --c-editor-crop-handle: 0.875rem;
+  --c-editor-album-cards-min: 15rem;
   --c-editor-pattern-cell: 2.25rem;
   --c-editor-pattern-icon: 1.25rem;
   --c-editor-pattern-opacity: 0.07;

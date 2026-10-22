@@ -33,7 +33,7 @@ export const VIEW_OPTIONS = [
   { value: 'albums', label: 'Albums', description: 'Each album a band of its pictures' },
 ];
 
-export const KIND_LABEL: Record<Article['kind'], string> = { note: 'Article', page: 'Page', gallery: 'Album', talk: 'Talk' };
+export const KIND_LABEL: Record<Article['kind'], string> = { note: 'Article', page: 'Page', talk: 'Talk' };
 
 /** A page as the Sections and Planet screens list it. */
 export interface ListedPage {
@@ -50,6 +50,12 @@ export interface ListedPage {
 }
 
 export function listedPage(index: ContentIndex, id: string): ListedPage {
+  // an album placed in a section (gallery spec §9.10): tagged Album, opened in the album editor
+  const album = index.albums.get(id);
+  if (album) {
+    const on = album.status === 'published';
+    return { id, title: album.title, kind: 'Album', status: on ? STATUS_LABEL.published : STATUS_LABEL.draft, tone: on ? 'positive' : 'neutral', published: on, href: withBase(`/_edit/albums/${id}/`) };
+  }
   const a = index.articles.get(id);
   const published = !!a && isPublished(a);
   const status = a?.status ?? 'draft';

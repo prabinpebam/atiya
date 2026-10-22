@@ -1,0 +1,152 @@
+---
+/** Edit mode's album editor (documentation/gallery/spec.md §9.2 to §9.7). Dev only: injected by integrations/editor.mjs. */
+import EditorLayout from '../EditorLayout.astro';
+import AlbumWords from '../components/AlbumWords.astro';
+import AlbumCover from '../components/AlbumCover.astro';
+import AlbumItems from '../components/AlbumItems.astro';
+import AlbumSettings from '../components/AlbumSettings.astro';
+import AlbumAdd from '../components/AlbumAdd.astro';
+import MediaGrid from '../components/MediaGrid.astro';
+import ContentIssues from '../components/ContentIssues.astro';
+import Dialog from '../../components/compounds/Dialog.astro';
+import IconButton from '../../components/fundamentals/IconButton.astro';
+import Button from '../../components/fundamentals/Button.astro';
+import Link from '../../components/fundamentals/Link.astro';
+import Select from '../../components/fundamentals/Select.astro';
+import Tag from '../../components/fundamentals/Tag.astro';
+import Text from '../../components/fundamentals/Text.astro';
+import { load, mediaCards, mediaCount, mediaSummary } from '../server/screens';
+import { ALWAYS, REGIONS_HEADER, regionsAsked, wants } from '../model/regions';
+import { readDoc } from '../server/store';
+import { OVERLAY, STRUCTURE } from '../server/articles';
+import { albumKey, albumSection, albumSections, lookupOf } from '../server/albums';
+import { albumCells, coverBand } from '../server/albumScreens';
+import { albumCounts, albumDates, countWords, dateSpan } from '../../content/album';
+import { settingsOf } from '../model/album';
+import { albumPath } from '../../content/repository';
+import { withBase } from '../../design/meta';
+import type { Album, Overlay, SiteStructure } from '../../content/schema';
+
+export const prerender = false;
+
+const id = Astro.params.id ?? '';
+const key = albumKey(id);
+const doc = readDoc<Album>(key);
+if (!doc) return new Response('No such album.', { status: 404 });
+const loaded = load();
+const album = doc.value;
+const priv = key.startsWith('/private/');
+const owner = `albums/${id}`;
+const structure = readDoc<SiteStructure>(STRUCTURE)?.value;
+const overlay = readDoc<Overlay>(OVERLAY)?.value ?? null;
+const section = structure ? albumSection(structure, overlay, id) : null;
+const sections = structure ? albumSections(structure).map((s) => ({ value: s.value, label: s.label, description: s.description })) : [];
+const published = album.status === 'published';
+const route = loaded.ok && published && !priv ? albumPath(id) : undefined;
+const path = route ? withBase(route) : null;
+const settings = settingsOf(album);
+
+// a swap names its regions, and only they are drawn; the picker's next page is drawn alone
+const asked = regionsAsked(Astro.request.headers.get(REGIONS_HEADER));
+const draw = (...names: string[]) => wants(asked, ...names);
+const fragment = !!asked && [...asked].every((n) => (ALWAYS as readonly string[]).includes(n) || n === 'media-grid');
+const lookup = loaded.ok ? lookupOf(loaded.index) : () => undefined;
+const grid = loaded.ok && !fragment && draw('album-grid', 'album-facts', 'album-state') ? await albumCells(loaded.index, album) : { cells: [], facts: {} };
+const band = loaded.ok && !fragment && draw('album-cover') ? await coverBand(loaded.index, album) : { arranged: false, tiles: [] };
+const count = countWords(albumCounts(album.items, lookup));
+const dates = dateSpan(albumDates(album, lookup));
+const needAlt = grid.cells.filter((c) => c.needsAlt).length;
+
+// the picker, a page at a time, when it asks (performance-report.md R5)
+const PICKER_PAGE = 40;
+const pickerAt = Math.max(0, Math.floor(Number(Astro.url.searchParams.get('picker') ?? 0)) || 0);
+const picker = loaded.ok && !!asked?.has('media-grid') ? await mediaCards(loaded.index, owner, { page: { at: pickerAt, size: PICKER_PAGE } }) : null;
+const pickerOf = loaded.ok ? mediaCount(loaded.index) : 0;
+const pickerPaging = loaded.ok
+  ? {
+      of: pickerOf,
+      shown: Math.min(pickerOf, pickerAt + PICKER_PAGE),
+      total: mediaSummary(loaded.index),
+      next: pickerAt + PICKER_PAGE < pickerOf ? `${Astro.url.pathname}?picker=${pickerAt + PICKER_PAGE}` : null,
+    }
+  : undefined;
+
+const state = { id, key, version: doc.version, album, facts: grid.facts, owner };
+const json = JSON.stringify(state).replace(/</g, '\\u003c');
+const ORDERS = [
+  { value: 'oldest', label: 'Oldest first' },
+  { value: 'newest', label: 'Newest first' },
+  { value: 'custom', label: 'Your own order' },
+];
+---
+
+<EditorLayout title={album.title} screen="album" nav={false}>
+  <Fragment slot="title">
+    <Link href={withBase('/_edit/albums/')} variant="quiet">Albums</Link>
+    <span data-album-heading><Text as="span" variant="ui"><strong>{album.title}</strong></Text></span>
+    {priv && <Tag size="sm" tone="highlight" icon="key">Private</Tag>}
+  </Fragment>
+  <Fragment slot="tools">
+    <IconButton label="Undo" icon="undo" size="sm" data-album-undo="" />
+    <IconButton label="Redo" icon="redo" size="sm" data-album-redo="" />
+    <Button variant="primary" size="sm" icon="plus" data-dialog-open="album-add">Add</Button>
+    <Select label="Order" hideLabel size="sm" options={ORDERS} value={album.order ?? 'oldest'} data-album-sort="" />
+    <Button variant="secondary" size="sm" icon="crop" disabled>Edit cover</Button>
+    <IconButton label="Settings" icon="settings" size="sm" data-dialog-open="album-settings" />
+    {path && <IconButton label="View on the site" icon="external" size="sm" href={path} />}
+    <Button variant="secondary" size="sm" icon="publish" data-album-publish="">{published ? 'Unpublish' : 'Publish'}</Button>
+  </Fragment>
+  {
+    loaded.ok && fragment ? (
+      picker && <MediaGrid mode="pick" media={picker} owner={owner} paging={pickerPaging} />
+    ) : loaded.ok ? (
+      <div data-album-editor>
+        <script is:inline type="application/json" data-region="album-state" data-album-state set:html={json} />
+        <AlbumWords title={album.title} summary={album.summary} description={album.description} count={count} dates={dates} needAlt={needAlt} status={published ? 'published' : 'draft'} />
+        <AlbumCover tiles={band.tiles} arranged={band.arranged} />
+        <AlbumItems title={album.title} cells={grid.cells} days={(album.order ?? 'oldest') !== 'custom'} />
+        <Dialog id="album-add" title="Add to the album">
+          <AlbumAdd kind="files" />
+        </Dialog>
+        <Dialog id="album-picker" title="Add from your library" size="lg">
+          {picker ? <MediaGrid mode="pick" media={picker} owner={owner} paging={pickerPaging} /> : <MediaGrid mode="pick" media={[]} owner={owner} paging={pickerPaging} pending />}
+          <Fragment slot="actions">
+            <span data-album-picker-count>Choose what to add</span>
+            <Button variant="primary" icon="check" data-album-picker-use="" disabled>
+              Add them
+            </Button>
+          </Fragment>
+        </Dialog>
+        <Dialog id="album-settings" title="Album settings">
+          <AlbumSettings layout={settings.layout} captions={settings.captions} dates={settings.dates} download={settings.download} large={settings.large} section={section} sections={sections} private={priv} path={path} />
+        </Dialog>
+        <Dialog id="album-text" title="Text card">
+          <AlbumAdd kind="text" />
+          <Fragment slot="actions">
+            <Button variant="primary" icon="check" data-album-text-save="">Save card</Button>
+          </Fragment>
+        </Dialog>
+        <Dialog id="album-link" title="Add a YouTube or Vimeo video">
+          <AlbumAdd kind="link" />
+          <Fragment slot="actions">
+            <Button variant="primary" icon="plus" data-album-link-add="">Add video</Button>
+          </Fragment>
+        </Dialog>
+        <Dialog id="album-delete" title="Delete the album?" size="sm">
+          <Text variant="ui">The album goes, and its place in its section. Its pictures and videos stay in your library.</Text>
+          <Fragment slot="actions">
+            <Button variant="primary" icon="delete" data-album-delete-confirm="">Delete album</Button>
+          </Fragment>
+        </Dialog>
+        <Dialog id="album-conflict" title="This album changed elsewhere" size="sm">
+          <Text variant="ui">Its file was changed outside this editor (by hand, or in another tab) since you opened it. Reload it to carry on from what's there now; nothing you did after that was saved.</Text>
+          <Fragment slot="actions">
+            <Button variant="primary" icon="restore" data-album-reload="">Reload it</Button>
+          </Fragment>
+        </Dialog>
+      </div>
+    ) : (
+      <ContentIssues issues={loaded.issues} />
+    )
+  }
+</EditorLayout>

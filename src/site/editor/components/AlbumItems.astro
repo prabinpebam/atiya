@@ -1,217 +1,75 @@
 ---
 /**
- * An album's Items view (documentation/gallery/spec.md §9.2): its items as cards in album order, beside the chosen
- * item's details (a split view, as Sections and Access are). Each card is the item's thumbnail with its kind, its
- * caption (or its alt text, dimmed, when it has none) and an Up front mark. Above the grid: Add from the library,
- * Upload, Add a video link and Sort by date taken; under it, the album's weight. Cards are chosen as the outline's
- * blocks are (Shift for a range, Ctrl or Cmd for one more), dragged to a new place, or moved with Alt and an arrow
- * key; every change is saved at once and undone with Undo (scripts/album.ts). The list is its own region, drawn
- * again after a save; the details are another, so typing in them never loses a word.
+ * The album editor's items (documentation/gallery/spec.md §9.2 to §9.4): the selection bar, shown while anything
+ * is selected, and the grid of every item in the order shown (the kit's PhotoGrid), which takes files dropped from
+ * the desktop anywhere on it. It hosts the album editor's script, which selects, orders, adds and saves.
  * @tier editor
- * @a11y The cards are an ordered list of toggle buttons, each named by its words, its kind and whether it's up
- * front, pressed while chosen; moving one is said in the status line, and every move has its keyboard way.
- * @key Alt+ArrowUp / Alt+ArrowLeft: moves the chosen cards one place earlier
- * @key Alt+ArrowDown / Alt+ArrowRight: moves the chosen cards one place later
- * @key Home / End (with Alt): moves the chosen cards to the start or the end
- * @key Delete: takes the chosen cards out of the album (their files stay in the library)
+ * @a11y The selection bar is a labelled toolbar that says how many are selected (a polite live region); every drag
+ * has a button and a key: Move to start, Move to end, and Alt with an arrow key.
+ * @key Ctrl+A: selects every item
+ * @key Escape: clears the selection
+ * @key Alt+Arrow: moves the focused item, or the selection, one place
+ * @key Delete: removes the selection from the album (it stays in the library)
  */
 import Button from '../../components/fundamentals/Button.astro';
-import Icon from '../../components/fundamentals/Icon.astro';
-import Image from '../../components/fundamentals/Image.astro';
-import Tag from '../../components/fundamentals/Tag.astro';
 import Text from '../../components/fundamentals/Text.astro';
-import TileButton from '../../components/fundamentals/TileButton.astro';
-import ActionBar from '../../components/compounds/ActionBar.astro';
-import SplitView from '../../components/compounds/SplitView.astro';
-import ListPane from '../kit/ListPane.astro';
-import StatusNote from '../kit/StatusNote.astro';
-import type { AlbumCard } from '../model/album';
-import { ALBUM_MAX_ITEMS } from '../../content/schema';
-import type { IconName } from '../../design/icons';
+import PhotoGrid, { type PhotoCell } from '../kit/PhotoGrid.astro';
 
 interface Props {
-  /** The album's cards, in album order (model/album.ts `albumCards`). */
-  cards: AlbumCard[];
-  /** The item whose details show (none: the first). */
-  chosen?: string;
-  /** The album's counts in words ("18 pictures, 2 videos"). */
-  counts: string;
-  /** Its weight in words, with the sealed budget for a private album. */
-  weight: string;
-  /** Sort by date taken would change the order (otherwise it's offered, disabled). */
-  sortable?: boolean;
-  /** It holds the most items an album can (Add is then off, and says why). */
-  full?: boolean;
+  /** The album's title, to name the grid. */
+  title: string;
+  /** The items in the order shown. */
+  cells: PhotoCell[];
+  /** A sorted album: headers for the days taken. */
+  days: boolean;
 }
 
-const { cards, chosen = cards[0]?.id, counts, weight, sortable = false, full = false } = Astro.props;
-const KIND: Record<AlbumCard['kind'], { label: string; icon: IconName }> = {
-  picture: { label: 'Picture', icon: 'image' },
-  animated: { label: 'Animated', icon: 'animated' },
-  drawing: { label: 'Drawing', icon: 'pen' },
-  video: { label: 'Video', icon: 'video' },
-  embed: { label: 'Embedded video', icon: 'play' },
-  missing: { label: 'Missing file', icon: 'error' },
-};
-const nameOf = (c: AlbumCard) => [c.label, KIND[c.kind].label, c.upFront ? 'up front' : ''].filter(Boolean).join(', ');
+const { title, cells, days } = Astro.props;
 ---
 
-<div class="album-items" data-editor-album data-chosen={chosen ?? ''}>
-  <SplitView list="wide">
-    <Fragment slot="list">
-      <ListPane label="Items" scroll="last">
-        <div class="album-items-head" data-region="album-head">
-          <ActionBar gap="sm">
-            <Button variant="primary" size="sm" icon="gallery" disabled={full} data-album-add="library">Add from library</Button>
-            <Button variant="secondary" size="sm" icon="upload" disabled={full} data-album-add="upload">Upload</Button>
-            <Button variant="secondary" size="sm" icon="link" disabled={full} data-album-add="link">Add a video link</Button>
-            <Button variant="quiet" size="sm" icon="calendar" disabled={!sortable} data-album-sort="">Sort by date taken</Button>
-          </ActionBar>
-          <Text variant="small" tone="muted">
-            {full ? `It holds ${ALBUM_MAX_ITEMS} items, the most an album can: take one out to add another.` : counts}
-          </Text>
-        </div>
-        <div class="album-items-list" data-region="album" data-scrollbar data-album-drop="">
-          {
-            cards.length ? (
-              <ol class="album-grid" aria-label="Items, in album order" data-album-items="">
-                {cards.map((c, n) => (
-                  <li class="album-card" data-album-card={c.id} data-album-kind={c.kind} data-taken={c.item.media ? c.facts?.taken : undefined} draggable="true">
-                    <TileButton variant="framed" pressed={c.id === chosen} data-album-pick={c.id} aria-label={nameOf(c)}>
-                      <span class="album-card-pic">
-                        {c.thumb ? <Image src={c.thumb} alt="" width={c.width} height={c.height} ratio="4/3" display="fit" rounded={false} /> : <Icon name={KIND[c.kind].icon} size="lg" />}
-                      </span>
-                      <span class="album-card-meta">
-                        <span class="album-card-n">{n + 1}</span>
-                        <Icon name={KIND[c.kind].icon} />
-                        {c.upFront && (
-                          <span data-album-upfront-mark="">
-                            <Tag size="sm" tone="accent">Up front</Tag>
-                          </span>
-                        )}
-                      </span>
-                      <span class="album-card-words" data-dimmed={c.dimmed ? '' : undefined}>
-                        <Text as="span" variant="small" tone={c.dimmed ? 'muted' : 'default'}>
-                          {c.label}
-                        </Text>
-                      </span>
-                    </TileButton>
-                  </li>
-                ))}
-              </ol>
-            ) : (
-              <div class="album-empty" data-album-empty="">
-                <Icon name="gallery" size="lg" />
-                <Text variant="ui">No items yet. Add pictures and videos from the library, drop files here, or paste a YouTube or Vimeo address.</Text>
-              </div>
-            )
-          }
-          <StatusNote data-album-weight="">{weight}</StatusNote>
-        </div>
-      </ListPane>
-    </Fragment>
-    <slot name="details" />
-  </SplitView>
-  <div class="album-drop-veil" data-album-veil hidden>
-    <Text variant="ui"><strong>Drop to add them to the album</strong></Text>
+<div class="items" data-album-items>
+  <div class="bar" role="toolbar" aria-label="Selected items" data-album-selbar hidden>
+    <Text as="span" variant="label"><span role="status" data-album-selcount>0 selected</span></Text>
+    <span data-album-only="cover" hidden><Button size="sm" variant="secondary" icon="image" data-album-act="cover">Set as cover picture</Button></span>
+    <span data-album-only="text" hidden><Button size="sm" variant="secondary" icon="edit" data-album-act="text">Edit the words</Button></span>
+    <Button size="sm" variant="secondary" icon="arrow-up" data-album-act="start">Move to start</Button>
+    <Button size="sm" variant="secondary" icon="arrow-down" data-album-act="end">Move to end</Button>
+    <Button size="sm" variant="secondary" icon="delete" data-album-act="remove">Remove from album</Button>
+    <Button size="sm" variant="quiet" icon="close" data-album-act="clear">Clear selection</Button>
+  </div>
+  <div data-region="album-grid">
+    <PhotoGrid label={`Items in ${title}`} cells={cells} days={days} />
   </div>
 </div>
 
+<script>
+  import { each } from '../../scripts/page';
+  import { initAlbumEditor } from '../scripts/albumEditor';
+
+  each<HTMLElement>('[data-album-editor]', (root, signal) => initAlbumEditor(root, signal));
+</script>
+
 <style>
-  .album-items {
-    position: relative;
-    min-inline-size: 0;
-  }
-
-  .album-items-head {
+  .items {
     display: grid;
-    gap: var(--space-2);
-    padding: var(--space-3);
-    border-block-end: var(--border-hairline) solid var(--color-rule);
-  }
-
-  .album-items-list {
-    display: grid;
-    align-content: start;
-    gap: var(--space-4);
-    min-block-size: 0;
-    overflow: auto;
-    padding: var(--space-3);
-  }
-
-  .album-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(var(--c-editor-thumb), 1fr));
     gap: var(--space-3);
-    margin: 0;
-    padding: 0;
-    list-style: none;
   }
 
-  .album-card[data-dragging] {
-    opacity: var(--opacity-disabled);
-  }
-
-  .album-card[data-drop-before] {
-    box-shadow: calc(-1 * var(--border-strong)) 0 0 0 var(--color-accent);
-  }
-
-  .album-card-pic {
-    display: grid;
-    place-items: center;
-    aspect-ratio: 4 / 3;
-    background: var(--color-bg-sunk);
-  }
-
-  .album-card-meta {
+  .bar {
+    position: sticky;
+    inset-block-start: 0;
+    z-index: var(--layer-raised);
     display: flex;
     flex-wrap: wrap;
+    gap: var(--space-2);
     align-items: center;
-    gap: var(--space-1) var(--space-2);
-  }
-
-  .album-card-n {
-    font: var(--type-label);
-    color: var(--color-text-muted);
-  }
-
-  .album-card-words {
-    display: -webkit-box;
-    overflow: hidden;
-    -webkit-box-orient: vertical;
-    -webkit-line-clamp: 2;
-    text-align: start;
-  }
-
-  .album-empty {
-    display: grid;
-    justify-items: center;
-    gap: var(--space-3);
-    padding: var(--space-8) var(--space-4);
-    border: var(--border-strong) dashed var(--color-rule);
+    padding: var(--space-2) var(--space-3);
+    border: var(--border-hairline) solid var(--color-border);
     border-radius: var(--radius-md);
-    text-align: center;
+    background: var(--color-bg-raised);
   }
 
-  .album-drop-veil {
-    position: absolute;
-    inset: 0;
-    display: grid;
-    place-items: center;
-    border: var(--border-strong) dashed var(--color-accent);
-    border-radius: var(--radius-md);
-    background: var(--color-accent-soft);
-    pointer-events: none;
-  }
-
-  .album-drop-veil[hidden] {
+  .bar[hidden] {
     display: none;
   }
 </style>
-
-<script>
-  import { each } from '../../scripts/page';
-  import { initAlbum } from '../scripts/album';
-
-  each<HTMLElement>('[data-editor-album]', (el, signal) => initAlbum(el, signal));
-</script>
