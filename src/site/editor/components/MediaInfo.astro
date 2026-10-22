@@ -1,0 +1,195 @@
+---
+/**
+ * The viewer's info panel (documentation/gallery/spec.md §9.5): an item's words, saved to its library item's
+ * sidecar as they're typed (§4: a picture's words are the picture's, the same in every album and page): the
+ * caption, the description (short rich text), the alt text with Suggest, the day it was taken and the place; for a
+ * video file or a linked video its title; credit and licence under More. Then what's this album's own: Downloads,
+ * and a video file's Play by itself and Loop, saved with the album. Then the picture's tools (Find the focus, Make
+ * it standard), where else it's used, and its file's facts. A text card's words are the album's, edited from the
+ * stage. scripts/mediaInfo.ts saves it (run by the viewer's script).
+ * @tier editor
+ * @a11y Every field is labelled, with its limits in its hint; a refused change is said beside the fields (a polite
+ * status) and in the status line; "Also in" is a list of links named by the album or page.
+ * @key Enter in the alt text field during a review: saves it and goes on to the next picture
+ */
+import TextField from '../../components/fundamentals/TextField.astro';
+import Checkbox from '../../components/fundamentals/Checkbox.astro';
+import Switch from '../../components/fundamentals/Switch.astro';
+import Select from '../../components/fundamentals/Select.astro';
+import Button from '../../components/fundamentals/Button.astro';
+import Link from '../../components/fundamentals/Link.astro';
+import Text from '../../components/fundamentals/Text.astro';
+import Heading from '../../components/fundamentals/Heading.astro';
+import ActionBar from '../../components/compounds/ActionBar.astro';
+import Fieldset from '../kit/Fieldset.astro';
+import RichField from '../kit/RichField.astro';
+import AltSuggestion from '../kit/AltSuggestion.astro';
+import StatusNote from '../kit/StatusNote.astro';
+import PlainList from '../kit/PlainList.astro';
+import { CAPTION_MAX, PLACE_MAX } from '../../content/schema';
+import type { ViewerItem, WordsKind } from '../model/albumViewer';
+
+interface Props {
+  /** The item open, as the viewer draws it. */
+  item: ViewerItem;
+  /** It's a review of alt text (Enter in the alt text field saves and moves on). */
+  review?: boolean;
+}
+
+const { item, review = false } = Astro.props;
+const media = item.media;
+const sc = (media?.sidecar ?? {}) as Record<string, unknown> & { licence?: { name?: string; url?: string } };
+const kind: WordsKind | null = media ? (media.sidecar.kind as WordsKind) : null;
+const str = (k: string) => (typeof sc[k] === 'string' ? (sc[k] as string) : '');
+const state = media && kind ? { media, kind, item: item.id, review } : null;
+const json = state ? JSON.stringify(state).replace(/</g, '\\u003c') : '';
+const followWords = item.albumDownload ? 'Follow the album (allowed)' : 'Follow the album (not allowed)';
+const DOWNLOADS = [
+  { value: 'follow', label: followWords },
+  { value: 'allow', label: 'Allow' },
+  { value: 'deny', label: "Don't allow" },
+];
+const download = item.download === undefined ? 'follow' : item.download ? 'allow' : 'deny';
+const uid = `info-${item.id}`;
+---
+
+<div class="media-info" data-media-info={item.id} data-review={review ? '' : undefined}>
+  {json && <script is:inline type="application/json" data-media-info-state set:html={json} />}
+  {
+    !media && item.kind === 'text' && (
+      <Text variant="small" tone="muted">
+        A text card's words are the album's: Edit the words, beside it.
+      </Text>
+    )
+  }
+  {!media && item.kind === 'missing' && <Text tone="negative">Nothing to describe: the library item is gone.</Text>}
+  {
+    media && kind && (
+      <Fragment>
+        <Fieldset legend="Its words">
+          {kind !== 'image' && <TextField label="Title" name="title" value={str('title')} maxlength={200} hint="Names the video, for everyone." />}
+          <TextField label="Caption" name="caption" value={str('caption')} maxlength={CAPTION_MAX} optional hint={`Under it in the album and the lightbox: ${CAPTION_MAX} characters at most.`} />
+          <RichField label="Description" toolsLabel="Description: formatting" inputId={`${uid}-description`} name="description" markdown={str('description')} hint="A few lines about it, shown in the lightbox: two paragraphs at most." />
+          {kind !== 'video' && (
+            <Fragment>
+              <TextField label="Alt text" name="alt" value={str('alt')} multiline rows={3} hint={'Say what it shows to someone who can\u2019t see it, in 250 characters at most (never \u201cimage of\u201d).'} data-viewer-focus={review ? '' : undefined} />
+              {kind === 'image' && <AltSuggestion ask />}
+              {kind === 'image' && <Checkbox label="It's decorative: it adds nothing a reader would miss" name="decorative" checked={sc.decorative === true} />}
+            </Fragment>
+          )}
+          <div class="when">
+            <TextField label="Date taken" type="date" name="taken" value={str('taken')} optional />
+            <Button variant="quiet" size="sm" icon="close" data-info-clear="taken">
+              Clear
+            </Button>
+          </div>
+          <TextField label="Place" name="place" value={str('place')} maxlength={PLACE_MAX} optional hint="Where it was taken, in your words." />
+          <details class="more">
+            <summary>More: credit and licence</summary>
+            <div class="more-fields">
+              <TextField label="Credit" name="credit" value={str('credit')} optional />
+              <TextField label="Licence" name="licenceName" value={sc.licence?.name ?? ''} optional hint="Its name: CC BY 4.0, All rights reserved." />
+              <TextField label="Licence address" type="url" name="licenceUrl" value={sc.licence?.url ?? ''} optional />
+            </div>
+          </details>
+          <StatusNote live="polite" data-info-problem="" />
+        </Fieldset>
+        <Fieldset legend="In this album">
+          {kind !== 'embed' && <Select label="Downloads" options={DOWNLOADS} value={download} name="download" hint="Whether the lightbox offers its original file here." data-info-download="" />}
+          {kind === 'embed' && (
+            <Text variant="small" tone="muted">
+              A linked video can't be downloaded from the site.
+            </Text>
+          )}
+          {kind === 'video' && (
+            <Fragment>
+              <Switch label="Play by itself (muted)" name="autoplay" checked={!!item.autoplay} data-info-play="autoplay" />
+              <Switch label="Loop" name="loop" checked={!!item.loop} data-info-play="loop" />
+              <Text variant="small" tone="muted">
+                Caption tracks: coming later.
+              </Text>
+            </Fragment>
+          )}
+        </Fieldset>
+        {(kind === 'image' || kind === 'embed') && (
+          <ActionBar gap="sm">
+            {kind === 'image' && item.kind !== 'drawing' && (
+              <Button variant="secondary" size="sm" icon="focus" data-info-focus="">
+                Find the focus
+              </Button>
+            )}
+            {item.large && (
+              <Button variant="secondary" size="sm" icon="compress" data-info-standard="">
+                Make it standard
+              </Button>
+            )}
+            {item.kind === 'drawing' && (
+              <Button variant="secondary" size="sm" icon="convert" disabled>
+                Turn into a picture (coming later)
+              </Button>
+            )}
+            {kind === 'embed' && (
+              <Button variant="secondary" size="sm" icon="image" disabled>
+                Change poster (coming later)
+              </Button>
+            )}
+          </ActionBar>
+        )}
+      </Fragment>
+    )
+  }
+  {
+    item.uses.length > 0 && (
+      <section class="part">
+        <Heading level={3} size="ui">
+          Also in
+        </Heading>
+        <PlainList>
+          {item.uses.map((u) => (
+            <li>
+              <Link href={u.href} variant="quiet">
+                {u.title}
+              </Link>{' '}
+              <Text as="span" variant="small" tone="muted">
+                {u.kind === 'album' ? 'Album' : 'Page'}
+                {u.draft ? ', draft' : ''}
+              </Text>
+            </li>
+          ))}
+        </PlainList>
+      </section>
+    )
+  }
+  <Text variant="small" tone="muted">{item.facts.join(' · ')}</Text>
+</div>
+
+<style>
+  .media-info {
+    display: grid;
+    gap: var(--space-5);
+    align-content: start;
+  }
+
+  .when {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: end;
+    gap: var(--space-2);
+  }
+
+  .more summary {
+    min-block-size: var(--size-touch);
+    font: var(--type-label);
+    cursor: pointer;
+  }
+
+  .more-fields {
+    display: grid;
+    gap: var(--space-3);
+  }
+
+  .part {
+    display: grid;
+    gap: var(--space-2);
+  }
+</style>

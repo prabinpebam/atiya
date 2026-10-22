@@ -4,7 +4,8 @@
  */
 import type { Album } from '../../content/schema';
 import type { ContentIndex } from '../../content/load';
-import { albumCounts, albumDates, albumOrder, albumsOrder, coverLead, coverOf, coverPicture, countWords, dateSpan, isTextItem, itemKind, type ItemKind } from '../../content/album';
+import { albumCounts, albumDates, albumOrder, albumsOrder, aspectOf, coverLead, coverOf, coverPicture, countWords, dateSpan, isMediaItem, isTextItem, itemKind, type ItemKind } from '../../content/album';
+import type { CoverItem } from '../model/cover';
 import { embedPoster, picture, video } from '../../content/pictures';
 import { findHub, hubs } from '../model/structure';
 import { withBase } from '../../design/meta';
@@ -12,7 +13,7 @@ import { lookupOf } from './albums';
 // ---------- what the screens draw ----------
 
 /** A thumbnail: a picture's card size, a video's or linked video's poster. */
-async function thumbOf(index: ContentIndex, media: string): Promise<{ thumb: string; alt: string; bg?: string; drawing?: boolean; width: number; height: number }> {
+export async function thumbOf(index: ContentIndex, media: string): Promise<{ thumb: string; alt: string; bg?: string; drawing?: boolean; width: number; height: number }> {
   try {
     if (index.media.has(media)) {
       const p = await picture(media, 'card');
@@ -143,8 +144,11 @@ export async function albumCells(index: ContentIndex, album: Album): Promise<{ c
   return { cells, facts };
 }
 
-/** The cover band as it stands (read only until Edit cover, phase A4): its tiles with their thumbnails, and whether it's arranged. */
-export async function coverBand(index: ContentIndex, album: Album): Promise<{ arranged: boolean; tiles: { item: string; x: number; y: number; w: number; h: number; thumb: string; alt: string; bg?: string; width: number; height: number }[] }> {
+/** The cover band as it stands: its tiles with their thumbnails, whether it's arranged, and the album's pictures and videos as Edit cover draws them (§9.6). */
+export async function coverBand(
+  index: ContentIndex,
+  album: Album,
+): Promise<{ arranged: boolean; tiles: { item: string; x: number; y: number; w: number; h: number; thumb: string; alt: string; bg?: string; width: number; height: number }[]; items: CoverItem[] }> {
   const lookup = lookupOf(index);
   const byId = new Map(album.items.map((i) => [i.id, i]));
   const tiles = await Promise.all(
@@ -154,5 +158,29 @@ export async function coverBand(index: ContentIndex, album: Album): Promise<{ ar
       return { item: t.item, x: t.x, y: t.y, w: t.w, h: t.h, ...shown };
     }),
   );
-  return { arranged: !!album.cover && 'tiles' in album.cover, tiles };
+  const items = await Promise.all(
+    albumOrder(album, lookup)
+      .filter(isMediaItem)
+      .filter((i) => lookup(i.media))
+      .map(async (i): Promise<CoverItem> => {
+        const m = lookup(i.media)!;
+        const t = await thumbOf(index, i.media);
+        const bytes = m.kind === 'embed' ? undefined : (m.bytes ?? (m.kind === 'image' ? m.facts?.bytes : undefined));
+        const aspect = aspectOf(m);
+        const focus = index.media.get(i.media)?.focus;
+        return {
+          id: i.id,
+          label: t.alt || i.media.split('/').pop() || i.id,
+          kind: itemKind(i, lookup),
+          thumb: t.thumb,
+          ...(t.bg ? { bg: t.bg } : {}),
+          width: t.width,
+          height: t.height,
+          ...(bytes !== undefined ? { bytes } : {}),
+          ...(aspect ? { aspect } : {}),
+          ...(focus ? { focus } : {}),
+        };
+      }),
+  );
+  return { arranged: !!album.cover && 'tiles' in album.cover, tiles, items };
 }

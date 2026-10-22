@@ -53,9 +53,11 @@ interface Props {
   intro?: string;
   /** The aside slot's name (a landmark), when a screen has one. */
   asideLabel?: string;
+  /** Without a heading, still put the content in the screens' column and gutters, scrolling (the album editor). */
+  column?: boolean;
 }
 
-const { title, screen, nav = true, dock = false, heading, intro, asideLabel } = Astro.props;
+const { title, screen, nav = true, dock = false, heading, intro, asideLabel, column = false } = Astro.props;
 const aside = Astro.slots.has('aside');
 // a swap names its regions; a whole screen never waits for git (performance-report.md R1, R2): the counts
 // come from the cached status, or, when there's none yet, are checked once the screen has painted
@@ -93,7 +95,7 @@ const groups = (['Content', 'Site', 'Checks'] as const)
 ---
 
 <PageShell title={`${title} · Edit mode`} noindex preload={['ui']} liveContent={false} themed={false}>
-  <div class="editor" data-editor-app data-screen={screen} data-nav={nav ? '' : undefined} data-generation={generation()} data-studio={studio ? '' : undefined} data-dock={dock ? '' : undefined}>
+  <div class="editor" data-editor-app data-screen={screen} data-nav={nav ? '' : undefined} data-column={column ? '' : undefined} data-generation={generation()} data-studio={studio ? '' : undefined} data-dock={dock ? '' : undefined}>
     <header class="top">
       <a class="brand" href={to('')}>Edit mode</a>
       <div class="title"><slot name="title" /></div>
@@ -167,6 +169,10 @@ const groups = (['Content', 'Site', 'Checks'] as const)
             ) : (
               <slot />
             )}
+          </div>
+        ) : column ? (
+          <div class="screen" data-region="screen">
+            <slot />
           </div>
         ) : (
           <slot />
@@ -403,7 +409,7 @@ const groups = (['Content', 'Site', 'Checks'] as const)
     outline: none;
   }
 
-  .editor:not([data-nav]) .main {
+  .editor:not([data-nav]):not([data-column]) .main {
     overflow: hidden;
   }
 

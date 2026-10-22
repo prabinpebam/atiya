@@ -9,6 +9,7 @@
 import TextField from '../../components/fundamentals/TextField.astro';
 import Text from '../../components/fundamentals/Text.astro';
 import Tag from '../../components/fundamentals/Tag.astro';
+import Button from '../../components/fundamentals/Button.astro';
 
 interface Props {
   /** The album's title. */
@@ -46,6 +47,13 @@ const { title, summary = '', description = '', count, dates, needAlt, status } =
         </Tag>
       )
     }
+    {
+      needAlt > 0 && (
+        <Button variant="quiet" size="sm" icon="sparkles" data-album-review="">
+          Review
+        </Button>
+      )
+    }
   </p>
 </div>
 
@@ -53,6 +61,7 @@ const { title, summary = '', description = '', count, dates, needAlt, status } =
   .words {
     display: grid;
     gap: var(--space-3);
+    max-inline-size: var(--size-measure);
   }
 
   .facts {

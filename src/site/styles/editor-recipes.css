@@ -101,3 +101,11 @@
 [data-rich-field] [data-rich-input] > * + * {
   margin-block-start: var(--space-3);
 }
+
+/* ---------- a screen's parts in one wrapper (a page's root its script needs, as the album editor's): stacked
+   with a screen's own gap (EditorLayout's column) ---------- */
+[data-editor-stack] {
+  display: grid;
+  gap: var(--space-8);
+  min-inline-size: 0;
+}

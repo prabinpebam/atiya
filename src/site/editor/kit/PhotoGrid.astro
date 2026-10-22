@@ -171,12 +171,20 @@ const first = cells[0]?.id;
 
 <style>
   .photo-grid {
-    display: grid;
-    gap: var(--space-4);
+    display: flex;
+    flex-wrap: wrap;
+    align-items: start;
+    gap: var(--space-4) var(--space-6);
     min-block-size: calc(var(--c-editor-photo-cell) * 2);
   }
 
+  .day {
+    min-inline-size: 0;
+    max-inline-size: 100%;
+  }
+
   .empty {
+    flex: 1 1 100%;
     display: grid;
     place-items: center;
     align-content: center;
@@ -202,8 +210,9 @@ const first = cells[0]?.id;
   }
 
   .cells {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(var(--c-editor-photo-cell), 1fr));
+    display: flex;
+    flex-wrap: wrap;
+    align-items: start;
     gap: var(--space-1);
     margin: 0;
     padding: 0;
@@ -212,6 +221,7 @@ const first = cells[0]?.id;
 
   .cell {
     position: relative;
+    inline-size: var(--c-editor-photo-cell);
     aspect-ratio: 1;
     overflow: hidden;
     border-radius: var(--radius-sm);
@@ -220,7 +230,8 @@ const first = cells[0]?.id;
   }
 
   .cell[data-kind='text'] {
-    grid-column: 1 / -1;
+    flex: 1 1 100%;
+    inline-size: auto;
     aspect-ratio: auto;
     min-block-size: var(--size-touch);
     padding: var(--space-3) var(--space-4);

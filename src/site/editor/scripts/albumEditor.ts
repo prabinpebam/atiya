@@ -10,11 +10,12 @@
 import type { Album } from '../../content/schema';
 import type { AlbumMedia, MediaLookup } from '../../content/album';
 import { SaveQueue } from '../model/queue';
-import { addItems, addText, editText, moveBy, moveItems, moveToEnd, moveToStart, pickRange, pickToggle, removeItems, setCoverLead, setSettings, setWords, sortAlbum, type AlbumSettings } from '../model/album';
+import { addItems, addText, editText, moveBy, moveItems, moveToEnd, moveToStart, pickRange, pickToggle, removeItems, setCoverLead, setItemDownload, setItemPlay, setSettings, setWords, sortAlbum, type AlbumSettings } from '../model/album';
 import { isVideoFile, needsConversion, pictureSizeIssue, posterTime, refusedFormat, svgChoices, typeOf, videoSizeIssue } from '../model/upload';
 import { takenOf } from '../model/exif';
 import { TAB, announce, api, describeIssue, editorUrl, onContentChange, saveStatus, startTask, swapRegions } from './client';
 import { fillPicker } from './picker';
+import { initAlbumCover } from './albumCover';
 
 interface AlbumState {
   id: string;
@@ -191,16 +192,23 @@ export function initAlbumEditor(root: HTMLElement, signal: AbortSignal) {
     const note = switched(before);
     if (note) announce(`${what}.${note}`);
   };
-  /** Opening an item is the viewer's (phase B2): the hook is here, and nothing else happens yet. */
+  /** Opening an item: the viewer (scripts/albumViewer.ts) hears it and opens at it. */
   const open = (id: string) => root.dispatchEvent(new CustomEvent('album:open-item', { bubbles: true, detail: { id } }));
 
-  const act = (what: string) => {
-    const ids = chosen();
+  const act = (what: string, given?: string[]) => {
+    const ids = given ?? chosen();
     if (what === 'clear') {
       picked = [];
       return paintPicked();
     }
     if (!ids.length) return;
+    // the selection's dialogs (scripts/albumActions.ts): Add to album, Set the date, Set the place, Downloads
+    const bulk = ({ 'add-to': 'album', date: 'date', place: 'place', downloads: 'download' } as Record<string, string>)[what];
+    if (bulk) return void root.dispatchEvent(new CustomEvent('album:selection', { detail: { what: bulk, ids } }));
+    if (what.startsWith('download-')) {
+      const v = what.slice('download-'.length);
+      return change(setItemDownload(doc, ids, v === 'allow' ? true : v === 'deny' ? false : undefined, lookup), 'Downloads set');
+    }
     if (what === 'start') return move((a) => moveToStart(a, ids, lookup), `Moved ${count(ids.length, 'item')} to the start`);
     if (what === 'end') return move((a) => moveToEnd(a, ids, lookup), `Moved ${count(ids.length, 'item')} to the end`);
     if (what === 'remove') {
@@ -272,8 +280,7 @@ export function initAlbumEditor(root: HTMLElement, signal: AbortSignal) {
       const id = cell.dataset.item!;
       const all = cells();
       const at = all.indexOf(cell);
-      const cols = Math.max(1, getComputedStyle(cell.parentElement!).gridTemplateColumns.split(' ').length);
-      const step = { ArrowLeft: -1, ArrowRight: 1, ArrowUp: -cols, ArrowDown: cols, Home: -at, End: all.length - 1 - at }[e.key];
+      const step = { ArrowLeft: -1, ArrowRight: 1, ArrowUp: rowStep(all, at, -1), ArrowDown: rowStep(all, at, 1), Home: -at, End: all.length - 1 - at }[e.key];
       if (step !== undefined && e.altKey && e.key.startsWith('Arrow')) {
         e.preventDefault();
         const ids = picked.includes(id) ? picked : [id];
@@ -717,6 +724,19 @@ export function initAlbumEditor(root: HTMLElement, signal: AbortSignal) {
     { signal },
   );
 
+  // ---------- the viewer and the selection's dialogs ask through events (scripts/albumViewer.ts, mediaInfo.ts, albumActions.ts) ----------
+  root.addEventListener('album:act', (e) => act((e as CustomEvent<{ what: string; ids: string[] }>).detail.what, (e as CustomEvent<{ ids: string[] }>).detail.ids), { signal });
+  root.addEventListener(
+    'album:item',
+    (e) => {
+      const d = (e as CustomEvent<{ id: string; play?: { autoplay?: boolean; loop?: boolean }; download?: boolean | null }>).detail;
+      if (d.play) return change(setItemPlay(doc, d.id, d.play, lookup), 'Playing set');
+      if (d.download !== undefined) change(setItemDownload(doc, [d.id], d.download ?? undefined, lookup), 'Downloads set');
+    },
+    { signal },
+  );
+  root.addEventListener('album:redraw', () => void (queue.pending ? undefined : redraw()), { signal });
+
   // ---------- a change made elsewhere: drawn again, unless something here waits to be saved ----------
   onContentChange((c) => {
     if (c.origin === TAB || queue.pending || !c.files.some((f) => f === state.key || f.includes('/media/'))) return;
@@ -732,6 +752,7 @@ export function initAlbumEditor(root: HTMLElement, signal: AbortSignal) {
 
   paintTools();
   paintPicked();
+  initAlbumCover(root, signal, { album: () => doc, change: (next, what) => change(next, what), lookup });
   // a new album opens with its title ready to type over (§9.1)
   if (new URLSearchParams(location.search).has('new')) {
     const title = root.querySelector<HTMLInputElement>('[data-album-field="title"] input');
@@ -739,6 +760,19 @@ export function initAlbumEditor(root: HTMLElement, signal: AbortSignal) {
     title?.select();
     history.replaceState(history.state, '', location.pathname);
   }
+}
+
+/** Up or down a row of the grid as it's drawn (days flow side by side): the offset to the nearest cell in the next row, 0 at an edge. */
+function rowStep(all: HTMLElement[], at: number, dir: 1 | -1): number {
+  const box = (el: HTMLElement) => el.getBoundingClientRect();
+  const here = box(all[at]!);
+  const x = here.left + here.width / 2;
+  const beyond = all.map((el, i) => ({ i, r: box(el) })).filter(({ r }) => (dir > 0 ? r.top > here.bottom - 1 : r.bottom < here.top + 1));
+  if (!beyond.length) return 0;
+  const rowTop = dir > 0 ? Math.min(...beyond.map(({ r }) => r.top)) : Math.max(...beyond.map(({ r }) => r.top));
+  const row = beyond.filter(({ r }) => Math.abs(r.top - rowTop) < 1);
+  const best = row.reduce((a, b) => (Math.abs(b.r.left + b.r.width / 2 - x) < Math.abs(a.r.left + a.r.width / 2 - x) ? b : a));
+  return best.i - at;
 }
 
 /** A multipart POST to the media API with its upload's progress (fetch can't report it). */

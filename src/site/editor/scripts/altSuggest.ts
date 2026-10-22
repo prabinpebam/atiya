@@ -12,8 +12,11 @@ import { missedLine, wantsSuggestion } from '../model/altText';
 export type AltSource = { media: () => string | null } | { file: () => File | null; owner: () => string };
 
 export interface AltSuggester {
-  /** Asks for a suggestion when the field is empty and not decorative; true when one is showing. `asked`: the owner pressed Suggest. */
-  suggest(opts?: { asked?: boolean }): Promise<boolean>;
+  /**
+   * Asks for a suggestion when the field is empty and not decorative; true when one is showing. `asked`: the owner pressed
+   * Suggest; `known`: one already asked for (the album viewer's review keeps them), shown without asking again.
+   */
+  suggest(opts?: { asked?: boolean; known?: string | null }): Promise<boolean>;
   /** Takes the suggestion away (a new file, a picture closed). */
   clear(): void;
   /** Accepts a showing suggestion into the field (Use all suggestions); true when there was one. */
@@ -73,6 +76,11 @@ export function initAltSuggest(scope: HTMLElement, signal: AbortSignal, source: 
       const wanted = () => wantsSuggestion({ alt: field.value, decorative: decorative() });
       // Suggest asks first even beside alt text, so it can show once the field is emptied
       if (!q || (!ask && !wanted())) return false;
+      if (opts.known) {
+        if (!wanted()) return false;
+        show(opts.known);
+        return true;
+      }
       const on = await api<{ on: boolean }>('GET', `ai/alt?${q}`);
       if (mine !== token || !on.ok) return false;
       if (askWrap) askWrap.dataset.altOn = on.data.on ? '1' : '';

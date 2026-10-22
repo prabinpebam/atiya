@@ -1,0 +1,88 @@
+---
+/**
+ * What the album editor's selection does to several items at once (documentation/gallery/spec.md §9.3), each in
+ * its own dialog: Add to album (another album, or a new one: the items stay in this one too), Set the date and Set
+ * the place (on every selected picture's own words, §4, saved together), and Downloads (this album's: Follow the
+ * album, Allow or Don't allow). scripts/albumActions.ts fills in the count and saves.
+ * @tier editor
+ * @a11y Each field is labelled; how many items it changes is said above the fields, and a refusal beside them (a
+ * polite status).
+ */
+import TextField from '../../components/fundamentals/TextField.astro';
+import Select from '../../components/fundamentals/Select.astro';
+import Button from '../../components/fundamentals/Button.astro';
+import Text from '../../components/fundamentals/Text.astro';
+import ActionBar from '../../components/compounds/ActionBar.astro';
+import StatusNote from '../kit/StatusNote.astro';
+import { PLACE_MAX } from '../../content/schema';
+
+interface Props {
+  /** What it does: add to another album, set the date taken, set the place, or set Downloads. */
+  kind: 'album' | 'date' | 'place' | 'download';
+  /** The other albums to choose from (Add to album). */
+  albums?: { id: string; title: string }[];
+  /** Whether the album itself allows downloads (Downloads: what Follow the album means). */
+  albumDownload?: boolean;
+}
+
+const { kind, albums = [], albumDownload = false } = Astro.props;
+const NEW = '+new';
+const ICONS = { album: 'collection', date: 'calendar', place: 'location', download: 'download' } as const;
+const SAVES = { album: 'Add to album', date: 'Set the date', place: 'Set the place', download: 'Set downloads' };
+const choices = [...albums.map((a) => ({ value: a.id, label: a.title })), { value: NEW, label: 'A new album', description: 'Made now, with these in it' }];
+---
+
+<div class="bulk" data-album-bulk={kind}>
+  <Text variant="small" tone="muted"><span data-bulk-count>The selected items</span></Text>
+  {
+    kind === 'album' && (
+      <Fragment>
+        <Select label="Album" options={choices} value={choices[0].value} name="album" data-bulk-album="" />
+        <span data-bulk-new hidden={choices[0].value !== NEW}>
+          <TextField label="The new album's title" name="title" maxlength={120} />
+        </span>
+        <Text variant="small" tone="muted">
+          They stay in this album too.
+        </Text>
+      </Fragment>
+    )
+  }
+  {kind === 'date' && <TextField label="Date taken" type="date" name="taken" hint="Leave it empty to clear their dates: they'll use their files' own again." />}
+  {
+    kind === 'download' && (
+      <Select
+        label="Downloads"
+        name="download"
+        value="follow"
+        options={[
+          { value: 'follow', label: albumDownload ? 'Follow the album (allowed)' : 'Follow the album (not allowed)' },
+          { value: 'allow', label: 'Allow' },
+          { value: 'deny', label: "Don't allow" },
+        ]}
+        hint="Whether the lightbox offers their original files here. A linked video never can be."
+      />
+    )
+  }
+  {kind === 'place' && <TextField label="Place" name="place" maxlength={PLACE_MAX} hint="Leave it empty to clear their places." />}
+  <StatusNote live="polite" data-bulk-problem="" />
+  <ActionBar align="end">
+    <Button variant="quiet" data-dialog-close="">Cancel</Button>
+    <Button variant="primary" icon={ICONS[kind]} data-bulk-save="">
+      {SAVES[kind]}
+    </Button>
+  </ActionBar>
+</div>
+
+<style>
+  .bulk {
+    display: grid;
+    gap: var(--space-3);
+  }
+</style>
+
+<script>
+  import { each } from '../../scripts/page';
+  import { initAlbumActions } from '../scripts/albumActions';
+
+  each<HTMLElement>('[data-album-editor]', (root, signal) => initAlbumActions(root, signal));
+</script>

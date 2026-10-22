@@ -1,13 +1,17 @@
 ---
 import Example from '../../library/Example.astro';
 import AlbumCover from '../components/AlbumCover.astro';
-import { COVER_TILES } from './samples';
+import { COVER_ITEMS, COVER_TILES } from './samples';
 ---
 
-<Example title="Automatic" description="The cover as it stands, worked out from the album; Edit cover comes later." layout="block">
-  <AlbumCover tiles={COVER_TILES} arranged={false} />
+<Example title="Automatic" description="The cover as it stands, worked out from the album: a small band beside its hint and Edit cover." layout="block">
+  <AlbumCover tiles={COVER_TILES} arranged={false} items={COVER_ITEMS} />
 </Example>
 
 <Example title="Arranged by hand" description="A cover arranged in Edit cover, shown as it is." layout="block">
-  <AlbumCover tiles={COVER_TILES} arranged />
+  <AlbumCover tiles={COVER_TILES} arranged items={COVER_ITEMS} />
+</Example>
+
+<Example title="Nothing to arrange" description="An album with no pictures yet: Edit cover waits." layout="block">
+  <AlbumCover tiles={[]} arranged={false} items={[]} />
 </Example>

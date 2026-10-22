@@ -4,10 +4,11 @@
  * { ok, versions } or { ok: false, issues } with 409 (a conflict) or 422 (the contract's refusal).
  */
 import type { APIRoute } from 'astro';
-import type { Album, Article, ImageMedia, SiteSettings, Person, PlanetStructure, SiteStructure, ThemeFile, VideoMedia } from '../../content/schema';
+import type { Album, Article, EmbedMedia, ImageMedia, SiteSettings, Person, PlanetStructure, SiteStructure, ThemeFile, VideoMedia } from '../../content/schema';
 import { asTab, commit, jsonBytes, readDoc, type Result } from '../server/store';
 import { createArticle, deleteArticle, duplicateArticle, saveArticle, PLANET, STRUCTURE, planetKey } from '../server/articles';
-import { cropMedia, cropSource, deleteMedia, findFocus, makeStandard, parseUploadCrop, removeDark, replaceMaster, saveSidecar, setDark, upload, uploadVideo } from '../server/media';
+import { cropMedia, cropSource, deleteMedia, findFocus, makeStandard, parseUploadCrop, removeDark, replaceMaster, saveSidecar, saveWordsMany, setDark, upload, uploadVideo } from '../server/media';
+import type { WordsChange } from '../model/albumViewer';
 import { isVideoFile } from '../model/upload';
 import { measureVideo } from '../server/videoShape';
 import { addLinkedVideo } from '../server/albumEmbed';
@@ -235,10 +236,16 @@ const handle: APIRoute = async ({ request, params, url }) => {
 
     // ---------- albums (documentation/gallery/spec.md §9.1, §9.7) ----------
     if (parts[0] === 'albums') {
-      const { createAlbum, deleteAlbum, moveAlbum, saveAlbum } = await import('../server/albums');
+      const { addToAlbum, createAlbum, deleteAlbum, moveAlbum, saveAlbum } = await import('../server/albums');
       const id = parts[1];
       if (id && !ID.test(id)) return json({ ok: false }, 404);
       if (method === 'POST' && !id) return result(await createAlbum(await body(request)));
+      // the selection's Add to album (§9.3): library items added at another album's end
+      if (method === 'POST' && id && parts[2] === 'items') {
+        const media = (await body<{ media?: unknown }>(request)).media;
+        if (!Array.isArray(media) || !media.length || !media.every((m) => typeof m === 'string')) return json({ ok: false, issues: [{ file: 'content/albums', message: 'name the library items to add' }] }, 422);
+        return result(await addToAlbum(id, media as string[]));
+      }
       if (method === 'PUT' && id && parts.length === 2) {
         const b = await body<{ album: Album; ifMatch: Record<string, string | null> }>(request);
         return result(await saveAlbum({ id, album: b.album, ifMatch: b.ifMatch ?? {} }));
@@ -361,6 +368,14 @@ const handle: APIRoute = async ({ request, params, url }) => {
       const r = await addLinkedVideo({ url: String(b.url ?? ''), ...(typeof b.album === 'string' && b.album ? { album: b.album } : {}), ...(b.private === true ? { private: true } : {}) });
       return r.ok ? json({ ok: true, versions: r.versions, id: r.id, existing: r.existing, title: r.title }) : json({ ok: false, error: r.issues[0]?.message ?? 'not linked', issues: r.issues }, r.status);
     }
+    // several library items' date, place or alt text in one save (gallery spec §9.3 Set the date and place, §9.5 Accept all)
+    if (method === 'PUT' && path === 'media-words') {
+      const b = await body<{ changes?: unknown }>(request).catch(() => ({}) as { changes?: unknown });
+      const list = Array.isArray(b.changes) ? b.changes : [];
+      const ok = list.every((c) => c && typeof c === 'object' && typeof (c as WordsChange).id === 'string' && (c as WordsChange).words && typeof (c as WordsChange).words === 'object');
+      if (!ok) return json({ ok: false, issues: [{ file: 'content/media', message: 'each change names an item and its words' }] }, 422);
+      return result(await saveWordsMany(list as WordsChange[]));
+    }
     if (parts[0] === 'media') {
       const id = parts.slice(1).join('/');
       if (method === 'GET' && !id) {
@@ -448,7 +463,7 @@ const handle: APIRoute = async ({ request, params, url }) => {
       }
       if (method === 'DELETE' && id.endsWith('/dark')) return result(await removeDark(id.replace(/\/dark$/, '')));
       if (method === 'PUT' && id) {
-        const b = await body<{ sidecar: ImageMedia | VideoMedia; ifMatch: Record<string, string | null> }>(request);
+        const b = await body<{ sidecar: ImageMedia | VideoMedia | EmbedMedia; ifMatch: Record<string, string | null> }>(request);
         return result(await saveSidecar(id, b.sidecar, b.ifMatch ?? {}));
       }
       if (method === 'DELETE' && id) return result(await deleteMedia(id));

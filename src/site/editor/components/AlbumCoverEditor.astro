@@ -1,0 +1,356 @@
+---
+/**
+ * Edit cover (documentation/gallery/spec.md §9.6): the album editor's cover band turned into its arranger, in place
+ * and at the column's full width. A toolbar (Wide or Phone, a preset, Close gaps, Arrange for phones or Back to
+ * automatic, Use automatic cover, Cancel and Done), the band over a faint grid of its square cells (12 columns; 6 on a
+ * phone), its holes hatched, the warnings that apply, the chosen tile's bar (its keys and options) and the album's
+ * pictures and videos below, those in the cover marked. A tile is dragged to a cell or by its handles to a size, both
+ * snapping to whole cells; an item dragged up joins the cover, a tile dragged down leaves it. Every change is saved
+ * at once through the album's own queue and undone with Undo. Hidden at rest; scripts/albumCover.ts draws it from the
+ * album being edited (its rules the pure model/cover.ts).
+ * @tier editor
+ * @a11y Every drag has a button or a key (WCAG 2.5.7): a tile is a button named by its item and its place, chosen
+ * with Enter or Space; the arrow keys move it a cell, Shift with an arrow resizes it, Delete takes it out; the tile
+ * bar has a button for each. The status line reads each new place ("columns 7 to 12, rows 1 to 2") or why a move was
+ * refused. The handles and the outline are the pointer's alone (aria-hidden). Tiles are in reading order.
+ * @key ArrowLeft / ArrowRight / ArrowUp / ArrowDown (on a tile): moves it a cell
+ * @key Shift+ArrowLeft / Shift+ArrowRight / Shift+ArrowUp / Shift+ArrowDown (on a tile): makes it a cell narrower, wider, shorter or taller
+ * @key Delete or Backspace (on a tile): takes it out of the cover
+ * @key Escape: Done
+ */
+import Button from '../../components/fundamentals/Button.astro';
+import IconButton from '../../components/fundamentals/IconButton.astro';
+import Image from '../../components/fundamentals/Image.astro';
+import Select from '../../components/fundamentals/Select.astro';
+import Switch from '../../components/fundamentals/Switch.astro';
+import Tag from '../../components/fundamentals/Tag.astro';
+import Text from '../../components/fundamentals/Text.astro';
+import TileButton from '../../components/fundamentals/TileButton.astro';
+import ActionBar from '../../components/compounds/ActionBar.astro';
+import { PRESETS } from '../model/cover';
+
+interface Props {
+  /** Open from the start (the parts library shows it open; the album editor opens it from the cover's Edit cover). */
+  open?: boolean;
+}
+
+const { open = false } = Astro.props;
+---
+
+<section class="ce" aria-label="Edit cover" data-album-cover-editor="" data-show="wide" hidden={!open}>
+  <div class="ce-head">
+    <Text as="span" variant="label">Edit cover</Text>
+    <Tag size="sm"><span data-cover-state="">Automatic</span></Tag>
+  </div>
+  <ActionBar gap="sm">
+    <Button variant="secondary" size="sm" icon="desktop" aria-pressed="true" data-cover-show="wide">Wide</Button>
+    <Button variant="secondary" size="sm" icon="phone" aria-pressed="false" data-cover-show="phone">Phone</Button>
+    <span data-cover-when="wide">
+      <Select label="Use a preset" hideLabel size="sm" placeholder="Use a preset…" options={PRESETS.map((p) => ({ value: p.id, label: p.name }))} data-cover-preset="" />
+    </span>
+    <span data-cover-when="editable">
+      <Button variant="quiet" size="sm" icon="compress" data-cover-close-gaps="">Close gaps</Button>
+    </span>
+    <span data-cover-when="phone-auto" hidden>
+      <Button variant="primary" size="sm" icon="phone" data-cover-phone-arrange="">Arrange for phones</Button>
+    </span>
+    <span data-cover-when="phone-own" hidden>
+      <Button variant="quiet" size="sm" icon="restore" data-cover-phone-back="">Back to automatic</Button>
+    </span>
+    <span data-cover-when="wide">
+      <Button variant="quiet" size="sm" icon="restore" data-cover-automatic="">Use automatic cover</Button>
+    </span>
+    <Button variant="secondary" size="sm" icon="close" data-cover-cancel="">Cancel</Button>
+    <Button variant="primary" size="sm" icon="check" data-cover-done="">Done</Button>
+  </ActionBar>
+  <Text variant="small" tone="muted"><span data-cover-hint="">Drag a tile to a cell, or by its edges to a size; or choose it and use the arrow keys (Shift to resize).</span></Text>
+  <div class="ce-frame" data-cover-frame="">
+    <div class="ce-canvas" role="group" aria-label="The cover's tiles, in reading order" data-cover-canvas="">
+      <span class="ce-outline" data-cover-outline="" aria-hidden="true" hidden></span>
+    </div>
+  </div>
+  <p class="ce-live" role="status" aria-live="polite" data-cover-status=""></p>
+  <ul class="ce-warnings" data-cover-warnings="" hidden></ul>
+  <section class="ce-bar" aria-label="The chosen tile" data-cover-bar="">
+    <Text variant="small" tone="muted"><span data-cover-none="">Choose a tile to move or resize it with buttons, change how it shows its item, or take it out.</span></Text>
+    <div class="ce-chosen" data-cover-chosen="" hidden>
+      <Text variant="ui"><strong data-cover-chosen-label=""></strong> <span data-cover-chosen-place=""></span></Text>
+      <span data-cover-when="editable">
+        <ActionBar gap="sm">
+          <IconButton label="Move left" icon="arrow-left" size="sm" variant="secondary" data-cover-move="left" />
+          <IconButton label="Move right" icon="arrow-right" size="sm" variant="secondary" data-cover-move="right" />
+          <IconButton label="Move up" icon="arrow-up" size="sm" variant="secondary" data-cover-move="up" />
+          <IconButton label="Move down" icon="arrow-down" size="sm" variant="secondary" data-cover-move="down" />
+          <Button variant="quiet" size="sm" icon="minus" data-cover-size="left">Narrower</Button>
+          <Button variant="quiet" size="sm" icon="plus" data-cover-size="right">Wider</Button>
+          <Button variant="quiet" size="sm" icon="minus" data-cover-size="up">Shorter</Button>
+          <Button variant="quiet" size="sm" icon="plus" data-cover-size="down">Taller</Button>
+        </ActionBar>
+      </span>
+      <span data-cover-when="wide">
+        <ActionBar gap="sm">
+          <Text as="span" variant="label">Show it</Text>
+          <Button variant="secondary" size="sm" aria-pressed="true" data-cover-display="kind">By kind</Button>
+          <Button variant="secondary" size="sm" aria-pressed="false" data-cover-display="fill">Fill</Button>
+          <Button variant="secondary" size="sm" aria-pressed="false" data-cover-display="fit">Fit</Button>
+          <Button variant="quiet" size="sm" icon="focus" data-cover-focus-reset="">Use the picture’s focus</Button>
+        </ActionBar>
+      </span>
+      <span data-cover-when="wide">
+        <ActionBar gap="sm">
+          <Switch label="Play in the band" data-cover-play="" />
+          <Switch label="Hide on phones" data-cover-phones="" />
+          <Button variant="secondary" size="sm" icon="delete" data-cover-remove="">Remove from cover</Button>
+        </ActionBar>
+      </span>
+      <Text variant="small" tone="muted"><span data-cover-play-why=""></span></Text>
+    </div>
+  </section>
+  <section class="ce-strip" aria-label="The album's pictures and videos" data-cover-strip-region="">
+    <Text as="span" variant="label">The album’s items</Text>
+    <Text variant="small" tone="muted"><span data-cover-strip-hint="">Drag an item up to add it to the cover, or a tile down to take it out. Choose an item to add it where it fits first.</span></Text>
+    <div class="ce-strip-items" data-scrollbar="" data-cover-strip=""></div>
+  </section>
+
+  <template data-cover-tile-template>
+    <div class="ce-tile" data-cover-place="">
+      <TileButton variant="framed" pressed={false} data-cover-tile="" aria-label="">
+        <span class="ce-pic"><Image src="data:," alt="" width={4} height={3} display="fill" fill rounded={false} /></span>
+        <span class="ce-marks">
+          <span data-cover-mark="play" hidden><Tag size="sm" tone="accent" icon="play">Plays</Tag></span>
+          <span data-cover-mark="phones" hidden><Tag size="sm">Not on phones</Tag></span>
+        </span>
+      </TileButton>
+      <span class="ce-handle" data-cover-handle="right" aria-hidden="true"></span>
+      <span class="ce-handle" data-cover-handle="bottom" aria-hidden="true"></span>
+      <span class="ce-handle" data-cover-handle="corner" aria-hidden="true"></span>
+    </div>
+  </template>
+  <template data-cover-hole-template><span class="ce-hole" aria-hidden="true"></span></template>
+  <template data-cover-strip-template>
+    <div class="ce-strip-item" data-cover-strip-place="">
+      <TileButton variant="framed" data-cover-strip-item="" aria-label="">
+        <span class="ce-strip-pic"><Image src="data:," alt="" width={4} height={3} display="fill" fill rounded={false} /></span>
+        <span class="ce-marks" data-cover-mark="in" hidden><Tag size="sm" tone="accent">Cover</Tag></span>
+      </TileButton>
+    </div>
+  </template>
+</section>
+
+<style>
+  .ce {
+    display: grid;
+    gap: var(--space-3);
+    min-inline-size: 0;
+  }
+
+  .ce[hidden] {
+    display: none;
+  }
+
+  .ce-head {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+  }
+
+  /* the band's frame: its width is the cells' measure (square cells; a phone's band about an inspector wide) */
+  .ce-frame {
+    container-type: inline-size;
+    min-inline-size: 0;
+  }
+
+  .ce[data-show='phone'] .ce-frame {
+    inline-size: 100%;
+    max-inline-size: var(--c-editor-inspector);
+  }
+
+  .ce-canvas {
+    --ce-cell: calc((100cqi - (var(--columns, 12) - 1) * var(--space-1)) / var(--columns, 12));
+    position: relative;
+    display: grid;
+    grid-template-columns: repeat(var(--columns, 12), minmax(0, 1fr));
+    grid-template-rows: repeat(var(--rows, 1), var(--ce-cell));
+    grid-auto-rows: var(--ce-cell);
+    gap: var(--space-1);
+    border-radius: var(--radius-sm);
+    background:
+      linear-gradient(90deg, var(--color-rule) var(--border-hairline), transparent var(--border-hairline)) 0 0 / calc(var(--ce-cell) + var(--space-1)) calc(var(--ce-cell) + var(--space-1)),
+      linear-gradient(var(--color-rule) var(--border-hairline), transparent var(--border-hairline)) 0 0 / calc(var(--ce-cell) + var(--space-1)) calc(var(--ce-cell) + var(--space-1)),
+      var(--color-bg-sunk);
+    user-select: none;
+  }
+
+  .ce-hole,
+  .ce-tile,
+  .ce-outline {
+    grid-column: var(--x) / span var(--w);
+    grid-row: var(--y) / span var(--h);
+    min-inline-size: 0;
+    min-block-size: 0;
+  }
+
+  .ce-hole {
+    border-radius: var(--radius-xs);
+    background: repeating-linear-gradient(45deg, var(--color-rule) 0 var(--border-strong), transparent var(--border-strong) var(--space-2));
+  }
+
+  .ce-tile {
+    position: relative;
+    display: grid;
+    touch-action: none;
+  }
+
+  .ce-tile[data-dragging] {
+    opacity: var(--opacity-disabled);
+  }
+
+  .ce-pic {
+    position: absolute;
+    inset: var(--space-1);
+    overflow: hidden;
+    border-radius: var(--radius-xs);
+    background: var(--color-bg-sunk);
+    pointer-events: none;
+  }
+
+  .ce-marks {
+    position: absolute;
+    inset-block-start: var(--space-2);
+    inset-inline-start: var(--space-2);
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-1);
+    pointer-events: none;
+  }
+
+  .ce-marks[hidden] {
+    display: none;
+  }
+
+  .ce-handle {
+    position: absolute;
+    z-index: var(--layer-raised);
+    background: var(--color-accent);
+    opacity: 0;
+    transition: opacity var(--duration-fast) var(--ease-standard);
+  }
+
+  .ce-handle[data-cover-handle='right'] {
+    inset-block: var(--space-4);
+    inset-inline-end: 0;
+    inline-size: var(--space-1);
+    cursor: ew-resize;
+  }
+
+  .ce-handle[data-cover-handle='bottom'] {
+    inset-inline: var(--space-4);
+    inset-block-end: 0;
+    block-size: var(--space-1);
+    cursor: ns-resize;
+  }
+
+  .ce-handle[data-cover-handle='corner'] {
+    inset-block-end: 0;
+    inset-inline-end: 0;
+    inline-size: var(--space-3);
+    block-size: var(--space-3);
+    border-radius: var(--radius-xs);
+    cursor: nwse-resize;
+  }
+
+  .ce-canvas:not([data-editable]) .ce-handle {
+    display: none;
+  }
+
+  @media (hover: hover) {
+    .ce-tile:hover .ce-handle {
+      opacity: 1;
+    }
+  }
+
+  .ce-tile:active .ce-handle,
+  .ce-tile:focus-within .ce-handle,
+  .ce-tile[data-chosen] .ce-handle,
+  .ce-tile[data-resizing] .ce-handle {
+    opacity: 1;
+  }
+
+  .ce-outline {
+    z-index: var(--layer-raised);
+    border: var(--border-strong) dashed var(--color-accent);
+    border-radius: var(--radius-xs);
+    background: var(--color-accent-soft);
+    pointer-events: none;
+  }
+
+  .ce-outline[data-refused] {
+    border-color: var(--color-negative);
+  }
+
+  .ce-outline[hidden] {
+    display: none;
+  }
+
+  .ce-live {
+    margin: 0;
+    min-block-size: var(--space-5);
+    font: var(--type-note);
+    color: var(--color-text-muted);
+  }
+
+  .ce-warnings {
+    display: grid;
+    gap: var(--space-1);
+    margin: 0;
+    padding-inline-start: var(--space-5);
+    font: var(--type-note);
+  }
+
+  .ce-warnings[hidden] {
+    display: none;
+  }
+
+  .ce-bar,
+  .ce-chosen,
+  .ce-strip {
+    display: grid;
+    align-content: start;
+    gap: var(--space-2);
+    min-inline-size: 0;
+  }
+
+  .ce-bar {
+    padding: var(--space-3);
+    border: var(--border-hairline) solid var(--color-rule);
+    border-radius: var(--radius-md);
+    background: var(--color-bg-raised);
+  }
+
+  .ce-chosen[hidden] {
+    display: none;
+  }
+
+  .ce-strip-items {
+    display: grid;
+    grid-auto-flow: column;
+    grid-auto-columns: var(--c-editor-thumb);
+    gap: var(--space-2);
+    padding-block-end: var(--space-2);
+    overflow-x: auto;
+  }
+
+  .ce-strip-item {
+    position: relative;
+    touch-action: none;
+    user-select: none;
+  }
+
+  .ce-strip-pic {
+    display: block;
+    aspect-ratio: 4 / 3;
+    overflow: hidden;
+    background: var(--color-bg-sunk);
+    pointer-events: none;
+  }
+</style>

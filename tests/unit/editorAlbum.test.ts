@@ -23,6 +23,8 @@ import {
   pickToggle,
   removeItems,
   setCoverLead,
+  setItemDownload,
+  setItemPlay,
   setSettings,
   setWords,
   settingsOf,
@@ -218,5 +220,34 @@ describe('the grid (§9.2)', () => {
     expect(pickRange(order, null, 'c')).toEqual(['c']);
     expect(pickToggle(order, ['c'], 'b')).toEqual(['b', 'c']);
     expect(pickToggle(order, ['b', 'c'], 'b')).toEqual(['c']);
+  });
+});
+
+describe("an item's own settings in this album (§9.3 Downloads, §9.5 Play by itself and Loop, V49)", () => {
+  const more: MediaLookup = (id) => (id === 'library/v' ? ({ kind: 'video', file: 'v.mp4', title: 'V' } as unknown as AlbumMedia) : id === 'library/y' ? ({ kind: 'embed', provider: 'youtube', id: 'x', title: 'Y' } as unknown as AlbumMedia) : MEDIA[id]);
+  const withAv = (): Album => ({ ...base(), items: [...base().items, { id: 'v', media: 'library/v' }, { id: 'y', media: 'library/y' }] });
+
+  it('sets, then follows the album again (the field taken out), never on a linked video', () => {
+    const allowed = setItemDownload(withAv(), ['a', 'b', 'y'], true, more);
+    expect(allowed.items.filter((i) => 'download' in i).map((i) => i.id)).toEqual(['a', 'b']);
+    const denied = setItemDownload(allowed, ['a'], false, more);
+    expect(denied.items.find((i) => i.id === 'a')).toEqual({ id: 'a', media: 'albums/trip/a', download: false });
+    const follows = setItemDownload(denied, ['a', 'b'], undefined, more);
+    expect(follows.items.some((i) => 'download' in i)).toBe(false);
+    expect(follows.title).toBe('A trip');
+  });
+
+  it('returns the same album when nothing changes', () => {
+    const a = withAv();
+    expect(setItemDownload(a, ['a'], undefined, more)).toBe(a);
+    expect(setItemPlay(a, 'a', { autoplay: true }, more)).toBe(a);
+  });
+
+  it('plays a video file by itself and loops it; off takes the field out; one setting leaves the other', () => {
+    const on = setItemPlay(withAv(), 'v', { autoplay: true, loop: true }, more);
+    expect(on.items.find((i) => i.id === 'v')).toEqual({ id: 'v', media: 'library/v', autoplay: true, loop: true });
+    const off = setItemPlay(on, 'v', { autoplay: false }, more);
+    expect(off.items.find((i) => i.id === 'v')).toEqual({ id: 'v', media: 'library/v', loop: true });
+    expect(setItemPlay(off, 'y', { loop: true }, more).items.find((i) => i.id === 'y')).toEqual({ id: 'y', media: 'library/y' });
   });
 });

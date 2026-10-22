@@ -212,6 +212,45 @@ export function editText(album: Album, id: string, text: string): Album {
   return { ...album, items: album.items.map((i) => (i.id === id && isTextItem(i) ? { ...i, text: text.trim() } : i)) };
 }
 
+// ---------- an item's own settings (§9.3 Downloads, §9.5) ----------
+
+/**
+ * Sets the selected items' downloads (§9.3): `true` Allow, `false` Don't allow, `undefined` Follow the album (the
+ * field goes). Never on a linked video or a text card (V49): they're left as they are. The same album back when
+ * nothing changes.
+ */
+export function setItemDownload(album: Album, ids: readonly string[], download: boolean | undefined, lookup: MediaLookup): Album {
+  const on = new Set(ids);
+  let changed = false;
+  const items = album.items.map((i) => {
+    if (!on.has(i.id) || !isMediaItem(i) || lookup(i.media)?.kind === 'embed' || i.download === download) return i;
+    changed = true;
+    const next: AlbumMediaItem = { ...i };
+    if (download === undefined) delete next.download;
+    else next.download = download;
+    return next;
+  });
+  return changed ? { ...album, items } : album;
+}
+
+/** A video file's Play by itself and Loop in this album (§9.5, V49): off removes the field; only a video file has them. */
+export function setItemPlay(album: Album, id: string, play: { autoplay?: boolean; loop?: boolean }, lookup: MediaLookup): Album {
+  let changed = false;
+  const items = album.items.map((i) => {
+    if (i.id !== id || !isMediaItem(i) || lookup(i.media)?.kind !== 'video') return i;
+    const next: AlbumMediaItem = { ...i };
+    for (const k of ['autoplay', 'loop'] as const) {
+      if (!(k in play)) continue;
+      if (play[k]) next[k] = true;
+      else delete next[k];
+    }
+    if (next.autoplay === i.autoplay && next.loop === i.loop) return i;
+    changed = true;
+    return next;
+  });
+  return changed ? { ...album, items } : album;
+}
+
 // ---------- the cover ----------
 
 /**

@@ -3,7 +3,7 @@
  * pages, sections, people and codes, and the design library's sample paintings for pictures. Never the site's
  * content: a story must look the same on any site, and nothing private may appear in one.
  */
-import { sample } from '../../design/samples';
+import { sample, SAMPLE_VIDEO } from '../../design/samples';
 import { withBase } from '../../design/meta';
 import type { Article, Block, Person, PlanetStructure, SiteSettings, SiteStructure } from '../../content/schema';
 import type { Issue } from '../../content/load';
@@ -16,7 +16,10 @@ import type { Runner } from '../model/aiServices';
 import { reviewView } from '../model/aiReview';
 import type { AlbumCardView } from '../components/AlbumCards.astro';
 import type { CoverTileView } from '../components/AlbumCover.astro';
+import type { CoverItem } from '../model/cover';
 import type { PhotoCell } from '../kit/PhotoGrid.astro';
+import type { ViewerItem } from '../model/albumViewer';
+import type { Picture } from '../../content/pictures';
 
 const pond = sample('pond');
 const bridge = sample('bridge');
@@ -327,4 +330,87 @@ export const COVER_TILES: CoverTileView[] = [
   { item: 'i2', x: 6, y: 0, w: 3, h: 2, thumb: bridge.thumb, width: bridge.width, height: bridge.height },
   { item: 'i4', x: 9, y: 0, w: 3, h: 2, thumb: workshop.thumb, width: workshop.width, height: workshop.height },
   { item: 'i5', x: 6, y: 2, w: 6, h: 2, thumb: plaza.thumb, width: plaza.width, height: plaza.height },
+];
+
+/** The album's pictures as Edit cover draws them (made-up names and sizes). */
+export const COVER_ITEMS: CoverItem[] = [
+  { id: 'i1', label: 'The pond at dawn', kind: 'picture', thumb: pond.thumb, width: pond.width, height: pond.height, aspect: pond.width / pond.height, bytes: 420000 },
+  { id: 'i2', label: 'The old bridge', kind: 'picture', thumb: bridge.thumb, width: bridge.width, height: bridge.height, aspect: bridge.width / bridge.height, bytes: 380000 },
+  { id: 'i4', label: 'The workshop', kind: 'picture', thumb: workshop.thumb, width: workshop.width, height: workshop.height, aspect: workshop.width / workshop.height, bytes: 350000 },
+  { id: 'i5', label: 'The plaza', kind: 'picture', thumb: plaza.thumb, width: plaza.width, height: plaza.height, aspect: plaza.width / plaza.height, bytes: 510000 },
+];
+
+/** A sample painting as the viewer draws it. */
+const pictureOf = (s: ReturnType<typeof sample>, more: Partial<Picture> = {}): Picture => ({ src: s.src, srcset: s.srcset, alt: s.alt, width: s.width, height: s.height, full: s.full, thumb: s.thumb, bg: 'transparent', ...more });
+
+const VIEWER_BASE = { albumDownload: true, cover: false, needsAlt: false, large: false, uses: [] as ViewerItem['uses'] };
+
+/** The viewer at a picture with its dark mode version, used on a page and in another album (made-up names). */
+export const VIEWER_PICTURE: ViewerItem = {
+  ...VIEWER_BASE,
+  id: 'i1',
+  kind: 'picture',
+  step: { at: 1, of: 8, prev: null, next: 'i2' },
+  picture: pictureOf(pond, { dark: { src: plaza.src, srcset: plaza.srcset, width: plaza.width, height: plaza.height, full: plaza.full, thumb: plaza.thumb, bg: 'transparent' } }),
+  media: { id: 'samples/pond', key: '/content/media/samples/pond.json', version: 'sample', sidecar: { kind: 'image', file: 'pond.webp', alt: pond.alt, caption: pond.caption, place: 'The lily pond', taken: '2026-05-03', visibility: 'public' } },
+  cover: true,
+  uses: [
+    { title: 'Walks on the planet', href: '/_edit/albums/walks/', kind: 'album', draft: false },
+    { title: 'Ponds I have known', href: '/_edit/article/ponds/', kind: 'page', draft: true },
+  ],
+  facts: ['Picture', '1600 × 1067', '420 KB', 'pond.webp'],
+};
+
+/** The viewer at a video: its own downloads and play settings in this album. */
+export const VIEWER_VIDEO: ViewerItem = {
+  ...VIEWER_BASE,
+  id: 'i6',
+  kind: 'video',
+  step: { at: 6, of: 8, prev: 'i5', next: 'i7' },
+  video: { src: SAMPLE_VIDEO.src, type: 'video/mp4', width: SAMPLE_VIDEO.width, height: SAMPLE_VIDEO.height, title: 'A drift over the planet', duration: 10, poster: { src: SAMPLE_VIDEO.poster, srcset: '', width: SAMPLE_VIDEO.width, height: SAMPLE_VIDEO.height, thumb: SAMPLE_VIDEO.poster } },
+  media: { id: 'samples/tour', key: '/content/media/samples/tour.json', version: 'sample', sidecar: { kind: 'video', file: 'tour.mp4', title: 'A drift over the planet', width: 960, height: 640, duration: 10, visibility: 'public' } },
+  download: false,
+  autoplay: true,
+  loop: true,
+  facts: ['Video', '960 × 640', '0:10', '2.1 MB'],
+};
+
+/** The viewer at a linked video: its poster and its provider. */
+export const VIEWER_EMBED: ViewerItem = {
+  ...VIEWER_BASE,
+  id: 'i7',
+  kind: 'embed',
+  step: { at: 7, of: 8, prev: 'i6', next: 'i8' },
+  embed: { poster: pictureOf(bridge), provider: 'YouTube', title: 'Building the bridge', duration: 184, shape: '16:9' },
+  media: { id: 'samples/bridge-film', key: '/content/media/samples/bridge-film.json', version: 'sample', sidecar: { kind: 'embed', provider: 'youtube', id: 'dQw4w9WgXcQ', title: 'Building the bridge', duration: 184, poster: { file: 'bridge-film.poster.webp' }, visibility: 'public' } },
+  facts: ['Linked video', 'YouTube', '3:04'],
+};
+
+/** The viewer at a text card. */
+export const VIEWER_TEXT: ViewerItem = { ...VIEWER_BASE, id: 'i3', kind: 'text', step: { at: 3, of: 8, prev: 'i2', next: 'i4' }, text: 'The second day: rain all morning, then the light came back.', facts: [] };
+
+/** The viewer at an item whose library item is gone. */
+export const VIEWER_MISSING: ViewerItem = { ...VIEWER_BASE, id: 'i8', kind: 'missing', step: { at: 8, of: 8, prev: 'i7', next: null }, facts: [] };
+
+/** A review of alt text: a picture without it, among the two that still need it. */
+export const VIEWER_REVIEW: ViewerItem = {
+  ...VIEWER_BASE,
+  id: 'i2',
+  kind: 'picture',
+  step: { at: 1, of: 2, prev: null, next: 'i4' },
+  picture: pictureOf(bridge, { alt: '' }),
+  media: { id: 'samples/bridge', key: '/content/media/samples/bridge.json', version: 'sample', sidecar: { kind: 'image', file: 'bridge.webp', visibility: 'public' } },
+  needsAlt: true,
+  large: true,
+  facts: ['Picture', '3840 × 2560', '1.4 MB', 'bridge.webp'],
+  strip: [
+    { id: 'i2', media: 'samples/bridge', thumb: bridge.thumb, alt: '', width: bridge.width, height: bridge.height, current: true },
+    { id: 'i4', media: 'samples/workshop', thumb: workshop.thumb, alt: '', width: workshop.width, height: workshop.height, current: false },
+  ],
+};
+
+/** Other albums an item can be added to. */
+export const OTHER_ALBUMS = [
+  { id: 'walks', title: 'Walks on the planet' },
+  { id: 'night', title: 'The plaza at night' },
 ];

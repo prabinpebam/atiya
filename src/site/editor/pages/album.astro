@@ -3,9 +3,13 @@
 import EditorLayout from '../EditorLayout.astro';
 import AlbumWords from '../components/AlbumWords.astro';
 import AlbumCover from '../components/AlbumCover.astro';
+import AlbumCoverEditor from '../components/AlbumCoverEditor.astro';
 import AlbumItems from '../components/AlbumItems.astro';
 import AlbumSettings from '../components/AlbumSettings.astro';
 import AlbumAdd from '../components/AlbumAdd.astro';
+import AlbumViewer from '../components/AlbumViewer.astro';
+import MediaInfo from '../components/MediaInfo.astro';
+import AlbumBulk from '../components/AlbumBulk.astro';
 import MediaGrid from '../components/MediaGrid.astro';
 import ContentIssues from '../components/ContentIssues.astro';
 import Dialog from '../../components/compounds/Dialog.astro';
@@ -21,6 +25,7 @@ import { readDoc } from '../server/store';
 import { OVERLAY, STRUCTURE } from '../server/articles';
 import { albumKey, albumSection, albumSections, lookupOf } from '../server/albums';
 import { albumCells, coverBand } from '../server/albumScreens';
+import { viewerItem } from '../server/albumViewer';
 import { albumCounts, albumDates, countWords, dateSpan } from '../../content/album';
 import { settingsOf } from '../model/album';
 import { albumPath } from '../../content/repository';
@@ -52,10 +57,15 @@ const draw = (...names: string[]) => wants(asked, ...names);
 const fragment = !!asked && [...asked].every((n) => (ALWAYS as readonly string[]).includes(n) || n === 'media-grid');
 const lookup = loaded.ok ? lookupOf(loaded.index) : () => undefined;
 const grid = loaded.ok && !fragment && draw('album-grid', 'album-facts', 'album-state') ? await albumCells(loaded.index, album) : { cells: [], facts: {} };
-const band = loaded.ok && !fragment && draw('album-cover') ? await coverBand(loaded.index, album) : { arranged: false, tiles: [] };
+const band = loaded.ok && !fragment && draw('album-cover') ? await coverBand(loaded.index, album) : { arranged: false, tiles: [], items: [] };
 const count = countWords(albumCounts(album.items, lookup));
 const dates = dateSpan(albumDates(album, lookup));
 const needAlt = grid.cells.filter((c) => c.needsAlt).length;
+// the viewer (§9.5): the item the address names (?item=), or the review's next picture without alt text (&review=1)
+const itemAsked = Astro.url.searchParams.get('item');
+const reviewing = Astro.url.searchParams.get('review') === '1';
+const viewer = loaded.ok && !fragment && draw('album-viewer') && (itemAsked || reviewing) ? await viewerItem(loaded.index, album, itemAsked ?? '', reviewing) : null;
+const others = loaded.ok ? [...loaded.index.albums.values()].filter((a) => a.id !== id).map((a) => ({ id: a.id, title: a.title })) : [];
 
 // the picker, a page at a time, when it asks (performance-report.md R5)
 const PICKER_PAGE = 40;
@@ -80,7 +90,7 @@ const ORDERS = [
 ];
 ---
 
-<EditorLayout title={album.title} screen="album" nav={false}>
+<EditorLayout title={album.title} screen="album" nav={false} column>
   <Fragment slot="title">
     <Link href={withBase('/_edit/albums/')} variant="quiet">Albums</Link>
     <span data-album-heading><Text as="span" variant="ui"><strong>{album.title}</strong></Text></span>
@@ -91,7 +101,7 @@ const ORDERS = [
     <IconButton label="Redo" icon="redo" size="sm" data-album-redo="" />
     <Button variant="primary" size="sm" icon="plus" data-dialog-open="album-add">Add</Button>
     <Select label="Order" hideLabel size="sm" options={ORDERS} value={album.order ?? 'oldest'} data-album-sort="" />
-    <Button variant="secondary" size="sm" icon="crop" disabled>Edit cover</Button>
+    <Button variant="secondary" size="sm" icon="crop" data-album-cover-edit="">Edit cover</Button>
     <IconButton label="Settings" icon="settings" size="sm" data-dialog-open="album-settings" />
     {path && <IconButton label="View on the site" icon="external" size="sm" href={path} />}
     <Button variant="secondary" size="sm" icon="publish" data-album-publish="">{published ? 'Unpublish' : 'Publish'}</Button>
@@ -100,10 +110,11 @@ const ORDERS = [
     loaded.ok && fragment ? (
       picker && <MediaGrid mode="pick" media={picker} owner={owner} paging={pickerPaging} />
     ) : loaded.ok ? (
-      <div data-album-editor>
+      <div data-album-editor data-editor-stack>
         <script is:inline type="application/json" data-region="album-state" data-album-state set:html={json} />
         <AlbumWords title={album.title} summary={album.summary} description={album.description} count={count} dates={dates} needAlt={needAlt} status={published ? 'published' : 'draft'} />
-        <AlbumCover tiles={band.tiles} arranged={band.arranged} />
+        <AlbumCover tiles={band.tiles} arranged={band.arranged} items={band.items} />
+        <AlbumCoverEditor />
         <AlbumItems title={album.title} cells={grid.cells} days={(album.order ?? 'oldest') !== 'custom'} />
         <Dialog id="album-add" title="Add to the album">
           <AlbumAdd kind="files" />
@@ -143,6 +154,23 @@ const ORDERS = [
           <Fragment slot="actions">
             <Button variant="primary" icon="restore" data-album-reload="">Reload it</Button>
           </Fragment>
+        </Dialog>
+        <Dialog id="album-viewer" title={reviewing ? 'Review alt text' : 'Viewer'} size="lg" closeLabel="Back to the album">
+          <div data-region="album-viewer">
+            <AlbumViewer item={viewer} review={reviewing}>{viewer && <Fragment slot="info"><MediaInfo item={viewer} review={reviewing} /></Fragment>}</AlbumViewer>
+          </div>
+        </Dialog>
+        <Dialog id="album-add-to" title="Add to another album">
+          <AlbumBulk kind="album" albums={others} />
+        </Dialog>
+        <Dialog id="album-date" title="Set the date taken" size="sm">
+          <AlbumBulk kind="date" />
+        </Dialog>
+        <Dialog id="album-place" title="Set the place" size="sm">
+          <AlbumBulk kind="place" />
+        </Dialog>
+        <Dialog id="album-downloads" title="Downloads" size="sm">
+          <AlbumBulk kind="download" albumDownload={settings.download} />
         </Dialog>
       </div>
     ) : (

@@ -1,0 +1,241 @@
+---
+/**
+ * The album editor's viewer (documentation/gallery/spec.md §9.5): one item large, between Previous and Next, with
+ * its place among the items ("3 of 12"), the actions on it (Set as cover picture, Add to album, Open in the
+ * library, Remove from album) and, beside it, its words (the `info` slot: the page puts MediaInfo there). A
+ * picture with a dark mode version can be seen in either; a video plays; a linked video shows its poster; a text
+ * card shows its words. In a review of alt text (§9.5, §9.8) it goes through only the pictures that need it, with
+ * their thumbnails in a strip below and, once every one has a suggestion, Accept all. Drawn in the viewer dialog's
+ * region, empty until an item is open; scripts/albumViewer.ts opens it, steps through and closes it.
+ * @tier editor
+ * @a11y The dialog is named; the place among the items is a polite status, so stepping is heard. Previous and Next
+ * are named buttons (disabled at the ends); the review's strip is a list of the pictures, the current one marked.
+ * @key Left and Right arrows: the previous and next item (never while typing in a field)
+ * @key Escape: back to the grid, at the item
+ */
+import Button from '../../components/fundamentals/Button.astro';
+import IconButton from '../../components/fundamentals/IconButton.astro';
+import Image from '../../components/fundamentals/Image.astro';
+import Video from '../../components/fundamentals/Video.astro';
+import Switch from '../../components/fundamentals/Switch.astro';
+import Tag from '../../components/fundamentals/Tag.astro';
+import Text from '../../components/fundamentals/Text.astro';
+import ActionBar from '../../components/compounds/ActionBar.astro';
+import { withBase } from '../../design/meta';
+import type { ViewerItem } from '../model/albumViewer';
+
+interface Props {
+  /** The item open (none: the viewer is closed, and draws nothing). */
+  item?: ViewerItem | null;
+  /** It's a review of alt text: only the pictures that need it. */
+  review?: boolean;
+}
+
+const { item = null, review = false } = Astro.props;
+const step = item?.step;
+const where = step ? (review ? `${step.at} of ${step.of} to describe` : `${step.at} of ${step.of}`) : '';
+const pic = item?.picture;
+const media = item?.media;
+const library = media ? withBase(`/_edit/media/?id=${encodeURIComponent(media.id)}`) : null;
+const strip = item?.strip ?? [];
+---
+
+<div class="viewer" data-album-viewer-stage={item ? item.id : ''} data-prev={step?.prev ?? undefined} data-next={step?.next ?? undefined} data-review={review ? '' : undefined}>
+  {
+    item && (
+      <Fragment>
+        <ActionBar align="between" gap="sm">
+          <Text as="span" variant="small" tone="muted">
+            <span role="status" data-viewer-where>{where}</span>
+          </Text>
+          <ActionBar gap="sm">
+            {item.kind !== 'text' && item.kind !== 'missing' && (
+              <Button variant="quiet" size="sm" icon="image" disabled={item.cover} data-viewer-act="cover">
+                {item.cover ? 'The cover picture' : 'Set as cover picture'}
+              </Button>
+            )}
+            {media && (
+              <Button variant="quiet" size="sm" icon="collection" data-viewer-act="add-to">
+                Add to album
+              </Button>
+            )}
+            {library && (
+              <Button variant="quiet" size="sm" icon="external" href={library}>
+                Open in the library
+              </Button>
+            )}
+            <Button variant="quiet" size="sm" icon="delete" data-viewer-act="remove">
+              {item.kind === 'text' ? 'Delete card' : 'Remove from album'}
+            </Button>
+          </ActionBar>
+        </ActionBar>
+        <div class="main">
+          <div class="stage">
+            <IconButton label="Previous" icon="chevron-left" variant="secondary" disabled={!step?.prev} data-viewer-go="prev" />
+            <figure class="art" data-viewer-art>
+              {pic && (
+                <Fragment>
+                  <span class="light">
+                    <Image src={pic.src} srcset={pic.srcset || undefined} poster={pic.poster} alt={pic.alt} width={pic.width} height={pic.height} display="fit" rounded={false} drawing={pic.drawing} />
+                  </span>
+                  {pic.dark && (
+                    <span class="dark">
+                      <Image src={pic.dark.src} srcset={pic.dark.srcset || undefined} poster={pic.dark.poster} alt={pic.alt} width={pic.dark.width} height={pic.dark.height} display="fit" rounded={false} />
+                    </span>
+                  )}
+                </Fragment>
+              )}
+              {item.video && (
+                <Video
+                  src={item.video.type === 'video/mp4' ? item.video.src : undefined}
+                  webm={item.video.type === 'video/webm' ? item.video.src : undefined}
+                  poster={item.video.poster?.src}
+                  width={item.video.width}
+                  height={item.video.height}
+                  label={item.video.title}
+                />
+              )}
+              {item.embed && (
+                <Fragment>
+                  <Image src={item.embed.poster.src} srcset={item.embed.poster.srcset || undefined} alt={item.embed.poster.alt} width={item.embed.poster.width} height={item.embed.poster.height} display="fit" rounded={false} />
+                  <figcaption>
+                    <Tag size="sm" icon="video">{item.embed.provider}</Tag> <Text as="span" variant="small" tone="muted">Plays from {item.embed.provider} on the site.</Text>
+                  </figcaption>
+                </Fragment>
+              )}
+              {item.kind === 'text' && (
+                <div class="card">
+                  <Text variant="lead">{item.text}</Text>
+                  <Button variant="secondary" size="sm" icon="edit" data-viewer-act="text">
+                    Edit the words
+                  </Button>
+                </div>
+              )}
+              {item.kind === 'missing' && <Text tone="negative">This item is no longer in the library: remove it, or put its file back.</Text>}
+            </figure>
+            <IconButton label="Next" icon="chevron-right" variant="secondary" disabled={!step?.next} data-viewer-go="next" />
+          </div>
+          <div class="info">
+            <slot name="info" />
+          </div>
+        </div>
+        {pic?.dark && (
+          <div class="mode">
+            <Switch label="Show its dark mode version" data-viewer-dark="" />
+          </div>
+        )}
+        {review && strip.length > 0 && (
+          <ActionBar align="between" data-viewer-review={JSON.stringify(strip.map((s) => ({ id: s.id, media: s.media })))}>
+            <ul class="strip" aria-label="Pictures to describe">
+              {strip.map((s) => (
+                <li class="thumb" aria-current={s.current ? 'true' : undefined} data-strip-item={s.id}>
+                  {s.thumb && <Image src={s.thumb} alt="" width={s.width} height={s.height} ratio="1/1" display="fit" rounded={false} />}
+                </li>
+              ))}
+            </ul>
+            <span hidden data-viewer-all-wrap>
+              <Button variant="primary" size="sm" icon="sparkles" data-viewer-all="">
+                Accept all suggestions
+              </Button>
+            </span>
+          </ActionBar>
+        )}
+      </Fragment>
+    )
+  }
+</div>
+
+<style>
+  .viewer {
+    display: grid;
+    gap: var(--space-4);
+  }
+
+  .viewer[data-album-viewer-stage=''] {
+    display: none;
+  }
+
+  .main {
+    display: grid;
+    gap: var(--space-5);
+  }
+
+  .stage {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    align-items: center;
+    gap: var(--space-2);
+  }
+
+  .art {
+    display: grid;
+    justify-items: center;
+    gap: var(--space-2);
+    margin: 0;
+    min-inline-size: 0;
+  }
+
+  .card {
+    display: grid;
+    gap: var(--space-3);
+    justify-items: start;
+    padding: var(--space-5);
+    border: var(--border-hairline) solid var(--color-rule);
+    border-radius: var(--radius-md);
+  }
+
+  /* the dark mode version, shown on a dark page when asked */
+  .dark {
+    display: none;
+    color-scheme: dark;
+  }
+
+  .art[data-dark] .light {
+    display: none;
+  }
+
+  .art[data-dark] .dark {
+    display: block;
+    padding: var(--space-2);
+    background: var(--color-bg);
+  }
+
+  .light {
+    display: block;
+  }
+
+  .light,
+  .dark {
+    inline-size: 100%;
+  }
+
+  .strip {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-1);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .thumb {
+    inline-size: var(--size-touch);
+    opacity: var(--opacity-disabled);
+  }
+
+  .thumb[aria-current] {
+    outline: var(--border-focus) solid var(--color-accent);
+    opacity: 1;
+  }
+</style>
+
+<script>
+  import { each } from '../../scripts/page';
+  import { initViewerHost, initViewerStage } from '../scripts/albumViewer';
+  import { initMediaInfo } from '../scripts/mediaInfo';
+
+  each<HTMLElement>('[data-album-editor]', (root, signal) => initViewerHost(root, signal));
+  each<HTMLElement>('[data-album-viewer-stage]', (stage, signal) => initViewerStage(stage, signal));
+  // the info panel is drawn into the viewer's slot, so its script comes with the viewer (always on the page)
+  each<HTMLElement>('[data-media-info]', (form, signal) => initMediaInfo(form, signal));
+</script>

@@ -1,17 +1,18 @@
 ---
 /**
- * An album's cover as its band will look (documentation/gallery/spec.md §9.2, §9.6), read only: its tiles on the
- * band's 12 columns of square cells, labelled Automatic (worked out from the cover picture and the album's first
- * items) or Arranged. Set as cover picture, in the selection bar, changes the lead; Edit cover, which arranges the
- * band in place, comes with phase A4.
+ * An album's cover as its band will look (documentation/gallery/spec.md §9.2, §9.6), at rest: a small band (its
+ * 12 columns of square cells kept, its width capped), labelled Automatic (worked out from the cover picture and the
+ * album's first items) or Arranged, with Edit cover beside it, which arranges the band in place (AlbumCoverEditor).
+ * It carries the album's pictures and videos as Edit cover draws them, so they're fresh after every save.
  * @tier editor
  * @a11y A labelled group: its pictures are decorative here (they're the album's items, named in the grid), and its
- * label says whether it's automatic or arranged.
+ * label says whether it's automatic or arranged. Edit cover is a button that says what it opens.
  */
 import Image from '../../components/fundamentals/Image.astro';
 import Text from '../../components/fundamentals/Text.astro';
 import Tag from '../../components/fundamentals/Tag.astro';
-import ActionBar from '../../components/compounds/ActionBar.astro';
+import Button from '../../components/fundamentals/Button.astro';
+import type { CoverItem } from '../model/cover';
 
 /** A tile of the band, with its thumbnail. */
 export interface CoverTileView {
@@ -40,49 +41,94 @@ interface Props {
   tiles: CoverTileView[];
   /** Arranged by hand (else automatic). */
   arranged: boolean;
+  /** The album's pictures and videos, as Edit cover draws them (none: nothing to arrange yet). */
+  items?: CoverItem[];
 }
 
-const { tiles, arranged } = Astro.props;
+const { tiles, arranged, items = [] } = Astro.props;
+const json = JSON.stringify(items).replace(/</g, '\\u003c');
 ---
 
-<section class="cover" aria-label={`Cover, ${arranged ? 'arranged' : 'automatic'}`} data-region="album-cover">
-  <ActionBar gap="sm">
+<section class="cover" aria-label={`Cover, ${arranged ? 'arranged' : 'automatic'}`} data-region="album-cover" data-album-cover="">
+  <div class="cover-head">
     <Text as="span" variant="label">Cover</Text>
     <Tag size="sm">{arranged ? 'Arranged' : 'Automatic'}</Tag>
-    <Text as="span" variant="small" tone="muted">Select a picture and choose Set as cover picture. Edit cover, to arrange the band, comes later.</Text>
-  </ActionBar>
-  {
-    tiles.length ? (
-      <div class="band">
-        {tiles.map((t) => (
-          <div class="tile" style={`grid-area: ${t.y + 1} / ${t.x + 1} / span ${t.h} / span ${t.w}`}>
-            {t.thumb && <Image src={t.thumb} alt="" width={t.width} height={t.height} display="fill" fill rounded={false} bg={t.bg ? { light: t.bg } : undefined} />}
+  </div>
+  <div class="cover-body">
+    {
+      tiles.length ? (
+        <div class="cover-frame">
+          <div class="band">
+            {tiles.map((t) => (
+              <div class="tile" style={`grid-area: ${t.y + 1} / ${t.x + 1} / span ${t.h} / span ${t.w}`}>
+                {t.thumb && <Image src={t.thumb} alt="" width={t.width} height={t.height} display="fill" fill rounded={false} bg={t.bg ? { light: t.bg } : undefined} />}
+              </div>
+            ))}
           </div>
-        ))}
-      </div>
-    ) : (
-      <Text variant="small" tone="muted">The cover fills itself once the album has pictures.</Text>
-    )
-  }
+        </div>
+      ) : (
+        <Text variant="small" tone="muted">The cover fills itself once the album has pictures.</Text>
+      )
+    }
+    <div class="cover-side">
+      <Text variant="small" tone="muted">
+        {arranged ? 'Arranged by hand. Edit cover to move, resize or swap its tiles, or to go back to the automatic cover.' : 'Worked out from the cover picture and the album’s first items. Select a picture and choose Set as cover picture, or Edit cover to arrange it yourself.'}
+      </Text>
+      <Button variant="secondary" size="sm" icon="crop" disabled={!items.length} data-album-cover-edit="">Edit cover</Button>
+    </div>
+  </div>
+  <script is:inline type="application/json" data-cover-items set:html={json} />
 </section>
 
 <style>
   .cover {
     display: grid;
     gap: var(--space-2);
+  }
+
+  /* hidden while Edit cover arranges it in place */
+  .cover[hidden] {
+    display: none;
+  }
+
+  .cover-head {
+    display: flex;
+    align-items: baseline;
+    gap: var(--space-2);
+  }
+
+  .cover-body {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: start;
+    gap: var(--space-4);
+  }
+
+  /* a small band: its width capped, its cells square, so it reads like the site's at a glance */
+  .cover-frame {
+    flex: 1 1 auto;
+    max-inline-size: var(--c-editor-album-cover-preview);
     container-type: inline-size;
   }
 
   .band {
     display: grid;
-    grid-template-columns: repeat(12, 1fr);
-    grid-auto-rows: calc((100cqi - 11 * var(--space-1)) / 12);
-    gap: var(--space-1);
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+    grid-auto-rows: calc((100cqi - 11 * var(--space-0-5)) / 12);
+    gap: var(--space-0-5);
   }
 
   .tile {
     overflow: hidden;
-    border-radius: var(--radius-sm);
+    border-radius: var(--radius-xs);
     background: var(--color-bg-sunk);
+  }
+
+  .cover-side {
+    display: grid;
+    flex: 1 1 var(--c-editor-thumb);
+    justify-items: start;
+    gap: var(--space-2);
+    max-inline-size: var(--c-editor-inspector);
   }
 </style>

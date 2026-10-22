@@ -33,6 +33,7 @@ import { takenOf } from '../model/exif';
 import { sanitizeSvg } from '../model/svgSanitize';
 import { videoTakenOf } from '../model/videoDate';
 import { findByFingerprint, fingerprintOf, type LibraryMatch } from './libraryIndex';
+import { batchProblem, withBatch, type WordsChange } from '../model/albumViewer';
 
 export const MAX_BYTES = 1.5 * 1024 * 1024;
 export const MAX_SIDE = 2560;
@@ -50,6 +51,13 @@ const WORDS_LATER = /^(library|albums\/.+)$/;
 
 /** Where a picture's or video's files are: private-pages/ for a private page's media, else content/. */
 const baseOf = (id: string) => (existsSync(fileOf(`/private/media/${id}.json`)) ? '/private/media/' : '/content/media/');
+/** A library item's sidecar as it is on disk, with its key and version (the info panel saves against them), or null. */
+export function sidecarOf(id: string): { key: string; version: string; sidecar: ImageMedia | VideoMedia | EmbedMedia } | null {
+  if (!MEDIA_ID.test(id)) return null;
+  const key = `${baseOf(id)}${id}.json`;
+  const doc = readDoc<ImageMedia | VideoMedia | EmbedMedia>(key);
+  return doc ? { key, version: doc.version, sidecar: doc.value } : null;
+}
 /** The folder an upload goes to: a private page's or a private album's own folder is in private-pages/. */
 export function folderOf(owner: string): string {
   const page = /^(articles|albums)\/(.+)$/.exec(owner);
@@ -353,11 +361,37 @@ export async function upload(u: Upload): Promise<Result & { id?: string; removed
   return r.ok ? { ...r, id: `${u.owner}/${name}`, ...(master.removed?.length ? { removed: master.removed } : {}) } : r;
 }
 
-export async function saveSidecar(id: string, sidecar: ImageMedia | VideoMedia, ifMatch: Record<string, string | null>): Promise<Result> {
+export async function saveSidecar(id: string, sidecar: ImageMedia | VideoMedia | EmbedMedia, ifMatch: Record<string, string | null>): Promise<Result> {
   if (!MEDIA_ID.test(id)) return refuse('content/media', 'not a media id');
   const key = `${baseOf(id)}${id}.json`;
-  const current = readDoc<ImageMedia | VideoMedia>(key);
+  const current = readDoc<ImageMedia | VideoMedia | EmbedMedia>(key);
   if (!current) return refuse(key.slice(1), "doesn't exist");
+  if (current.value.kind === 'embed') {
+    // a linked video's provider, ID, shape, length, poster and fingerprint are its link's: only its words change here
+    const v = current.value;
+    const s = sidecar as Partial<EmbedMedia>;
+    const word = (k: 'alt' | 'caption' | 'description' | 'place' | 'taken' | 'credit') => (s[k]?.trim() ? { [k]: s[k]!.trim() } : {});
+    const next: EmbedMedia = {
+      kind: 'embed',
+      provider: v.provider,
+      id: v.id,
+      title: (s.title ?? v.title).trim(),
+      ...(v.shape ? { shape: v.shape } : {}),
+      ...(v.duration ? { duration: v.duration } : {}),
+      poster: v.poster,
+      ...word('alt'),
+      ...word('caption'),
+      ...word('description'),
+      ...word('place'),
+      ...word('taken'),
+      ...word('credit'),
+      ...(s.licence?.name ? { licence: s.licence } : {}),
+      ...(s.source ? { source: s.source } : {}),
+      ...(v.fingerprint ? { fingerprint: v.fingerprint } : {}),
+      visibility: s.visibility ?? v.visibility,
+    };
+    return commit({ changes: [{ key, bytes: jsonBytes(next) }], ifMatch: { [key]: ifMatch[key] ?? null } });
+  }
   if (current.value.kind === 'video') {
     // a video's file, size, length and poster are its upload's: the details form changes only its words
     const v = current.value;
@@ -394,6 +428,26 @@ export async function saveSidecar(id: string, sidecar: ImageMedia | VideoMedia, 
 }
 
 // ---------- videos (documentation/content/media.md §12) ----------
+
+/**
+ * Several library items' words at once (gallery spec §9.3 Set the date, Set the place; §9.5 Accept all): each
+ * sidecar read where it lives, changed, and all saved in one transaction (one check, all or nothing).
+ */
+export async function saveWordsMany(changes: readonly WordsChange[]): Promise<Result> {
+  const problem = batchProblem(changes);
+  if (problem) return refuse('content/media', problem);
+  const out: Change[] = [];
+  const ifMatch: Record<string, string | null> = {};
+  for (const c of changes) {
+    if (!MEDIA_ID.test(c.id)) return refuse('content/media', 'not a media id');
+    const key = `${baseOf(c.id)}${c.id}.json`;
+    const doc = readDoc<Record<string, unknown>>(key);
+    if (!doc) return refuse(key.slice(1), "doesn't exist");
+    out.push({ key, bytes: jsonBytes(withBatch(doc.value, c.words)) });
+    ifMatch[key] = doc.version;
+  }
+  return commit({ changes: out, ifMatch });
+}
 
 export interface VideoUpload {
   file: { name: string; bytes: Buffer };

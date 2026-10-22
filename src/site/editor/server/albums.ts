@@ -16,7 +16,7 @@ import { today, unique } from '../model/ids';
 import { childSlugs, findHub, hubs, nodeIds, nodeOf, place, sectionOf, unplace } from '../model/structure';
 import { placePrivate, privateNode, sectionOrder, unplacePrivate } from '../model/access';
 import { albumLifecycleRefusal, showingPages, type AlbumChange } from '../model/albumBlock';
-import { albumIdFrom, newAlbum } from '../model/album';
+import { addItems, albumIdFrom, newAlbum } from '../model/album';
 
 const ID = /^[a-z0-9]+(-[a-z0-9]+)*$/;
 
@@ -123,6 +123,21 @@ export async function saveAlbum(req: SaveAlbum): Promise<Result> {
     if (why) return refuse(key, why, 'status');
   }
   return commit({ changes: [{ key, bytes: jsonBytes(next) }], ifMatch: { [key]: req.ifMatch[key] ?? cur.version } });
+}
+
+/**
+ * Adds library items to another album (§9.3 Add to album): at its end, each once (one already there is skipped);
+ * they stay in the album they were chosen in. Answers how many went in and how many were there already.
+ */
+export async function addToAlbum(id: string, media: readonly string[]): Promise<Result & { added?: number; skipped?: number }> {
+  if (!ID.test(id)) return refuse(albumKey(id), 'not an album id');
+  const key = albumKey(id);
+  const cur = readDoc<Album>(key);
+  if (!cur) return refuse(key, "doesn't exist");
+  const { album, added, skipped } = addItems(cur.value, media);
+  if (!added.length) return { ok: true, versions: { [key]: cur.version }, added: 0, skipped: skipped.length };
+  const r = await saveAlbum({ id, album, ifMatch: { [key]: cur.version } });
+  return r.ok ? { ...r, added: added.length, skipped: skipped.length } : r;
 }
 
 /** Deletes an album (§9.1): its file and its node go, its pictures stay in the library. Refused while a page shows it (V51). */

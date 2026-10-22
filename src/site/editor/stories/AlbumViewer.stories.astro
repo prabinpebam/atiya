@@ -1,0 +1,30 @@
+---
+import Example from '../../library/Example.astro';
+import AlbumViewer from '../components/AlbumViewer.astro';
+import MediaInfo from '../components/MediaInfo.astro';
+import { VIEWER_EMBED, VIEWER_MISSING, VIEWER_PICTURE, VIEWER_REVIEW, VIEWER_TEXT, VIEWER_VIDEO } from './samples';
+---
+
+<Example title="A picture" description="The picture large, its dark mode version a switch away, Previous and Next beside it and its words in the info panel." layout="block">
+  <AlbumViewer item={VIEWER_PICTURE}><Fragment slot="info"><MediaInfo item={VIEWER_PICTURE} /></Fragment></AlbumViewer>
+</Example>
+
+<Example title="A video" description="The video with its poster and controls; its play settings are this album's." layout="block">
+  <AlbumViewer item={VIEWER_VIDEO}><Fragment slot="info"><MediaInfo item={VIEWER_VIDEO} /></Fragment></AlbumViewer>
+</Example>
+
+<Example title="A linked video" description="Its poster and its provider: it plays from the provider on the site." layout="block">
+  <AlbumViewer item={VIEWER_EMBED}><Fragment slot="info"><MediaInfo item={VIEWER_EMBED} /></Fragment></AlbumViewer>
+</Example>
+
+<Example title="A text card" description="Its words, with Edit the words." layout="block">
+  <AlbumViewer item={VIEWER_TEXT}><Fragment slot="info"><MediaInfo item={VIEWER_TEXT} /></Fragment></AlbumViewer>
+</Example>
+
+<Example title="A missing item" description="Its library item is gone: Remove from album is what's left." layout="block">
+  <AlbumViewer item={VIEWER_MISSING}><Fragment slot="info"><MediaInfo item={VIEWER_MISSING} /></Fragment></AlbumViewer>
+</Example>
+
+<Example title="Review alt text" description="Only the pictures that need alt text, in a strip; Enter saves and moves on." layout="block">
+  <AlbumViewer item={VIEWER_REVIEW} review><Fragment slot="info"><MediaInfo item={VIEWER_REVIEW} review /></Fragment></AlbumViewer>
+</Example>

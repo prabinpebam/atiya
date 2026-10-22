@@ -1,0 +1,21 @@
+---
+import Example from '../../library/Example.astro';
+import MediaInfo from '../components/MediaInfo.astro';
+import { VIEWER_EMBED, VIEWER_PICTURE, VIEWER_REVIEW, VIEWER_VIDEO } from './samples';
+---
+
+<Example title="A picture's words" description="Caption, description, alt text with a suggestion, date taken and place, saved on the picture; Downloads in this album; where else it's used; its file." layout="block">
+  <MediaInfo item={VIEWER_PICTURE} />
+</Example>
+
+<Example title="A video's" description="Its title, and this album's Downloads, Play by itself and Loop." layout="block">
+  <MediaInfo item={VIEWER_VIDEO} />
+</Example>
+
+<Example title="A linked video's" description="Its title and words; its poster is the site's own." layout="block">
+  <MediaInfo item={VIEWER_EMBED} />
+</Example>
+
+<Example title="In a review" description="A large picture without alt text: Make it standard is offered, and Enter in the alt text moves on." layout="block">
+  <MediaInfo item={VIEWER_REVIEW} review />
+</Example>
