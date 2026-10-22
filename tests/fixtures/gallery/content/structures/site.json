@@ -27,6 +27,22 @@
               "type": "article",
               "id": "fixture-album-note"
             }
+          },
+          {
+            "id": "fixture-captions",
+            "kind": "item",
+            "item": {
+              "type": "article",
+              "id": "fixture-captions"
+            }
+          },
+          {
+            "id": "fixture-story",
+            "kind": "item",
+            "item": {
+              "type": "article",
+              "id": "fixture-story"
+            }
           }
         ]
       }

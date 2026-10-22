@@ -8,6 +8,7 @@
  *   node scripts/test-run.mjs --by agent --purpose "album items" -- --project=editor tests/e2e/editor-albums.spec.ts
  */
 import { expect, test, type Page } from '@playwright/test';
+import AxeBuilder from '@axe-core/playwright';
 import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import sharp from 'sharp';
@@ -332,5 +333,53 @@ test.describe('editor: albums', () => {
     expect(showcase().phone).toBeUndefined();
     expect(showcase().tiles.map((t) => t.item)).toContain('p03');
     await expect(page.locator('[data-arranger-phone-arrange]')).toBeVisible();
+  });
+});
+
+/** Axe on the album's views (plan G5 and G6, Definition of Done row 23): its own describe, so a failure above can't skip it. */
+test.describe('editor: albums', () => {
+  test.beforeEach(() => reset());
+  test.afterAll(() => reset());
+
+  test('axe: the album views (Items with an item chosen, the add forms, Settings) and Up front, in light and dark', async ({ page }) => {
+    const serious = async (scope: string, where: string) => {
+      // a dialog or pane has finished coming in (axe would read its text half-faded)
+      await page.waitForFunction(() => document.getAnimations().every((a) => a.playState !== 'running'));
+      const r = await new AxeBuilder({ page }).include(scope).analyze();
+      return r.violations.filter((v) => v.impact === 'serious' || v.impact === 'critical').map((v) => `${where}: ${v.id}: ${v.nodes.map((n) => n.target.join(' ')).join(', ')}`);
+    };
+    const found: string[] = [];
+    for (const scheme of ['light', 'dark'] as const) {
+      await page.emulateMedia({ colorScheme: scheme });
+      // Items, an item chosen and its details
+      await openItems(page, 'p03');
+      await expect(page.locator('[data-album-details="p03"]')).toBeVisible();
+      found.push(...(await serious('main', `${scheme} items`)));
+      // the add forms
+      for (const [add, id] of [['upload', '#album-upload'], ['link', '#album-link']] as const) {
+        await page.locator(`[data-album-add="${add}"]`).click();
+        await expect(page.locator(id)).toBeVisible();
+        found.push(...(await serious(id, `${scheme} ${add}`)));
+        await page.keyboard.press('Escape');
+        await expect(page.locator(id)).toBeHidden();
+      }
+      // Settings: the Page tab's Album settings
+      await page.goto(`/_edit/articles/${ALBUM}/`);
+      await page.getByRole('tab', { name: 'Page', exact: true }).click();
+      await page.locator('[data-section-pick="album"]').click();
+      await expect(page.locator('[data-album-settings]')).toBeVisible();
+      found.push(...(await serious('[data-album-settings]', `${scheme} settings`)));
+      // Up front: the wide band with a tile chosen, then the phone's
+      await openFront(page);
+      await arrTile(page, 'p01').click();
+      await expect(arrTile(page, 'p01')).toHaveAttribute('aria-pressed', 'true');
+      await expect(page.locator('[data-arranger-chosen-place]')).toBeVisible();
+      found.push(...(await serious('main', `${scheme} up front`)));
+      await page.locator('[data-arranger-show="phone"]').click();
+      await expect(page.locator('[data-arranger-phone-arrange]')).toBeVisible();
+      await expect(page.locator('[data-arranger-show="phone"]')).toHaveAttribute('aria-pressed', 'true');
+      found.push(...(await serious('main', `${scheme} up front, phones`)));
+    }
+    expect(found).toEqual([]);
   });
 });

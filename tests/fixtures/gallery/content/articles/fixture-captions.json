@@ -1,0 +1,31 @@
+{
+  "id": "fixture-captions",
+  "type": "article",
+  "kind": "gallery",
+  "slug": "fixture-captions",
+  "title": "Doors and windows",
+  "summary": "A made-up album that shows each picture's caption under its cell.",
+  "status": "published",
+  "visibility": "public",
+  "updatedAt": "2026-06-03",
+  "locale": "en",
+  "body": [],
+  "album": {
+    "items": [
+      {
+        "id": "door",
+        "media": "articles/fixture-album/p04",
+        "caption": "A red door, freshly painted."
+      },
+      {
+        "id": "top",
+        "media": "articles/fixture-album/p01"
+      },
+      {
+        "id": "noodles",
+        "media": "articles/fixture-album/p06"
+      }
+    ],
+    "captions": true
+  }
+}

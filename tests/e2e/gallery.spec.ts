@@ -148,6 +148,91 @@ test.describe('gallery: lightbox', () => {
     await expect(dialog.locator('[data-lightbox-caption]')).toHaveText('The plan, drawn to scale.');
   });
 
+  // plan DoD 2: a drawing stays an SVG, sharp at any size. The zoomed stage is measured against the same
+  // drawing as a raster would show it (drawn at its fitted size, then enlarged 4 times): a vector's edges step
+  // within a pixel or two, a raster's spread over about four
+  test('a drawing zoomed to 400% stays sharp: its SVG redrawn, edges as crisp as at its own size', async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 900 });
+    await page.emulateMedia({ colorScheme: 'light' });
+    await page.goto(ALBUM);
+    const dialog = await openAt(page, 'plan');
+    await expect(stage(dialog)).toHaveAttribute('data-kind', 'drawing');
+    const img = stageImage(dialog);
+    await expect.poll(() => srcOf(img)).toMatch(/\.svg$/);
+    await expect.poll(() => img.evaluate((i) => (i as HTMLImageElement).complete && (i as HTMLImageElement).naturalWidth > 0)).toBe(true);
+    const zoomIn = dialog.getByRole('button', { name: 'Zoom in' });
+    while (await zoomIn.isEnabled()) await zoomIn.click();
+    await expect(status(dialog)).toHaveText('Zoomed to 400%');
+    // the transform has settled at 4 times, and the browser has had time to draw it again
+    await expect
+      .poll(() =>
+        img.evaluate((i) => {
+          const m = new DOMMatrix(getComputedStyle(i).transform);
+          return Math.abs(m.a - 4) < 0.01 && i.getAnimations().length === 0;
+        }),
+      )
+      .toBe(true);
+    await page.evaluate(() => new Promise((done) => requestAnimationFrame(() => requestAnimationFrame(() => setTimeout(done, 500)))));
+
+    const box = (await stage(dialog).boundingBox())!;
+    const W = 640;
+    const H = 200;
+    const shot = await page.screenshot({ clip: { x: Math.round(box.x + box.width / 2 - W / 2), y: Math.round(box.y + box.height / 2 - H / 2), width: W, height: H } });
+    const { zoomed, raster } = await img.evaluate(
+      async (el, { b64, W, H }) => {
+        const i = el as HTMLImageElement;
+        // the sharpest step between neighbouring pixels in a row or column, against that line's contrast
+        const crisp = (d: Uint8ClampedArray, w: number, h: number) => {
+          const lum = (p: number) => 0.2126 * d[p] + 0.7152 * d[p + 1] + 0.0722 * d[p + 2];
+          let best = 0;
+          const line = (at: (k: number) => number, n: number) => {
+            let lo = 255;
+            let hi = 0;
+            let step = 0;
+            let prev = lum(at(0));
+            for (let k = 0; k < n; k++) {
+              const v = lum(at(k));
+              lo = Math.min(lo, v);
+              hi = Math.max(hi, v);
+              if (k) step = Math.max(step, Math.abs(v - prev));
+              prev = v;
+            }
+            if (hi - lo > 60) best = Math.max(best, step / (hi - lo));
+          };
+          for (let y = 0; y < h; y++) line((x) => (y * w + x) * 4, w);
+          for (let x = 0; x < w; x++) line((y) => (y * w + x) * 4, h);
+          return best;
+        };
+        const pixels = (src: CanvasImageSource, sx: number, sy: number) => {
+          const c = new OffscreenCanvas(W, H);
+          const g = c.getContext('2d')!;
+          g.drawImage(src, sx, sy, W, H, 0, 0, W, H);
+          return g.getImageData(0, 0, W, H).data;
+        };
+        const bytes = Uint8Array.from(atob(b64), (ch) => ch.charCodeAt(0));
+        const zoomed = crisp(pixels(await createImageBitmap(new Blob([bytes], { type: 'image/png' })), 0, 0), W, H);
+        // the same drawing as a raster: drawn at its fitted size, enlarged 4 times, the same middle cut out
+        const fw = i.offsetWidth;
+        const fh = i.offsetHeight;
+        const small = new OffscreenCanvas(fw, fh);
+        const sg = small.getContext('2d')!;
+        // on paper, as the light lightbox's scrim is
+        sg.fillStyle = '#fbfaf7';
+        sg.fillRect(0, 0, fw, fh);
+        sg.drawImage(i, 0, 0, fw, fh);
+        const big = new OffscreenCanvas(fw * 4, fh * 4);
+        const bg = big.getContext('2d')!;
+        bg.imageSmoothingQuality = 'high';
+        bg.drawImage(small, 0, 0, fw * 4, fh * 4);
+        const raster = crisp(pixels(big, fw * 2 - W / 2, fh * 2 - H / 2), W, H);
+        return { zoomed, raster };
+      },
+      { b64: shot.toString('base64'), W, H },
+    );
+    expect(raster, 'the raster stand-in has edges to measure').toBeGreaterThan(0);
+    expect(zoomed, `the zoomed drawing's sharpest edge (${zoomed.toFixed(2)}) against a 4× raster's (${raster.toFixed(2)})`).toBeGreaterThan(Math.max(0.45, raster * 1.3));
+  });
+
   test('an animated picture plays with Pause over it, and starts paused on its still under reduced motion', async ({ page }) => {
     await page.setViewportSize({ width: 1280, height: 900 });
     await page.goto(ALBUM);

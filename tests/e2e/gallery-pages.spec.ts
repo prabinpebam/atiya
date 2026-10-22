@@ -138,6 +138,78 @@ test.describe('gallery', () => {
     await expect(page.locator('main header').first()).toContainText(/20\d\d/);
     await noSeriousViolations(page);
   });
+
+  test('captions under the grid\'s cells when the album asks: its own or its picture\'s, under the picture, each row level, room kept for one without', async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 900 });
+    // the fixture album doesn't ask: no caption under its cells
+    await page.goto('/gallery/fixture-album/');
+    await expect(page.locator('.album-grid[data-layout="grid"]')).toBeVisible();
+    await expect(page.locator('.album-grid[data-captions]')).toHaveCount(0);
+    await expect(page.locator('[data-cell-caption]')).toHaveCount(0);
+
+    await page.goto('/gallery/fixture-captions/');
+    await expect(page.locator('.album-grid[data-layout="grid"][data-captions]')).toBeVisible();
+    await expect(page.locator('[data-justified][data-ready]')).toBeAttached();
+    const cells = page.locator('li[data-album-cell]');
+    expect(await cells.evaluateAll((els) => els.map((e) => e.id))).toEqual(['item-door', 'item-top', 'item-noodles']);
+    // the item's own caption, else its picture's; an item without one keeps its room
+    await expect(page.locator('#item-door [data-cell-caption]')).toHaveText('A red door, freshly painted.');
+    await expect(page.locator('#item-top [data-cell-caption]')).toHaveText('The view from the top, kept large.');
+    await expect(page.locator('#item-noodles [data-cell-caption]')).toHaveText('');
+    const boxes = await cells.evaluateAll((els) =>
+      els.map((el) => {
+        const box = (s: string) => el.querySelector(s)!.getBoundingClientRect();
+        const [link, caption] = [box('a[data-lightbox="album"]'), box('[data-cell-caption]')];
+        return { top: link.top, linkBottom: link.bottom, linkHeight: link.height, captionTop: caption.top, captionHeight: caption.height };
+      }),
+    );
+    for (const b of boxes) {
+      expect(b.captionTop, 'the caption is under its picture').toBeGreaterThanOrEqual(b.linkBottom - 1);
+      expect(b.captionHeight, 'every caption keeps the same room').toBeCloseTo(boxes[0].captionHeight, 0);
+    }
+    // cells in a row share their picture's height, so the captions line up
+    for (const [i, a] of boxes.entries())
+      for (const z of boxes.slice(i + 1)) if (Math.abs(a.top - z.top) < 2) expect(Math.abs(a.linkHeight - z.linkHeight), 'a row is level').toBeLessThan(2);
+    await noSeriousViolations(page);
+  });
+
+  test('a Story shows every item whole, one after another, with its words under it; no captions under cells', async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 900 });
+    await page.goto('/gallery/fixture-story/');
+    await expect(page.locator('.album-grid[data-layout="story"]')).toBeVisible();
+    await expect(page.locator('[data-justified]')).toHaveCount(0);
+    await expect(page.locator('[data-cell-caption]')).toHaveCount(0);
+    const cells = page.locator('li[data-album-cell]');
+    expect(await cells.evaluateAll((els) => els.map((e) => e.id))).toEqual(['item-cloud', 'item-flags', 'item-map']);
+    // every item whole: its picture drawn at its own shape, never cropped to a cell
+    for (const cell of await cells.all()) {
+      const img = cell.locator('a[data-lightbox="album"] img').first();
+      await expect(img).toBeVisible();
+      const { w, h, shape, contained } = await img.evaluate((i: HTMLImageElement) => {
+        const li = i.closest<HTMLElement>('[data-album-cell]')!;
+        const r = i.getBoundingClientRect();
+        return { w: r.width, h: r.height, shape: Number(li.dataset.width) / Number(li.dataset.height), contained: getComputedStyle(i).objectFit === 'contain' };
+      });
+      // a drawing is fitted whole into its box; a picture's box is its own shape, so nothing is cut off
+      if (!contained) expect(Math.abs(w / h - shape) / shape, 'drawn whole, at its own shape').toBeLessThan(0.02);
+    }
+    // one after another, down the page
+    const tops = await cells.evaluateAll((els) => els.map((e) => e.getBoundingClientRect()).map((r) => ({ top: r.top, bottom: r.bottom })));
+    for (let i = 1; i < tops.length; i++) expect(tops[i].top).toBeGreaterThanOrEqual(tops[i - 1].bottom - 1);
+    // its words under it: the description, the caption, when and where it was taken
+    const words = (id: string) => page.locator(`#item-${id} figcaption.words`);
+    await expect(words('cloud')).toContainText('The cloud sat on the water all morning.');
+    await expect(words('cloud')).toContainText('By noon it had lifted, and the islands showed.');
+    await expect(words('cloud')).toContainText('Loktak Lake');
+    await expect(words('cloud').locator('time')).toContainText(/Taken \w/);
+    await expect(words('flags')).toContainText('Prayer flags over the pass on the way down.');
+    await expect(words('map')).toContainText('The way round the lake, drawn from memory.');
+    for (const id of ['cloud', 'flags', 'map']) {
+      const [pic, text] = await Promise.all([page.locator(`#item-${id} a[data-lightbox="album"]`).boundingBox(), words(id).boundingBox()]);
+      expect(text!.y, `${id}'s words are under it`).toBeGreaterThanOrEqual(pic!.y + pic!.height - 1);
+    }
+    await noSeriousViolations(page);
+  });
 });
 
 test.describe('gallery: without scripts', () => {

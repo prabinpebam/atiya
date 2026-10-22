@@ -84,6 +84,15 @@ describe('a test build reads the real content and the fixture album as one', () 
     expect(c.videos.get('articles/fixture-album/clip')?.captions).toHaveLength(1);
   });
 
+  it('with an album that shows captions under its cells and one told as a Story, after it in the section (plan DoD 12)', () => {
+    const talks = c.routes.find((r) => r.node.id === 'talks')!.node as { children: { id: string }[] };
+    expect(talks.children.map((n) => n.id)).toEqual(expect.arrayContaining(['fixture-album', 'fixture-album-note', 'fixture-captions', 'fixture-story']));
+    expect(c.articles.get('fixture-captions')?.album).toMatchObject({ captions: true });
+    expect(c.articles.get('fixture-captions')?.album?.layout).toBeUndefined();
+    expect(c.articles.get('fixture-story')?.album).toMatchObject({ layout: 'story' });
+    for (const id of ['fixture-captions', 'fixture-story']) expect(c.routes.find((r) => r.node.id === id)?.path).toBe(`/gallery/${id}/`);
+  });
+
   it('with its masters keyed as public content, sized, and found in the fixture', () => {
     expect(snap.masters.has('/content/media/articles/fixture-album/clip.en.vtt')).toBe(true);
     expect(snap.sizes?.get('/content/media/articles/fixture-album/plan.svg')).toBe(readFileSync(join(ALBUM, 'plan.svg')).length);

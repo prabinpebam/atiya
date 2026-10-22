@@ -206,6 +206,26 @@ if (countsKB) {
     failed = true;
   }
 }
+// an album band's play-and-pause script (documentation/gallery/spec.md §11): loaded with a page that shows a
+// band, small, and never by a page without one; what it shares with pages without a band isn't its cost
+const BAND_BUDGET_KB = 3;
+const band = staticClosure(js.filter((f) => /^AlbumBand\.astro_astro_type_script/.test(f)));
+if (band.length) {
+  const htmlOf = (p) => readFileSync(join(DIST, p), 'utf8');
+  const withoutBand = pages('').filter((p) => !htmlOf(p).includes('data-album-band'));
+  const elsewhere = new Set(withoutBand.flatMap(eagerScripts));
+  const bandKB = sum(band.filter((f) => !elsewhere.has(f)));
+  console.log(`album band:       ${bandKB.toFixed(2)} KB gz, with a page that shows a band (budget ${BAND_BUDGET_KB} KB)`);
+  const stray = band.filter((f) => /^AlbumBand\./.test(f) && elsewhere.has(f));
+  if (stray.length) {
+    console.error(`✗ a page without an album band loads its script: ${stray.join(', ')}`);
+    failed = true;
+  }
+  if (bandKB > BAND_BUDGET_KB) {
+    console.error('✗ the album band\'s script is over budget');
+    failed = true;
+  }
+} else console.log('album band:       not in this build');
 if (gameKB > GAME_BUDGET_KB) {
   console.error(`✗ game JS over budget`);
   failed = true;
