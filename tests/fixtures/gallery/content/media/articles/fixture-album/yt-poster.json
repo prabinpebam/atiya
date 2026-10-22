@@ -2,5 +2,11 @@
   "kind": "image",
   "file": "yt-poster.webp",
   "alt": "A title card: the talk.",
-  "visibility": "public"
+  "visibility": "public",
+  "facts": {
+    "width": 1280,
+    "height": 720,
+    "bg": "rgb(122 145 94)",
+    "bytes": 5810
+  }
 }

@@ -123,7 +123,7 @@ export function initSections(root: HTMLElement, signal: AbortSignal) {
       const slug = get('slug');
       if (slug !== undefined) fields.slug = slug;
       const view = get('view');
-      if (view === 'features' || view === 'list' || view === 'tiles' || view === 'bento') fields.view = view;
+      if (view === 'features' || view === 'list' || view === 'tiles' || view === 'bento' || view === 'albums') fields.view = view;
       let next = updateHub(state.structure, hub, fields);
       // its entry in the top navigation (the same menu the Navigation screen edits)
       if (nav) next = setInMenu(next, hub, nav.checked);
@@ -135,7 +135,7 @@ export function initSections(root: HTMLElement, signal: AbortSignal) {
       const id = unique(slugify(title), nodeIds(state.structure));
       const summary = get('summary');
       const v = get('view');
-      const view = v === 'list' || v === 'tiles' || v === 'bento' ? v : 'features';
+      const view = v === 'list' || v === 'tiles' || v === 'bento' || v === 'albums' ? v : 'features';
       // a section is always directly under the home page (three levels: V22), after the others
       const added = addHub(state.structure, state.structure.home.id, { id, kind: 'hub', slug: slugify(title), title, ...(summary ? { summary } : {}), view, children: [] });
       const go = new URL(location.href);

@@ -1,0 +1,332 @@
+---
+/**
+ * An album's band on the Gallery's Albums view (documentation/gallery/spec.md §5, §6): the album's title, which
+ * leads to it, with how much it holds and when; the pictures and videos its owner put up front, laid on a grid of
+ * square cells 12 columns across (6 on a phone, in the phone's own arrangement); its short description; and
+ * See all. Each tile is one link to its item on the album page. A video or an animated picture set to play plays
+ * in its tile, muted, while half of it is in view (scripts/albumBand.ts); the band's Pause stops them for the
+ * visit. A dinkus parts it from the band before.
+ * @tier compound
+ * @a11y The band is an article named by its title, a heading whose link opens the album; the tiles are a list, in reading order (row by row), each one link named by its item: the alt text, ", animated" for an animated picture, "Video: title (length)" for a video.
+ * @a11y Pause is a toggle button (aria-pressed), after the counts and never inside a tile; it shows only where something can play, and nothing plays under reduced motion or Save-Data.
+ * @a11y See all names its album ("See all 21 in Summer sketches"); every link is at least 44 px.
+ */
+import Heading from '../fundamentals/Heading.astro';
+import Text from '../fundamentals/Text.astro';
+import Image from '../fundamentals/Image.astro';
+import Icon from '../fundamentals/Icon.astro';
+import Link from '../fundamentals/Link.astro';
+import Button from '../fundamentals/Button.astro';
+import Divider from '../fundamentals/Divider.astro';
+import { stableId } from '../../design/stableId';
+import { placeStyle, seeAll, tileSizes, type BandTile } from '../../scripts/albumBandRules';
+
+interface Props {
+  /** The album page's ID (Pause is kept for the visit under it). */
+  id: string;
+  /** The album's title. */
+  title: string;
+  /** The album page's address. */
+  href: string;
+  /** What it holds, in words ("17 pictures, 3 videos, 1 drawing"). */
+  counts: string;
+  /** When its pictures were taken ("June to August 2024"). */
+  dates?: string;
+  /** Its short description, under the tiles. */
+  summary?: string;
+  /** The tiles up front, in reading order, each with its places on the wide and the phone grid. */
+  tiles: BandTile[];
+  /** How many items the album holds (See all's count). */
+  total: number;
+  /** The first band on the page: its largest tile loads first. */
+  priority?: boolean;
+  /** Draws the break (a dinkus) above it: every band but the first. */
+  rule?: boolean;
+  /** The title's heading level: 2 on a section's view; in a page's body (the album block), one below the heading it follows. */
+  headingLevel?: 2 | 3 | 4 | 5;
+}
+
+const { id, title, href, counts, dates, summary, tiles, total, priority = false, rule = false, headingLevel = 2 } = Astro.props;
+const headId = `album-band-${stableId(Astro, 'AlbumBand')}`;
+const plays = tiles.some((t) => t.motion);
+const more = seeAll(total, tiles.length, title);
+const largest = priority ? tiles.reduce((best, t, i) => (t.place.w * t.place.h > tiles[best]!.place.w * tiles[best]!.place.h ? i : best), 0) : -1;
+// a drawing without a dark version sits on paper in the dark, so its ink still reads
+const bgOf = (t: BandTile) => {
+  const light = t.still?.bg;
+  const dark = t.still?.dark?.bg ?? (t.kind === 'drawing' ? 'var(--c-album-drawing-paper)' : light);
+  return light && dark ? { light, dark } : undefined;
+};
+---
+
+{
+  rule && (
+    <div class="break">
+      <Divider variant="dinkus" spacing="sm" />
+    </div>
+  )
+}
+<article class="album-band" aria-labelledby={headId} data-album-band data-album-id={id} data-plays={plays ? '' : undefined}>
+  <header class="head">
+    <Heading level={headingLevel} size="h2" id={headId}><a class="title" href={href}>{title}</a></Heading>
+    <div class="facts" data-band-counts>
+      <Text variant="meta" as="span">{counts}</Text>
+      {dates && <Text variant="meta" as="span" tone="muted">{dates}</Text>}
+      {
+        plays && (
+          <span class="pause" data-band-pause-slot hidden>
+            <Button variant="quiet" size="sm" icon="pause" aria-pressed="false" data-band-pause="">Pause</Button>
+          </span>
+        )
+      }
+    </div>
+  </header>
+  <ul class="grid" data-band-grid>
+    {
+      tiles.map((t, i) => (
+        <li class="tile" style={placeStyle(t.place, t.phone)} data-tile data-item-id={t.id} data-kind={t.kind} data-play={t.motion ? '' : undefined} data-on-phones={t.phone ? undefined : 'false'}>
+          <a
+            class="link"
+            href={t.href}
+            aria-label={t.name}
+            data-full={t.full?.src}
+            data-full-dark={t.full?.dark}
+            data-thumb={t.full?.thumb}
+            data-thumb-dark={t.full?.thumbDark}
+            data-caption={t.full?.caption}
+            data-alt={t.full?.alt}
+            data-album-title={title}
+          >
+            {t.still ? (
+              <Image src={t.still.src} srcset={t.still.srcset} alt="" width={t.still.width} height={t.still.height} sizes={tileSizes(t.place.w, t.phone?.w)} fill display={t.display ?? (t.kind === 'drawing' ? 'fit' : 'fill')} focus={t.focus} dark={t.still.dark} bg={bgOf(t)} drawing={t.kind === 'drawing'} priority={i === largest} />
+            ) : (
+              <span class="blank" />
+            )}
+            {t.motion?.kind === 'video' && <video class="motion" muted loop playsinline preload="none" aria-hidden="true" data-band-motion data-src={t.motion.src} data-type={t.motion.type} />}
+            {t.motion?.kind === 'animated' && (
+              <picture class="motion" aria-hidden="true" data-band-motion>
+                {t.motion.dark && <source data-srcset={t.motion.dark} media="(prefers-color-scheme: dark)" data-dark="" />}
+                <img class="moving" alt="" data-src={t.motion.src} data-srcset={t.motion.srcset} sizes={tileSizes(t.place.w, t.phone?.w)} width={t.still?.width} height={t.still?.height} />
+              </picture>
+            )}
+            {t.kind === 'animated' && (
+              <span class="badge" aria-hidden="true">
+                <Icon name="animated" size="inherit" tone="tonal" />
+              </span>
+            )}
+            {(t.kind === 'video' || t.kind === 'embed') && (
+              <span class="badge" aria-hidden="true">
+                <Icon name="play" size="inherit" tone="tonal" />
+                {t.length}
+              </span>
+            )}
+          </a>
+        </li>
+      ))
+    }
+  </ul>
+  {
+    summary && (
+      <div class="summary">
+        <Text variant="standfirst" narrow>
+          {summary}
+        </Text>
+      </div>
+    )
+  }
+  <div class="more">
+    <Link href={href} variant="standalone" data-see-all="">
+      {more.text}
+      <span class="sr-only">{more.label.slice(more.text.length)}</span>
+    </Link>
+  </div>
+</article>
+
+<style>
+  .break {
+    margin-block: calc(var(--c-album-band-space) / 2);
+  }
+
+  /* the band measures itself: its cells are a twelfth of its own width (a sixth on a phone), however wide its column */
+  .album-band {
+    display: grid;
+    gap: var(--space-5);
+    container-type: inline-size;
+  }
+
+  .head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: var(--space-2) var(--space-4);
+  }
+
+  /* underlined only under the pointer or a press: the line waits, clear, until then */
+  .title {
+    display: inline-block;
+    min-block-size: var(--size-touch);
+    color: var(--color-text);
+    text-decoration: underline transparent;
+    text-decoration-thickness: var(--underline-thickness-strong);
+    text-underline-offset: var(--underline-offset);
+  }
+
+  @media (hover: hover) {
+    .title:hover {
+      text-decoration-color: var(--color-highlight);
+    }
+  }
+
+  .title:active {
+    text-decoration-color: var(--color-highlight);
+  }
+
+  .facts {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-1) var(--space-2);
+  }
+
+  .pause[hidden] {
+    display: none;
+  }
+
+  /* 12 columns of square cells: a row is exactly one column's width */
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+    grid-auto-rows: calc((100cqi - 11 * var(--c-album-gap)) / 12);
+    gap: var(--c-album-gap);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .tile {
+    grid-column: var(--x) / span var(--w);
+    grid-row: var(--y) / span var(--h);
+    min-inline-size: 0;
+  }
+
+  .link {
+    position: relative;
+    display: block;
+    block-size: 100%;
+    min-block-size: var(--size-touch);
+    overflow: hidden;
+    border-radius: var(--c-image-radius);
+    background: var(--c-image-placeholder);
+    color: var(--color-on-image);
+    text-decoration: none;
+  }
+
+  .blank {
+    display: block;
+    block-size: 100%;
+  }
+
+  /* what plays sits over the still, shown only while it plays */
+  .motion {
+    position: absolute;
+    inset: 0;
+    display: block;
+    inline-size: 100%;
+    block-size: 100%;
+    object-fit: cover;
+    opacity: 0;
+    transition: opacity var(--duration-base) var(--ease-standard);
+    pointer-events: none;
+  }
+
+  .moving {
+    display: block;
+    inline-size: 100%;
+    block-size: 100%;
+    object-fit: cover;
+  }
+
+  .tile[data-playing] .motion {
+    opacity: 1;
+  }
+
+  /* the badge says what a tile holds while it's still: light words on the image shade, on its corner */
+  .badge {
+    position: absolute;
+    inset: auto var(--space-2) var(--space-2) auto;
+    z-index: var(--layer-raised);
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-1);
+    padding: var(--space-1) var(--space-2);
+    border-radius: var(--radius-sm);
+    background: var(--color-image-shade);
+    color: var(--color-on-image);
+    font-family: var(--font-ui);
+    font-size: var(--text-sm);
+    font-weight: var(--weight-semibold);
+    font-variant-numeric: tabular-nums;
+    line-height: var(--leading-ui);
+  }
+
+  .tile[data-playing] .badge {
+    opacity: 0;
+  }
+
+  @media (hover: hover) {
+    .link:hover .badge {
+      transform: scale(var(--scale-lift));
+    }
+  }
+
+  .link:active .badge {
+    transform: scale(var(--scale-lift));
+  }
+
+  .link:active {
+    transform: scale(var(--scale-press-large));
+  }
+
+  .more {
+    display: flex;
+    justify-content: flex-end;
+  }
+
+  /* a phone: 6 columns in the phone's own arrangement, the counts under the title, tiles kept off phones gone */
+  @container (max-width: 40rem) {
+    .head {
+      flex-direction: column;
+      align-items: flex-start;
+    }
+
+    .grid {
+      grid-template-columns: repeat(6, minmax(0, 1fr));
+      grid-auto-rows: calc((100cqi - 5 * var(--c-album-gap)) / 6);
+    }
+
+    .tile {
+      grid-column: var(--px) / span var(--pw);
+      grid-row: var(--py) / span var(--ph);
+    }
+
+    .tile[data-on-phones='false'] {
+      display: none;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .motion {
+      display: none;
+    }
+
+    .link:active {
+      transform: none;
+    }
+  }
+</style>
+
+<script>
+  import { each } from '../../scripts/page';
+  import { setUpBand } from '../../scripts/albumBand';
+  each<HTMLElement>('[data-album-band][data-plays]', setUpBand);
+</script>

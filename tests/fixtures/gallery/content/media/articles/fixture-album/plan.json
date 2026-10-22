@@ -4,6 +4,18 @@
   "alt": "A floor plan of the cottage: two rooms and a porch.",
   "visibility": "public",
   "dark": {
-    "file": "plan.dark.svg"
+    "file": "plan.dark.svg",
+    "facts": {
+      "width": 800,
+      "height": 600,
+      "bg": "rgb(8 8 8)",
+      "bytes": 600
+    }
+  },
+  "facts": {
+    "width": 800,
+    "height": 600,
+    "bg": "rgb(8 8 8)",
+    "bytes": 600
   }
 }

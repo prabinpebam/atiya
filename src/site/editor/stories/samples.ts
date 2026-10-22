@@ -4,6 +4,7 @@
  * content: a story must look the same on any site, and nothing private may appear in one.
  */
 import { sample } from '../../design/samples';
+import { withBase } from '../../design/meta';
 import type { Article, Block, Person, PlanetStructure, SiteSettings, SiteStructure } from '../../content/schema';
 import type { Issue } from '../../content/load';
 import type { Thumb } from '../model/inspectorFields';
@@ -212,6 +213,30 @@ export const PICTURE = {
   version: 'sample',
 };
 
+/** A picture kept large (gallery spec §4): its master is over 2560 px, and Make it standard is offered. */
+export const LARGE_PICTURE = {
+  ...PICTURE,
+  id: 'samples/bridge',
+  src: bridge.src,
+  srcset: bridge.srcset,
+  width: 3840,
+  height: 2560,
+  sidecar: { kind: 'image' as const, file: 'bridge.webp', alt: bridge.alt, visibility: 'public' as const, large: true as const, taken: '2026-04-12' },
+  key: '/content/media/samples/bridge.json',
+};
+
+/** A drawing (gallery spec §4.1): an SVG kept as a vector, shown whole, never cropped. */
+export const DRAWING = {
+  ...PICTURE,
+  id: 'samples/planet',
+  src: withBase('/favicon.svg'),
+  srcset: '',
+  width: 64,
+  height: 64,
+  sidecar: { kind: 'image' as const, file: 'planet.svg', alt: 'A small green planet with a red roof on it.', visibility: 'public' as const },
+  key: '/content/media/samples/planet.json',
+};
+
 /** The site's navigation entries, and the header they make. */
 export const NAV_ENTRIES = [
   { index: 0, kind: 'section' as const, label: 'Work', target: '/work/', hidden: false },
@@ -253,3 +278,11 @@ const REVIEW_NOW = REVIEW_BASE.map((b) => (b.key === 'p4' ? ({ ...b, markdown: '
 export const AI_REVIEW = reviewView({ by: 'Ollama', summary: 'Tightened the section and added a closing line.', base: REVIEW_BASE, proposed: REVIEW_PROPOSED, decisions: { p1: 'accept', p3: 'reject' } }, REVIEW_NOW);
 /** The same proposal once the removed paragraph is gone from the article too. */
 export const AI_REVIEW_REMOVED = reviewView({ by: 'Ollama', summary: 'Tightened the section and added a closing line.', base: REVIEW_BASE, proposed: REVIEW_PROPOSED, decisions: {} }, REVIEW_NOW.filter((b) => b.key !== 'p1'));
+
+/** The album block's chooser on a published page (made up): one album to pick, a draft, a private one and the page's own, disabled with their reasons. */
+export const ALBUM_CHOICES = [
+  { id: 'harbour-walks', title: 'Harbour walks', detail: '24 items, published', disabled: false },
+  { id: 'kitchen-garden', title: 'Kitchen garden', detail: 'A draft, and this page is published: publish the album first', disabled: true },
+  { id: 'family-trip', title: 'Our trip north', detail: 'Private: its band would show its words outside its seal', disabled: true },
+  { id: 'the-bridge-album', title: 'The bridge, in pictures', detail: 'This page: its album is already on it', disabled: true },
+];

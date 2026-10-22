@@ -101,9 +101,9 @@ async function withRetries(op: () => void): Promise<void> {
 }
 
 /** The content check: the issues the content would have. */
-function check(snap: Pick<Snapshot, 'docs' | 'masters' | 'errors'>): { issues: Issue[] } {
+function check(snap: Pick<Snapshot, 'docs' | 'masters' | 'errors' | 'sizes'>): { issues: Issue[] } {
   try {
-    timed('store.check', () => loadContent(snap.docs, snap.masters, snap.errors));
+    timed('store.check', () => loadContent(snap.docs, snap.masters, snap.errors, new Set(), snap.sizes));
     return { issues: [] };
   } catch (e) {
     if (e instanceof ContentError) return { issues: e.issues };
@@ -143,7 +143,7 @@ export function checkOnly(changes: Change[], opts: Pick<StoreOptions, 'root' | '
       if (c.bytes) docs[c.key] = JSON.parse(c.bytes.toString('utf8'));
       else delete docs[c.key];
     }
-    return { docs, masters: snap.masters, errors: snap.errors };
+    return { docs, masters: snap.masters, errors: snap.errors, sizes: snap.sizes };
   };
   const after = check(made([...base, ...changes])).issues;
   if (!after.length) return after;
@@ -197,6 +197,7 @@ async function apply(tx: Transaction, opts: StoreOptions, origin: string | null 
   // a copy: the parsed documents are shared with every reader, so they're replaced here, never changed
   const docs = { ...snap.docs };
   const masters = new Set(snap.masters);
+  const sizes = new Map(snap.sizes ?? []);
   for (const t of targets) {
     if (t.key.endsWith('.json')) {
       if (!t.bytes) delete docs[t.key];
@@ -207,13 +208,18 @@ async function apply(tx: Transaction, opts: StoreOptions, origin: string | null 
           issues.push({ file: t.key.replace(/^\//, ''), message: 'not valid JSON' });
         }
       }
-    } else if (t.bytes) masters.add(t.key);
-    else masters.delete(t.key);
+    } else if (t.bytes) {
+      masters.add(t.key);
+      sizes.set(t.key, t.bytes.length);
+    } else {
+      masters.delete(t.key);
+      sizes.delete(t.key);
+    }
   }
   if (issues.length) return { ok: false, status: 422, issues };
   // (a page's address can change freely: moving it to another section is taking it down and putting it up
   // again there, with no redirect: documentation/sections/spec.md §7.2)
-  const now = check({ docs, masters, errors: snap.errors });
+  const now = check({ docs, masters, errors: snap.errors, sizes });
   const after = now.issues.filter((i) => !before.has(describe(i)));
   if (after.length) return { ok: false, status: 422, issues: after };
 

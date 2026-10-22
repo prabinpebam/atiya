@@ -16,6 +16,7 @@ import SiteHeader, { type NavItem } from '../components/compounds/SiteHeader.ast
 import SiteFooter from '../components/compounds/SiteFooter.astro';
 import Breadcrumbs from '../components/compounds/Breadcrumbs.astro';
 import StoryCard from '../components/compounds/StoryCard.astro';
+import AlbumBand from '../components/compounds/AlbumBand.astro';
 import PlaceBar, { type PlanetFrame } from '../components/compounds/PlaceBar.astro';
 import Recommendations, { type RecommendationCard } from '../components/compounds/Recommendations.astro';
 import Dialog from '../components/compounds/Dialog.astro';
@@ -66,8 +67,10 @@ interface Props {
   invited?: number;
   /** Where a reader asks for access to them (the site's contact page): its form, with the request started for this section. */
   ask?: string;
-  /** How they're laid out: list (rows), tiles (an even grid), bento (a lead, then halves and thirds) or features (every page a lead). */
-  view?: 'list' | 'tiles' | 'bento' | 'features';
+  /** How they're laid out: list (rows), tiles (an even grid), bento (a lead, then halves and thirds), features (every page a lead) or albums (each album page a band of its pictures, documentation/gallery/spec.md §5). */
+  view?: 'list' | 'tiles' | 'bento' | 'features' | 'albums';
+  /** The albums view's bands, by the node of the page each is (a page without one shows as a feature card). */
+  albums?: Record<string, Omit<ComponentProps<typeof AlbumBand>, 'rule' | 'priority' | 'headingLevel'>>;
   /** What an empty section says, in place of its pages: only when it has none at all, open or private. */
   empty?: string;
   /** For an address that moved: the page sends the reader on to this path at once (and says so, with a link). */
@@ -92,13 +95,16 @@ interface Props {
   };
 }
 
-const { title, description, heading, standfirst, nav, footer, action, crumbs, stories = [], privatePages = [], signIn, invited = 0, ask, view = 'tiles', empty, redirect, frame, noindex, shows, recommendations: recs } = Astro.props;
+const { title, description, heading, standfirst, nav, footer, action, crumbs, stories = [], privatePages = [], signIn, invited = 0, ask, view = 'tiles', albums = {}, empty, redirect, frame, noindex, shows, recommendations: recs } = Astro.props;
 const recsAt = recs && recs.items.length > 0 ? ('after' in recs.place ? 'after' : recs.place.at) : null;
 const recsAfter = recs && 'after' in recs.place ? recs.place.after : null;
 const shown = stories;
 const sealed = privatePages;
 const hasPrivate = sealed.length > 0 || shown.some((s) => s.privateTag);
-const variantOf = (i: number) => (view === 'features' ? 'feature' : view === 'list' ? 'row' : view === 'bento' && i === 0 ? 'feature' : undefined);
+const variantOf = (i: number) => (view === 'features' || view === 'albums' ? 'feature' : view === 'list' ? 'row' : view === 'bento' && i === 0 ? 'feature' : undefined);
+// the albums view: the first band shown loads its largest picture first
+const bandOf = (s: Story) => (view === 'albums' && s.node ? albums[s.node] : undefined);
+const firstBand = shown.findIndex((s) => bandOf(s));
 // a bento's halves (.cell:nth-child(5n + 2) and (5n + 3)) share their row by two, so their pictures are wider
 const columnsOf = (i: number) => (i % 5 === 1 || i % 5 === 2 ? 2 : 3);
 const open = (mark: string) => `<!--sealed:card:${mark}-->`;
@@ -117,10 +123,20 @@ const open = (mark: string) => `<!--sealed:card:${mark}-->`;
     <div class="list" data-view={view}>
       {
         shown.length > 0 || sealed.length > 0 ? (
-          <div class={view === 'features' ? 'features' : view === 'list' ? 'rows' : view === 'bento' ? 'bento' : 'grid'} data-cards>
+          <div class={view === 'features' ? 'features' : view === 'list' ? 'rows' : view === 'bento' ? 'bento' : view === 'albums' ? 'albums' : 'grid'} data-cards>
             {shown.map((s, i) => (
               <Fragment>
-                {view === 'bento' ? (
+                {view === 'albums' ? (
+                  bandOf(s) ? (
+                    <div class="album" data-node={s.node}>
+                      <AlbumBand {...bandOf(s)!} rule={i > 0} priority={i === firstBand} />
+                    </div>
+                  ) : (
+                    <div class="page" data-node={s.node}>
+                      <StoryCard {...s} variant="feature" shared={s.privateTag ? 'private' : undefined} />
+                    </div>
+                  )
+                ) : view === 'bento' ? (
                   <div class="cell" data-node={s.node}>
                     <StoryCard {...s} variant={variantOf(i)} columns={columnsOf(i)} shared={s.privateTag ? 'private' : undefined} />
                   </div>
@@ -313,6 +329,16 @@ const open = (mark: string) => `<!--sealed:card:${mark}-->`;
   .features {
     display: grid;
     gap: var(--space-section);
+  }
+
+  /* album bands one after another, each parted from the one before by its own break; another kind of page
+     among them is a feature card, with a spread's room before it */
+  .albums {
+    display: grid;
+  }
+
+  .albums > .page:not(:first-child) {
+    margin-block-start: var(--space-section);
   }
 
   /* the lead across the page, then rows of two halves and rows of three thirds (six columns) */

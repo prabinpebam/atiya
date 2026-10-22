@@ -886,13 +886,13 @@ describe('a page opens as its kind reads', () => {
 });
 
 describe('the real content is three levels, with its navigation and redirects', () => {
-  it('renames Talks to Gallery without changing its identity, view or amphitheater mapping', () => {
+  it('renames Talks to Gallery without changing its identity or amphitheater mapping, and shows its albums (gallery G2)', () => {
     const c = content();
     const section = c.routes.find((r) => r.node.id === 'talks');
     expect(section).toMatchObject({
       path: '/gallery/',
       label: 'Gallery',
-      node: { id: 'talks', kind: 'hub', slug: 'gallery', title: 'Gallery', summary: 'A visual way to explore my work.', view: 'list', children: [] },
+      node: { id: 'talks', kind: 'hub', slug: 'gallery', title: 'Gallery', summary: 'A visual way to explore my work.', view: 'albums', children: [] },
     });
     expect(c.routes.some((r) => r.path === '/talks/')).toBe(false);
     const nav = siteNav(c.structure, c.routes, section);

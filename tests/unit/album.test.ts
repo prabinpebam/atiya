@@ -324,13 +324,12 @@ describe('the fixture album (tests/fixtures/gallery/content)', () => {
   const root = join(process.cwd(), 'tests', 'fixtures', 'gallery', 'content');
   const walk = (dir: string): string[] => readdirSync(dir, { withFileTypes: true }).flatMap((e) => (e.isDirectory() ? walk(join(dir, e.name)) : [join(dir, e.name)]));
   const docs: Record<string, unknown> = {};
-  for (const f of walk(root)) docs[`/content/${relative(root, f).split(sep).join('/')}`] = JSON.parse(readFileSync(f, 'utf8'));
-  // the fixture holds sidecars only: its masters are the files they name
   const masters = new Set<string>();
-  for (const [key, d] of Object.entries(docs) as [string, any][]) {
-    if (!key.startsWith('/content/media/')) continue;
-    const dir = key.slice(0, key.lastIndexOf('/') + 1);
-    for (const file of [d.file, d.dark?.file, d.animation?.poster, d.poster?.file, ...(d.captions ?? []).map((c: { file: string }) => c.file)]) if (file) masters.add(dir + file);
+  for (const f of walk(root)) {
+    const key = `/content/${relative(root, f).split(sep).join('/')}`;
+    // its masters are made by scripts/make-gallery-fixture.mjs, beside their sidecars
+    if (key.endsWith('.json')) docs[key] = JSON.parse(readFileSync(f, 'utf8'));
+    else masters.add(key);
   }
   const c = loadContent(docs, masters);
   const g = c.articles.get('fixture-album')!;

@@ -1,0 +1,58 @@
+---
+import Example from '../library/Example.astro';
+import AlbumGrid from '../components/compounds/AlbumGrid.astro';
+import Lightbox from '../components/compounds/Lightbox.astro';
+import { withBase } from '../design/meta';
+import { PORTRAIT_SAMPLES, SAMPLE_VIDEO, SAMPLES } from '../design/samples';
+import type { AlbumCell } from '../scripts/albumGrid';
+
+const [tall] = PORTRAIT_SAMPLES;
+const cellOf = (s: (typeof SAMPLES)[number], extra: Partial<AlbumCell> = {}): AlbumCell => ({
+  id: s.slug,
+  kind: 'picture',
+  width: s.width,
+  height: s.height,
+  picture: { src: s.src, srcset: s.srcset, alt: s.alt, width: s.width, height: s.height, full: s.full, thumb: s.thumb },
+  caption: s.caption,
+  ...extra,
+});
+const poster = { src: SAMPLE_VIDEO.poster, alt: '', width: SAMPLE_VIDEO.width, height: SAMPLE_VIDEO.height, full: SAMPLE_VIDEO.poster, thumb: SAMPLE_VIDEO.poster };
+const tour: AlbumCell = { id: 'tour', kind: 'video', width: SAMPLE_VIDEO.width, height: SAMPLE_VIDEO.height, picture: poster, video: { src: SAMPLE_VIDEO.src, type: 'video/mp4' }, title: 'A drift over the planet', duration: 10, caption: 'The plaza, the waterfall, then the lighthouse.' };
+// a made-up video ID: the cell shows the poster and links to the provider's page
+const talk: AlbumCell = { id: 'talk', kind: 'embed', width: 1600, height: 900, picture: poster, embed: { provider: 'youtube', id: 'sample00000' }, title: 'A talk about the planet', duration: 1325, caption: 'The planet, told in twenty minutes.' };
+const animated: AlbumCell = cellOf(SAMPLES[2]!, { id: 'pond-loop', kind: 'animated', caption: 'The pond, moving.' });
+const mark: AlbumCell = {
+  id: 'mark',
+  kind: 'drawing',
+  width: 512,
+  height: 512,
+  picture: { src: withBase('/favicon.svg'), alt: 'The site mark: a small planet.', width: 512, height: 512, full: withBase('/favicon.svg'), thumb: withBase('/favicon.svg'), drawing: true },
+  caption: 'A drawing, shown whole on its paper.',
+};
+// each example's own IDs: an item's ID is its address on the page
+const gridOf = (prefix: string) => [tall!, ...SAMPLES.slice(0, 5)].map((s) => cellOf(s, { id: `${prefix}-${s.slug}` }));
+const mixed = [cellOf(SAMPLES[0]!), tour, animated, talk, mark, cellOf(SAMPLES[3]!)];
+const story: AlbumCell[] = [
+  cellOf(SAMPLES[0]!, { id: 'story-plaza', description: '<p>Every path on the planet begins here, at the compass rose.</p>', credit: 'Made up for the library', taken: '2026-03-12', takenWords: '12 March 2026', place: 'The plaza' }),
+  cellOf(tall!, { id: 'story-lighthouse', place: 'The hilltop' }),
+  { ...tour, id: 'story-tour' },
+];
+---
+
+<Example title="The Grid" layout="block" description="Every item in album order, in justified rows at the wide width; a portrait may take two rows. Without scripts, rows that wrap.">
+  <AlbumGrid items={gridOf('grid')} title="A walk round the planet" layout="grid" />
+</Example>
+
+<Example title="Captions under the cells" layout="block" description="Each caption under its cell, at most two lines, the room kept where there's none, so the rows stay level. No picture spans two rows.">
+  <AlbumGrid items={gridOf('captioned')} title="A walk round the planet, captioned" captions />
+</Example>
+
+<Example title="Every kind of item" layout="block" description="A picture, a video file (its poster, Play and its length), an animated picture (Animated), a YouTube video (its poster, Play, the provider and its length) and a drawing, shown whole.">
+  <AlbumGrid items={mixed} title="Everything the planet has" />
+</Example>
+
+<Example title="The Story" layout="block" description="One item after another at the wide width, a portrait no taller than the screen, each with its caption, description, credit, date and place at the text width.">
+  <AlbumGrid items={story} title="A day on the planet" layout="story" />
+</Example>
+
+<Lightbox />

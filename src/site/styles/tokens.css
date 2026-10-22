@@ -297,6 +297,11 @@
   --c-table-cell-min: 8rem;
   --c-table-row-heading-min: 10rem;
   --c-table-cell-max: 16rem;
+  --c-album-grid-row-height: 14rem;
+  --c-album-grid-row-height-small: 10rem;
+  --c-album-grid-caption-lines: 2;
+  --c-album-grid-drawing-paper: var(--color-on-image);
+  --c-album-grid-query-small: 36rem;
   --c-gallery-row-height: 14rem;
   --c-gallery-row-height-small: 10rem;
   --c-image-radius: var(--radius-lg);
@@ -357,6 +362,10 @@
   --c-recommendation-lines-row: 5;
   --c-recommendation-lines-wall: 9;
   --c-recommendation-mark: var(--color-highlight);
+  --c-album-gap: var(--space-2);
+  --c-album-band-space: var(--space-section);
+  --c-album-drawing-paper: var(--color-on-image);
+  --c-album-query-compose: 40rem;
   --c-bento-picture-side: 6rem;
   --c-bento-picture-band: 5.5rem;
   --c-bento-picture: 20rem;

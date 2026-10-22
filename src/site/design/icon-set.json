@@ -1,6 +1,7 @@
 {
   "$description": "The website's icons: the name components use -> the Font Awesome Pro name (Duotone unless prefixed with a style, e.g. classic-solid/plus). Add with node scripts/import-site-icons.mjs <name>=<font-awesome-name>.",
   "icons": {
+    "animated": "photo-film",
     "arrow-down": "arrow-down",
     "arrow-left": "arrow-left",
     "arrow-right": "arrow-right",

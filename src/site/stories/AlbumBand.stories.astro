@@ -1,0 +1,63 @@
+---
+import Example from '../library/Example.astro';
+import AlbumBand from '../components/compounds/AlbumBand.astro';
+import { SAMPLE_VIDEO, sample } from '../design/samples';
+import { withBase } from '../design/meta';
+import type { BandTile } from '../scripts/albumBandRules';
+
+// made-up albums from the library's sample paintings
+const still = (slug: string) => {
+  const s = sample(slug);
+  return { src: s.src, srcset: s.srcset, width: s.width, height: s.height, bg: 'rgb(124 170 120)' };
+};
+const href = withBase('/design/');
+const tile = (id: string, slug: string, place: BandTile['place'], phone: BandTile['phone'], extra: Partial<BandTile> = {}): BandTile => ({
+  id,
+  kind: 'picture',
+  name: sample(slug).alt,
+  href: `${href}#item-${id}`,
+  place,
+  phone,
+  still: still(slug),
+  full: { src: sample(slug).full, thumb: sample(slug).thumb, caption: sample(slug).caption, alt: sample(slug).alt },
+  ...extra,
+});
+
+const walk: BandTile[] = [
+  tile('plaza', 'plaza', { x: 0, y: 0, w: 6, h: 6 }, { x: 0, y: 0, w: 6, h: 6 }),
+  tile('tour', 'plaza', { x: 6, y: 0, w: 3, h: 3 }, { x: 0, y: 6, w: 3, h: 3 }, {
+    kind: 'video',
+    name: 'Video: A drift over the planet (10 seconds)',
+    still: { src: SAMPLE_VIDEO.poster, width: SAMPLE_VIDEO.width, height: SAMPLE_VIDEO.height, bg: 'rgb(124 170 120)' },
+    motion: { kind: 'video', src: SAMPLE_VIDEO.src, type: 'video/mp4' },
+    length: '0:10',
+  }),
+  tile('pond', 'pond', { x: 9, y: 0, w: 3, h: 3 }, { x: 3, y: 6, w: 3, h: 3 }, { kind: 'animated', name: `${sample('pond').alt}, animated` }),
+  tile('bridge', 'bridge', { x: 6, y: 3, w: 3, h: 3 }, { x: 0, y: 9, w: 3, h: 3 }, { kind: 'drawing', display: 'fit' }),
+  tile('talk', 'waterfall', { x: 9, y: 3, w: 3, h: 3 }, { x: 3, y: 9, w: 3, h: 3 }, { kind: 'embed', name: 'Video: A talk about the planet (2 minutes 20 seconds)', still: undefined, length: '2:20' }),
+];
+
+const night: BandTile[] = [
+  tile('dusk', 'lighthouse-dusk', { x: 0, y: 0, w: 6, h: 4 }, { x: 0, y: 0, w: 6, h: 4 }),
+  tile('night', 'plaza-night', { x: 6, y: 0, w: 6, h: 4 }, undefined),
+];
+---
+
+<Example title="A band" layout="block" description="The album's title leads to it, with its counts and dates beside it; the tiles up front sit on square cells 12 columns across (6 on a phone, in the phone's own arrangement). The video plays muted while half of it is in view, and Pause stops it; the animated picture, the drawing and the embed show their badges.">
+  <AlbumBand
+    id="story-walk"
+    title="A walk round the planet"
+    href={href}
+    counts="17 pictures, 3 videos, 1 drawing"
+    dates="June to August 2024"
+    summary="From the plaza out to the bridge, in the order the paths lead."
+    tiles={walk}
+    total={21}
+    priority
+  />
+</Example>
+
+<Example title="Bands one after another" layout="block" description="A dinkus parts a band from the one before. With every item up front, See all reads Open the album; a tile kept off phones leaves the phone's band.">
+  <AlbumBand id="story-walk-2" title="A walk round the planet" href={href} counts="17 pictures, 3 videos, 1 drawing" tiles={walk} total={21} headingLevel={3} />
+  <AlbumBand id="story-night" title="After dark" href={href} counts="2 pictures" dates="2024" tiles={night} total={2} rule headingLevel={3} />
+</Example>

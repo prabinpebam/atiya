@@ -2,5 +2,11 @@
   "kind": "image",
   "file": "vimeo-poster.webp",
   "alt": "A title card: the short film.",
-  "visibility": "public"
+  "visibility": "public",
+  "facts": {
+    "width": 1280,
+    "height": 720,
+    "bg": "rgb(123 127 81)",
+    "bytes": 5768
+  }
 }

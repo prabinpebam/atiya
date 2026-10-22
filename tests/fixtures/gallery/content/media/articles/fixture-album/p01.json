@@ -6,8 +6,8 @@
   "facts": {
     "width": 3840,
     "height": 2560,
-    "bg": "rgb(120 140 90)",
-    "bytes": 1200000
+    "bg": "rgb(91 127 141)",
+    "bytes": 29750
   },
   "large": true,
   "caption": "The view from the top, kept large.",

@@ -4,10 +4,14 @@
  * format; it can be cropped before it's uploaded (the crop dialog's local mode: the server cuts it from the
  * file, at full quality); a format the server can't read is turned into a PNG here first (transparency
  * kept). A picture can also be handed to it (the canvas's paste) with a `media:file` event on the grid.
+ * What the file offers shows with it (gallery spec §4): an SVG kept as a drawing (never cropped) or turned
+ * into a picture, Keep it large past 2560 px, the note that an animated PNG is kept as a still; a format the
+ * site can't keep is refused before anything is sent, and a HEIC's date taken is read before it's converted.
  */
-import { announce, api, describeIssue, saveStatus } from './client';
+import { announce, api, describeIssue, saveStatus, startTask } from './client';
 import { canCrop, openCrop } from './crop';
-import { APNG_NOTE, HEIC_REFUSED, describePicture, describeVideo, formatLabel, isApng, isVideoFile, keptAsIs, mayHaveAlpha, needsConversion, pastedName, pictureOfPaste, pictureSizeIssue, pngName, posterTime, refusedFormat, typeOf, videoSizeIssue, videoTypeOf } from '../model/upload';
+import { keptAsDrawing, showUploadOptions, uploadNote } from './uploadOptions';
+import { APNG_NOTE, HEIC_REFUSED, describePicture, describeVideo, formatLabel, isApng, isVideoFile, keptAsIs, mayHaveAlpha, needsConversion, pastedName, pictureOfPaste, pictureSizeIssue, pngName, posterTime, refusedFormat, removedNote, typeOf, videoSizeIssue, videoTypeOf } from '../model/upload';
 import { takenOf } from '../model/exif';
 import type { Rect } from '../model/crop';
 
@@ -158,6 +162,7 @@ export function initUpload(root: HTMLElement, signal: AbortSignal) {
     }
     if (!chosen) return;
     const c = chosen;
+    const drawing = keptAsDrawing(form);
     stage.hidden = !c.shown;
     if (c.shown) {
       const r = c.rect ?? { x: 0, y: 0, width: c.width, height: c.height };
@@ -171,9 +176,9 @@ export function initUpload(root: HTMLElement, signal: AbortSignal) {
     facts.textContent = c.shown
       ? describePicture({ width: c.width, height: c.height, type: c.type, alpha: c.alpha, crop: c.rect, converted: c.converted, bytes: c.file.size })
       : `${formatLabel(c.type)}. This browser can't show it, but it uploads as it is.`;
-    // a GIF is kept exactly as it is: cutting it would re-encode it
-    cropWrap.hidden = !c.shown || !canCrop() || keptAsIs(c.type);
-    uncropWrap.hidden = !c.rect;
+    // a GIF is kept exactly as it is, and a drawing whole: cutting either would make it something else
+    cropWrap.hidden = !c.shown || !canCrop() || keptAsIs(c.type) || drawing;
+    uncropWrap.hidden = !c.rect || drawing;
   };
 
   /** A video chosen: under 100 MB, of a kind the site takes, and playable here (or a reader couldn't play it either). */
@@ -213,6 +218,8 @@ export function initUpload(root: HTMLElement, signal: AbortSignal) {
     const mine = ++loading;
     say('');
     drop();
+    showUploadOptions(form, null);
+    uploadNote(form, '');
     if (!file) return render();
     // formats the site can't keep are refused with what to do (gallery spec §4)
     const refused = refusedFormat(file);
@@ -264,8 +271,10 @@ export function initUpload(root: HTMLElement, signal: AbortSignal) {
       taken,
       apng,
     };
+    // what this file offers: an SVG's choice, Keep it large; and what saving it will do (an APNG kept still)
+    showUploadOptions(form, { type, bytes: up.size, width: chosen.width, height: chosen.height, animated: apng });
+    uploadNote(form, apng ? APNG_NOTE : '');
     render();
-    if (apng) say(APNG_NOTE);
   };
 
   /** Puts a picture (or a video) in the form, as if chosen: from a paste here or on the canvas. */
@@ -282,6 +291,16 @@ export function initUpload(root: HTMLElement, signal: AbortSignal) {
   };
 
   input.addEventListener('change', () => void load(input.files?.[0]), { signal });
+  // a drawing or a picture: a drawing isn't cropped, so its crop goes
+  form.addEventListener(
+    'change',
+    (e) => {
+      if (!(e.target as Element).closest('[data-upload-svg]') || !chosen) return;
+      if (keptAsDrawing(form)) chosen.rect = null;
+      render();
+    },
+    { signal },
+  );
   root.addEventListener('media:file', (e) => take((e as CustomEvent<{ file: File }>).detail.file), { signal });
 
   // a picture pasted while the form can be seen (the picker open, or the library)
@@ -338,15 +357,17 @@ export function initUpload(root: HTMLElement, signal: AbortSignal) {
     data.set('duration', String(c.duration));
     data.set('owner', root.dataset.owner ?? 'shared');
     say('');
-    if (submit) submit.disabled = true;
+    if (submit?.getAttribute('aria-busy') === 'true') return;
+    const task = startTask(`Uploading ${c.file.name}…`, { el: submit, busyLabel: 'Uploading…' });
     saveStatus.saving();
     const r = await api<{ id: string }>('POST', 'media', data);
-    if (submit) submit.disabled = false;
     if (!r.ok) {
+      task.failed();
       const why = (r.data.issues ?? []).map(describeIssue).join(' ') || "Couldn't upload it.";
       saveStatus.failed(`Not uploaded: ${why}`);
       return say(why);
     }
+    void task.done();
     delete form.dataset.unsaved;
     saveStatus.saved(`Uploaded ${c.file.name}`);
     root.dispatchEvent(new CustomEvent('media:uploaded', { bubbles: true, detail: { id: r.data.id } }));
@@ -362,20 +383,25 @@ export function initUpload(root: HTMLElement, signal: AbortSignal) {
       if (!data.get('decorative') && !String(data.get('alt') ?? '').trim()) return say('Say what the picture shows (its alt text), or mark it decorative.');
       data.set('file', chosen.file, chosen.file.name);
       data.set('owner', root.dataset.owner ?? 'shared');
-      if (chosen.rect) data.set('crop', JSON.stringify({ ...chosen.rect, of: { width: chosen.width, height: chosen.height } }));
+      // a drawing is kept whole (gallery spec §4.1): no crop goes with it
+      if (chosen.rect && !keptAsDrawing(form)) data.set('crop', JSON.stringify({ ...chosen.rect, of: { width: chosen.width, height: chosen.height } }));
       if (chosen.taken) data.set('taken', chosen.taken);
       say('');
-      if (submit) submit.disabled = true;
+      if (submit?.getAttribute('aria-busy') === 'true') return;
+      const name = chosen.file.name;
+      const task = startTask(`Uploading ${name}…`, { el: submit, busyLabel: 'Uploading…' });
       saveStatus.saving();
-      const r = await api<{ id: string }>('POST', 'media', data);
-      if (submit) submit.disabled = false;
+      const r = await api<{ id: string; removed?: string[] }>('POST', 'media', data);
       if (!r.ok) {
+        task.failed();
         const why = (r.data.issues ?? []).map(describeIssue).join(' ') || "Couldn't upload it.";
         saveStatus.failed(`Not uploaded: ${why}`);
         return say(why);
       }
+      void task.done();
       delete form.dataset.unsaved;
-      saveStatus.saved(`Uploaded ${chosen.file.name}`);
+      // what a drawing's cleaning took out stays in the status line until the next change
+      saveStatus.saved(`Uploaded ${name}${r.data.removed?.length ? `. ${removedNote(r.data.removed)}` : ''}`);
       root.dispatchEvent(new CustomEvent('media:uploaded', { bubbles: true, detail: { id: r.data.id } }));
     },
     { signal },

@@ -5,7 +5,10 @@
  * picture is saved, and for its title before a video is. A video under 100 MB (GitHub's limit) is kept as
  * it is, with a frame from it as its poster. A picture chosen, dropped or pasted (Ctrl+V while the form shows) is previewed at once, on a
  * checkerboard so its transparency shows, with its size and format, and can be cropped before it's
- * uploaded. Any picture the browser or the server can read is taken. Grouped by folder (an article's own, a person's, shared). In the picker it chooses one picture,
+ * uploaded. Any picture the browser or the server can read is taken; a format the site can't keep (JPEG XL, camera
+ * RAW, PSD, MKV, AVI, WMV, 3GP) is refused with what to do. An SVG is kept as a drawing (cleaned, at most 200 KB, never
+ * cropped) or turned into a picture; a still picture past 2560 px can be kept large (up to 3840 px); an animated PNG
+ * is said to be kept as a still before it's saved (gallery spec §4, §4.1). Grouped by folder (an article's own, a person's, shared). In the picker it chooses one picture,
  * or several (or one video: it shows only what the field or block takes); in the library it opens a picture's details, and marks the pictures nothing uses (a
  * replaced lead picture, an upload not placed yet): they're allowed, and Delete is offered for them.
  * Thumbnails show the whole image with square corners, without the public page's styling. The picker is
@@ -17,6 +20,7 @@
  * @a11y Search hides the pictures (and the folders) that don't match, and says how many are left.
  * @a11y A picture without alt text says so in words, not only with its warning icon.
  * @a11y The preview's size, format and crop are a polite live region; cropping has the crop dialog's keyboard way.
+ * @a11y An SVG's two ways are radios in a named group; the note before saving (an animated PNG) is a polite live region.
  * @key Ctrl+V: puts a copied picture in the upload form
  */
 import TextField from '../../components/fundamentals/TextField.astro';
@@ -30,11 +34,13 @@ import Heading from '../../components/fundamentals/Heading.astro';
 import Tag from '../../components/fundamentals/Tag.astro';
 import TileButton from '../../components/fundamentals/TileButton.astro';
 import Select from '../../components/fundamentals/Select.astro';
+import Radio from '../../components/fundamentals/Radio.astro';
 import Progress from '../../components/fundamentals/Progress.astro';
 import Skeleton from '../../components/fundamentals/Skeleton.astro';
 import ActionBar from '../../components/compounds/ActionBar.astro';
 import IssueNote from '../kit/IssueNote.astro';
 import StatusNote from '../kit/StatusNote.astro';
+import Fieldset from '../kit/Fieldset.astro';
 
 export interface MediaCard {
   id: string;
@@ -108,6 +114,17 @@ const groups = [...new Set(media.map((m) => m.owner))].map((o) => ({ owner: o, l
           <span data-upload-uncrop-wrap hidden><Button variant="quiet" size="sm" icon="restore" data-upload-uncrop="">Undo the crop</Button></span>
         </ActionBar>
       </div>
+      <div data-upload-svg hidden>
+        <Fieldset legend="Keep this SVG">
+          <Radio name="svgAs" value="drawing" label="Keep it as a drawing" hint="Sharp at any size and light to load: cleaned of scripts and outside links, shown whole and never cropped. 200 KB at most." checked />
+          <Radio name="svgAs" value="picture" label="Turn it into a picture" hint="Saved as WebP like a photo, at the size it's drawn: it can be cropped." />
+          <StatusNote data-upload-svg-why="" hidden>It's over 200 KB, so it can only be turned into a picture.</StatusNote>
+        </Fieldset>
+      </div>
+      <div data-upload-large hidden>
+        <Checkbox label="Keep it large: up to 3840 px" name="large" hint="For a photo worth seeing whole on a big screen: only the lightbox shows it at that size, and it takes up to 3.5 MB. Otherwise it's saved at 2560 px." />
+      </div>
+      <StatusNote data-upload-note="" hidden />
       <div class="fields" data-upload-for="image">
         <TextField label="Alt text" name="alt" multiline rows={2} hint="What it shows, for someone who can't see it (250 characters at most). Leave it empty only if it's decorative." />
         <Checkbox label="It's decorative: it adds nothing a reader would miss" name="decorative" />

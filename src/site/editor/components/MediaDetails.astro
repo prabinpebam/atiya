@@ -7,6 +7,10 @@
  * each on a page of its own mode), Replace and Delete. A video file's details are the video itself
  * (playable), its title, caption, credit, licence and source, where it's used, and Delete. The details save to the sidecar, so they
  * aren't part of any article's undo. Delete is offered only when nothing refers to it.
+ * Gallery spec §4, §4.1: Find the focus measures where the subject is and moves the point there (saved with the
+ * details); a picture kept large (up to 3840 px) can be made standard (saved again at 2560 px); a drawing (an SVG kept
+ * as a vector) is never cropped, and its dark version is a drawing too. Replace offers an SVG's two ways and Keep it
+ * large as the upload does.
  * Image previews are whole and square-cornered, including both colour versions.
  * @tier editor
  * @a11y The focus point is set with a button over the picture (a click places it; the arrow keys move it by 5%, Home puts it back in the centre), and the point is read out in words.
@@ -31,6 +35,9 @@ import ActionBar from '../../components/compounds/ActionBar.astro';
 import Form from '../kit/Form.astro';
 import PlainList from '../kit/PlainList.astro';
 import IssueNote from '../kit/IssueNote.astro';
+import Fieldset from '../kit/Fieldset.astro';
+import StatusNote from '../kit/StatusNote.astro';
+import Radio from '../../components/fundamentals/Radio.astro';
 import { withBase } from '../../design/meta';
 import { sizes } from '../../design/responsive';
 import type { ImageMedia, VideoMedia } from '../../content/schema';
@@ -85,6 +92,8 @@ const sc = picture?.sidecar;
 const animated = !!(sc?.animation || sc?.dark?.animation);
 // a GIF is kept exactly as it is (media.md §4): cropping it would re-encode it
 const gif = [sc?.file, sc?.dark?.file].some((f) => f?.endsWith('.gif'));
+// a drawing (an SVG kept as a vector) is shown whole: never cropped, its focus set by hand (gallery spec §4.1)
+const drawing = !!sc?.file.endsWith('.svg');
 const [fx, fy] = (sc?.focus ?? '50% 50%').split(' ').map((v) => parseInt(v, 10));
 const name = (picture ?? video)?.id.split('/').pop();
 const state = picture ? JSON.stringify({ id: picture.id, key: picture.key, version: picture.version, sidecar: sc }).replace(/</g, '\\u003c') : video ? JSON.stringify({ id: video.id, key: video.key, version: video.version, sidecar: video.sidecar }).replace(/</g, '\\u003c') : '';
@@ -159,6 +168,7 @@ const videoFacts = vs ? [`${vs.width} \u00d7 ${vs.height}`, vs.duration ? clock(
             <Heading level={2} size="h4" id="media-details-title">{name}</Heading>
             <Text variant="small" tone="muted">{`${picture.id} \u00b7 ${picture.width} \u00d7 ${picture.height}`}</Text>
             {isPrivate && <Tag size="sm" tone="highlight" icon="key">Private</Tag>}
+            {drawing && <Tag size="sm" icon="pen">Drawing</Tag>}
           </div>
           <div class="focus" style={`--focus-x: ${fx}%; --focus-y: ${fy}%`} data-editor-focus>
             <Image src={picture.src} srcset={picture.srcset} poster={picture.poster} sizes={sizes(['md', '100vw'], '40vw')} alt={sc.alt ?? ''} width={picture.width} height={picture.height} display="fit" rounded={false} />
@@ -169,7 +179,10 @@ const videoFacts = vs ? [`${vs.width} \u00d7 ${vs.height}`, vs.duration ? clock(
             <Text as="span" variant="small" tone="muted" id="media-focus-value">
               {sc.focus ? `Focus at ${fx}% across, ${fy}% down` : 'Focus in the centre'}
             </Text>
-            <Button variant="quiet" size="sm" icon="focus" data-editor-focus-clear="">Use the centre</Button>
+            <ActionBar gap="sm">
+              {!drawing && <Button variant="quiet" size="sm" icon="sparkles" data-editor-focus-find="">Find the focus</Button>}
+              <Button variant="quiet" size="sm" icon="focus" data-editor-focus-clear="">Use the centre</Button>
+            </ActionBar>
           </div>
           <HiddenField name="focus" value={sc.focus ?? ''} />
           <TextField label="Alt text" name="alt" value={sc.alt ?? ''} multiline rows={3} hint={'What it shows, for someone who can\u2019t see it: 250 characters at most, and never \u201cimage of\u201d.'} />
@@ -200,6 +213,16 @@ const videoFacts = vs ? [`${vs.width} \u00d7 ${vs.height}`, vs.duration ? clock(
           )}
         </section>
 
+        {sc.large && (
+          <section class="part" aria-labelledby="media-size-title" data-editor-media-size>
+            <Heading level={3} size="ui" id="media-size-title">Kept large</Heading>
+            <Text variant="small" tone="muted">{`Its master is kept up to 3840 px (${picture.width} \u00d7 ${picture.height}), and only the lightbox shows it that big. Make it standard to save it again at 2560 px, like every other picture: it takes less room, and pages look the same.`}</Text>
+            <ActionBar align="end">
+              <Button variant="secondary" icon="compress" data-editor-media-standard="">Make it standard</Button>
+            </ActionBar>
+          </section>
+        )}
+
         <section class="part" aria-labelledby="media-crop-title">
           <Heading level={3} size="ui" id="media-crop-title">Crop</Heading>
           {original ? (
@@ -225,7 +248,7 @@ const videoFacts = vs ? [`${vs.width} \u00d7 ${vs.height}`, vs.duration ? clock(
             </PlainList>
           )}
           <ActionBar align="end">
-            {gif ? <Text variant="small" tone="muted">A GIF is kept exactly as it is, so it isn't cropped. Set its focus point above to control what a frame keeps.</Text> : animated ? <Text variant="small" tone="muted">An animated picture stays whole. Set its focus point above to control what a frame keeps.</Text> : <Button variant="secondary" icon="crop" data-editor-media-crop="">Crop the picture</Button>}
+            {drawing ? <Text variant="small" tone="muted">A drawing is shown whole, so it isn't cropped. Set its focus point above to control what a frame keeps.</Text> : gif ? <Text variant="small" tone="muted">A GIF is kept exactly as it is, so it isn't cropped. Set its focus point above to control what a frame keeps.</Text> : animated ? <Text variant="small" tone="muted">An animated picture stays whole. Set its focus point above to control what a frame keeps.</Text> : <Button variant="secondary" icon="crop" data-editor-media-crop="">Crop the picture</Button>}
           </ActionBar>
         </section>
 
@@ -251,7 +274,7 @@ const videoFacts = vs ? [`${vs.width} \u00d7 ${vs.height}`, vs.duration ? clock(
           ) : (
             <Text variant="small" tone="muted">None: the same picture shows in light and dark mode. Add one when a picture needs other colours on a dark page (a diagram, a logo, a screenshot).</Text>
           )}
-          <FileField label={picture.dark ? 'New dark version' : 'Dark version'} name="file" accept="image/jpeg,image/png,image/webp,image/avif,image/gif,image/tiff,image/svg+xml" hint="The same picture, in colours for a dark page, and of the same shape. Saved as WebP within the budgets, with its transparency; a GIF is kept exactly as it is." />
+          <FileField label={picture.dark ? 'New dark version' : 'Dark version'} name="file" accept={drawing ? 'image/svg+xml,.svg' : 'image/jpeg,image/png,image/webp,image/avif,image/gif,image/tiff,image/svg+xml'} hint={drawing ? 'The same drawing, in colours for a dark page, and of the same shape: an SVG, cleaned like the drawing (200 KB at most).' : 'The same picture, in colours for a dark page, and of the same shape. Saved as WebP within the budgets, with its transparency; a GIF is kept exactly as it is.'} />
           <IssueNote data-editor-form-issue="" />
           <ActionBar align="end">
             {picture.dark && <Button variant="quiet" icon="delete" data-editor-media-dark-remove="">Remove it</Button>}
@@ -262,6 +285,17 @@ const videoFacts = vs ? [`${vs.width} \u00d7 ${vs.height}`, vs.duration ? clock(
         <form class="part" data-editor-media-replace novalidate aria-labelledby="media-replace-title">
           <Heading level={3} size="ui" id="media-replace-title">Replace the picture</Heading>
           <FileField label="New picture" name="file" accept="image/jpeg,image/png,image/webp,image/avif,image/gif,image/tiff,image/svg+xml" hint="It keeps its name and details, so every page that uses it shows the new one. A GIF is kept exactly as it is." />
+          <div data-upload-svg hidden>
+            <Fieldset legend="Keep this SVG">
+              <Radio name="svgAs" value="drawing" label="Keep it as a drawing" hint="Sharp at any size: cleaned of scripts and outside links, shown whole and never cropped. 200 KB at most." checked />
+              <Radio name="svgAs" value="picture" label="Turn it into a picture" hint="Saved as WebP like a photo, at the size it's drawn." />
+              <StatusNote data-upload-svg-why="" hidden>It's over 200 KB, so it can only be turned into a picture.</StatusNote>
+            </Fieldset>
+          </div>
+          <div data-upload-large hidden>
+            <Checkbox label="Keep it large: up to 3840 px" name="large" checked={!!sc.large} hint="Only the lightbox shows it at that size, and it takes up to 3.5 MB. Otherwise it's saved at 2560 px." />
+          </div>
+          <StatusNote data-upload-note="" hidden />
           <IssueNote data-editor-form-issue="" />
           <ActionBar align="end">
             <Button variant="secondary" type="submit" icon="upload">Replace it</Button>

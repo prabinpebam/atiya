@@ -13,10 +13,12 @@
  *
  *   node scripts/editor-test-server.mjs [--port 4330] [--prepare-only]
  */
-import { cpSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
+import { cpSync, existsSync, mkdirSync, readFileSync, readdirSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { execFileSync, spawn } from 'node:child_process';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { GALLERY_FIXTURE } from '../integrations/roots.mjs';
+import { mergeOverlayStructure } from '../src/site/content/overlay.ts';
 import { startStandIn } from './lib/ai-stand-in.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
@@ -49,6 +51,25 @@ function writeAiSettings() {
   writeFileSync(join(FIXTURE, '.atiya', 'ai.json'), `${JSON.stringify({ version: 1, services: [standIn], writer: 'ollama', decider: { kind: 'rules' }, agents: { propose: false } }, null, 2)}\n`);
 }
 
+/**
+ * The made-up album (tests/fixtures/gallery/content) joins the copy as public content, as a `--mode test`
+ * build adds it (src/site/content/overlay.ts): its articles and media copied in, its pages appended to the
+ * real structure's sections. Never into the real content/.
+ */
+export function addGalleryFixture(content) {
+  const from = join(ROOT, GALLERY_FIXTURE);
+  for (const dir of ['articles', 'media']) {
+    for (const rel of readdirSync(join(from, dir), { recursive: true })) {
+      const to = join(content, dir, rel);
+      if (existsSync(to) && !statSync(to).isDirectory()) throw new Error(`The gallery fixture's ${dir}/${rel} is in the content too: rename the fixture's.`);
+    }
+    cpSync(join(from, dir), join(content, dir), { recursive: true });
+  }
+  const site = join(content, 'structures', 'site.json');
+  const merged = mergeOverlayStructure(JSON.parse(readFileSync(site, 'utf8')), JSON.parse(readFileSync(join(from, 'structures', 'site.json'), 'utf8')));
+  writeFileSync(site, `${JSON.stringify(merged, null, 2)}\n`);
+}
+
 export function prepare() {
   for (const d of [FIXTURE, REMOTE, PRIVATE_REMOTE, SEED]) rmSync(d, { recursive: true, force: true });
   // the private pages: the fixtures, committed to their own remote
@@ -66,6 +87,7 @@ export function prepare() {
   // the public repository: a copy of content/, and the private pages as its submodule
   mkdirSync(FIXTURE, { recursive: true });
   cpSync(join(ROOT, 'content'), join(FIXTURE, 'content'), { recursive: true });
+  addGalleryFixture(join(FIXTURE, 'content'));
   writeFileSync(join(FIXTURE, '.gitattributes'), 'content/**/*.json text eol=lf\n');
   // AI settings (ai-services.md §11), written again by every reset: the writer is the stand-in (scripts/lib/ai-stand-in.mjs)
   writeFileSync(join(FIXTURE, '.gitignore'), '.atiya/\n');

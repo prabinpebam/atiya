@@ -20,7 +20,7 @@ import { createHash } from 'node:crypto';
 import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { basename, join, relative, resolve, isAbsolute } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { privateRootFor } from './roots.mjs';
+import { overlayRootFor, privateRootFor } from './roots.mjs';
 import { PLANET_FILES, planetOn, siteFeatures } from './features.mjs';
 import { LAUNCH_HEADER, launchAllows } from './launch.mjs';
 import { draftScript } from '../src/site/theme/draft.ts';
@@ -193,6 +193,8 @@ export default function editor() {
         if (override && command === 'build') throw new Error('CONTENT_ROOT is only for the editor in dev and its tests: unset it to build, so the build reads the real content.');
         contentRoot = override && command === 'dev' ? (isAbsolute(override) ? override : resolve(root, override)) : join(root, 'content');
         privateRoot = privateRootFor(root, command);
+        // a test build's made-up public content beside the real (roots.mjs); never in dev or another build
+        const overlayRoot = overlayRootFor(root, command);
         // the header, footer and titles name the site from its own settings, never the code (desktop spec §9.2)
         siteName = siteNameOf(contentRoot);
         features = siteFeatures({ root, contentRoot });
@@ -201,20 +203,22 @@ export default function editor() {
             define: {
               __SITE_CONTENT_ROOT__: JSON.stringify(contentRoot),
               __SITE_PRIVATE_ROOT__: JSON.stringify(privateRoot),
+              __SITE_OVERLAY_ROOT__: JSON.stringify(overlayRoot),
               __SITE_NAME__: JSON.stringify(siteName),
               __SITE_PARENT_DOMAIN__: JSON.stringify(parentDomainOf(config.site, override && command === 'dev' ? contentRoot : root)),
               __SITE_FEATURES__: JSON.stringify(features),
               // a plain boolean, so a build without the planet's residents drops their chunks (plan M3a)
               __GAME_RESIDENTS__: JSON.stringify(features.residents),
             },
-            // the private masters a build imports (masters.ts globs through this alias)
-            resolve: { alias: { '@private-pages': privateRoot } },
+            // the private masters a build imports, and a test build's overlay's (masters.ts globs through these
+            // aliases; with no overlay, a folder that doesn't exist, in which the glob finds nothing)
+            resolve: { alias: { '@private-pages': privateRoot, '@content-overlay': overlayRoot ?? join(root, 'tests/fixtures/gallery/.no-overlay') } },
             server: {
               ...(process.env.SITE_STRICT_PORT ? { strictPort: true } : {}),
               // a picture's master (an upload, a crop) is never a module, but a new one made the dev server
               // reload every open page, losing unsaved typing in other tabs; the store tells the pages itself,
               // and the sidecar beside each master is what they show (documentation/editor/spec.md §8.4)
-              ...(command === 'dev' ? { watch: { ignored: [/[\\/](content|private-pages)[\\/]media[\\/].+\.(?:webp|jpe?g|png|avif|gif|svg|pdf|mp4|webm)$/i] } } : {}),
+              ...(command === 'dev' ? { watch: { ignored: [/[\\/](content|private-pages)[\\/]media[\\/].+\.(?:webp|jpe?g|png|avif|gif|svg|pdf|mp4|webm|vtt)$/i] } } : {}),
             },
           },
         });

@@ -1,11 +1,19 @@
 ---
 import Example from '../../library/Example.astro';
 import MediaDetails from '../components/MediaDetails.astro';
-import { PICTURE } from './samples';
+import { DRAWING, LARGE_PICTURE, PICTURE } from './samples';
 ---
 
 <Example title="A picture's details" description="Its focus point, its words, where it's used, its crops, its dark mode version, Replace and Delete." layout="block">
   <MediaDetails picture={PICTURE} usedIn={[{ label: 'A walk round the pond', href: 'articles/a-walk-round-the-pond/' }]} copies={['samples/pond-2']} />
+</Example>
+
+<Example title="A picture kept large" description="Its master is kept up to 3840 px for the lightbox: Make it standard saves it again at 2560 px. Replace offers Keep it large again, checked." layout="block">
+  <MediaDetails picture={LARGE_PICTURE} usedIn={[]} />
+</Example>
+
+<Example title="A drawing" description="An SVG kept as a vector: shown whole, never cropped, with no Find the focus; its dark version is an SVG too." layout="block">
+  <MediaDetails picture={DRAWING} usedIn={[]} />
 </Example>
 
 <Example title="Nothing chosen" description="What it says until a picture or a video is chosen." layout="block">

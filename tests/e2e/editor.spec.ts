@@ -1575,8 +1575,9 @@ test.describe('editor', () => {
     const sideProjects = page.locator('[data-manager-pages="side-projects"]');
     for (const id of [one, two]) await sideProjects.locator(`[data-manager-pick="${id}"]`).click();
     await expect(sideProjects.locator('[data-manager-count]')).toHaveText('2 selected');
+    const talksBefore = pagesOf('talks');
     await drag(two, section('talks'));
-    await expect.poll(() => pagesOf('talks')).toEqual([one, two]);
+    await expect.poll(() => pagesOf('talks')).toEqual([...talksBefore, one, two]);
     expect(pagesOf('side-projects')).toEqual(sideBefore);
   });
 

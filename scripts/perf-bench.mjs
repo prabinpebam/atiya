@@ -205,7 +205,7 @@ const readyAt = (page, predicate, arg, timeout = 120_000) => page.waitForFunctio
 function inventory(contentDir) {
   const walk = (d) => readdirSync(d, { withFileTypes: true }).flatMap((e) => (e.isDirectory() ? walk(join(d, e.name)) : [join(d, e.name)]));
   const files = walk(contentDir);
-  const media = files.filter((f) => /[\\/]media[\\/]/.test(f) && /\.(webp|jpe?g|png|avif|gif|mp4|webm)$/i.test(f));
+  const media = files.filter((f) => /[\\/]media[\\/]/.test(f) && /\.(webp|jpe?g|png|avif|gif|svg|mp4|webm)$/i.test(f));
   return {
     articles: files.filter((f) => /[\\/]articles[\\/][^\\/]+\.json$/.test(f)).length,
     jsonDocuments: files.filter((f) => f.endsWith('.json')).length,

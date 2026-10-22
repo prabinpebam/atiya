@@ -30,9 +30,10 @@ export const VIEW_OPTIONS = [
   { value: 'tiles', label: 'Tiles', description: 'An even grid of cards' },
   { value: 'bento', label: 'Bento', description: 'A lead, then halves and thirds' },
   { value: 'features', label: 'Features', description: 'Every page a lead: picture beside its words' },
+  { value: 'albums', label: 'Albums', description: 'Each album a band of its pictures' },
 ];
 
-export const KIND_LABEL: Record<Article['kind'], string> = { note: 'Article', page: 'Page', gallery: 'Gallery', talk: 'Talk' };
+export const KIND_LABEL: Record<Article['kind'], string> = { note: 'Article', page: 'Page', gallery: 'Album', talk: 'Talk' };
 
 /** A page as the Sections and Planet screens list it. */
 export interface ListedPage {

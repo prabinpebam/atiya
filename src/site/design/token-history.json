@@ -13,6 +13,15 @@
     "breakpoint.md": {"v":"56rem"},
     "breakpoint.short": {"v":"30rem"},
     "breakpoint.sm": {"v":"40rem"},
+    "c.album-grid.caption-lines": {"v":"2"},
+    "c.album-grid.drawing-paper": {"v":"var(--color-on-image)"},
+    "c.album-grid.query-small": {"v":"36rem"},
+    "c.album-grid.row-height": {"v":"14rem"},
+    "c.album-grid.row-height-small": {"v":"10rem"},
+    "c.album.band-space": {"v":"var(--space-section)"},
+    "c.album.drawing-paper": {"v":"var(--color-on-image)"},
+    "c.album.gap": {"v":"var(--space-2)"},
+    "c.album.query-compose": {"v":"40rem"},
     "c.bento.evidence": {"v":"15rem"},
     "c.bento.lift": {"v":"var(--space-2)"},
     "c.bento.picture": {"v":"20rem","d":"Bento's pictures now take their tile's width, shown whole: no replacement"},
@@ -445,6 +454,65 @@
     "weight.semibold": {"v":"600"}
   },
   "entries": [
+    {
+      "date": "2026-10-22",
+      "changes": {
+        "c.album-grid.caption-lines": [
+          null,
+          {
+            "v": "2"
+          }
+        ],
+        "c.album-grid.drawing-paper": [
+          null,
+          {
+            "v": "var(--color-on-image)"
+          }
+        ],
+        "c.album-grid.query-small": [
+          null,
+          {
+            "v": "36rem"
+          }
+        ],
+        "c.album-grid.row-height": [
+          null,
+          {
+            "v": "14rem"
+          }
+        ],
+        "c.album-grid.row-height-small": [
+          null,
+          {
+            "v": "10rem"
+          }
+        ],
+        "c.album.band-space": [
+          null,
+          {
+            "v": "var(--space-section)"
+          }
+        ],
+        "c.album.drawing-paper": [
+          null,
+          {
+            "v": "var(--color-on-image)"
+          }
+        ],
+        "c.album.gap": [
+          null,
+          {
+            "v": "var(--space-2)"
+          }
+        ],
+        "c.album.query-compose": [
+          null,
+          {
+            "v": "40rem"
+          }
+        ]
+      }
+    },
     {
       "date": "2026-10-21",
       "changes": {

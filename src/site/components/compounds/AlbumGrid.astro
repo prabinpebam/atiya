@@ -1,0 +1,356 @@
+---
+/**
+ * An album's items on its page (documentation/gallery/spec.md §7): every item, in album order, in the
+ * justified Grid (no picture cropped by more than a quarter to fit its row) or as a Story, one after
+ * another at the wide width with its words under it. Each item is a link into the page's lightbox (the
+ * group `album`), at its own address (`#item-<id>`); a video or an embed shows its poster with the Play
+ * badge, an animated picture plays (its still under reduced motion), and a drawing sits whole. Each
+ * item's words for the lightbox (caption, description, credit, date, place) wait in a template beside it.
+ * In the Grid, an album may show each caption under its cell, at most two lines, its rows kept level.
+ * @tier compound
+ * @a11y Every item is a real link: a picture to its full size, a video to its file, an embed to its page at the provider, so the album works without scripts.
+ * @a11y A link is named by its picture's alt text (", animated" after an animated one's), or "Video: <title>" and its length; badges are hidden from assistive technology, their words in the name.
+ * @a11y Items keep album order in the source, so Tab, reading order and the lightbox follow the album.
+ * @a11y The words in the template are inert until the lightbox shows them, so nothing is read out twice.
+ * @key Enter: opens the focused item in the lightbox (without scripts, follows its link)
+ */
+import Image from '../fundamentals/Image.astro';
+import Icon from '../fundamentals/Icon.astro';
+import Caption from '../fundamentals/Caption.astro';
+import Prose from '../fundamentals/Prose.astro';
+import Text from '../fundamentals/Text.astro';
+import { sizes } from '../../design/responsive';
+import { linkAttrs, NEW_TAB_NOTE } from '../../design/links';
+import { pageUrl, playerUrl } from '../../design/videoProviders';
+import { ALBUM_GROUP } from '../../scripts/lightboxRules';
+import { badgeOf, cellHref, cellName, type AlbumCell } from '../../scripts/albumGrid';
+
+interface Props {
+  /** The album's items, in album order (content/albumPage.ts `albumCells` makes them). */
+  items: AlbumCell[];
+  /** The album's title: the lightbox's name. */
+  title: string;
+  /** grid: justified rows at the wide width; story: one item after another, each with its words. */
+  layout?: 'grid' | 'story';
+  /** The Grid only: each item's caption under its cell, at most two lines (the room kept where there's none). */
+  captions?: boolean;
+}
+
+const { items, title, layout = 'grid', captions = false } = Astro.props;
+const story = layout === 'story';
+const underCells = !story && captions;
+const cellSizes = story ? sizes(['wide', '96vw'], 'wide') : sizes(['sm', '50vw'], '33vw');
+---
+
+<div class="album-grid" data-layout={layout} data-captions={underCells ? '' : undefined}>
+  <ol class="list" role="list" data-justified={story ? undefined : ''}>
+    {
+      items.map((cell, i) => {
+        const p = cell.picture;
+        const href = cellHref(cell, pageUrl);
+        const policy = linkAttrs(href, Astro.url.hostname);
+        const badge = badgeOf(cell);
+        const playable = cell.kind === 'video' || cell.kind === 'embed';
+        const drawing = cell.kind === 'drawing';
+        const words = !!(cell.caption || cell.description || cell.credit || cell.taken || cell.place);
+        return (
+          <li class="cell" id={`item-${cell.id}`} data-album-cell data-kind={cell.kind} data-width={cell.width} data-height={cell.height} style={`--item-w: ${cell.width}; --item-h: ${cell.height}`}>
+            <figure class="wrap">
+              <a
+                class="link"
+                href={href}
+                target={policy.target}
+                rel={policy.rel}
+                aria-label={`${cellName(cell, i, items.length)}${policy.newTab ? NEW_TAB_NOTE : ''}`}
+                data-lightbox={ALBUM_GROUP}
+                data-kind={cell.kind}
+                data-item-id={cell.id}
+                data-album-title={title}
+                data-caption={cell.caption ?? ''}
+                data-alt={p?.alt || cell.title || ''}
+                data-thumb={p?.thumb}
+                data-full-dark={p?.dark?.full}
+                data-thumb-dark={p?.dark?.thumb}
+                data-poster={playable ? p?.full : undefined}
+                data-poster-dark={playable ? p?.dark?.full : undefined}
+                data-video-type={cell.video?.type}
+                data-embed-src={cell.embed ? playerUrl(cell.embed.provider, cell.embed.id, { autoplay: true }) : undefined}
+                data-download={cell.download}
+              >
+                {p ? (
+                  <Image
+                    src={p.src}
+                    srcset={p.srcset}
+                    poster={p.poster}
+                    sizes={cellSizes}
+                    alt={playable ? '' : p.alt}
+                    width={p.width}
+                    height={p.height}
+                    display={drawing ? 'fit' : 'fill'}
+                    focus={story ? undefined : p.focus}
+                    fill={!story}
+                    drawing={p.drawing}
+                    priority={i === 0}
+                    radius={story ? 'feature' : 'default'}
+                    bg={drawing && !p.dark ? { light: p.bg ?? 'transparent', dark: 'var(--c-album-grid-drawing-paper)' } : undefined}
+                    dark={p.dark}
+                  />
+                ) : (
+                  <span class="placeholder" />
+                )}
+                {badge && (
+                  <span class="badge" aria-hidden="true">
+                    <Icon name={badge.icon} size="text" />
+                    {badge.words && <span>{badge.words}</span>}
+                  </span>
+                )}
+              </a>
+              {underCells && <figcaption class="caption" data-cell-caption>{cell.caption}</figcaption>}
+              {story && words && (
+                <figcaption class="words">
+                  {(cell.caption || cell.credit) && (
+                    <Caption as="div" credit={cell.credit}>
+                      {cell.caption}
+                    </Caption>
+                  )}
+                  {cell.description && (
+                    <Prose size="compact">
+                      <Fragment set:html={cell.description} />
+                    </Prose>
+                  )}
+                  {(cell.taken || cell.place) && (
+                    <p class="meta">
+                      {cell.taken && (
+                        <Text as="time" variant="meta" datetime={cell.taken}>
+                          Taken {cell.takenWords}
+                        </Text>
+                      )}
+                      {cell.place && (
+                        <Text as="span" variant="meta">
+                          {cell.place}
+                        </Text>
+                      )}
+                    </p>
+                  )}
+                </figcaption>
+              )}
+            </figure>
+            {words && (
+              <template data-album-words>
+                {cell.caption && <p data-words="caption">{cell.caption}</p>}
+                {cell.description && <div data-words="description" set:html={cell.description} />}
+                {cell.credit && <p data-words="credit">{cell.credit}</p>}
+                {cell.taken && (
+                  <time data-words="taken" datetime={cell.taken}>
+                    {cell.takenWords}
+                  </time>
+                )}
+                {cell.place && <p data-words="place">{cell.place}</p>}
+              </template>
+            )}
+          </li>
+        );
+      })
+    }
+  </ol>
+</div>
+
+<style>
+  .album-grid {
+    container-type: inline-size;
+  }
+
+  .list {
+    display: grid;
+    gap: var(--space-section);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .wrap {
+    display: grid;
+    margin: 0;
+  }
+
+  .link {
+    position: relative;
+    display: block;
+    border-radius: var(--c-image-radius);
+    color: var(--color-on-image);
+    text-decoration: none;
+    transition: transform var(--duration-base) var(--ease-spring);
+  }
+
+  @media (hover: hover) {
+    .link:hover {
+      z-index: var(--layer-raised);
+      transform: translateY(calc(var(--space-0-5) * -1));
+    }
+  }
+
+  .link:active {
+    transform: translateY(0);
+  }
+
+  .placeholder {
+    display: block;
+    height: 100%;
+    aspect-ratio: var(--item-w) / var(--item-h);
+    border-radius: inherit;
+    background: var(--c-image-placeholder);
+  }
+
+  /* the Play or Animated badge, on the image shade the video block's length uses */
+  .badge {
+    position: absolute;
+    inset-block-end: var(--space-2);
+    inset-inline-start: var(--space-2);
+    z-index: var(--layer-raised);
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-1);
+    padding: var(--space-1) var(--space-2);
+    border-radius: var(--radius-pill);
+    background: var(--color-image-shade);
+    color: var(--color-on-image);
+    font: var(--type-label);
+  }
+
+  /* ---------- the Grid: justified rows (the script places each cell; without it, rows that wrap) ---------- */
+  .album-grid[data-layout='grid'] .list {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    gap: var(--space-3);
+  }
+
+  .album-grid[data-layout='grid'] .cell {
+    flex: 1 1 var(--size-measure-narrow);
+    min-width: 0;
+  }
+
+  .album-grid[data-layout='grid'] .link {
+    height: var(--c-album-grid-row-height);
+  }
+
+  .album-grid[data-layout='grid'] .list[data-ready] {
+    position: relative;
+    display: block;
+  }
+
+  .album-grid[data-layout='grid'] .list[data-ready] .cell {
+    position: absolute;
+    inset-block-start: 0;
+    inset-inline-start: 0;
+    width: var(--cell-width);
+    height: var(--cell-block);
+    transform: translate(var(--cell-left), var(--cell-top));
+  }
+
+  .album-grid[data-layout='grid'] .list[data-ready] .link {
+    height: var(--cell-height);
+  }
+
+  /* a caption under its cell: two lines at most, its room kept when there's none, so every row stays level */
+  .caption {
+    display: -webkit-box;
+    overflow: hidden;
+    block-size: calc(var(--c-album-grid-caption-lines) * var(--leading-ui) * var(--text-sm));
+    box-sizing: content-box;
+    margin: 0;
+    padding-block-start: var(--space-2);
+    font: var(--type-hint);
+    color: var(--color-text-muted);
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: var(--c-album-grid-caption-lines);
+  }
+
+  /* ---------- the Story: one item after another, whole, its words under it at the text width ---------- */
+  .album-grid[data-layout='story'] .wrap {
+    gap: var(--space-4);
+  }
+
+  /* a portrait narrower, so it's never taller than the screen below the header */
+  .album-grid[data-layout='story'] .link {
+    justify-self: center;
+    width: min(100%, (100dvh - var(--size-chrome-block) - var(--space-12)) * var(--item-w) / var(--item-h));
+  }
+
+  .words {
+    display: grid;
+    gap: var(--space-2);
+    justify-self: center;
+    width: min(100%, var(--size-measure));
+  }
+
+  .meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-1) var(--space-3);
+    margin: 0;
+  }
+
+  @container (width < 36rem) {
+    .album-grid[data-layout='grid'] .link {
+      height: var(--c-album-grid-row-height-small);
+    }
+
+    .badge {
+      inset-block-end: var(--space-1);
+      inset-inline-start: var(--space-1);
+    }
+  }
+</style>
+
+<script>
+  import { each } from '../../scripts/page';
+  import { justifyGallery } from '../../scripts/justifiedGallery';
+  import { levelRows } from '../../scripts/albumGrid';
+  import { narrowerThan } from '../../scripts/media';
+  import { cssNumber } from '../../scripts/units';
+
+  // the Grid's justified rows, worked out for the list's own width (it's a container: never the screen's)
+  each<HTMLElement>('[data-justified]', (list, signal) => {
+    const cells = [...list.querySelectorAll<HTMLElement>('[data-album-cell]')];
+    const caption = list.querySelector<HTMLElement>('[data-cell-caption]');
+    let frame = 0;
+    const render = () => {
+      frame = 0;
+      const remPx = parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
+      const css = getComputedStyle(list);
+      const gap = parseFloat(css.columnGap) || 0;
+      const small = narrowerThan(list.clientWidth, css.getPropertyValue('--c-album-grid-query-small'), remPx);
+      const rowHeight = cssNumber(css.getPropertyValue(small ? '--c-album-grid-row-height-small' : '--c-album-grid-row-height'), remPx);
+      // with captions under the cells, no picture spans two rows, and each row makes room for its captions
+      const room = caption ? caption.offsetHeight : 0;
+      const sizes = cells.map((c) => ({ width: Number(c.dataset.width), height: Number(c.dataset.height) }));
+      const layout = justifyGallery(sizes, list.clientWidth, rowHeight, gap, { span: !caption });
+      const level = levelRows(layout.boxes, layout.rows, layout.height, room);
+      for (const box of level.boxes) {
+        const cell = cells[box.index]!;
+        cell.style.setProperty('--cell-left', `${box.left}px`);
+        cell.style.setProperty('--cell-top', `${box.top}px`);
+        cell.style.setProperty('--cell-width', `${box.width}px`);
+        cell.style.setProperty('--cell-height', `${box.height}px`);
+        cell.style.setProperty('--cell-block', `${box.block}px`);
+      }
+      list.style.height = `${level.height}px`;
+      list.dataset.ready = '';
+    };
+    const schedule = () => {
+      if (!frame) frame = requestAnimationFrame(render);
+    };
+    const observer = new ResizeObserver(schedule);
+    observer.observe(list);
+    signal.addEventListener(
+      'abort',
+      () => {
+        observer.disconnect();
+        if (frame) cancelAnimationFrame(frame);
+      },
+      { once: true },
+    );
+    schedule();
+  });
+</script>

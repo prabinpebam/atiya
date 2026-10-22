@@ -2,10 +2,13 @@
  * The media library (documentation/editor/spec.md §6): opening a picture's details from the grid (the
  * address keeps it, so Back works), and the details' own changes: the focus point, the sidecar's fields,
  * Replace and Delete. Each saves to the picture at once, in one store transaction, and the grid and the
- * details are rendered again from the server.
+ * details are rendered again from the server. Gallery spec §4: Find the focus (measured by the server, saved
+ * with the details), Make it standard, and Replace's choices (an SVG's two ways, Keep it large).
  */
 import { api, announce, describeIssue, feedbackTiming, saveStatus, startTask, swapRegions } from './client';
 import { openCrop } from './crop';
+import { showUploadOptions, sizeOf, uploadNote } from './uploadOptions';
+import { APNG_NOTE, isApng, refusedFormat, removedNote, typeOf } from '../model/upload';
 import type { ImageMedia, VideoMedia } from '../../content/schema';
 
 const nameOf = (id: string) => id.split('/').pop() ?? id;
@@ -154,6 +157,26 @@ export function initMediaDetails(root: HTMLElement, signal: AbortSignal) {
     { signal },
   );
   root.querySelector('[data-editor-focus-clear]')?.addEventListener('click', () => setFocus(null), { signal });
+  // Find the focus (gallery spec §4): the server measures where the subject is; the point moves there, saved with the details
+  const find = root.querySelector<HTMLButtonElement>('[data-editor-focus-find]');
+  find?.addEventListener(
+    'click',
+    async () => {
+      if (find.getAttribute('aria-busy') === 'true') return;
+      const task = startTask('Finding the focus…', { el: find, busyLabel: 'Finding…' });
+      const r = await api<{ focus?: string | null }>('POST', `media/${state.id}/focus`);
+      if (!r.ok) {
+        task.failed();
+        return announce(`The focus wasn't found: ${(r.data.issues ?? []).map(describeIssue).join(' ') || 'try again'}`, 'negative');
+      }
+      void task.done();
+      if (!r.data.focus) return announce('No clear subject: the focus point stays where it is.');
+      setFocus(r.data.focus.split(' ').map((v) => parseFloat(v)) as [number, number]);
+      form.dataset.unsaved = '';
+      saveStatus.dirty('Focus point found: save the details to keep it');
+    },
+    { signal },
+  );
 
   // ---------- the details ----------
   form.addEventListener(
@@ -225,18 +248,23 @@ export function initMediaDetails(root: HTMLElement, signal: AbortSignal) {
       const file = d.get('file');
       if (!(file instanceof File) || !file.size) return say(darkForm, 'Choose the dark version.');
       say(darkForm, '');
+      const button = darkForm.querySelector<HTMLButtonElement>('button[type="submit"]');
+      if (button?.getAttribute('aria-busy') === 'true') return;
+      const task = startTask('Saving the dark version…', { el: button, busyLabel: 'Saving…' });
       saveStatus.saving();
-      const r = await api<{ width: number; height: number; lightWidth: number; lightHeight: number }>('POST', `media/${state.id}/dark`, d);
+      const r = await api<{ width: number; height: number; lightWidth: number; lightHeight: number; removed?: string[] }>('POST', `media/${state.id}/dark`, d);
       if (!r.ok) {
+        task.failed();
         const why = (r.data.issues ?? []).map(describeIssue).join(' ') || "The dark version wasn't saved.";
         saveStatus.failed(`Not saved: ${why}`);
         return say(darkForm, why);
       }
+      void task.done();
       delete darkForm.dataset.unsaved;
       await swapRegions(['media-details', 'media-grid']);
       const { width, height, lightWidth, lightHeight } = r.data;
       const differs = lightWidth && lightHeight && Math.abs(width / height / (lightWidth / lightHeight) - 1) > 0.01;
-      saveStatus.saved(`Saved the dark version of ${nameOf(state.id)}${differs ? ': its shape differs from the picture\u2019s' : ''}`);
+      saveStatus.saved(`Saved the dark version of ${nameOf(state.id)}${differs ? ': its shape differs from the picture\u2019s' : ''}${r.data.removed?.length ? `. ${removedNote(r.data.removed)}` : ''}`);
     },
     { signal },
   );
@@ -252,8 +280,30 @@ export function initMediaDetails(root: HTMLElement, signal: AbortSignal) {
     { signal },
   );
 
-  // ---------- replace ----------
+  // ---------- replace: with an SVG's two ways and Keep it large, as an upload offers them ----------
   const replace = root.querySelector<HTMLFormElement>('[data-editor-media-replace]');
+  const replaceFile = replace?.querySelector<HTMLInputElement>('input[type="file"]');
+  let choosing = 0;
+  replaceFile?.addEventListener(
+    'change',
+    async () => {
+      const mine = ++choosing;
+      const file = replaceFile.files?.[0];
+      say(replace!, '');
+      showUploadOptions(replace!, null);
+      uploadNote(replace!, '');
+      if (!file) return;
+      const refused = refusedFormat(file);
+      if (refused) return say(replace!, refused);
+      const type = typeOf(file);
+      const apng = type === 'image/png' && (await file.arrayBuffer().then((b) => isApng(new Uint8Array(b)), () => false));
+      const { width, height } = await sizeOf(file);
+      if (mine !== choosing) return;
+      showUploadOptions(replace!, { type, bytes: file.size, width, height, animated: apng });
+      uploadNote(replace!, apng ? APNG_NOTE : '');
+    },
+    { signal },
+  );
   replace?.addEventListener(
     'submit',
     async (e) => {
@@ -261,16 +311,43 @@ export function initMediaDetails(root: HTMLElement, signal: AbortSignal) {
       const d = new FormData(replace);
       const file = d.get('file');
       if (!(file instanceof File) || !file.size) return say(replace, 'Choose the new picture.');
+      const refused = refusedFormat(file);
+      if (refused) return say(replace, refused);
       say(replace, '');
+      const button = replace.querySelector<HTMLButtonElement>('button[type="submit"]');
+      if (button?.getAttribute('aria-busy') === 'true') return;
+      const task = startTask(`Replacing ${nameOf(state.id)}…`, { el: button, busyLabel: 'Replacing…' });
       saveStatus.saving();
-      const r = await api('POST', `media/${state.id}/replace`, d);
+      const r = await api<{ removed?: string[] }>('POST', `media/${state.id}/replace`, d);
       if (!r.ok) {
+        task.failed();
         const why = (r.data.issues ?? []).map(describeIssue).join(' ') || "It wasn't replaced.";
         saveStatus.failed(`Not replaced: ${why}`);
         return say(replace, why);
       }
+      void task.done();
       await swapRegions(['media-details', 'media-grid']);
-      saveStatus.saved(`Replaced ${nameOf(state.id)}`);
+      saveStatus.saved(`Replaced ${nameOf(state.id)}${r.data.removed?.length ? `. ${removedNote(r.data.removed)}` : ''}`);
+    },
+    { signal },
+  );
+
+  // ---------- make it standard: a picture kept large saved again at 2560 px ----------
+  const standard = root.querySelector<HTMLButtonElement>('[data-editor-media-standard]');
+  standard?.addEventListener(
+    'click',
+    async () => {
+      if (standard.getAttribute('aria-busy') === 'true') return;
+      const task = startTask(`Making ${nameOf(state.id)} standard…`, { el: standard, busyLabel: 'Saving at 2560 px…' });
+      saveStatus.saving();
+      const r = await api('POST', `media/${state.id}/standard`);
+      if (!r.ok) {
+        task.failed();
+        return saveStatus.failed(`Not made standard: ${(r.data.issues ?? []).map(describeIssue).join(' ') || 'the change was refused'}`);
+      }
+      void task.done();
+      await swapRegions(['media-details', 'media-grid']);
+      saveStatus.saved(`Made ${nameOf(state.id)} standard: saved again at 2560 px`);
     },
     { signal },
   );

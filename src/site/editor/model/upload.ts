@@ -205,6 +205,28 @@ export const MAX_LARGE_SIDE = 3840;
 export const canKeepLarge = (p: { width: number; height: number; type: string; animated?: boolean }) =>
   Math.max(p.width, p.height) > MAX_SIDE && !keptAsIs(p.type) && p.type !== 'image/svg+xml' && !p.animated;
 
+/** What a file chosen offers before it's saved (gallery spec §4, §4.1): an SVG's choice, and Keep it large. */
+export interface UploadOptions {
+  /** An SVG: whether it can be kept as a drawing, and which choice starts selected; null for anything else. */
+  svg: { drawing: boolean; default: 'drawing' | 'picture' } | null;
+  /** "Keep it large" is offered. */
+  large: boolean;
+}
+
+/** The choices an upload (or a Replace) offers for a file of this type, size and shape. */
+export function uploadOptions(f: { type: string; bytes: number; width: number; height: number; animated?: boolean }): UploadOptions {
+  const svg = f.type === 'image/svg+xml' ? svgChoices(f.bytes) : null;
+  return { svg, large: !svg && canKeepLarge(f) };
+}
+
+/** "a, b and c". */
+const listed = (items: string[]) => (items.length < 2 ? items.join('') : `${items.slice(0, -1).join(', ')} and ${items[items.length - 1]}`);
+
+/** What the status line says a drawing's cleaning took out (the server's `removed`), or '' when it took nothing. */
+export function removedNote(removed: readonly string[] | undefined): string {
+  return removed?.length ? `Cleaned before saving: took out ${listed([...removed])}.` : '';
+}
+
 // ---------- the focus point (gallery spec §4, D-G16) ----------
 
 /**

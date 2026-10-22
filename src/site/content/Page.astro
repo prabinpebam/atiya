@@ -13,12 +13,12 @@ import Blocks from './Blocks.astro';
 import { getArticle, getOpenRoutes, getPlanet, getRecommendations, getRoutes, getSite, getStructure } from './repository';
 import { recommendationBand } from './recommendations';
 import { withPhotos } from './recommendationsBand';
-import { pageMeasure } from './reading';
-import { cardPicture, openingOf, relatedOf } from './opening';
+import { albumOf, cardPicture, measureOf, openingOf, relatedOf } from './opening';
 import { exploreAction, footerLinks, siteNav } from './navigation';
 import { withBase } from '../design/meta';
 import { searchCopy } from './limits';
 import { mergeAfterAnchors } from './sectionOrder';
+import { bandsOf } from './bands';
 import type { Route } from './routes';
 import type { Article } from './schema';
 import type { ComponentProps } from 'astro/types';
@@ -60,6 +60,8 @@ if (sealed && import.meta.env.PROD) {
 let header: ComponentProps<typeof ArticleLayout>['header'] | undefined;
 let related: ComponentProps<typeof ArticleLayout>['related'];
 let relatedIds: string[] = [];
+// a gallery page's album: its introduction and every item, before its own words (gallery spec §7)
+const album = article?.album ? await albumOf(article) : undefined;
 if (article) {
   // its section (a page's parent is always one: V22)
   const section = route && route.ancestors.length > 1 ? route.ancestors.at(-1) : undefined;
@@ -76,7 +78,7 @@ if (article) {
 // a hub lists what it places (published): its open pages as story cards, its private ones sealed (§2.1)
 const story = async (r: Route) => {
   const a = getArticle((r.node as { item: { id: string } }).item.id)!;
-  return { node: r.node.id, href: withBase(r.path), title: a.title, dek: a.summary, meta: pageMeasure(a), picture: await cardPicture(a) };
+  return { node: r.node.id, href: withBase(r.path), title: a.title, dek: a.summary, meta: measureOf(a), picture: await cardPicture(a) };
 };
 const children = node?.kind === 'hub' ? getRoutes().filter((r) => r.parent === node && r.node.kind === 'item' && r.node.item.type === 'article') : [];
 const stories = await Promise.all(children.filter((r) => r.access === 'open').map(story));
@@ -101,11 +103,16 @@ const shown = sealing
 const recommendations = node?.kind === 'hub' ? await withPhotos(recommendationBand(node.recommendations, getRecommendations(), shown.map((s) => s.node ?? ''))) : undefined;
 // the articles this page shows (dev only): a change to any other article's own files doesn't reload it (report R10)
 const shows = import.meta.env.DEV ? (article ? [article.id, ...relatedIds] : node?.kind === 'hub' ? children.map((r) => (r.node as { item: { id: string } }).item.id) : undefined) : undefined;
+// the Albums view (documentation/gallery/spec.md §5): each open album page a band; an album with nothing in it is a draft, never shown
+const albums =
+  node?.kind === 'hub' && node.view === 'albums'
+    ? await bandsOf(children.filter((r) => r.access === 'open').map((r) => ({ node: r.node.id, page: (r.node as { item: { id: string } }).item.id, href: withBase(r.path) })))
+    : undefined;
 ---
 
 {
   article && header ? (
-    <ArticleLayout title={docTitle} description={article.seo?.description ?? searchCopy(article.summary)} nav={nav} footer={footer} action={action} crumbs={crumbs} header={{ ...header, isPrivate: access === 'private', draft: import.meta.env.DEV && !editable && !!route && !route.published }} related={related} sealed={sealed} shows={shows}>
+    <ArticleLayout title={docTitle} description={article.seo?.description ?? searchCopy(article.summary)} nav={nav} footer={footer} action={action} crumbs={crumbs} header={{ ...header, isPrivate: access === 'private', draft: import.meta.env.DEV && !editable && !!route && !route.published }} related={related} sealed={sealed} shows={shows} album={album}>
       <Blocks blocks={article.body} editable={editable} />
       <slot name="page-end" slot="page-end" />
     </ArticleLayout>
@@ -120,11 +127,12 @@ const shows = import.meta.env.DEV ? (article ? [article.id, ...relatedIds] : nod
         footer={footer}
         action={action}
         crumbs={crumbs}
-        stories={shown}
+        stories={albums ? shown.filter((s) => !albums.hidden.has(s.node ?? '')) : shown}
         privatePages={sealing ? privatePages : []}
         signIn={privatePages.length ? signInHref(route!.path) : undefined}
         ask={privatePages.length ? contact : undefined}
         view={node.view}
+        albums={albums?.bands}
         shows={shows}
         recommendations={recommendations}
         empty={recommendations ? undefined : 'Nothing here yet. This section is being written.'}

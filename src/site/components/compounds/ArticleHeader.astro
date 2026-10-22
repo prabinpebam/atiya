@@ -27,6 +27,8 @@ interface Props {
   author?: { name: string; avatar?: string; avatarDark?: string };
   /** ISO date (2026-09-29). */
   date?: string;
+  /** An album's span of dates, in words ("March to May 2026"), shown instead of the date (gallery spec §7). */
+  dates?: string;
   /** Its measure: "6 min read", or "12 pictures" for a gallery. */
   readingTime?: string;
   /** The lead picture, with its caption and credit, in a 21:9 frame (filling it, cropped around its focus point "50% 30%", unless display says otherwise), and its dark mode version if it has one. */
@@ -43,7 +45,7 @@ interface Props {
   draft?: boolean;
 }
 
-const { title, standfirst, topic, author, date, readingTime, picture, pictureWidth = 'wide', portrait, level = 1, isPrivate = false, draft = false } = Astro.props;
+const { title, standfirst, topic, author, date, dates, readingTime, picture, pictureWidth = 'wide', portrait, level = 1, isPrivate = false, draft = false } = Astro.props;
 const shown = date ? new Date(`${date}T12:00:00Z`).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' }) : null;
 ---
 
@@ -62,12 +64,17 @@ const shown = date ? new Date(`${date}T12:00:00Z`).toLocaleDateString('en-GB', {
       <Heading level={level} size="h1">{title}</Heading>
       {standfirst && <Text variant="standfirst">{standfirst}</Text>}
       {
-        (author || shown || readingTime) && (
+        (author || shown || dates || readingTime) && (
           <div class="byline">
             {author && <Avatar name={author.name} src={author.avatar} srcDark={author.avatarDark} size="sm" decorative />}
             <p class="meta">
               {author && <span class="name">{author.name}</span>}
-              {shown && (
+              {dates && (
+                <Text as="span" variant="meta">
+                  {dates}
+                </Text>
+              )}
+              {!dates && shown && (
                 <Text as="time" variant="meta" datetime={date}>
                   {shown}
                 </Text>

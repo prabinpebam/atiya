@@ -5,7 +5,7 @@
  */
 import { describe, expect, it } from 'vitest';
 import { clock, describePicture, describeVideo, formatLabel, isVideoFile, keptAsIs, MAX_GIF_BYTES, MAX_PICTURE_BYTES, MAX_VIDEO_BYTES, mayHaveAlpha, megabytes, needsConversion, pastedName, pictureOfPaste, pictureSizeIssue, pngName, posterTime, typeOf, videoSizeIssue, videoTypeOf } from '../../src/site/editor/model/upload';
-import { APNG_NOTE, canKeepLarge, focusPercent, isApng, joinFocus, MAX_LARGE_SIDE, MAX_SIDE, refusedFormat, svgChoices, SVG_DRAWING_MAX_BYTES } from '../../src/site/editor/model/upload';
+import { APNG_NOTE, canKeepLarge, focusPercent, isApng, joinFocus, MAX_LARGE_SIDE, MAX_SIDE, refusedFormat, removedNote, svgChoices, SVG_DRAWING_MAX_BYTES, uploadOptions } from '../../src/site/editor/model/upload';
 import { exifBlock, exifDay, takenFromTiff, takenOf } from '../../src/site/editor/model/exif';
 import sharp from 'sharp';
 
@@ -256,5 +256,24 @@ describe('the date taken, read at upload (gallery spec §4)', () => {
     expect(takenOf(await base.clone().webp().withExif(both).toBuffer())).toBe('2018-09-10');
     expect(takenOf(await base.clone().jpeg().withExif({ IFD0: { DateTime: '2022:05:06 07:08:09' } }).toBuffer())).toBe('2022-05-06');
     expect(takenOf(await base.clone().jpeg().toBuffer())).toBeNull();
+  });
+});
+
+describe('what an upload offers before saving (gallery spec §4, §4.1)', () => {
+  it('offers an SVG its two ways, a drawing first up to 200 KB, and never Keep it large', () => {
+    expect(uploadOptions({ type: 'image/svg+xml', bytes: 4_000, width: 5000, height: 3000 })).toEqual({ svg: { drawing: true, default: 'drawing' }, large: false });
+    expect(uploadOptions({ type: 'image/svg+xml', bytes: SVG_DRAWING_MAX_BYTES + 1, width: 100, height: 100 })).toEqual({ svg: { drawing: false, default: 'picture' }, large: false });
+  });
+  it('offers Keep it large only to a still raster picture over 2560 px', () => {
+    expect(uploadOptions({ type: 'image/jpeg', bytes: 5e6, width: 4000, height: 3000 })).toEqual({ svg: null, large: true });
+    expect(uploadOptions({ type: 'image/jpeg', bytes: 5e6, width: 2560, height: 1440 })).toEqual({ svg: null, large: false });
+    expect(uploadOptions({ type: 'image/gif', bytes: 5e6, width: 4000, height: 3000 }).large).toBe(false);
+    expect(uploadOptions({ type: 'image/png', bytes: 5e6, width: 4000, height: 3000, animated: true }).large).toBe(false);
+  });
+  it('says what cleaning a drawing took out, or nothing', () => {
+    expect(removedNote(undefined)).toBe('');
+    expect(removedNote([])).toBe('');
+    expect(removedNote(['scripts'])).toBe('Cleaned before saving: took out scripts.');
+    expect(removedNote(['scripts', 'event handlers', 'comments'])).toBe('Cleaned before saving: took out scripts, event handlers and comments.');
   });
 });

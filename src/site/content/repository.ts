@@ -35,8 +35,8 @@ export function content(): ContentIndex {
     // the store's snapshot after its write, when nothing else changed since; else read again (only the
     // documents that changed are parsed again: source.ts)
     const snap = timed('content.read', () => currentSnapshot());
-    const load = import.meta.env.DEV ? loadContentLeavingOut : loadContent;
-    const index = timed('content.validate', () => load(snap.docs, snap.masters, snap.errors));
+    const sizes = snap.sizes ?? new Map<string, number>();
+    const index = timed('content.validate', () => (import.meta.env.DEV ? loadContentLeavingOut(snap.docs, snap.masters, snap.errors, sizes) : loadContent(snap.docs, snap.masters, snap.errors, new Set(), sizes)));
     for (const w of index.warnings) console.warn(`[content] ${w}`);
     for (const p of index.problems) console.warn(`[content] left out until fixed: ${p.file}${p.path ? `: ${p.path}` : ''}: ${p.message}`);
     cached = { generation: now, index };
@@ -196,6 +196,16 @@ export const isVideoMedia = (id: string): boolean => content().videos.has(id);
 export function videoHref(id: string): string {
   const v = getVideo(id);
   return withBase(`/media/${id}.${v.file.split('.').pop()}`);
+}
+
+/**
+ * Where a video's caption tracks are published (with the base), beside it: `<base>/media/<owner>/<name>.<language>.vtt`
+ * for each of its sidecar's `captions` (gallery spec §4.3), served in dev and copied at build by the content-files integration.
+ */
+export function captionHrefs(id: string): { src: string; srclang: string; label: string; default?: boolean }[] {
+  const v = getVideo(id);
+  const dir = id.slice(0, id.lastIndexOf('/') + 1);
+  return (v.captions ?? []).map((c) => ({ src: withBase(`/media/${dir}${c.file}`), srclang: c.srclang, label: c.label, ...(c.default ? { default: true } : {}) }));
 }
 
 /** A gallery page's album with each item's media looked up (gallery spec §3): undefined for any other page. */

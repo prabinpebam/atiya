@@ -123,7 +123,7 @@
         "slug": "gallery",
         "title": "Gallery",
         "summary": "A visual way to explore my work.",
-        "view": "list",
+        "view": "albums",
         "children": []
       },
       {
