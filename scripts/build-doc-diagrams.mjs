@@ -48,6 +48,9 @@ const DIAGRAMS = [
   { name: 'home-curation', page: 'documentation/home-views/curation.md', prefix: 'hv-curation' },
   { name: 'home-editor', page: 'documentation/home-views/owner-flows.md', prefix: 'hv-editor' },
   { name: 'home-controls', page: 'documentation/home-views/controls.md', prefix: 'hv-controls' },
+  { name: 'gallery-band', page: 'documentation/gallery/spec.md', prefix: 'ga-band' },
+  { name: 'gallery-lightbox', page: 'documentation/gallery/spec.md', prefix: 'ga-lightbox' },
+  { name: 'gallery-arranger', page: 'documentation/gallery/spec.md', prefix: 'ga-arranger' },
 ];
 
 const V = (n) => `var(--color-${n})`;

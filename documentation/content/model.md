@@ -249,6 +249,8 @@ A set of pictures that stands on its own. A structure can show it as its own pag
 | `layout` | enum | `grid`, `mosaic` or `row`: the default when it's shown or embedded |
 | `caption` | Markdown | One caption for the set, as a magazine does |
 
+**Albums (specified 22 October 2026, not built):** the site's galleries are pages of kind `gallery` with an `album` field, not this resource ([the gallery spec](../gallery/spec.md#32-the-album-field)).
+
 ### Résumé
 
 One résumé, as structured data, so it renders as an HTML page and can feed other views.

@@ -1,0 +1,62 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 700">
+<title>The Albums view: one band per album</title>
+<desc>On a wide screen, an album's band has its title and counts, then its bento on a 12-column grid of square cells: a lead picture six columns wide and four rows tall, two smaller pictures beside it, one an animated picture shown as a still poster, a wide video below them shown as its poster with a badge, and a row of a picture, a YouTube video and a drawing kept whole. Below the bento are the short description and a See all link, then a quiet break before the next album. On a phone, the same tiles follow in reading order on a 6-column grid worked out from the wide one, unless the owner arranged it: wide tiles become full width, the others pair up in halves, and the last one, left alone, widens to full width.</desc>
+<text class="label" x="40" y="40">Wide screen, 1280 px</text>
+<text class="label" x="740" y="40">Phone, 360 px</text>
+<g id="wide">
+<rect class="src" x="40" y="56" width="660" height="580" rx="16" />
+<text class="name" x="64" y="92">Album title</text>
+<text class="note" x="64" y="114">18 pictures · 2 videos · 1 drawing</text>
+</g>
+<g id="lead">
+<rect class="out" x="64" y="132" width="302" height="200" rx="12" />
+<text class="out-name" x="80" y="164">Lead picture</text>
+<text class="out-note" x="80" y="186">6 × 4 cells, filled round its focus</text>
+</g>
+<g id="tiles">
+<rect class="box" x="370" y="132" width="149" height="98" rx="12" />
+<text class="note" x="384" y="156">Picture, 3 × 2</text>
+<rect class="box" x="523" y="132" width="149" height="98" rx="12" />
+<text class="note" x="537" y="156">Animated: poster</text>
+<rect class="box" x="370" y="234" width="302" height="98" rx="12" />
+<text class="note" x="384" y="258">Video: still poster and a Play badge</text>
+<rect class="box" x="64" y="336" width="200" height="98" rx="12" />
+<text class="note" x="78" y="360">Picture, 4 × 2</text>
+<rect class="box" x="268" y="336" width="200" height="98" rx="12" />
+<text class="note" x="282" y="360">YouTube: poster, badge</text>
+<rect class="box" x="472" y="336" width="200" height="98" rx="12" />
+<text class="note" x="486" y="360">Drawing, fitted whole</text>
+</g>
+<g id="words">
+<text class="note" x="64" y="466">The short description: the album's summary, a line or two.</text>
+<rect class="chip" x="64" y="484" width="120" height="36" rx="10" />
+<text class="line" x="80" y="507">See all 21</text>
+</g>
+<g id="break">
+<text class="label" x="300" y="560">A quiet break between albums</text>
+<rect class="later" x="64" y="580" width="612" height="40" rx="12" />
+<text class="name" x="80" y="606">The next album</text>
+</g>
+<g id="phone">
+<rect class="src" x="740" y="56" width="220" height="580" rx="16" />
+<text class="name" x="754" y="86">Album title</text>
+<text class="note" x="754" y="106">18 pictures · 2 videos</text>
+<text class="note" x="754" y="122">1 drawing</text>
+<rect class="out" x="754" y="128" width="188" height="124" rx="10" />
+<text class="out-note" x="766" y="154">Lead, 6 × 4</text>
+<rect class="box" x="754" y="256" width="92" height="60" rx="10" />
+<text class="label" x="764" y="278">Picture</text>
+<rect class="box" x="850" y="256" width="92" height="60" rx="10" />
+<text class="label" x="860" y="278">Animated</text>
+<rect class="box" x="754" y="320" width="188" height="60" rx="10" />
+<text class="label" x="764" y="342">Video, full width</text>
+<rect class="box" x="754" y="384" width="92" height="60" rx="10" />
+<text class="label" x="764" y="406">Picture</text>
+<rect class="box" x="850" y="384" width="92" height="60" rx="10" />
+<text class="label" x="860" y="406">YouTube</text>
+<rect class="box" x="754" y="448" width="188" height="124" rx="10" />
+<text class="label" x="764" y="470">Drawing, alone: widened</text>
+<text class="line" x="754" y="604">See all 21</text>
+</g>
+<text class="label" x="40" y="668">Square cells: 12 columns wide, 6 on a phone (worked out, or arranged by hand). Still, unless a tile is set to play.</text>
+</svg>

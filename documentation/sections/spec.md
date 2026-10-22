@@ -125,6 +125,7 @@ Every page is the same resource, `content/articles/<id>.json` with its blocks, a
 | **Gallery** | `gallery` (new) | A set of pictures with a few words | Title, standfirst, and the number of pictures instead of the reading time. The body is usually galleries and carousels |
 | Talk | `talk` | Reserved until the model holds an event, a date and a recording | Refused by edit mode, as today |
 
+- **Albums (specified, not built).** A Gallery page becomes an album: its items in order, their words, and the few shown up front in a bento band ([the gallery spec](../gallery/spec.md#31-an-album-is-a-page)).
 - **A portrait.** Any page can have a `portrait` (a media ID): the person it's about, shown whole at 4:5 beside the title (above it on a phone), around the picture's focus point. The résumé (`/contact/resume/`) has one. Edit mode sets it in the page's settings, beside the lead picture and the thumbnail.
 
 - **One kind of reference.** A structure refers to a page as `{ "type": "article", "id": … }`. The content model's other item types (`caseStudy`, `gallery` as a resource, and so on) have no repository or renderer, so structures refuse them until one exists. A "gallery" here is always a page of kind Gallery.
@@ -147,6 +148,7 @@ A section's page is its heading, its standfirst and its pages, in its `view`. It
   - `feature` for bento's lead, and for every page in features.
   No section can be styled beyond its view.
 - **The meta line** follows the page's kind: an Article's reading time, a Page's nothing, a Gallery's number of pictures.
+- **A fifth view, Albums (specified, not built),** shows each album as a band of its chosen items in a bento grid ([the gallery spec §5](../gallery/spec.md#5-the-albums-view)).
 - **On a phone** every view is a single column. The list keeps its small pictures; tiles, bento and features stack (a feature's picture goes above its words).
 - **Empty.** A section with no published pages at all, open or private, shows its summary and an empty state: "Nothing here yet. This section is being written." One whose pages are all private says that instead ([access spec §2.1](../access/spec.md)). Its address works, and it stays in the navigation if the owner put it there.
 - **Drafts** show in edit mode's canvas only, never on the site (as today).
@@ -185,6 +187,8 @@ Today's seven topics become the site's first sections, in the planet's order. Ea
 The owner can rename, hide or delete any of them in edit mode. They're sections, not code.
 
 **Renamed (13 October 2026):** Talks is now Gallery, a visual way to explore the owner's work. Its stable node ID remains `talks`, so the navigation and the Amphitheater keep pointing to the same section. Its address is `/gallery/`; its list view and pages are unchanged. The Amphitheater keeps its name and model, with Gallery as its kicker and the section's new summary. The old classic Amphitheater redirect now targets `/gallery/`; `/talks/` is removed without a new redirect (D11).
+
+**Albums (specified 22 October 2026, not built):** Gallery is to switch to the Albums view, keeping its ID and address ([the gallery spec](../gallery/spec.md)).
 
 ### 3.7 The end of a page: what to read next, and back to top
 
@@ -495,7 +499,7 @@ New or changed rules, checked by the content loader. So the build, the unit test
 | V15 | A section is shown by one building at most, so a page is in one building at most |
 | V16 | A place's `site` names a section that exists (it's required) |
 | V17 | Every navigation entry points at a node that exists, or is a valid link; at most eight entries; labels at most 24 characters |
-| V18 | A section's `view` is `list`, `tiles`, `bento` or `features` (a building reads its section's) |
+| V18 | A section's `view` is `list`, `tiles`, `bento` or `features` (a building reads its section's); `albums` is to join them ([the gallery spec](../gallery/spec.md#16-rules)) |
 | V19 | A redirect's source is free (not a built page), its target is a built page, and both go through the base path. A redirect that no longer fits (a page now lives at its source, or its target has gone) is left out of the build with a warning, not an error, since moves write none (D11) |
 | V20 | No placeholder markers in visitor-facing copy |
 | V21 | Every node ID is unique across the site structure, and a moved page keeps its node |

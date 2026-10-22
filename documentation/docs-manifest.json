@@ -288,6 +288,24 @@
       "group": "Content and publishing"
     },
     {
+      "path": "gallery/spec.md",
+      "title": "The gallery: albums",
+      "order": 20.76,
+      "icon": "photo_library",
+      "status": "draft",
+      "updated": "2026-10-22",
+      "group": "Content and publishing"
+    },
+    {
+      "path": "gallery/plan.md",
+      "title": "Gallery: plan and DoD",
+      "order": 20.77,
+      "icon": "checklist",
+      "status": "draft",
+      "updated": "2026-10-22",
+      "group": "Content and publishing"
+    },
+    {
       "path": "contact/spec.md",
       "title": "The contact form",
       "order": 20.8,

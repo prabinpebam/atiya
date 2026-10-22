@@ -150,7 +150,8 @@ See [the design system](design-system.md) §5 for the catalogue. What sets them 
   - a smoky scrim of drifting blurred wisps (static under reduced motion);
   - a filmstrip of thumbnails, arrow keys, Home and End, swipe;
   - focus returns to the opener;
-  - any `a[data-lightbox]` joins a group, so galleries, figures and carousels don't import it.
+  - any `a[data-lightbox]` joins a group, so galleries, figures and carousels don't import it;
+  - an album's lightbox (specified, not built) shows the whole album, every kind of item and an info panel ([the gallery spec §8](../gallery/spec.md#8-the-lightbox)).
 - **Carousel:** scroll-snap, no rotation, real ends, dots and a counter. Every slide's picture frame is the tallest picture's shape (its dark version's included), so the carousel is only as tall as that picture, held between `c.carousel.slide-min` (300 px) and `c.carousel.slide-max` (80% of the screen's height); each picture sits in it by its `display` (fill, fit, actual size, tile).
 - **Video embed:** a local file with captions, or a YouTube or Vimeo facade that requests nothing until pressed. Either takes exactly the video's own shape (a file's size, an embed's `shape` from its provider; an embed without one is 16:9), as wide as its place but never taller than the screen below the header, so a portrait video narrows and centres; a local file can also be shown at its actual size. A local file can autoplay (muted, while in view, never under reduced motion) and loop, both off by default; a video file can also be a gallery cell or a carousel slide, playing in its place. The player iframe uses `strict-origin-when-cross-origin`, so providers receive the site origin they require without receiving a private page's path.
 - **Prose:** Markdown set as a magazine sets it, with the breakout grid, a drop cap (`initial-letter` where supported), old-style figures and a marigold dinkus.
@@ -184,7 +185,7 @@ See [the design system](design-system.md) §5 for the catalogue. What sets them 
 ## 5. Deferred, with reasons
 
 - **A native `base-select` path:** our listbox is the one implementation until Firefox ships the feature. Then the list could be the browser's own, styled.
-- **Pan and zoom inside the lightbox:** pinch-zoom works natively on phones; a desktop zoom waits for real case-study images that need it.
+- **Pan and zoom inside the lightbox:** pinch-zoom works natively on phones; the lightbox's own zoom (buttons, keys, pinch and the wheel, for pictures worth looking into) is the gallery's phase G8 ([gallery spec §8.8](../gallery/spec.md#88-zoom), [its plan](../gallery/plan.md#g8-zoom-in-the-lightbox)).
 - **A table of contents for long reads:** there are no long reads yet. The layout has room for it in the popout column.
 - **Code highlighting in the library:** plain, token-coloured code keeps the library's print look. Shiki's dual themes are the upgrade path if wanted.
 - **Case-study content:** the classic pages still carry the placeholder landmark copy. The IA's work, expertise and leadership pages will use the Index and Article layouts as they are written.

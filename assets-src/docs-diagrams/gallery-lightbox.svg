@@ -1,0 +1,48 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 640">
+<title>The lightbox, opened from an album</title>
+<desc>Over the smoke, a top bar names the album, counts the item shown as 7 of 21, and holds Info, Copy link and Close. The stage shows the item whole, whatever its kind, between Previous and Next. Beside it, the info panel holds the item's caption, its short rich description and its credit, then a link to the album and a Copy a link button. Along the bottom, the filmstrip holds the whole album in its order, with the current item marked.</desc>
+<g id="frame">
+<rect class="src" x="40" y="40" width="920" height="560" rx="16" />
+</g>
+<g id="bar">
+<rect class="chip" x="56" y="56" width="888" height="44" rx="10" />
+<text class="chip-name" x="72" y="84">Album title</text>
+<text class="note" x="440" y="84">7 of 21</text>
+<text class="note" x="776" y="84">Info · Copy link · Close</text>
+</g>
+<g id="stage">
+<rect class="box" x="56" y="112" width="600" height="360" rx="14" />
+<text class="note" x="68" y="296">Previous</text>
+<rect class="later" x="136" y="136" width="440" height="312" rx="10" />
+<text class="name" x="152" y="280">Picture, drawing, video or player</text>
+<text class="note" x="152" y="304">Shown whole on the smoke; a player starts as its poster</text>
+<text class="note" x="596" y="296">Next</text>
+</g>
+<g id="info">
+<rect class="box" x="668" y="112" width="276" height="360" rx="14" />
+<text class="name" x="684" y="144">Caption</text>
+<text class="note" x="684" y="170">A short rich description:</text>
+<text class="note" x="684" y="188">a few paragraphs, with links,</text>
+<text class="note" x="684" y="206">emphasis and lists.</text>
+<text class="label" x="684" y="236">Credit and licence</text>
+<text class="label" x="684" y="384">From the album</text>
+<text class="line" x="684" y="408">Open the album</text>
+<text class="line" x="684" y="432">Copy a link</text>
+</g>
+<g id="strip">
+<rect class="chip" x="56" y="484" width="888" height="100" rx="12" />
+<text class="label" x="72" y="508">Filmstrip: the whole album, in its order</text>
+<rect class="src" x="72" y="524" width="64" height="44" rx="6" />
+<rect class="src" x="158" y="524" width="64" height="44" rx="6" />
+<rect class="src" x="244" y="524" width="64" height="44" rx="6" />
+<rect class="src" x="330" y="524" width="64" height="44" rx="6" />
+<rect class="src" x="416" y="524" width="64" height="44" rx="6" />
+<rect class="src" x="502" y="524" width="64" height="44" rx="6" />
+<rect class="out" x="588" y="524" width="64" height="44" rx="6" />
+<text class="out-note" x="604" y="552">7</text>
+<rect class="src" x="674" y="524" width="64" height="44" rx="6" />
+<rect class="src" x="760" y="524" width="64" height="44" rx="6" />
+<rect class="src" x="846" y="524" width="64" height="44" rx="6" />
+</g>
+<text class="label" x="40" y="624">Wide: the info panel is a side column. On a phone it's a sheet over the stage, and the filmstrip scrolls.</text>
+</svg>
