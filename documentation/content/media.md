@@ -365,7 +365,7 @@ A video can be the site's own file, not only a YouTube or Vimeo embed. It's a me
 
 ## 13. Albums: drawings and large pictures
 
-Albums ([the gallery spec](../gallery/spec.md)) brought a few kinds of picture and a few fields every page can use. What's built is in [its §20](../gallery/spec.md#20-as-built).
+Albums ([the gallery spec](../gallery/spec.md)) brought a few kinds of picture and a few fields every page can use. What's built is in [its §20](../gallery/spec.md#20-as-built). The album redesign, specified and not built yet, adds to the sidecar a picture's `description`, `place` and `fingerprint` (and a video's `taken`), so its words follow it wherever it's used, and makes a YouTube or Vimeo link a library item of its own ([the gallery spec §3.8](../gallery/spec.md#38-the-pictures-sidecar), [§4.2](../gallery/spec.md#42-videos-and-linked-videos)).
 
 - **Drawings.** An SVG upload is kept as a drawing or turned into a picture: edit mode asks. A drawing is cleaned on upload by an allow-list (`src/site/editor/model/svgSanitize.ts`): no scripts, handlers, `foreignObject`, outside links or entities, at most 200 KB with any pictures it holds, and a `viewBox`; it says what it removed. It's shown as its own file at every size, fitted and never cropped, and its dark mode version is an `.svg` too ([§10](#10-dark-mode-versions)).
 - **Animated pictures.** A GIF is kept as it is ([§5](#5-the-pipeline)). An animated PNG is kept still, and edit mode says so before saving.

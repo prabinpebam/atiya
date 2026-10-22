@@ -124,7 +124,7 @@ Which AI services edit mode uses, how each is connected and set up, and how your
 | S8 | Let my own agent propose changes through MCP, and copy its setup | §7.6 |
 | S9 | Make a new agent token, so the old one stops working | §7.6 |
 | S10 | See open proposals from agents, and open their review | §8 |
-| S11 | Have the writer suggest alt text for the pictures I add to an album, or turn that off | §8.1; [gallery §9.6](../gallery/spec.md#96-suggested-alt-text) |
+| S11 | Have the writer suggest alt text for the pictures I add to an album, or turn that off | §8.1; [gallery §9.8](../gallery/spec.md#98-suggested-alt-text) |
 
 ## 2. The wishlist, one by one
 
@@ -290,7 +290,7 @@ Steps 1, 2, 4, 5 and 6 are the same. Step 3 is different, because a key is never
 
 ### 7.7 Testing, changing and removing
 
-- **Test** is on every card. Its results use AI editing's error copy ([§10.4](ai-editing.md#104-errors-and-edge-cases)): key refused, out of credit, busy, unreachable, not running, can't follow the shape. It also sends a small picture, and keeps whether the model accepted it: suggested alt text needs a model that does ([gallery §9.6](../gallery/spec.md#96-suggested-alt-text)).
+- **Test** is on every card. Its results use AI editing's error copy ([§10.4](ai-editing.md#104-errors-and-edge-cases)): key refused, out of credit, busy, unreachable, not running, can't follow the shape. It also sends a small picture, and keeps whether the model accepted it: suggested alt text needs a model that does ([gallery §9.8](../gallery/spec.md#98-suggested-alt-text)).
 - **Replace key** opens the key dialog (Studio) or names the Credential Manager entry (plain dev). The old key is gone once the new one is saved.
 - **Change model** is the card's Select. It takes effect on the next request.
 - **Remove** asks first ("Remove OpenAI? Its key is deleted from this computer."). It deletes the key (Studio) and the settings. In plain dev, it also says the Credential Manager entry stays until you delete it. Removing the writer makes the next service the writer, or none.
@@ -306,7 +306,7 @@ A screen of its own, **AI** (`/_edit/ai/`), listed in edit mode's `SCREENS`, so 
 |---|---|
 | Intro | One line: "AI sends your words only when you ask, to the service named in the prompt." |
 | Writer | A Select of the services set up, and the model. Under it: "Used for every AI request." Empty, it says "No service yet," with **Add a service** |
-| Pictures | **Suggest alt text for new pictures**, a switch, on by default; shown when the writer's model accepts pictures (its last Test, §7.7), else "This model can't see pictures." ([gallery §9.6](../gallery/spec.md#96-suggested-alt-text)) |
+| Pictures | **Suggest alt text for new pictures**, a switch, on by default; shown when the writer's model accepts pictures (its last Test, §7.7), else "This model can't see pictures." ([gallery §9.8](../gallery/spec.md#98-suggested-alt-text)) |
 | Found on this computer | Shown only when Ollama or LM Studio answers and isn't added yet (§7.4) |
 | Services | A card per service, then **Add a service** |
 | Decider | Two radio cards: **Rules** ("Built in. Free, and decides from words in your request") and **Jev** ("Better at spotting research and the right block. A cloud service"). With Jev chosen, its key state, Test and the last result |

@@ -261,7 +261,7 @@ Every grant is a record in `private-pages/access.json`:
 | `kind` | `code` (typed) or `link` (a magic link) |
 | `recipient` | Who it's for: `name`, `organisation`, `role`, optional `email`. Its name and organisation are shown to the reader on the agreement (§7.6); never to anyone else |
 | `purpose` | Why it was shared, in your words ("Senior design manager role, first screen"). Shown to the reader on the agreement (§7.6), which they agree to use the work only for |
-| `scope` | What it opens: every private page in a section (now and later), and/or single private pages. A code and a link open the same pages (V26) |
+| `scope` | What it opens: every private page in a section (now and later), and/or single private pages. A code and a link open the same pages (V26). With the album redesign (specified, not built yet), a scope can name a private album as it names a page, and a section's scope covers its private albums ([the gallery spec §12](../gallery/spec.md#12-private-albums)) |
 | `createdAt` | When it was made, with its time zone |
 | `expiresAt` | When it stops working (optional; edit mode suggests 30 days) |
 | `revokedAt` | When you withdrew it, if you did |

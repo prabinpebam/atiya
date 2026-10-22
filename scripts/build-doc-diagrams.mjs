@@ -51,6 +51,7 @@ const DIAGRAMS = [
   { name: 'gallery-band', page: 'documentation/gallery/spec.md', prefix: 'ga-band' },
   { name: 'gallery-lightbox', page: 'documentation/gallery/spec.md', prefix: 'ga-lightbox' },
   { name: 'gallery-arranger', page: 'documentation/gallery/spec.md', prefix: 'ga-arranger' },
+  { name: 'gallery-editor', page: 'documentation/gallery/spec.md', prefix: 'ga-editor' },
 ];
 
 const V = (n) => `var(--color-${n})`;

@@ -1,0 +1,58 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 700">
+<title>The album editor</title>
+<desc>The album editor, from top to bottom. The header holds the album's title and its actions: Add, Sort, Edit cover, Settings, Preview and Publish. Below it, the album's title, short description and introduction are typed in place, with a line of facts: the count, the span of dates, and how many pictures need alt text, with Review. Then the cover as its band will look, marked Automatic, with Set as cover picture and Edit cover as the ways to change it. A selection bar shows while items are selected, with what they can do. Below it, every item is in a grid of thumbnails in the order shown, some selected, with a text card across the grid between two rows. Beside the grid, the viewer shows one item large with its words to edit: caption, description, alt text with Suggest, date taken and place, downloads, and the other albums it's in.</desc>
+<g id="frame">
+<rect class="src" x="40" y="40" width="920" height="620" rx="16" />
+<rect class="chip" x="56" y="56" width="888" height="44" rx="10" />
+<text class="chip-name" x="72" y="84">Summer sketches</text>
+<text class="note" x="400" y="84">Add · Sort · Edit cover · Settings · Preview · Publish</text>
+</g>
+<g id="words">
+<rect class="box" x="56" y="112" width="888" height="84" rx="14" />
+<text class="name" x="72" y="140">Title, short description and introduction, typed in place</text>
+<text class="note" x="72" y="164">Each saves as it's typed</text>
+<text class="note" x="72" y="186">21 items · March to May 2026 · 7 need alt text · Review</text>
+</g>
+<g id="cover">
+<rect class="box" x="56" y="208" width="888" height="150" rx="14" />
+<text class="name" x="72" y="236">Cover · Automatic</text>
+<rect class="out" x="72" y="248" width="260" height="96" rx="10" />
+<text class="out-name" x="88" y="280">Lead</text>
+<text class="out-note" x="88" y="302">The cover picture</text>
+<rect class="src" x="340" y="248" width="124" height="44" rx="8" />
+<rect class="src" x="472" y="248" width="124" height="44" rx="8" />
+<rect class="src" x="340" y="300" width="124" height="44" rx="8" />
+<rect class="src" x="472" y="300" width="124" height="44" rx="8" />
+<text class="note" x="620" y="280">Set as cover picture on any item,</text>
+<text class="note" x="620" y="302">or Edit cover to arrange it</text>
+</g>
+<g id="selection">
+<rect class="chip" x="56" y="370" width="888" height="40" rx="10" />
+<text class="chip-name" x="72" y="396">4 selected</text>
+<text class="note" x="220" y="396">Add to cover · Set as cover picture · Add to album · Set the date · Remove from album</text>
+</g>
+<g id="grid">
+<rect class="box" x="56" y="422" width="600" height="222" rx="14" />
+<rect class="out" x="72" y="438" width="134" height="72" rx="8" />
+<rect class="out" x="214" y="438" width="134" height="72" rx="8" />
+<rect class="src" x="356" y="438" width="134" height="72" rx="8" />
+<rect class="src" x="498" y="438" width="142" height="72" rx="8" />
+<rect class="later" x="72" y="518" width="568" height="36" rx="8" />
+<text class="note" x="88" y="542">Text card: words between pictures</text>
+<rect class="out" x="72" y="562" width="134" height="66" rx="8" />
+<rect class="src" x="214" y="562" width="134" height="66" rx="8" />
+<rect class="out" x="356" y="562" width="134" height="66" rx="8" />
+<rect class="src" x="498" y="562" width="142" height="66" rx="8" />
+</g>
+<g id="viewer">
+<rect class="box" x="672" y="422" width="272" height="222" rx="14" />
+<text class="name" x="688" y="450">The viewer</text>
+<text class="note" x="688" y="476">Caption · Description</text>
+<text class="note" x="688" y="500">Alt text · Suggest</text>
+<text class="note" x="688" y="524">Date taken · Place</text>
+<text class="note" x="688" y="548">Downloads</text>
+<text class="note" x="688" y="572">Also in Monsoon walks</text>
+<text class="note" x="688" y="596">Previous · Next</text>
+</g>
+<text class="label" x="40" y="684">Select, drag and open items; every change saves at once and can be undone.</text>
+</svg>

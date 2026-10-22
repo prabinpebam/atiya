@@ -1,59 +1,64 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 680">
-<title>Edit mode's Arranger: the band, tile by tile</title>
-<desc>The Arranger shows the album's band at its real width over a faint grid of square cells. A toolbar holds the presets, Close gaps, Use the default, the Wide and Phone views (the phone's worked out until Arrange for phones) and Undo. The selected tile has handles that resize it by whole cells. Dropping a tile on one of the same size swaps them; otherwise the tiles below are pushed down. A hole is hatched and warned about, not refused. A live region reads each move aloud as columns and rows. Beside the canvas, a tray holds the album's items that aren't up front: drag one in to show it, or a tile out to hide it. Below, the inspector holds the selected tile's keys and buttons, and its overrides: how it's shown, its own focus, Play in the band and Hide on phones.</desc>
+<title>Edit cover: the band, tile by tile</title>
+<desc>Edit cover turns the album editor's cover band into the arranger, in place. A toolbar holds the presets, Close gaps, the Wide and Phone views (the phone's worked out until Arrange for phones), Use automatic cover and Done. The band shows at its real width over a faint grid of square cells. The chosen tile has handles that resize it by whole cells. Dropping a tile on one of the same size swaps them; otherwise the tiles below are pushed down. A hole is hatched and warned about, not refused. A live region reads each move aloud as columns and rows. Below the band, the tile bar holds the chosen tile's keys and options: how it's shown, its own focus, Play in the band, Hide on phones and Remove from cover. Below that, the album's items stay in their grid as the tray: those in the cover are marked, an item dragged up joins the cover, and a tile dragged down leaves it.</desc>
 <g id="frame">
 <rect class="src" x="40" y="40" width="920" height="600" rx="16" />
 <rect class="chip" x="56" y="56" width="888" height="44" rx="10" />
-<text class="chip-name" x="72" y="84">Arranger</text>
-<text class="note" x="500" y="84">Presets · Close gaps · Use the default · Wide | Phone · Undo</text>
+<text class="chip-name" x="72" y="84">Edit cover</text>
+<text class="note" x="300" y="84">Presets · Close gaps · Wide | Phone · Use automatic cover · Done</text>
 </g>
 <g id="canvas">
-<rect class="box" x="56" y="112" width="612" height="420" rx="14" />
-<rect class="later" x="72" y="128" width="584" height="344" rx="8" />
+<rect class="box" x="56" y="112" width="888" height="300" rx="14" />
+<rect class="later" x="72" y="128" width="856" height="236" rx="8" />
 </g>
 <g id="lead">
-<rect class="out" x="76" y="132" width="284" height="188" rx="10" />
+<rect class="out" x="76" y="132" width="420" height="150" rx="10" />
 <text class="out-name" x="92" y="164">Lead</text>
 <text class="out-note" x="92" y="186">6 × 4 cells</text>
 </g>
 <g id="selected">
-<rect class="chip" x="364" y="132" width="284" height="92" rx="10" />
-<text class="chip-name" x="380" y="160">Selected</text>
-<text class="note" x="380" y="184">Handles resize by whole cells</text>
+<rect class="chip" x="500" y="132" width="424" height="72" rx="10" />
+<text class="chip-name" x="516" y="160">Chosen</text>
+<text class="note" x="516" y="184">Handles resize by whole cells</text>
 </g>
 <g id="moves">
-<rect class="box" x="364" y="228" width="140" height="92" rx="10" />
-<text class="note" x="380" y="256">Same size: swaps</text>
-<rect class="box" x="508" y="228" width="140" height="92" rx="10" />
-<text class="note" x="524" y="256">Picture</text>
-<rect class="box" x="76" y="324" width="188" height="92" rx="10" />
-<text class="note" x="92" y="352">Pushed down, not lost</text>
-<rect class="box" x="460" y="324" width="188" height="92" rx="10" />
-<text class="note" x="476" y="352">Picture</text>
+<rect class="box" x="500" y="208" width="208" height="74" rx="10" />
+<text class="note" x="516" y="236">Same size: swaps</text>
+<rect class="box" x="716" y="208" width="208" height="74" rx="10" />
+<text class="note" x="732" y="236">Picture</text>
+<rect class="box" x="76" y="286" width="208" height="74" rx="10" />
+<text class="note" x="92" y="314">Pushed down, not lost</text>
+<rect class="box" x="500" y="286" width="424" height="74" rx="10" />
+<text class="note" x="516" y="314">Picture</text>
 </g>
 <g id="hole">
-<rect class="gate" x="268" y="324" width="188" height="92" rx="10" />
-<text class="note" x="284" y="352">A hole is warned,</text>
-<text class="note" x="284" y="372">not refused</text>
+<rect class="gate" x="288" y="286" width="208" height="74" rx="10" />
+<text class="note" x="304" y="314">A hole is warned,</text>
+<text class="note" x="304" y="334">not refused</text>
 </g>
 <g id="live">
-<text class="note" x="72" y="500">Read aloud: columns 7 to 12, rows 1 to 2</text>
+<text class="note" x="72" y="396">Read aloud: columns 7 to 12, rows 1 to 2</text>
 </g>
-<g id="tray">
-<rect class="box" x="680" y="112" width="264" height="420" rx="14" />
-<text class="name" x="696" y="144">Not up front</text>
-<rect class="src" x="696" y="164" width="108" height="72" rx="8" />
-<rect class="src" x="820" y="164" width="108" height="72" rx="8" />
-<rect class="src" x="696" y="248" width="108" height="72" rx="8" />
-<rect class="src" x="820" y="248" width="108" height="72" rx="8" />
-<rect class="src" x="696" y="332" width="108" height="72" rx="8" />
-<rect class="src" x="820" y="332" width="108" height="72" rx="8" />
-<text class="note" x="696" y="444">Drag in to show, out to hide</text>
+<g id="tilebar">
+<rect class="chip" x="56" y="424" width="888" height="44" rx="10" />
+<text class="chip-name" x="72" y="452">Tile bar</text>
+<text class="note" x="200" y="452">Arrows move · Shift+arrows resize · Fill or Fit · Own focus · Play · Hide on phones · Remove</text>
 </g>
-<g id="inspector">
-<rect class="chip" x="56" y="544" width="888" height="80" rx="12" />
-<text class="chip-name" x="72" y="572">Selected tile</text>
-<text class="note" x="72" y="600">Arrows move · Shift+arrows resize · Move and Size buttons · Fill or Fit · Remove from the band</text>
+<g id="items">
+<rect class="box" x="56" y="480" width="888" height="148" rx="14" />
+<text class="name" x="72" y="508">The album's items</text>
+<rect class="out" x="72" y="520" width="96" height="64" rx="8" />
+<text class="out-note" x="84" y="558">Cover</text>
+<rect class="out" x="180" y="520" width="96" height="64" rx="8" />
+<text class="out-note" x="192" y="558">Cover</text>
+<rect class="src" x="288" y="520" width="96" height="64" rx="8" />
+<rect class="src" x="396" y="520" width="96" height="64" rx="8" />
+<rect class="out" x="504" y="520" width="96" height="64" rx="8" />
+<text class="out-note" x="516" y="558">Cover</text>
+<rect class="src" x="612" y="520" width="96" height="64" rx="8" />
+<rect class="src" x="720" y="520" width="96" height="64" rx="8" />
+<rect class="src" x="828" y="520" width="96" height="64" rx="8" />
+<text class="note" x="72" y="612">Drag an item up to add it to the cover, a tile down to take it out</text>
 </g>
 <text class="label" x="40" y="664">Every change saves, shows at once and can be undone.</text>
 </svg>
