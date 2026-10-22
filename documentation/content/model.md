@@ -180,7 +180,7 @@ Every page of the site, whatever it is: the owner's model is that a page is anyt
 |---|---|---|---|---|
 | `note` | Article | Stories, case studies, essays, notes | Its section, byline, date and reading time | `topics` (topic term IDs) |
 | `page` | Page | About, Contact, Colophon, Privacy, Now | Title and standfirst only | None |
-| `gallery` | Gallery | A set of pictures with a few words | Title, standfirst and the number of pictures | None |
+| `gallery` | Album | An album: its items in order, their words, and the few shown up front | Title, standfirst, what it holds and the dates its items were taken | `album` ([the gallery spec §3.2](../gallery/spec.md#32-the-album-field)) |
 | `talk` | Talk | A talk, panel or podcast (reserved: edit mode refuses it until the fields below exist) | As an article | `event`, `date`, `venue?`, `recording` (a video media ID or an `embed`), `slides?` (a link) |
 
 As built, the structures refer only to this resource (`{ "type": "article", "id": … }`): the other item types below have no repository or renderer yet, so a structure that names one is refused.
@@ -249,7 +249,13 @@ A set of pictures that stands on its own. A structure can show it as its own pag
 | `layout` | enum | `grid`, `mosaic` or `row`: the default when it's shown or embedded |
 | `caption` | Markdown | One caption for the set, as a magazine does |
 
-**Albums (specified 22 October 2026, not built):** the site's galleries are pages of kind `gallery` with an `album` field, not this resource ([the gallery spec](../gallery/spec.md#32-the-album-field)).
+**Albums (gallery G1, built):** the site's galleries are pages of kind `gallery` with an `album` field, not this resource ([the gallery spec](../gallery/spec.md#32-the-album-field)). An `album` holds:
+
+- `items`: at most 200, in order, each a piece of media (a picture, an animated picture, a drawing or a video file) or an `embed` (YouTube or Vimeo, with its `title` and `poster`), with an `id` that's its address on the page (`#item-<id>`) and never changes, and its own `caption`, `description` and `place` for this album only;
+- `showcase`: the tiles up front, on 12 columns (at most 12 tiles), and the owner's own phone arrangement; left out, the default arrangement;
+- `description`, `layout` (`grid` or `story`), `captions`, `dates` and `download`, left out while they're the defaults.
+
+Its rules are V38 to V51 ([the gallery spec §16](../gallery/spec.md#16-rules)), pure in `src/site/content/album.ts` and held by the content check. A Gallery page without an album reads as empty.
 
 ### Résumé
 
@@ -308,6 +314,7 @@ A `body` is an array of blocks. Each block has a `type` and an optional `id` (an
 | `carousel` | `gallery` (a gallery ID) or `items` (`{ media, caption?, autoplay?, loop? }[]`: pictures or video files, autoplay and loop a video's only); `label`, `peek?`, `pager?`, `arrows?`. Its slides are the tallest item's shape, 300 px to 80% of the screen tall; a video plays in its slide (an autoplaying one only while it's the slide in view) | `Carousel` |
 | `video` | `media` (a video file, [media §12](media.md#12-video-files)) or `embed` (`{ provider: youtube or vimeo, id, width?, height? }`: `width` and `height`, both or neither, are the video's own shape, read from the provider's oEmbed when the editor adds it, so its player takes exactly that shape; left out, 16:9), exactly one; `title` (the player's name: an embed needs it, a video file has its own); `poster` (an image media ID: an embed's picture, the site's own thumbnail, shown until the reader presses Play, filling the player's shape; for a video file optional, in place of its own frame); `duration?` (seconds, shown on an embed's poster); `caption?`, `credit?` (a video file's own when left out), `width?` (a layout place, or `actual` for a video file: its own pixel width, centred); `autoplay?`, `loop?` (a video file's only, both off by default: autoplay plays it muted while in view, never under reduced motion; the content check refuses them on an embed, as it does `actual`). Either kind is as wide as its place but never taller than the screen below the header: a portrait video narrows, centred | `VideoEmbed` |
 | `quote` | `text`, `cite?` (text or person), `variant` (`block`, `pull`) | `Quote` |
+| `album` | `album` (a Gallery page's ID), `width?` (`wide`, the default, or `full`) | `AlbumBand`: that album's band with its title and See all ([the gallery spec §7.2](../gallery/spec.md#72-an-album-inside-another-page)). The content check holds V51: a Gallery page that exists, never a private one, never the page it's in, and never an unpublished one from a published page. An album with nothing to show draws nothing |
 | `divider` | none | `Divider` |
 | `listing` | `source` (a query: `type`, `filter`, `sort`, `limit`), `presentation` (`cards` or `list`), `heading?` | New: a `StoryCard` grid or a `ContentsList` |
 | `related` | `items` (item refs), `heading?` | `StoryCard` grid |
@@ -408,6 +415,8 @@ The build runs these checks (`npm run content:check`), and names the file and fi
 | V11 | `stale` is reported (not failed) when `reviewedAt` is older than the review cadence (twice a year for case studies) |
 | V12 | **One canonical page:** every published item is placed on the site exactly once (by an item node or a hub's query). An item placed twice fails; an item placed nowhere is reported, since it has no page (except a gallery that's only embedded in bodies) |
 | V13 | **A way out from the planet:** every item a place shows has a canonical page on the site, and every place has a `fullPage`. The planet can arrange content its own way, but never shows something with no page to open |
+
+Albums add V38 to V51 ([the gallery spec §16](../gallery/spec.md#16-rules)), and sections add theirs ([the sections spec §8](../sections/spec.md#8-rules)).
 
 ## 9. An example
 

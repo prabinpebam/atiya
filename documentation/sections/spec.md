@@ -125,7 +125,7 @@ Every page is the same resource, `content/articles/<id>.json` with its blocks, a
 | **Gallery** | `gallery` (new) | A set of pictures with a few words | Title, standfirst, and the number of pictures instead of the reading time. The body is usually galleries and carousels |
 | Talk | `talk` | Reserved until the model holds an event, a date and a recording | Refused by edit mode, as today |
 
-- **Albums (specified, not built).** A Gallery page becomes an album: its items in order, their words, and the few shown up front in a bento band ([the gallery spec](../gallery/spec.md#31-an-album-is-a-page)).
+- **Albums (gallery G1 to G3).** A Gallery page is an album: its items in order, their words, and the few shown up front in a bento band ([the gallery spec](../gallery/spec.md#31-an-album-is-a-page)). Its items follow its introduction on its page, after the opening, whose meta counts what it holds and spans the dates its items were taken. Edit mode shows the kind as Album, makes one with New album, and never changes a page into or out of one.
 - **A portrait.** Any page can have a `portrait` (a media ID): the person it's about, shown whole at 4:5 beside the title (above it on a phone), around the picture's focus point. The résumé (`/contact/resume/`) has one. Edit mode sets it in the page's settings, beside the lead picture and the thumbnail.
 
 - **One kind of reference.** A structure refers to a page as `{ "type": "article", "id": … }`. The content model's other item types (`caseStudy`, `gallery` as a resource, and so on) have no repository or renderer, so structures refuse them until one exists. A "gallery" here is always a page of kind Gallery.
@@ -141,14 +141,15 @@ A section's page is its heading, its standfirst and its pages, in its `view`. It
 | **Tiles** | An even grid of cards: picture, title, summary, meta | A set of equals (case studies) |
 | **Bento** | A mosaic: the first page across the whole width (its picture beside its words), then a row of two halves and a row of three thirds, in turn | A few pages with a clear lead (leadership) |
 | **Features** | Every page a lead, one after another: its picture beside its words, its title set large, with a magazine spread's room between them | A handful of pages that each deserve a spread (side projects) |
+| **Albums** | Each album a band: its title and counts, a bento grid of the items up front, its summary and See all, then a quiet break | Albums (the gallery) |
 
-- **All four are the layout's, from the same card.** `IndexLayout` takes `view` and arranges `StoryCard`s:
+- **The first four are the layout's, from the same card.** `IndexLayout` takes `view` and arranges `StoryCard`s:
   - `row`, a new variant, for the list;
   - `standard` for tiles, and for bento's single cells;
   - `feature` for bento's lead, and for every page in features.
   No section can be styled beyond its view.
 - **The meta line** follows the page's kind: an Article's reading time, a Page's nothing, a Gallery's number of pictures.
-- **A fifth view, Albums (specified, not built),** shows each album as a band of its chosen items in a bento grid ([the gallery spec §5](../gallery/spec.md#5-the-albums-view)).
+- **Albums** is the layout's too, but draws each album with `AlbumBand` rather than a card, from the bands `bandsOf` works out (`src/site/content/bands.ts`): an album with nothing to show is left out, and a page that isn't an album shows as a feature card ([the gallery spec §5](../gallery/spec.md#5-the-albums-view)).
 - **On a phone** every view is a single column. The list keeps its small pictures; tiles, bento and features stack (a feature's picture goes above its words).
 - **Empty.** A section with no published pages at all, open or private, shows its summary and an empty state: "Nothing here yet. This section is being written." One whose pages are all private says that instead ([access spec §2.1](../access/spec.md)). Its address works, and it stays in the navigation if the owner put it there.
 - **Drafts** show in edit mode's canvas only, never on the site (as today).
@@ -180,7 +181,7 @@ Today's seven topics become the site's first sections, in the planet's order. Ea
 | Town Hall | About | `/about/` | None yet | List |
 | Lighthouse | Leadership | `/leadership/` | Do what makes you proud | Bento |
 | Library | Writing | `/writing/` | None yet | List |
-| Amphitheater | Gallery | `/gallery/` | None yet | List |
+| Amphitheater | Gallery | `/gallery/` | None yet | Albums |
 | Greenhouse | Side projects | `/side-projects/` | None yet | Tiles |
 | Post Office | Contact | `/contact/` | None yet | List |
 
@@ -188,7 +189,7 @@ The owner can rename, hide or delete any of them in edit mode. They're sections,
 
 **Renamed (13 October 2026):** Talks is now Gallery, a visual way to explore the owner's work. Its stable node ID remains `talks`, so the navigation and the Amphitheater keep pointing to the same section. Its address is `/gallery/`; its list view and pages are unchanged. The Amphitheater keeps its name and model, with Gallery as its kicker and the section's new summary. The old classic Amphitheater redirect now targets `/gallery/`; `/talks/` is removed without a new redirect (D11).
 
-**Albums (specified 22 October 2026, not built):** Gallery is to switch to the Albums view, keeping its ID and address ([the gallery spec](../gallery/spec.md)).
+**Albums (specified 22 October 2026; the view built in gallery G2):** Gallery uses the Albums view, keeping its ID and address ([the gallery spec](../gallery/spec.md)).
 
 ### 3.7 The end of a page: what to read next, and back to top
 
@@ -429,7 +430,7 @@ The game also sends `planet:theme` (`theme`) to its frame on ready and when its 
 
 ### 7.1 Pages
 
-"Articles and pages" becomes **Pages**: every page of every kind (Article, Page, Gallery), with its kind, its section and its building. New page asks for its kind, and Gallery joins the choices.
+"Articles and pages" becomes **Pages**: every page of every kind (Article, Page, Album), with its kind, its section and its building. New page asks for its kind; an album is made with New album ([the gallery spec §9.1](../gallery/spec.md#91-making-an-album)).
 
 ### 7.2 Sections
 
@@ -444,7 +445,7 @@ The Sections screen ([edit mode §5](../editor/spec.md#5-sections-the-site-struc
   - **Move** (a click on the handle, or Move selected) has Move up, Move down (for one page) and a button for every section: the touch and keyboard route to everything a drag does.
 - **Published pages move freely** (D11). A page's address follows its section, so a move changes it, and the old address simply goes, with no redirect. Its slug and status can change at any time too. Only Delete asks for a draft (unpublish first).
 - **Settings** is the chosen section's form:
-  - **View** (List, Tiles, Bento) replaces Template.
+  - **View** (List, Tiles, Bento, Features, Albums) replaces Template.
   - **In the navigation** is a switch that adds the section to the top navigation (at the end) or removes it. It edits the same `menus.primary` as the Navigation screen.
   - **Move up** and **Move down** reorder the sections (and Alt+Up and Alt+Down on a section in the list).
   - The home page's settings are its title, menu label and summary; its Pages tab says it lists the sections rather than holding pages.
@@ -499,7 +500,7 @@ New or changed rules, checked by the content loader. So the build, the unit test
 | V15 | A section is shown by one building at most, so a page is in one building at most |
 | V16 | A place's `site` names a section that exists (it's required) |
 | V17 | Every navigation entry points at a node that exists, or is a valid link; at most eight entries; labels at most 24 characters |
-| V18 | A section's `view` is `list`, `tiles`, `bento` or `features` (a building reads its section's); `albums` is to join them ([the gallery spec](../gallery/spec.md#16-rules)) |
+| V18 | A section's `view` is `list`, `tiles`, `bento`, `features` or `albums` (a building reads its section's; the gallery spec's V43 keeps `album` to Gallery pages) |
 | V19 | A redirect's source is free (not a built page), its target is a built page, and both go through the base path. A redirect that no longer fits (a page now lives at its source, or its target has gone) is left out of the build with a warning, not an error, since moves write none (D11) |
 | V20 | No placeholder markers in visitor-facing copy |
 | V21 | Every node ID is unique across the site structure, and a moved page keeps its node |
@@ -606,3 +607,4 @@ Filled in as each phase lands.
   - **The planet frame** (`PlanetPage.astro`): the list reads the section's view and summary under the building's name; a section with private pages shows the invited-readers panel (`IndexLayout`'s `invited`: Sign in and Ask for access, opening the site in a new tab); the Post Office's list leads with the contact form.
   - **Edit mode:** the Planet screen lists each building's section pages read-only (moved in Sections) and its Settings has Shows instead of View and On the site; `model/planet.ts` is `placeOfSection`, `placeOfPage` and `updatePlace`; saving, moving, copying and deleting a page never write `planet.json` (`followOnPlanet` is gone); a page's Page tab says which building shows it.
   - **Tests:** unit (the planet contract and V15/V16, "Explore in 3D", the planet model, a page's writes leaving `planet.json` alone); E2E "editor" (the Planet screen read-only, Settings refusing a section shown twice, a page's building, a moved page leaving and rejoining the Lighthouse) and "planet" (reading in a building).
+- **Albums (gallery G1 to G3, G5):** a Gallery page is an album (`album` on the article, V43), and the fifth view, `albums`, is in the contract (`SECTION_VIEWS`, so V18 takes it), `IndexLayout` (the `albums` prop of bands by node, drawn by `AlbumBand`) and edit mode's View choices ("Albums: Each album a band of its pictures"). The Gallery section uses it. Pages shows the kind as Album and has New album. As built and evidence: [the gallery spec §20](../gallery/spec.md#20-as-built).

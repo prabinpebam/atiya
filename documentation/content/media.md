@@ -147,7 +147,7 @@ content/media/
 | Field | For | Required | Notes |
 |---|---|---|---|
 | `kind` | all | yes | `image`, `video`, `audio`, `document` |
-| `file` | all | yes | The master's file name, in the same folder |
+| `file` | all | yes | The master's file name, in the same folder; an image's may be a drawing, `.svg` ([§13](#13-albums-drawings-and-large-pictures)) |
 | `alt` | image | yes, unless `decorative` | What it shows and why it's there; at most 250 characters; never "image of" |
 | `decorative` | image | no | `true` renders `alt=""`; not allowed on a `cover` |
 | `caption` | all | no | The default caption; a use may override it |
@@ -158,9 +158,11 @@ content/media/
 | `crop` | image | no | A cropped copy's record: `from` (the original's ID) and `x`, `y`, `width`, `height` in the original's pixels. Cropping the copy again starts from there ([§9](#9-shapes-thumbnails-and-crops)) |
 | `animation` | image | no | Present when the WebP master has more than one frame: `{ "poster": "cover.poster.webp" }`. The poster is its still first frame for reduced motion and thumbnails |
 | `dark` | image | no | Its dark mode version: `{ "file": "cover.dark.webp" }`, a second master beside it, shown instead when the page is dark ([§10](#10-dark-mode-versions)). Left out, the same picture shows in both modes |
+| `taken` | image | no | The day it was taken, `YYYY-MM-DD`: a real date, not in the future. Read from the file's EXIF when it's uploaded, never typed; no screen changes it yet ([§13](#13-albums-drawings-and-large-pictures)) |
+| `large` | image | no | `true`: Keep it large. A still picture kept at more than 2560 px and at most 3840 px on its long side; never a drawing or an animation ([§13](#13-albums-drawings-and-large-pictures)) |
 | `facts` | image | no | Written by edit mode, never by hand: the master's `width`, `height`, background `bg` and file size `bytes` when it was saved, so it needn't be decoded to be shown ([§9.3](#93-picture-facts-kept)); `dark.facts` the same for its dark version |
 | `poster` | video | yes | A media ID (an image with alt text) |
-| `captions` | video | yes | `[{ "file": "walkthrough.en.vtt", "srclang": "en", "label": "English", "default": true }]` |
+| `captions` | video | warned without | `[{ "file": "walkthrough.en.vtt", "srclang": "en", "label": "English", "default": true }]`: WebVTT tracks beside the master, named `<name>.<language>.vtt`. The check warns for a video without one ([the gallery spec's V40](../gallery/spec.md#16-rules)) |
 | `transcript` | video, audio | when speech carries meaning | Markdown |
 | `visibility` | all | yes | As for documents; a non-public asset can't be used by a published document |
 
@@ -170,11 +172,11 @@ content/media/
 
 | Kind | Master format | Limit | Notes |
 |---|---|---|---|
-| Photo, painting, render | JPEG (quality 85 or more), WebP or AVIF | 2560 px on the long side, 1.5 MB | The build makes the smaller sizes |
+| Photo, painting, render | JPEG (quality 85 or more), WebP or AVIF | 2560 px on the long side (3840 px kept large), 1.5 MB | The build makes the smaller sizes |
 | Animated picture | Animated WebP, or a GIF kept exactly as uploaded | 2560 px per frame on the long side; 1.5 MB for WebP, under 100 MB for a GIF (GitHub's limit for a file) | Every frame, delay and loop is preserved; a still WebP poster sits beside it |
 | GIF (still or animated) | GIF, kept byte for byte: never re-encoded, resized, cropped or stripped | 2560 px on the long side (refused, not resized), under 100 MB | A GIF's look rarely survives a conversion, so it's published as it was uploaded; a big one weighs on its page |
 | Screenshot, UI, diagram with text | PNG or WebP (lossless) | 2560 px, 2 MB | Redraw sensitive diagrams schematically ([confidential work](../ia-navigation/06-content-inventory-and-mapping.md)); don't blur |
-| Vector diagram | SVG | 200 KB | Sanitised: no scripts, handlers or external references; to be kept as a vector ([the gallery spec §4.1](../gallery/spec.md#41-drawings-svg-kept-as-a-vector)) |
+| Vector diagram (a drawing) | SVG | 200 KB | Cleaned on upload: no scripts, handlers or external references; kept as a vector ([§13](#13-albums-drawings-and-large-pictures)) |
 | Video | MP4 (H.264, AAC) or WebM, kept as uploaded | Under 100 MB (GitHub's limit for a file) | With a poster (a frame from it) and a caption; long videos are better on YouTube or Vimeo as an `embed` ([§12](#12-video-files)) |
 | Audio | MP3 | 10 MB | With a transcript |
 | Document | PDF | 2 MB | The résumé; tagged and accessible |
@@ -360,3 +362,16 @@ A video can be the site's own file, not only a YouTube or Vimeo embed. It's a me
 - **How a page shows it:** a `video` block with `media` (its ID) instead of `embed` ([model §6](model.md#6-blocks)). The block's own `title`, `caption` and `credit` override the video's, and its own `poster` (any picture) the frame taken from it. The `VideoEmbed` compound draws it with the `Video` fundamental: the browser's own controls, its poster, in its own shape, with the caption centred under it. Its `width` can be a layout place or `actual` (its own pixel width, centred, never wider than the page allows). `autoplay` (off by default) plays it muted while at least half of it is in view, pauses it when it leaves, never restarts it once the reader has paused it, and never starts it under reduced motion; `loop` (off by default) starts it again when it ends. Neither applies to a YouTube or Vimeo embed, which starts when the reader presses play.
 - **In a gallery or a carousel:** an item can be a video file as well as a picture. It plays in its cell or slide (shown filling it, or whole with `display: fit`), with its own frame as its poster and its own controls, and isn't opened in the lightbox. Each video item can have its own `autoplay` and `loop`; in a carousel, an autoplaying video plays only while it's the slide in view. In an album, a video opens in the lightbox like a picture (specified, not built: [the gallery spec §8.2](../gallery/spec.md#82-the-stage-by-kind)).
 - **In edit mode** it's uploaded from the same form as a picture (the picker or the library), chosen for a Video block from the palette, and listed in the library with its poster, its length and a Video tag. Its details (the player, the title and the words) save to its sidecar, and Delete removes the video, its poster and its sidecar once nothing uses it ([editor spec §6](../editor/spec.md#6-media)).
+
+## 13. Albums: drawings and large pictures
+
+Albums ([the gallery spec](../gallery/spec.md)) brought a few kinds of picture and a few fields every page can use. What's built is in [its §20](../gallery/spec.md#20-as-built).
+
+- **Drawings.** An SVG upload is kept as a drawing or turned into a picture: edit mode asks. A drawing is cleaned on upload by an allow-list (`src/site/editor/model/svgSanitize.ts`): no scripts, handlers, `foreignObject`, outside links or entities, at most 200 KB with any pictures it holds, and a `viewBox`; it says what it removed. It's shown as its own file at every size, fitted and never cropped, and its dark mode version is an `.svg` too ([§10](#10-dark-mode-versions)).
+- **Animated pictures.** A GIF is kept as it is ([§5](#5-the-pipeline)). An animated PNG is kept still, and edit mode says so before saving.
+- **Formats the site can't keep** (JPEG XL, camera RAW, PSD, and MKV, AVI, WMV and 3GP videos) are refused with what to do.
+- **The day it was taken** (`taken`) is read from the file's EXIF when it's uploaded (`DateTimeOriginal`, else `DateTime`), never guessed from the file's own times; Replace fills it when the sidecar has none. Edit mode shows it (an album's Items view, and Sort by date taken uses it), but no screen changes it yet.
+- **Keep it large** (`large`) is offered only for a still picture over 2560 px, which is then kept at up to 3840 px. Media's **Make it standard** saves it again at 2560 px.
+- **A video's caption tracks** (`captions`) are WebVTT files beside it, published beside the video at `<base>/media/<owner>/<name>.<language>.vtt`.
+- **An embed's poster.** A YouTube or Vimeo video added to an album by its address gets its thumbnail fetched once and kept as the site's own picture in the page's folder, with the alt text "Still from: " and the video's title.
+- **The site's weight.** Every build warns when the published site passes 750 MB and fails past 950 MB (`scripts/lib/siteWeight.mjs`, a step of `scripts/build-site.mjs`), under GitHub Pages' 1 GB.
