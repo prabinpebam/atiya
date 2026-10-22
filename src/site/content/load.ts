@@ -15,6 +15,11 @@ import { BUILTIN_MODES } from '../modes/builtin';
 import { effectiveWays } from '../modes/ways';
 import { SHOWCASE_FILE, TOPICS_FILE, showcaseFile, topicsFile, type Showcase, type TopicsFile } from '../home/schema';
 import { checkHome } from '../home/check';
+import { albumProblems, albumWarnings, type MediaLookup } from './album';
+import { DRAWING_MAX_BYTES, PRIVATE_VIDEO_MAX_BYTES, isDrawingFile } from './schema';
+
+const kb = (bytes: number) => `${Math.round(bytes / 1024)} KB`;
+const mb = (bytes: number) => `${(bytes / (1024 * 1024)).toFixed(1).replace(/\.0$/, '')} MB`;
 
 /** Where a resource comes from: the public content folder, or private-pages/ (documentation/access/spec.md §3). */
 export type Origin = 'public' | 'private';
@@ -30,6 +35,8 @@ export interface MediaRecord extends ImageMedia {
   posterMaster?: string;
   /** Its dark mode version's still first frame, when that master is animated. */
   darkPosterMaster?: string;
+  /** Its master's size in bytes, when the source gave it (loadContent's `sizes`). */
+  bytes?: number;
   origin: Origin;
 }
 
@@ -45,6 +52,8 @@ export interface VideoRecord extends VideoMedia {
   id: string;
   master: string;
   posterMaster?: string;
+  /** Its master's size in bytes, when the source gave it (loadContent's `sizes`). */
+  bytes?: number;
   origin: Origin;
 }
 
@@ -134,9 +143,17 @@ export function mediaUsed(a: Article): string[] {
     else if (b.type === 'collection') ids.push(...b.items.flatMap((i) => (i.media ? [i.media] : [])));
     else if (b.type === 'video' && b.poster) ids.push(b.poster);
   }
+  // an album's items (a picture, a drawing or a video file) and its embeds' posters
+  for (const item of a.album?.items ?? []) ids.push(...(item.media ? [item.media] : []), ...(item.poster ? [item.poster] : []));
   if (a.seo?.image) ids.push(a.seo.image);
   return ids;
 }
+
+/**
+ * A gallery page as the site reads it (V43): one written before albums has none, and reads as an album with no
+ * items (edit mode writes it on its first save), so it keeps loading.
+ */
+export const withAlbum = (a: Article): Article => (a.kind === 'gallery' && !a.album ? { ...a, album: { items: [] } } : a);
 
 /** Every video file's media ID a document uses. */
 export const videosUsed = (a: Article): string[] => a.body.flatMap((b) => (b.type === 'video' && b.media ? [b.media] : []));
@@ -146,13 +163,18 @@ export const videosUsed = (a: Article): string[] => a.body.flatMap((b) => (b.typ
  * @param masters the media masters under content/media/, as paths from the project root
  * @param readErrors files the source couldn't read (not valid JSON, not a content file)
  * @param leftOut files to treat as absent (an article as one that doesn't pass its check): loadContentLeavingOut's
+ * @param sizes the masters' sizes in bytes, when the source knows them (a drawing's limit, V42; a playing tile's
+ *   and a private album's video's, V40, V44, V48); without one, a picture's measured `facts.bytes` stand in, and a
+ *   size not known at all isn't checked
  */
-export function loadContent(docs: Record<string, unknown>, masters: Set<string>, readErrors: string[] = [], leftOut: ReadonlySet<string> = new Set()): ContentIndex {
+export function loadContent(docs: Record<string, unknown>, masters: Set<string>, readErrors: string[] = [], leftOut: ReadonlySet<string> = new Set(), sizes: ReadonlyMap<string, number> = new Map()): ContentIndex {
   const issues: Issue[] = readErrors.map((e) => {
     const at = e.indexOf(': ');
     return { file: e.slice(0, at), message: e.slice(at + 2) };
   });
   const add = (file: string, message: string, path?: string) => issues.push({ file: file.replace(/^\//, ''), message, ...(path ? { path } : {}) });
+  // the latest day it is anywhere: a picture taken "today" where its owner is is never in the future (V50)
+  const today = new Date(Date.now() + 14 * 3600e3).toISOString().slice(0, 10);
   const parse = <T>(schema: z.ZodType<T>, file: string, data: unknown): T | undefined => {
     const r = schema.safeParse(data);
     if (r.success) return r.data;
@@ -232,7 +254,7 @@ export function loadContent(docs: Record<string, unknown>, masters: Set<string>,
       if (a && a.id !== name) add(file, `id "${a.id}" must match the file name`, 'id');
       else if (a && articles.has(a.id)) add(file, `article "${a.id}" is in both content/ and private-pages/: an ID is unique across both (V24)`, 'id');
       else if (a) {
-        articles.set(a.id, a);
+        articles.set(a.id, withAlbum(a));
         origins.set(a.id, m[1] === 'private' ? 'private' : 'public');
       }
     } else if (/^\/content\/people\/[^/]+\.json$/.test(file)) {
@@ -277,7 +299,9 @@ export function loadContent(docs: Record<string, unknown>, masters: Set<string>,
         else if (!masters.has(master)) add(file, `its video ${master.slice(1)} is missing`);
         else if (v.poster && v.poster.file.replace(/\.poster\.\w+$/, '') !== name) add(file, `the poster "${v.poster.file}" must share the sidecar's name (${name}.poster.webp)`, 'poster.file');
         else if (posterMaster && !masters.has(posterMaster)) add(file, `its poster ${posterMaster.slice(1)} is missing`, 'poster.file');
-        else if (claimMedia(file, mediaKey)) videos.set(mediaKey, { ...v, id: mediaKey, master, ...(posterMaster ? { posterMaster } : {}), origin });
+        else if (v.captions?.some((c) => !c.file.startsWith(`${name}.`))) add(file, `a caption track must share the sidecar's name (${name}.<language>.vtt)`, 'captions');
+        else if (v.captions?.some((c) => !masters.has(dir + c.file))) add(file, `its caption track ${(dir + v.captions.find((c) => !masters.has(dir + c.file))!.file).slice(1)} is missing`, 'captions');
+        else if (claimMedia(file, mediaKey)) videos.set(mediaKey, { ...v, id: mediaKey, master, ...(posterMaster ? { posterMaster } : {}), ...(sizes.has(master) ? { bytes: sizes.get(master) } : {}), origin });
         continue;
       }
       const s = parse(imageMedia, file, data);
@@ -295,6 +319,9 @@ export function loadContent(docs: Record<string, unknown>, masters: Set<string>,
       else if (darkMaster && !masters.has(darkMaster)) add(file, `its dark version ${darkMaster.slice(1)} is missing`, 'dark.file');
       else if (s.dark?.animation && s.dark.animation.poster.replace(/\.dark\.poster\.webp$/, '') !== name) add(file, `the dark animation poster "${s.dark.animation.poster}" must share the sidecar's name (${name}.dark.poster.webp)`, 'dark.animation.poster');
       else if (darkPosterMaster && !masters.has(darkPosterMaster)) add(file, `its dark animation poster ${darkPosterMaster.slice(1)} is missing`, 'dark.animation.poster');
+      else if (isDrawingFile(s.file) && (sizes.get(master) ?? s.facts?.bytes ?? 0) > DRAWING_MAX_BYTES) add(file, `the drawing is ${kb(sizes.get(master) ?? s.facts!.bytes)}: a drawing is at most ${kb(DRAWING_MAX_BYTES)} (V42)`, 'file');
+      else if (darkMaster && isDrawingFile(darkMaster) && (sizes.get(darkMaster) ?? s.dark?.facts?.bytes ?? 0) > DRAWING_MAX_BYTES) add(file, `its dark version is more than ${kb(DRAWING_MAX_BYTES)}: a drawing is at most that (V42)`, 'dark.file');
+      else if (s.taken && s.taken > today) add(file, `taken on ${s.taken}, a day that hasn't come yet: a picture's date is no later than the day it was saved (V50)`, 'taken');
       else if (claimMedia(file, mediaKey))
         media.set(mediaKey, {
           ...s,
@@ -303,6 +330,7 @@ export function loadContent(docs: Record<string, unknown>, masters: Set<string>,
           ...(darkMaster ? { darkMaster } : {}),
           ...(posterMaster ? { posterMaster } : {}),
           ...(darkPosterMaster ? { darkPosterMaster } : {}),
+          ...(sizes.has(master) ? { bytes: sizes.get(master) } : {}),
           origin,
         });
     } else add(file, 'not a resource the content model knows');
@@ -320,6 +348,13 @@ export function loadContent(docs: Record<string, unknown>, masters: Set<string>,
     const darkPoster = /\.dark\.poster\.\w+$/.test(master);
     const dark = !darkPoster && /\.dark\.\w+$/.test(master);
     const poster = !darkPoster && /\.poster\.\w+$/.test(master);
+    // a video's caption track (<name>.<language>.vtt), named by its video's sidecar
+    if (/\.vtt$/.test(master)) {
+      const vttSidecar = master.replace(/\.[a-z]{2,3}(-[a-z0-9]+)*\.vtt$/, '.json');
+      const named = (docs[vttSidecar] as { captions?: { file?: string }[] } | null)?.captions?.some((c) => c.file === master.split('/').pop());
+      if (vttSidecar === master || !named) add(master, `a caption track no video names (add it to its video's "captions", or delete it)`);
+      continue;
+    }
     const sidecar = master.replace(darkPoster ? /\.dark\.poster\.\w+$/ : dark ? /\.dark\.\w+$/ : poster ? /\.poster\.\w+$/ : /\.\w+$/, '.json');
     const doc = docs[sidecar] as { kind?: string; poster?: { file?: string }; animation?: { poster?: string }; dark?: { file?: string; animation?: { poster?: string } } } | null;
     if (!(sidecar in docs)) add(master, `a master without its sidecar (${sidecar.split('/').pop()})`);
@@ -356,12 +391,32 @@ export function loadContent(docs: Record<string, unknown>, masters: Set<string>,
     else if (!PUBLIC.has(rec.visibility)) add(from, `media "${id}" isn't public`);
     else if (rec.origin === 'private' && origin === 'public') add(from, `media "${id}" is private (in private-pages/): an open page can't show it (V25)`);
   };
+  // albums (documentation/gallery/spec.md §16): V38 to V50 for each page; V51 for the blocks that show one, below
+  const lookupMedia: MediaLookup = (id) => media.get(id) ?? videos.get(id);
+  const albumNotes: string[] = [];
+  const checkAlbum = (a: Article, file: string, origin: Origin) => {
+    if (a.seo?.image && isDrawingFile(media.get(a.seo.image)?.file ?? '')) add(file, 'a social image is a picture: a drawing isn\'t shown where the page is shared (V46)', 'seo.image');
+    if (!a.album) return;
+    if (a.kind !== 'gallery') return add(file, `an album belongs to a page of kind gallery, and this one is a ${a.kind} (V43)`, 'album');
+    // a published album with no items is refused, unless it's a gallery page from before albums whose body still shows its pictures
+    for (const i of albumProblems(a.album, lookupMedia, { published: isPublished(a) && !a.body.length })) add(file, i.message, `album.${i.path}`);
+    if (origin === 'private')
+      a.album.items.forEach((item, i) => {
+        const v = item.media ? videos.get(item.media) : undefined;
+        if (v?.bytes && v.bytes > PRIVATE_VIDEO_MAX_BYTES) add(file, `the video "${item.media}" is ${mb(v.bytes)}: a private album's video file is at most ${mb(PRIVATE_VIDEO_MAX_BYTES)}, as it's sealed and fetched whole (V44)`, `album.items.${i}.media`);
+      });
+    for (const w of albumWarnings(a.album, lookupMedia)) albumNotes.push(origin === 'private' ? `a private page's album: ${w.replace(/"[^"]*"/g, 'an item')}` : `${file}: ${w}`);
+  };
   for (const a of articles.values()) {
     const origin = origins.get(a.id)!;
     const file = `${origin === 'private' ? 'private' : 'content'}/articles/${a.id}.json`;
-    // a gallery's or a carousel's item can be a video file too; every other use is a picture
-    const either = new Set(a.body.flatMap((b) => (b.type === 'gallery' || b.type === 'carousel' ? b.items.map((it) => it.media) : [])));
+    // a gallery's or a carousel's item can be a video file too, and so can an album's; every other use is a picture
+    const either = new Set([
+      ...a.body.flatMap((b) => (b.type === 'gallery' || b.type === 'carousel' ? b.items.map((it) => it.media) : [])),
+      ...(a.album?.items ?? []).flatMap((it) => (it.media ? [it.media] : [])),
+    ]);
     for (const id of mediaUsed(a)) needMedia(file, id, origin, either.has(id));
+    checkAlbum(a, file, origin);
     a.body.forEach((b, i) => {
       if (b.type !== 'gallery' && b.type !== 'carousel') return;
       b.items.forEach((it, n) => {
@@ -417,11 +472,27 @@ export function loadContent(docs: Record<string, unknown>, masters: Set<string>,
   for (const p of people.values()) if (p.avatar) needMedia(`content/people/${p.id}.json`, p.avatar);
   for (const r of recommendations) if (r.photo) needMedia('content/recommendations.json', r.photo);
   if (site?.socialImage) needMedia('content/site.json', site.socialImage);
+  if (site?.socialImage && isDrawingFile(media.get(site.socialImage)?.file ?? '')) add('content/site.json', "a social image is a picture: a drawing isn't shown where the site is shared (V46)", 'socialImage');
+  // an album block (V51): another page's album, open, and published wherever the page showing it is
+  for (const a of articles.values()) {
+    const file = `${origins.get(a.id) === 'private' ? 'private' : 'content'}/articles/${a.id}.json`;
+    a.body.forEach((b, i) => {
+      if (b.type !== 'album') return;
+      const at = `body.${i}.album`;
+      const target = articles.get(b.album);
+      if (b.album === a.id) add(file, "a page can't show its own album as a block: its album is already on it (V51)", at);
+      else if (!target) {
+        if (!invalidArticles.has(b.album)) add(file, `the album "${b.album}" doesn't exist (V51)`, at);
+      } else if (target.kind !== 'gallery') add(file, `"${b.album}" is a ${target.kind}, not an album: an album block shows a gallery page's album (V51)`, at);
+      else if (origins.get(b.album) === 'private') add(file, `"${b.album}" is a private album: its band would carry its words outside its seal (V51)`, at);
+      else if (isPublished(a) && !isPublished(target)) add(file, `the album "${b.album}" isn't published, and this page is: publish the album first, or take the block out (V51)`, at);
+    });
+  }
   if (site && !people.has(site.owner)) add('content/site.json', `owner "${site.owner}" isn't in content/people/`, 'owner');
 
   let routes: Route[] = [];
   const access = new Map<string, Access>();
-  const warnings: string[] = [];
+  const warnings: string[] = [...albumNotes];
   const OVERLAY = 'private/structures/overlay.json';
   if (structure) {
     const lookup = (type: string, id: string) => {
@@ -574,7 +645,7 @@ const LEAVABLE = /^\/(content|private)\/(articles|media)\/|^\/content\/(showcase
  * settings, structure, people, the private overlay or grants) still fails, as it would every page. The issues of
  * what was left out come back as `problems`. A build never calls this: it uses loadContent, and stops.
  */
-export function loadContentLeavingOut(docs: Record<string, unknown>, masters: Set<string>, readErrors: string[] = []): ContentIndex {
+export function loadContentLeavingOut(docs: Record<string, unknown>, masters: Set<string>, readErrors: string[] = [], sizes: ReadonlyMap<string, number> = new Map()): ContentIndex {
   const leftOut = new Set<string>();
   const problems: Issue[] = [];
   const key = (file: string) => `/${file.replace(/^\//, '')}`;
@@ -582,7 +653,7 @@ export function loadContentLeavingOut(docs: Record<string, unknown>, masters: Se
     try {
       const keptMasters = new Set([...masters].filter((m) => !leftOut.has(m)));
       const keptErrors = readErrors.filter((e) => !leftOut.has(key(e.slice(0, e.indexOf(': ')))));
-      const index = loadContent(docs, keptMasters, keptErrors, leftOut);
+      const index = loadContent(docs, keptMasters, keptErrors, leftOut, sizes);
       return { ...index, problems };
     } catch (e) {
       if (!(e instanceof ContentError)) throw e;

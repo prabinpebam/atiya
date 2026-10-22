@@ -2,14 +2,16 @@
 /**
  * The page’s one image lightbox: a native modal dialog with a smoke scrim (paper-white in light mode,
  * black in dark), previous and next controls, a live counter, captions and a filmstrip. Figures,
- * galleries and carousels only provide links.
+ * galleries and carousels only provide links (`a[data-lightbox]`); its script is `scripts/lightbox.ts`,
+ * with its rules pure in `lightboxRules.ts` and `zoomRules.ts`.
  * @tier compound
  * @a11y Uses <dialog>.showModal(), so focus is trapped, the page behind is inert and Escape closes it.
  * @a11y The opener keeps focus history; closing returns focus to the thumbnail that opened it.
- * @a11y The counter is announced politely, and every filmstrip thumbnail is a named button.
- * @key Left / Right: previous / next image
+ * @a11y Opening adds a history entry (the item's address on an album page), so Back closes it; none in the planet's frame.
+ * @a11y The counter is announced politely; the filmstrip is one Tab stop (a roving tab index) of named buttons.
+ * @key Left / Right: previous / next image (in the filmstrip, the focus follows)
  * @key Home / End: first / last image
- * @key Escape: closes the lightbox
+ * @key Escape or Back: closes the lightbox
  */
 import IconButton from '../fundamentals/IconButton.astro';
 import Caption from '../fundamentals/Caption.astro';
@@ -226,212 +228,7 @@ const { id = 'site-lightbox' } = Astro.props;
 
 <script>
   import { each } from '../../scripts/page';
-  import { counter, swipe, wrap } from '../../scripts/media';
-  import { pageIsDark } from '../../scripts/theme';
+  import { setupLightbox } from '../../scripts/lightbox';
 
-  interface LightboxItem {
-    link: HTMLAnchorElement;
-    href: string;
-    thumb: string;
-    /** Its dark mode version's full size and thumbnail, if it has one. */
-    hrefDark?: string;
-    thumbDark?: string;
-    caption: string;
-    alt: string;
-    /** Whether its drop shadow option is on. */
-    shadow: boolean;
-  }
-
-  const itemFrom = (link: HTMLAnchorElement): LightboxItem => {
-    const img = link.querySelector<HTMLImageElement>('img');
-    return {
-      link,
-      href: link.href,
-      thumb: link.dataset.thumb || img?.currentSrc || img?.src || link.href,
-      hrefDark: link.dataset.fullDark,
-      thumbDark: link.dataset.thumbDark,
-      caption: link.dataset.caption || '',
-      alt: link.dataset.alt || img?.alt || '',
-      shadow: link.dataset.shadow !== undefined,
-    };
-  };
-  // a picture's dark version shows in the lightbox, as on the page, while the page is dark
-  const fullOf = (item: LightboxItem) => (item.hrefDark && pageIsDark() ? item.hrefDark : item.href);
-  const thumbOf = (item: LightboxItem) => (item.thumbDark && pageIsDark() ? item.thumbDark : item.thumb);
-
-  // a full-size picture fetched ahead (a sealed one can't be: it's decrypted when its link is used)
-  const warmed = new Map<string, Promise<void>>();
-  const warm = (url: string) => {
-    if (!url || url.includes('/_sealed/')) return Promise.resolve();
-    let p = warmed.get(url);
-    if (!p) {
-      p = new Promise<void>((resolve) => {
-        const img = new Image();
-        img.onload = img.onerror = () => resolve();
-        img.src = url;
-      });
-      warmed.set(url, p);
-    }
-    return p;
-  };
-  /** How far apart two places are in a set that wraps round. */
-  const ring = (a: number, b: number, n: number) => Math.min(Math.abs(a - b), n - Math.abs(a - b));
-
-  each<HTMLDialogElement>('[data-lightbox-dialog]', (dialog, signal) => {
-    if (dialog.dataset.ready !== undefined) return;
-    dialog.dataset.ready = '';
-
-    const image = dialog.querySelector<HTMLImageElement>('[data-lightbox-image]');
-    const stage = dialog.querySelector<HTMLElement>('[data-lightbox-stage]');
-    const count = dialog.querySelector<HTMLElement>('[data-lightbox-counter]');
-    const caption = dialog.querySelector<HTMLElement>('[data-lightbox-caption]');
-    const captionWrap = dialog.querySelector<HTMLElement>('[data-lightbox-caption-wrap]');
-    const strip = dialog.querySelector<HTMLElement>('[data-lightbox-strip]');
-    const close = dialog.querySelector<HTMLButtonElement>('[data-lightbox-close]');
-    const prev = dialog.querySelector<HTMLButtonElement>('[data-lightbox-prev]');
-    const next = dialog.querySelector<HTMLButtonElement>('[data-lightbox-next]');
-    if (!image || !stage || !count || !caption || !captionWrap || !strip || !close || !prev || !next) return;
-
-    let items: LightboxItem[] = [];
-    let index = 0;
-    let opener: HTMLElement | null = null;
-    let down: { x: number; y: number; id: number } | null = null;
-    const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
-
-    const preload = (i: number) => {
-      if (items.length < 2) return;
-      const item = items[wrap(i, items.length)];
-      if (item) void warm(fullOf(item));
-    };
-    // the whole set, once it's open: nearest the picture shown first, two at a time, so stepping through it never waits
-    let warming = 0;
-    const warmSet = () => {
-      const run = ++warming;
-      const n = items.length;
-      const order = items.map((_, k) => k).sort((a, b) => ring(a, index, n) - ring(b, index, n));
-      let next = 0;
-      const worker = async () => {
-        while (run === warming && next < order.length) await warm(fullOf(items[order[next++]]));
-      };
-      void worker();
-      void worker();
-    };
-
-    const paintStrip = () => {
-      strip.textContent = '';
-      items.forEach((item, i) => {
-        const button = document.createElement('button');
-        button.type = 'button';
-        button.dataset.lightboxThumb = '';
-        button.setAttribute('aria-label', item.alt ? `Show picture ${i + 1}: ${item.alt}` : `Show picture ${i + 1}`);
-        if (i === index) button.setAttribute('aria-current', 'true');
-        const img = document.createElement('img');
-        img.src = thumbOf(item);
-        img.alt = '';
-        button.append(img);
-        button.addEventListener('click', () => render(i));
-        strip.append(button);
-      });
-      strip.querySelector<HTMLElement>('[aria-current="true"]')?.scrollIntoView({ block: 'nearest', inline: 'center' });
-    };
-
-    const render = (nextIndex: number, instant = false) => {
-      if (!items.length) return;
-      index = wrap(nextIndex, items.length);
-      const item = items[index];
-      const apply = () => {
-        image.src = fullOf(item);
-        image.alt = item.alt;
-        stage.toggleAttribute('data-shadow', item.shadow);
-        count.textContent = counter(index, items.length);
-        caption.textContent = item.caption;
-        captionWrap.hidden = item.caption.length === 0;
-        paintStrip();
-        preload(index + 1);
-        preload(index - 1);
-      };
-      if (instant || reduce) {
-        apply();
-        stage.removeAttribute('data-fading');
-        return;
-      }
-      stage.setAttribute('data-fading', '');
-      window.setTimeout(() => {
-        apply();
-        requestAnimationFrame(() => stage.removeAttribute('data-fading'));
-      }, 90);
-    };
-
-    // pointing at a picture, or tabbing to it, starts its full size: it's there when it opens
-    const warmLink = (event: Event) => {
-      const link = event.target instanceof Element ? event.target.closest<HTMLAnchorElement>('a[data-lightbox]') : null;
-      if (link) void warm(fullOf(itemFrom(link)));
-    };
-    document.addEventListener('pointerover', warmLink, { signal, passive: true });
-    document.addEventListener('focusin', warmLink, { signal });
-
-    document.addEventListener('click', (event) => {
-      const target = event.target;
-      const link = target instanceof Element ? target.closest<HTMLAnchorElement>('a[data-lightbox]') : null;
-      if (!link || !document.contains(link)) return;
-      if (event instanceof MouseEvent && (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey)) return;
-      if (typeof dialog.showModal !== 'function') return;
-      const group = link.dataset.lightbox || '';
-      const links = [...document.querySelectorAll<HTMLAnchorElement>('a[data-lightbox]')].filter((a) => (a.dataset.lightbox || '') === group);
-      items = links.map(itemFrom);
-      index = Math.max(0, links.indexOf(link));
-      opener = link;
-      event.preventDefault();
-      if (!dialog.open) dialog.showModal();
-      render(index, true);
-      close.focus();
-      warmSet();
-    }, { signal });
-
-    close.addEventListener('click', () => dialog.close());
-    // the theme changing while it's open (the switch, another tab, the system): the picture follows
-    const retheme = () => {
-      if (dialog.open && items.length) render(index, true);
-    };
-    matchMedia('(prefers-color-scheme: dark)').addEventListener('change', retheme, { signal });
-    const themeWatch = new MutationObserver(retheme);
-    themeWatch.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
-    signal.addEventListener('abort', () => themeWatch.disconnect());
-    prev.addEventListener('click', () => render(index - 1));
-    next.addEventListener('click', () => render(index + 1));
-    dialog.addEventListener('click', (event) => {
-      if (event.target === dialog) dialog.close();
-    });
-    dialog.addEventListener('close', () => {
-      opener?.focus();
-      opener = null;
-    });
-    dialog.addEventListener('keydown', (event) => {
-      if (!dialog.open) return;
-      if (event.key === 'ArrowLeft') {
-        event.preventDefault();
-        render(index - 1);
-      } else if (event.key === 'ArrowRight') {
-        event.preventDefault();
-        render(index + 1);
-      } else if (event.key === 'Home') {
-        event.preventDefault();
-        render(0);
-      } else if (event.key === 'End') {
-        event.preventDefault();
-        render(items.length - 1);
-      }
-    });
-    stage.addEventListener('pointerdown', (event) => {
-      if (event.pointerType === 'mouse') return;
-      down = { x: event.clientX, y: event.clientY, id: event.pointerId };
-      stage.setPointerCapture(event.pointerId);
-    });
-    stage.addEventListener('pointerup', (event) => {
-      if (!down || down.id !== event.pointerId) return;
-      const dir = swipe(event.clientX - down.x, event.clientY - down.y);
-      down = null;
-      if (dir !== 0) render(index + dir);
-    });
-  });
+  each<HTMLDialogElement>('[data-lightbox-dialog]', setupLightbox);
 </script>

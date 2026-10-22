@@ -60,6 +60,8 @@ const WIDTHS: Record<Slot, number[]> = {
   card: [240, 480, 960],
 };
 const FULL = 2560;
+/** A picture kept large (gallery spec §4) also gets this size, for the lightbox's stage and zoom only. */
+const LARGEST = 3840;
 const THUMB = 240;
 
 /** A picture's dark mode version, at the same widths: shown instead when the page is dark. */
@@ -74,6 +76,8 @@ export interface DarkPicture {
   poster?: string;
   /** The colour of its edges, for a background behind it (media.md §9.1). */
   bg: string;
+  /** A drawing: its SVG, shown whole and as it is at every size (gallery spec §4.1). */
+  drawing?: true;
 }
 
 export interface Picture {
@@ -93,6 +97,10 @@ export interface Picture {
   bg: string;
   /** Its dark mode version, if it has one (documentation/content/media.md §10). */
   dark?: DarkPicture;
+  /** A drawing: its SVG (`src`, `full` and `thumb` are the file itself), shown whole (gallery spec §4.1). */
+  drawing?: true;
+  /** A picture kept large: its 3840 px size (or its own, if smaller), for the lightbox's stage and zoom only (gallery spec §4). */
+  largest?: { src: string; width: number };
 }
 
 const webp = async (src: ImageMetadata, width: number) => (await timedAsync('picture.url', () => getImage({ src, width, format: 'webp', quality: 80 }))).src;
@@ -126,24 +134,31 @@ interface Sized {
   thumb: string;
   poster?: string;
   bg: string;
+  drawing?: true;
+  largest?: { src: string; width: number };
 }
 
 /** One master at a slot's widths, worked out: what the page needs to show it, and every file it names. */
-async function work(master: string, slot: Slot, posterMaster?: string, kept?: SidecarFacts): Promise<{ value: Sized; urls: string[] }> {
+async function work(master: string, slot: Slot, posterMaster?: string, kept?: SidecarFacts, large = false): Promise<{ value: Sized; urls: string[] }> {
   const meta = await metadata(master, kept);
   if (posterMaster) {
     const posterMeta = await metadata(posterMaster);
     const [poster, thumb, bg] = await Promise.all([webp(posterMeta, Math.min(posterMeta.width, 1600)), webp(posterMeta, Math.min(posterMeta.width, THUMB)), edgeColour(master, kept)]);
     return { value: { src: meta.src, srcset: '', width: meta.width, height: meta.height, full: meta.src, thumb, poster, bg }, urls: [meta.src, poster, thumb] };
   }
-  if (/\.gif$/i.test(master)) {
+  // a GIF is kept as it is, and a drawing too: one file, as uploaded (a build names it by its content's hash)
+  const drawing = /\.svg$/i.test(master);
+  if (drawing || /\.gif$/i.test(master)) {
     const bg = await edgeColour(master, kept);
-    return { value: { src: meta.src, srcset: '', width: meta.width, height: meta.height, full: meta.src, thumb: meta.src, bg }, urls: [meta.src] };
+    return { value: { src: meta.src, srcset: '', width: meta.width, height: meta.height, full: meta.src, thumb: meta.src, bg, ...(drawing ? { drawing: true as const } : {}) }, urls: [meta.src] };
   }
   const wanted = WIDTHS[slot];
   const widths = [...new Set([...wanted.filter((w) => w < meta.width), Math.min(meta.width, Math.max(...wanted))])].sort((a, b) => a - b);
   const urls = await Promise.all(widths.map((w) => webp(meta, w)));
   const [full, thumb, bg] = await Promise.all([webp(meta, Math.min(meta.width, FULL)), webp(meta, Math.min(meta.width, THUMB)), edgeColour(master, kept)]);
+  // kept large: one more size, wider than the full one, for the lightbox alone (never in a srcset)
+  const largestWidth = Math.min(meta.width, LARGEST);
+  const largest = large ? { src: largestWidth > FULL ? await webp(meta, largestWidth) : full, width: largestWidth } : undefined;
   return {
     value: {
       src: urls[Math.min(1, urls.length - 1)],
@@ -153,8 +168,9 @@ async function work(master: string, slot: Slot, posterMaster?: string, kept?: Si
       full,
       thumb,
       bg,
+      ...(largest ? { largest } : {}),
     },
-    urls: [...urls, full, thumb],
+    urls: [...urls, full, thumb, ...(largest ? [largest.src] : [])],
   };
 }
 
@@ -164,7 +180,7 @@ async function work(master: string, slot: Slot, posterMaster?: string, kept?: Si
  * On globalThis, so a module reloaded by HMR keeps them; at most MEMO_MAX, the oldest used dropped first.
  */
 // the address rule (a master's version in its URL) is one of the rules: a change to it works pictures out again
-const MEMO_RULES = JSON.stringify([WIDTHS, FULL, THUMB, 'v']);
+const MEMO_RULES = JSON.stringify([WIDTHS, FULL, LARGEST, THUMB, 'v', 'svg']);
 const MEMO_MAX = 4000;
 type Memo = Map<string, Promise<{ value: Sized; urls: string[] }>>;
 const memo = (): Memo => ((globalThis as typeof globalThis & { __sitePictureMemo?: Memo }).__sitePictureMemo ??= new Map());
@@ -174,27 +190,27 @@ const stamp = (master: string) => {
   return `${master}@${st.size}:${st.mtimeMs}`;
 };
 
-/** The key a picture is kept by: its master's and poster's paths, sizes and times, the slot and the rules. */
-export function pictureMemoKey(master: string, slot: Slot, posterMaster?: string): string {
-  return `${MEMO_RULES}|${slot}|${stamp(master)}|${posterMaster ? stamp(posterMaster) : ''}`;
+/** The key a picture is kept by: its master's and poster's paths, sizes and times, the slot, whether it's kept large, and the rules. */
+export function pictureMemoKey(master: string, slot: Slot, posterMaster?: string, large = false): string {
+  return `${MEMO_RULES}|${slot}|${stamp(master)}|${posterMaster ? stamp(posterMaster) : ''}${large ? '|large' : ''}`;
 }
 
-/** One master at a slot's widths: what the page needs to show it. An animation, or a GIF (kept as it is, never converted), is shown as its master. */
-async function sized(master: string, slot: Slot, posterMaster?: string, kept?: SidecarFacts): Promise<Sized> {
+/** One master at a slot's widths: what the page needs to show it. An animation, a GIF (kept as it is, never converted) or a drawing is shown as its master. */
+async function sized(master: string, slot: Slot, posterMaster?: string, kept?: SidecarFacts, large = false): Promise<Sized> {
   if (!import.meta.env.DEV) {
-    const { value, urls } = await work(master, slot, posterMaster, kept);
+    const { value, urls } = await work(master, slot, posterMaster, kept, large);
     await record(master, urls);
     return value;
   }
   const cache = memo();
-  const key = pictureMemoKey(master, slot, posterMaster);
+  const key = pictureMemoKey(master, slot, posterMaster, large);
   let p = cache.get(key);
   if (p) {
     // used again: the newest
     cache.delete(key);
     cache.set(key, p);
   } else {
-    p = work(master, slot, posterMaster, kept);
+    p = work(master, slot, posterMaster, kept, large);
     cache.set(key, p);
     p.catch(() => cache.delete(key));
     while (cache.size > MEMO_MAX) cache.delete(cache.keys().next().value!);
@@ -204,7 +220,7 @@ async function sized(master: string, slot: Slot, posterMaster?: string, kept?: S
 
 export async function picture(id: string, slot: Slot): Promise<Picture> {
   const m = getMedia(id);
-  const [light, dark] = await Promise.all([sized(m.master, slot, m.posterMaster, m.facts), m.darkMaster ? sized(m.darkMaster, slot, m.darkPosterMaster, m.dark?.facts) : undefined]);
+  const [light, dark] = await Promise.all([sized(m.master, slot, m.posterMaster, m.facts, !!m.large), m.darkMaster ? sized(m.darkMaster, slot, m.darkPosterMaster, m.dark?.facts) : undefined]);
   return {
     ...light,
     alt: m.decorative ? '' : (m.alt ?? ''),

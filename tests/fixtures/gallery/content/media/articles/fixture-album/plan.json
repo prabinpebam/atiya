@@ -1,0 +1,9 @@
+{
+  "kind": "image",
+  "file": "plan.svg",
+  "alt": "A floor plan of the cottage: two rooms and a porch.",
+  "visibility": "public",
+  "dark": {
+    "file": "plan.dark.svg"
+  }
+}

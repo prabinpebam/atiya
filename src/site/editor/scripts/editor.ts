@@ -29,6 +29,7 @@ import type { AiDo } from './aiPrompt';
 import { PICTURE_SPECS, thumbnailFor } from '../../design/pictures';
 import { plainText } from '../../content/markdown';
 import type { Article, Block } from '../../content/schema';
+import type { ProviderVideo } from '../../content/providers';
 
 interface State {
   id: string;
@@ -1244,7 +1245,7 @@ export function initEditor(root: HTMLElement, signal: AbortSignal) {
       });
   };
   let pendingCarousel: string[] = [];
-  let pendingVideo: { embed: { provider: 'youtube' | 'vimeo'; id: string }; title: string; duration?: number } | null = null;
+  let pendingVideo: { embed: ProviderVideo; title: string; duration?: number } | null = null;
 
   // ---------- a new collection's items: one to start, more added (and removed) in the form ----------
   // The form has the inspector's sections (the kit's): each item a pane in the PaneGroup's list, with its row in the list beside it (item-<uid>).

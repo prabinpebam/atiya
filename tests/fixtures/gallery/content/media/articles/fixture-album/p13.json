@@ -1,0 +1,13 @@
+{
+  "kind": "image",
+  "file": "p13.webp",
+  "alt": "Snow on a pine branch.",
+  "visibility": "public",
+  "facts": {
+    "width": 2400,
+    "height": 1600,
+    "bg": "rgb(200 180 150)",
+    "bytes": 413000
+  },
+  "taken": "2026-05-03"
+}

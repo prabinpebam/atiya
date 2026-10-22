@@ -1,0 +1,15 @@
+{
+  "kind": "image",
+  "file": "p01.webp",
+  "alt": "A hill path at dawn.",
+  "visibility": "public",
+  "facts": {
+    "width": 3840,
+    "height": 2560,
+    "bg": "rgb(120 140 90)",
+    "bytes": 1200000
+  },
+  "large": true,
+  "caption": "The view from the top, kept large.",
+  "taken": "2026-03-11"
+}

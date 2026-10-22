@@ -66,11 +66,13 @@ interface Props {
   rounded?: boolean;
   /** A drop shadow under it, following its own shape (a fitted or transparent picture casts the shadow of what shows). */
   shadow?: boolean;
+  /** A drawing (an SVG kept as a vector): shown whole, so left to display it's fit, never cropped (gallery spec §4.1). */
+  drawing?: boolean;
 }
 
-const { src, alt, width, height, srcset, poster, sizes, ratio, fit = 'cover', display, focus, radius: asked = 'default', priority = false, fill = false, dark, bg, rounded = true, shadow = false } = Astro.props;
+const { src, alt, width, height, srcset, poster, sizes, ratio, fit = 'cover', display, focus, radius: asked = 'default', priority = false, fill = false, dark, bg, rounded = true, shadow = false, drawing = false } = Astro.props;
 const radius = rounded ? asked : 'none';
-const mode = display ?? (fit === 'contain' ? 'fit' : 'fill');
+const mode = display ?? (drawing || fit === 'contain' ? 'fit' : 'fill');
 // Fixed-ratio fit separates the layout box from the image's own shape.
 const fittedRatio = mode === 'fit' && !fill ? ratio : undefined;
 const framed = mode === 'actual' || mode === 'tile' || fittedRatio !== undefined;

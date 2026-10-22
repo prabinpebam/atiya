@@ -7,7 +7,8 @@
  */
 import { announce, api, describeIssue, saveStatus } from './client';
 import { canCrop, openCrop } from './crop';
-import { describePicture, describeVideo, formatLabel, isVideoFile, keptAsIs, mayHaveAlpha, needsConversion, pastedName, pictureOfPaste, pictureSizeIssue, pngName, posterTime, typeOf, videoSizeIssue, videoTypeOf } from '../model/upload';
+import { APNG_NOTE, HEIC_REFUSED, describePicture, describeVideo, formatLabel, isApng, isVideoFile, keptAsIs, mayHaveAlpha, needsConversion, pastedName, pictureOfPaste, pictureSizeIssue, pngName, posterTime, refusedFormat, typeOf, videoSizeIssue, videoTypeOf } from '../model/upload';
+import { takenOf } from '../model/exif';
 import type { Rect } from '../model/crop';
 
 /** A video chosen: its file and what this browser read of it (media.md §12). */
@@ -62,6 +63,10 @@ interface Chosen {
   /** The browser can show it (it can't show a TIFF, which still uploads). */
   shown: boolean;
   rect: Rect | null;
+  /** The day it was taken, read here from a picture the browser converts (its EXIF is lost in the PNG). */
+  taken: string | null;
+  /** An animated PNG: kept as a still (gallery spec §4), which the form says before saving. */
+  apng: boolean;
 }
 
 /** The picture's size as this browser shows it, or null if it can't. */
@@ -209,6 +214,12 @@ export function initUpload(root: HTMLElement, signal: AbortSignal) {
     say('');
     drop();
     if (!file) return render();
+    // formats the site can't keep are refused with what to do (gallery spec §4)
+    const refused = refusedFormat(file);
+    if (refused) {
+      render();
+      return say(refused);
+    }
     if (isVideoFile(file)) return loadVideo(file, mine);
     const type = typeOf(file);
     if (!type.startsWith('image/')) {
@@ -222,14 +233,20 @@ export function initUpload(root: HTMLElement, signal: AbortSignal) {
     }
     let up = file;
     let converted = false;
+    let taken: string | null = null;
+    let apng = false;
     if (needsConversion(type)) {
+      // its date taken is read here, before the PNG it becomes loses it (a HEIC's EXIF), and sent with it
+      taken = await file.arrayBuffer().then((b) => takenOf(new Uint8Array(b)), () => null);
       try {
         up = await toPng(file);
         converted = true;
       } catch {
         render();
-        return say(`This browser can't read ${formatLabel(type)} pictures. Save it as a JPEG or PNG and choose it again.`);
+        return say(/hei[cf]/.test(type) ? HEIC_REFUSED : `This browser can't read ${formatLabel(type)} pictures. Save it as a JPEG or PNG and choose it again.`);
       }
+    } else if (type === 'image/png') {
+      apng = await file.arrayBuffer().then((b) => isApng(new Uint8Array(b)), () => false);
     }
     const url = URL.createObjectURL(up);
     const shown = await measure(url);
@@ -244,8 +261,11 @@ export function initUpload(root: HTMLElement, signal: AbortSignal) {
       converted,
       shown: !!shown,
       rect: null,
+      taken,
+      apng,
     };
     render();
+    if (apng) say(APNG_NOTE);
   };
 
   /** Puts a picture (or a video) in the form, as if chosen: from a paste here or on the canvas. */
@@ -343,6 +363,7 @@ export function initUpload(root: HTMLElement, signal: AbortSignal) {
       data.set('file', chosen.file, chosen.file.name);
       data.set('owner', root.dataset.owner ?? 'shared');
       if (chosen.rect) data.set('crop', JSON.stringify({ ...chosen.rect, of: { width: chosen.width, height: chosen.height } }));
+      if (chosen.taken) data.set('taken', chosen.taken);
       say('');
       if (submit) submit.disabled = true;
       saveStatus.saving();

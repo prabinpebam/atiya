@@ -5,7 +5,7 @@
  */
 
 /** A section's view on the site (the site's SECTION_VIEWS; a unit test keeps them equal). */
-export type ModeSectionView = 'list' | 'tiles' | 'bento' | 'features';
+export type ModeSectionView = 'list' | 'tiles' | 'bento' | 'features' | 'albums';
 /** A page's kind (the content contract's article kinds; a unit test keeps them equal). */
 export type ModePageKind = 'note' | 'page' | 'gallery' | 'talk';
 

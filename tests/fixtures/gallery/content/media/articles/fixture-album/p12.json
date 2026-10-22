@@ -1,0 +1,13 @@
+{
+  "kind": "image",
+  "file": "p12.webp",
+  "alt": "A lantern-lit lane.",
+  "visibility": "public",
+  "facts": {
+    "width": 1600,
+    "height": 2400,
+    "bg": "rgb(120 140 90)",
+    "bytes": 412000
+  },
+  "taken": "2026-05-02"
+}

@@ -39,7 +39,7 @@ export interface PictureFactsProgress {
 }
 
 const FORMAT: Record<string, string> = { jpeg: 'jpg', heif: 'avif' };
-const PICTURE = /\.(webp|jpe?g|png|avif|gif)$/i;
+const PICTURE = /\.(webp|jpe?g|png|avif|gif|svg)$/i;
 /** A master's format from its name, for facts a sidecar kept (uploads are named by what they are). */
 const formatOfName = (path: string) => {
   const ext = (/\.(\w+)$/.exec(path)?.[1] ?? 'webp').toLowerCase();

@@ -1,0 +1,13 @@
+{
+  "kind": "image",
+  "file": "p05.webp",
+  "alt": "Prayer flags over a pass.",
+  "visibility": "public",
+  "facts": {
+    "width": 2400,
+    "height": 1600,
+    "bg": "rgb(200 180 150)",
+    "bytes": 405000
+  },
+  "taken": "2026-03-15"
+}

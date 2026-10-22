@@ -1,0 +1,12 @@
+{
+  "kind": "image",
+  "file": "p14.webp",
+  "alt": "A potter at a wheel.",
+  "visibility": "public",
+  "facts": {
+    "width": 2400,
+    "height": 1600,
+    "bg": "rgb(60 80 120)",
+    "bytes": 414000
+  }
+}

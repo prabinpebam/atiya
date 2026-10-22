@@ -1,0 +1,12 @@
+{
+  "kind": "image",
+  "file": "p07.webp",
+  "alt": "Rice fields after rain.",
+  "visibility": "public",
+  "facts": {
+    "width": 2400,
+    "height": 1600,
+    "bg": "rgb(210 120 80)",
+    "bytes": 407000
+  }
+}

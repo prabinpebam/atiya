@@ -14,6 +14,7 @@ import Image from '../fundamentals/Image.astro';
 import Caption from '../fundamentals/Caption.astro';
 import { svgOf } from '../../design/icons';
 import { linkAttrs } from '../../design/links';
+import { pageUrl, playerUrl } from '../../design/videoProviders';
 import type { PictureSource } from '../../design/pictures';
 
 interface Props {
@@ -99,14 +100,9 @@ const clock = duration ? `${mins}:${String(secs).padStart(2, '0')}` : undefined;
 const spoken = duration
   ? [mins && `${mins} minute${mins === 1 ? '' : 's'}`, secs && `${secs} second${secs === 1 ? '' : 's'}`].filter(Boolean).join(' ')
   : undefined;
-const pageHref = kind === 'youtube' ? `https://www.youtube.com/watch?v=${id ?? ''}` : kind === 'vimeo' ? `https://vimeo.com/${id ?? ''}` : src;
+const pageHref = kind === 'file' ? src : pageUrl(kind, id ?? '');
 const pagePolicy = linkAttrs(pageHref, Astro.url.hostname);
-const embedSrc =
-  kind === 'youtube'
-    ? `https://www.youtube-nocookie.com/embed/${id ?? ''}?autoplay=1`
-    : kind === 'vimeo'
-      ? `https://player.vimeo.com/video/${id ?? ''}?autoplay=1&dnt=1`
-      : undefined;
+const embedSrc = kind === 'file' ? undefined : playerUrl(kind, id ?? '', { autoplay: true });
 ---
 
 <figure class="video-embed" data-kind={kind} data-breakout={breakout}>

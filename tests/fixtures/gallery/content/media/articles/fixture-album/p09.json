@@ -1,0 +1,12 @@
+{
+  "kind": "image",
+  "file": "p09.webp",
+  "alt": "A bridge of bamboo.",
+  "visibility": "public",
+  "facts": {
+    "width": 1600,
+    "height": 2400,
+    "bg": "rgb(200 180 150)",
+    "bytes": 409000
+  }
+}

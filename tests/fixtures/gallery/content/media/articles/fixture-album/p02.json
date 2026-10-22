@@ -1,0 +1,13 @@
+{
+  "kind": "image",
+  "file": "p02.webp",
+  "alt": "A market stall of oranges.",
+  "visibility": "public",
+  "facts": {
+    "width": 2400,
+    "height": 1600,
+    "bg": "rgb(60 80 120)",
+    "bytes": 402000
+  },
+  "taken": "2026-03-12"
+}

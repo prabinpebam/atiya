@@ -9,13 +9,14 @@
  * every page, as the client-side router keeps the first page's): `'unsafe-inline'` stands in for them until then.
  */
 import { catalogue, embedHost, type ContactSetting } from './services.ts';
+import { VIDEO_HOSTS } from '../content/providers.ts';
 
 export const DIRECTIVES = ['default-src', 'script-src', 'style-src', 'img-src', 'font-src', 'connect-src', 'frame-src', 'media-src', 'worker-src', 'object-src', 'base-uri', 'form-action'] as const;
 export type Directive = (typeof DIRECTIVES)[number];
 export type Sources = Partial<Record<Directive, string[]>>;
 
-/** The players a video block embeds (VideoEmbed.astro). */
-export const VIDEO_HOSTS = ['https://www.youtube-nocookie.com', 'https://player.vimeo.com'];
+/** The players a video block embeds (VideoEmbed.astro): every provider's hosts (src/site/content/providers.ts). */
+export { VIDEO_HOSTS };
 /** PostHog's host when the site names none (scripts/telemetryClient.ts). */
 export const POSTHOG_DEFAULT = 'https://us.i.posthog.com';
 /** Umami's host when the site names none (scripts/countsRules.ts). */

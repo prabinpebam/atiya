@@ -29,7 +29,8 @@ describe('the policy every site starts from', () => {
   });
 
   it('frames the video players VideoEmbed builds, and only those', () => {
-    const embed = readFileSync('src/site/components/compounds/VideoEmbed.astro', 'utf8');
+    // VideoEmbed builds its players from the one list of providers
+    const embed = readFileSync('src/site/content/providers.ts', 'utf8');
     for (const host of ['https://www.youtube-nocookie.com/embed/', 'https://player.vimeo.com/video/']) expect(embed).toContain(host);
     expect(base['frame-src']).toEqual(["'self'", 'https://www.youtube-nocookie.com', 'https://player.vimeo.com']);
   });

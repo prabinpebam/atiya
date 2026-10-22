@@ -1,0 +1,12 @@
+{
+  "kind": "image",
+  "file": "p16.webp",
+  "alt": "A heron by a pond.",
+  "visibility": "public",
+  "facts": {
+    "width": 2400,
+    "height": 1600,
+    "bg": "rgb(120 140 90)",
+    "bytes": 416000
+  }
+}

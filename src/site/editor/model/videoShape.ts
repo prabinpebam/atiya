@@ -5,27 +5,24 @@
  * player takes just the video's shape.
  */
 
+import { isPortraitUrl, oembedUrl as providerOembed, pageUrl, type ProviderVideo } from '../../content/providers';
+
 export interface Shape {
   width: number;
   height: number;
 }
 
-type Embed = { provider: 'youtube' | 'vimeo'; id: string };
+type Embed = ProviderVideo;
 
 /** A YouTube Short is portrait, but YouTube's oEmbed answers 16:9 for it: its address says it instead. */
-export const isShorts = (url: string) => /youtube\.com\/shorts\//i.test(url.trim());
+export const isShorts = (url: string) => isPortraitUrl(url);
 export const SHORTS_SHAPE: Shape = { width: 1080, height: 1920 };
 
 /**
  * Where to ask: asked for a big player (1920), the provider answers in the video's own proportions with
  * enough pixels that the shape isn't rounded off (Vimeo's default 426 × 160 is a loop of 1920 × 720).
  */
-export function oembedUrl(embed: Embed): string {
-  const page = embed.provider === 'youtube' ? `https://www.youtube.com/watch?v=${embed.id}` : `https://vimeo.com/${embed.id}`;
-  return embed.provider === 'youtube'
-    ? `https://www.youtube.com/oembed?format=json&maxwidth=1920&maxheight=1920&url=${encodeURIComponent(page)}`
-    : `https://vimeo.com/api/oembed.json?maxwidth=1920&url=${encodeURIComponent(page)}`;
-}
+export const oembedUrl = (embed: Embed): string => providerOembed(embed.provider, pageUrl(embed.provider, embed.id));
 
 /** The shape in an oEmbed answer, or null when it holds none. */
 export function shapeOf(answer: unknown): Shape | null {

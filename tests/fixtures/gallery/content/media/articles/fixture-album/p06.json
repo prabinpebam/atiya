@@ -1,0 +1,13 @@
+{
+  "kind": "image",
+  "file": "p06.webp",
+  "alt": "A bowl of noodles.",
+  "visibility": "public",
+  "facts": {
+    "width": 1600,
+    "height": 2400,
+    "bg": "rgb(60 80 120)",
+    "bytes": 406000
+  },
+  "taken": "2026-03-16"
+}

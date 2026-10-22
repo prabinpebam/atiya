@@ -11,8 +11,9 @@ import type { ImageMetadata } from 'astro';
 
 type Masters = Record<string, { default: ImageMetadata }>;
 
-const publicMasters: Masters = import.meta.glob<{ default: ImageMetadata }>('/content/media/**/*.{webp,jpg,jpeg,png,avif,gif}', { eager: true });
-const privateMasters: Masters = import.meta.glob<{ default: ImageMetadata }>('@private-pages/media/**/*.{webp,jpg,jpeg,png,avif,gif}', { eager: true });
+// a drawing (.svg) is imported too: astro:assets emits it as it is, under a content-hashed name (gallery spec §4.1)
+const publicMasters: Masters = import.meta.glob<{ default: ImageMetadata }>('/content/media/**/*.{webp,jpg,jpeg,png,avif,gif,svg}', { eager: true });
+const privateMasters: Masters = import.meta.glob<{ default: ImageMetadata }>('@private-pages/media/**/*.{webp,jpg,jpeg,png,avif,gif,svg}', { eager: true });
 
 /** A private master's key, whatever form the glob gives it (the alias, or the folder's path). */
 const privateKey = (key: string) => '/private/media/' + key.replace(/\\/g, '/').replace(/^.*?\/media\//, '');

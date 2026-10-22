@@ -7,7 +7,7 @@ import type { APIRoute } from 'astro';
 import type { Article, ImageMedia, SiteSettings, Person, PlanetStructure, SiteStructure, ThemeFile, VideoMedia } from '../../content/schema';
 import { asTab, commit, jsonBytes, readDoc, type Result } from '../server/store';
 import { createArticle, deleteArticle, duplicateArticle, saveArticle, PLANET, STRUCTURE, planetKey } from '../server/articles';
-import { cropMedia, cropSource, deleteMedia, parseUploadCrop, removeDark, replaceMaster, saveSidecar, setDark, upload, uploadVideo } from '../server/media';
+import { cropMedia, cropSource, deleteMedia, findFocus, makeStandard, parseUploadCrop, removeDark, replaceMaster, saveSidecar, setDark, upload, uploadVideo } from '../server/media';
 import { isVideoFile } from '../model/upload';
 import { measureVideo } from '../server/videoShape';
 import { changes, discard, publish, push } from '../server/git';
@@ -369,6 +369,8 @@ const handle: APIRoute = async ({ request, params, url }) => {
           );
         }
         const crop = parseUploadCrop(form.get('crop'));
+        const svgAs = form.get('svgAs');
+        const taken = form.get('taken');
         const r = await upload({
           file: { name: file.name, bytes: Buffer.from(await file.arrayBuffer()) },
           owner: String(form.get('owner') ?? 'shared'),
@@ -376,6 +378,10 @@ const handle: APIRoute = async ({ request, params, url }) => {
           decorative: form.get('decorative') === 'on' || form.get('decorative') === 'true',
           caption: String(form.get('caption') ?? ''),
           ...(crop ? { crop } : {}),
+          // gallery spec §4: an SVG kept as a drawing, a picture kept large, the day the browser read before converting
+          ...(svgAs === 'drawing' || svgAs === 'picture' ? { svgAs } : {}),
+          ...(form.get('large') === 'on' || form.get('large') === 'true' ? { large: true } : {}),
+          ...(typeof taken === 'string' && taken ? { taken } : {}),
         });
         return result(r);
       }
@@ -395,8 +401,18 @@ const handle: APIRoute = async ({ request, params, url }) => {
         const form = await request.formData();
         const file = form.get('file');
         if (!(file instanceof File)) return json({ ok: false, issues: [{ file: 'content/media', path: 'file', message: 'choose a picture' }] }, 422);
-        return result(await replaceMaster(id.replace(/\/replace$/, ''), Buffer.from(await file.arrayBuffer())));
+        const svgAs = form.get('svgAs');
+        return result(
+          await replaceMaster(id.replace(/\/replace$/, ''), Buffer.from(await file.arrayBuffer()), {
+            name: file.name,
+            ...(svgAs === 'drawing' || svgAs === 'picture' ? { svgAs } : {}),
+            large: form.get('large') === 'on' || form.get('large') === 'true',
+          }),
+        );
       }
+      // gallery spec §4: "Find the focus" (measures, saves nothing) and "Make it standard" (a large picture saved again at 2560 px)
+      if (method === 'POST' && id.endsWith('/focus')) return result(await findFocus(id.replace(/\/focus$/, '')));
+      if (method === 'POST' && id.endsWith('/standard')) return result(await makeStandard(id.replace(/\/standard$/, '')));
       // a picture's dark mode version: added or replaced (multipart: file, and a crop chosen first), or removed
       if (method === 'POST' && id.endsWith('/dark')) {
         const form = await request.formData();

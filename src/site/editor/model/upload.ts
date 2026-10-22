@@ -144,6 +144,88 @@ export function videoSizeIssue(bytes: number): string | null {
 /** "34.2 MB". */
 export const megabytes = (bytes: number) => `${(bytes / 1_000_000).toFixed(bytes < 10_000_000 ? 1 : 0)} MB`;
 
+// ---------- formats the site can't keep (gallery spec §4, D-G8) ----------
+
+const RAW_EXT = ['cr2', 'cr3', 'crw', 'nef', 'nrw', 'arw', 'srf', 'sr2', 'dng', 'orf', 'rw2', 'raf', 'srw', 'pef', 'x3f', 'erf', 'kdc', 'mrw', 'mos', '3fr', 'iiq', 'rwl', 'raw'];
+
+/**
+ * Why a file the site can't keep is refused, with what to do, or null when it's fine (the table in gallery
+ * spec §4): JPEG XL, camera RAW and PSD are exported as JPEG or PNG first; MKV, AVI, WMV and 3GP saved as
+ * MP4. A HEIC the browser can't open says so where it's opened (`HEIC_REFUSED`).
+ */
+export function refusedFormat(file: { type: string; name: string }): string | null {
+  const ext = /\.([a-z0-9]+)$/i.exec(file.name)?.[1]?.toLowerCase() ?? '';
+  const type = file.type.toLowerCase();
+  if (ext === 'jxl' || type === 'image/jxl') return 'This is a JPEG XL picture, which the site can\'t keep. Export it as JPEG or PNG, then add it.';
+  if (RAW_EXT.includes(ext) || /^image\/x-(canon|nikon|sony|adobe-dng|olympus|panasonic|fuji|samsung|pentax|dcraw)/.test(type) || type === 'image/x-dcraw') return 'This is a camera RAW file, which the site can\'t keep. Export it as JPEG or PNG from your photo app, then add it.';
+  if (ext === 'psd' || ext === 'psb' || type === 'image/vnd.adobe.photoshop' || type === 'image/x-photoshop' || type === 'application/x-photoshop') return 'This is a Photoshop file, which the site can\'t keep. Export it as PNG or JPEG, then add it.';
+  if (['mkv', 'avi', 'wmv', '3gp', '3g2'].includes(ext) || /^video\/(x-matroska|x-msvideo|avi|x-ms-wmv|3gpp2?)$/.test(type)) return `This ${ext ? `${ext.toUpperCase()} ` : ''}video is in a format the site can't keep. Save it as MP4 (HandBrake does it), then add it.`;
+  return null;
+}
+
+/** A HEIC or HEIF this browser can't open (it's turned into a PNG in the browser first). */
+export const HEIC_REFUSED = "This browser can't open HEIC. Export it as JPEG, then add it.";
+
+/** What the upload form says before saving an animated PNG (gallery spec §4): sharp reads its first frame only. */
+export const APNG_NOTE = 'This animated PNG will be kept as a still picture. To keep it moving, save it as a GIF or an animated WebP.';
+
+/** Whether a PNG is animated (an APNG): it has an `acTL` chunk before its first `IDAT`. */
+export function isApng(bytes: Uint8Array): boolean {
+  const sig = [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a];
+  if (bytes.length < 8 || sig.some((v, i) => bytes[i] !== v)) return false;
+  let at = 8;
+  while (at + 8 <= bytes.length) {
+    const len = ((bytes[at] << 24) | (bytes[at + 1] << 16) | (bytes[at + 2] << 8) | bytes[at + 3]) >>> 0;
+    const type = String.fromCharCode(bytes[at + 4], bytes[at + 5], bytes[at + 6], bytes[at + 7]);
+    if (type === 'acTL') return true;
+    if (type === 'IDAT' || type === 'IEND') return false;
+    at += 12 + len;
+  }
+  return false;
+}
+
+// ---------- SVG: a drawing or a picture (gallery spec §4.1) ----------
+
+/** The largest SVG kept as a drawing (the same as the sanitizer's). */
+export const SVG_DRAWING_MAX_BYTES = 200 * 1024;
+
+/** How an SVG can be kept: as a drawing (at most 200 KB, the default then) or turned into a picture (always). */
+export function svgChoices(bytes: number): { drawing: boolean; default: 'drawing' | 'picture' } {
+  const drawing = bytes <= SVG_DRAWING_MAX_BYTES;
+  return { drawing, default: drawing ? 'drawing' : 'picture' };
+}
+
+// ---------- keep it large (gallery spec §4) ----------
+
+/** A master's longest side: 2560 px, or 3840 px kept large. */
+export const MAX_SIDE = 2560;
+export const MAX_LARGE_SIDE = 3840;
+
+/** Whether "Keep it large" is offered: a raster still picture bigger than 2560 px (not a GIF or a drawing). */
+export const canKeepLarge = (p: { width: number; height: number; type: string; animated?: boolean }) =>
+  Math.max(p.width, p.height) > MAX_SIDE && !keptAsIs(p.type) && p.type !== 'image/svg+xml' && !p.animated;
+
+// ---------- the focus point (gallery spec §4, D-G16) ----------
+
+/**
+ * The focus point (the sidecar's `focus`, "x% y%") from where an attention crop was cut: a crop of
+ * `crop.width` × `crop.height` taken `left`, `top` pixels into a picture of `width` × `height` has its
+ * centre there. sharp reports the offsets as negatives (cropOffsetLeft/Top); either sign is read.
+ */
+export function focusPercent(picture: { width: number; height: number }, crop: { left: number; top: number; width: number; height: number }): string {
+  const pct = (offset: number, size: number, whole: number) => {
+    if (!(whole > 0)) return 50;
+    const centre = Math.abs(offset) + Math.min(size, whole) / 2;
+    return Math.max(0, Math.min(100, Math.round((centre / whole) * 100)));
+  };
+  return `${pct(crop.left, crop.width, picture.width)}% ${pct(crop.top, crop.height, picture.height)}%`;
+}
+
+/** Merges two focus measures (one from a crop across, one from a crop down): x from the first, y from the second. */
+export function joinFocus(across: string, down: string): string {
+  return `${across.split(' ')[0]} ${down.split(' ')[1]}`;
+}
+
 /** A length in seconds as "1:23" (or "1:02:03"). */
 export function clock(seconds: number): string {
   const s = Math.max(0, Math.round(seconds));

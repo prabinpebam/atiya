@@ -1,0 +1,13 @@
+{
+  "kind": "image",
+  "file": "p04.webp",
+  "alt": "A red door in a white wall.",
+  "visibility": "public",
+  "facts": {
+    "width": 2400,
+    "height": 1600,
+    "bg": "rgb(120 140 90)",
+    "bytes": 404000
+  },
+  "taken": "2026-03-14"
+}

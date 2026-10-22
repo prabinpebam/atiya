@@ -1,0 +1,12 @@
+{
+  "kind": "image",
+  "file": "p08.webp",
+  "alt": "A cat asleep on a step.",
+  "visibility": "public",
+  "facts": {
+    "width": 2400,
+    "height": 1600,
+    "bg": "rgb(120 140 90)",
+    "bytes": 408000
+  }
+}

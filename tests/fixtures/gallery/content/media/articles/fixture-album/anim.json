@@ -1,0 +1,15 @@
+{
+  "kind": "image",
+  "file": "anim.gif",
+  "alt": "A flag flapping in the wind.",
+  "visibility": "public",
+  "animation": {
+    "poster": "anim.poster.webp"
+  },
+  "facts": {
+    "width": 800,
+    "height": 600,
+    "bg": "rgb(90 110 160)",
+    "bytes": 900000
+  }
+}

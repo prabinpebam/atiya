@@ -5,6 +5,9 @@
  */
 import { describe, expect, it } from 'vitest';
 import { clock, describePicture, describeVideo, formatLabel, isVideoFile, keptAsIs, MAX_GIF_BYTES, MAX_PICTURE_BYTES, MAX_VIDEO_BYTES, mayHaveAlpha, megabytes, needsConversion, pastedName, pictureOfPaste, pictureSizeIssue, pngName, posterTime, typeOf, videoSizeIssue, videoTypeOf } from '../../src/site/editor/model/upload';
+import { APNG_NOTE, canKeepLarge, focusPercent, isApng, joinFocus, MAX_LARGE_SIDE, MAX_SIDE, refusedFormat, svgChoices, SVG_DRAWING_MAX_BYTES } from '../../src/site/editor/model/upload';
+import { exifBlock, exifDay, takenFromTiff, takenOf } from '../../src/site/editor/model/exif';
+import sharp from 'sharp';
 
 describe('the upload form', () => {
   it('knows a file by its type, or by its extension when the system gives none', () => {
@@ -92,5 +95,166 @@ describe('a video in the upload form (documentation/content/media.md §12)', () 
 
   it('takes its poster a second in, or a tenth of a short one', () => {
     expect([posterTime(60), posterTime(5), posterTime(0), posterTime(Number.NaN)]).toEqual([1, 0.5, 0, 0]);
+  });
+});
+
+// ---------- gallery spec §4: formats, the date taken, the focus point, keeping it large, drawings ----------
+
+describe('formats the site refuses, with what to do (gallery spec §4)', () => {
+  it('refuses JPEG XL, camera RAW and Photoshop files, by name or type, saying to export them', () => {
+    expect(refusedFormat({ type: '', name: 'shot.JXL' })).toMatch(/JPEG XL.*Export it as JPEG or PNG/);
+    expect(refusedFormat({ type: 'image/jxl', name: 'a' })).toMatch(/JPEG XL/);
+    for (const ext of ['cr2', 'CR3', 'nef', 'arw', 'dng', 'orf', 'rw2', 'raf']) expect(refusedFormat({ type: '', name: `IMG_1.${ext}` }), ext).toMatch(/camera RAW.*Export it as JPEG or PNG/);
+    expect(refusedFormat({ type: 'image/x-canon-cr2', name: 'x' })).toMatch(/camera RAW/);
+    expect(refusedFormat({ type: '', name: 'poster.psd' })).toMatch(/Photoshop.*Export it as PNG or JPEG/);
+    expect(refusedFormat({ type: 'image/vnd.adobe.photoshop', name: 'x' })).toMatch(/Photoshop/);
+  });
+
+  it('refuses MKV, AVI, WMV and 3GP, saying to save them as MP4', () => {
+    expect(refusedFormat({ type: '', name: 'clip.mkv' })).toBe("This MKV video is in a format the site can't keep. Save it as MP4 (HandBrake does it), then add it.");
+    for (const ext of ['avi', 'wmv', '3gp', '3g2']) expect(refusedFormat({ type: '', name: `c.${ext}` }), ext).toMatch(/Save it as MP4/);
+    expect(refusedFormat({ type: 'video/x-matroska', name: 'clip' })).toMatch(/^This video is in a format/);
+  });
+
+  it('keeps what it can: pictures, HEIC (converted in the browser), SVG, GIF, MP4, WebM and MOV', () => {
+    for (const name of ['a.jpg', 'a.png', 'a.webp', 'a.avif', 'a.gif', 'a.tif', 'a.heic', 'a.svg', 'a.mp4', 'a.webm', 'a.mov']) expect(refusedFormat({ type: '', name }), name).toBeNull();
+  });
+
+  it('knows an animated PNG by its acTL chunk before the picture data, and says what happens to it', () => {
+    const chunk = (type: string, data: number[] = []) => [0, 0, 0, data.length, ...[...type].map((c) => c.charCodeAt(0)), ...data, 0, 0, 0, 0];
+    const sig = [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a];
+    const ihdr = chunk('IHDR', new Array(13).fill(0));
+    expect(isApng(new Uint8Array([...sig, ...ihdr, ...chunk('acTL', new Array(8).fill(0)), ...chunk('IDAT', [1]), ...chunk('IEND')]))).toBe(true);
+    expect(isApng(new Uint8Array([...sig, ...ihdr, ...chunk('IDAT', [1]), ...chunk('acTL', new Array(8).fill(0)), ...chunk('IEND')]))).toBe(false);
+    expect(isApng(new Uint8Array([...sig, ...ihdr, ...chunk('IDAT', [1]), ...chunk('IEND')]))).toBe(false);
+    expect(isApng(new Uint8Array([0xff, 0xd8, 0xff]))).toBe(false);
+    expect(APNG_NOTE).toMatch(/kept as a still picture.*GIF or an animated WebP/);
+  });
+});
+
+describe('an SVG: a drawing or a picture (gallery spec §4.1)', () => {
+  it('offers Keep it as a drawing up to 200 KB (the default then), and always Turn it into a picture', () => {
+    expect(svgChoices(12_000)).toEqual({ drawing: true, default: 'drawing' });
+    expect(svgChoices(SVG_DRAWING_MAX_BYTES)).toEqual({ drawing: true, default: 'drawing' });
+    expect(svgChoices(SVG_DRAWING_MAX_BYTES + 1)).toEqual({ drawing: false, default: 'picture' });
+  });
+});
+
+describe('keep it large (gallery spec §4)', () => {
+  it('is offered only for a still raster picture bigger than 2560 px', () => {
+    expect([MAX_SIDE, MAX_LARGE_SIDE]).toEqual([2560, 3840]);
+    expect(canKeepLarge({ width: 4000, height: 3000, type: 'image/jpeg' })).toBe(true);
+    expect(canKeepLarge({ width: 1200, height: 2561, type: 'image/png' })).toBe(true);
+    expect(canKeepLarge({ width: 2560, height: 1440, type: 'image/jpeg' })).toBe(false);
+    expect(canKeepLarge({ width: 4000, height: 3000, type: 'image/gif' })).toBe(false);
+    expect(canKeepLarge({ width: 4000, height: 3000, type: 'image/svg+xml' })).toBe(false);
+    expect(canKeepLarge({ width: 4000, height: 3000, type: 'image/webp', animated: true })).toBe(false);
+  });
+});
+
+describe('the focus point from an attention crop (gallery spec §4)', () => {
+  it('is the crop\'s centre, as percentages of the picture, whichever sign the offsets have', () => {
+    expect(focusPercent({ width: 1000, height: 500 }, { left: -500, top: 0, width: 500, height: 500 })).toBe('75% 50%');
+    expect(focusPercent({ width: 1000, height: 500 }, { left: 0, top: 0, width: 500, height: 500 })).toBe('25% 50%');
+    expect(focusPercent({ width: 1000, height: 500 }, { left: 250, top: 0, width: 500, height: 500 })).toBe('50% 50%');
+    expect(focusPercent({ width: 400, height: 800 }, { left: 0, top: -400, width: 400, height: 400 })).toBe('50% 75%');
+  });
+
+  it('stays within the picture, and is the middle of nothing measurable', () => {
+    expect(focusPercent({ width: 100, height: 100 }, { left: -90, top: 0, width: 50, height: 200 })).toBe('100% 50%');
+    expect(focusPercent({ width: 0, height: 0 }, { left: 0, top: 0, width: 0, height: 0 })).toBe('50% 50%');
+  });
+
+  it('joins a crop across (its x) with a crop down (its y)', () => {
+    expect(joinFocus('30% 50%', '50% 80%')).toBe('30% 80%');
+  });
+});
+
+// ---------- the date taken: EXIF fixtures built byte by byte ----------
+
+/** A TIFF block (EXIF) with DateTime in IFD0 and DateTimeOriginal in the Exif IFD, either byte order. */
+function tiff(o: { little?: boolean; dateTime?: string; original?: string }): Uint8Array {
+  const little = o.little ?? true;
+  const out: number[] = [];
+  const u16 = (v: number) => (little ? out.push(v & 255, v >> 8) : out.push(v >> 8, v & 255));
+  const u32 = (v: number) => (little ? out.push(v & 255, (v >> 8) & 255, (v >> 16) & 255, v >>> 24) : out.push(v >>> 24, (v >> 16) & 255, (v >> 8) & 255, v & 255));
+  const str = (s: string) => [...s].map((c) => c.charCodeAt(0)).concat(0);
+  const n0 = (o.dateTime ? 1 : 0) + (o.original ? 1 : 0);
+  const ifd0At = 8;
+  const exifAt = ifd0At + 2 + n0 * 12 + 4;
+  const dataAt = exifAt + (o.original ? 18 : 0);
+  const dt = o.dateTime ? str(o.dateTime) : [];
+  const dto = o.original ? str(o.original) : [];
+  out.push(...(little ? [0x49, 0x49, 0x2a, 0] : [0x4d, 0x4d, 0, 0x2a]));
+  u32(ifd0At);
+  u16(n0);
+  if (o.dateTime) {
+    u16(0x0132), u16(2), u32(dt.length), u32(dataAt);
+  }
+  if (o.original) {
+    u16(0x8769), u16(4), u32(1), u32(exifAt);
+  }
+  u32(0);
+  if (o.original) {
+    u16(1), u16(0x9003), u16(2), u32(dto.length), u32(dataAt + dt.length), u32(0);
+  }
+  out.push(...dt, ...dto);
+  return new Uint8Array(out);
+}
+const EXIF = [0x45, 0x78, 0x69, 0x66, 0, 0];
+const jpeg = (t: Uint8Array) => {
+  const len = 2 + 6 + t.length;
+  const app0 = [0xff, 0xe0, 0, 16, 0x4a, 0x46, 0x49, 0x46, 0, 1, 1, 0, 0, 1, 0, 1, 0, 0];
+  return new Uint8Array([0xff, 0xd8, ...app0, 0xff, 0xe1, len >> 8, len & 255, ...EXIF, ...t, 0xff, 0xda, 0, 2, 0xff, 0xd9]);
+};
+const pngChunk = (type: string, data: number[]) => [(data.length >>> 24) & 255, (data.length >> 16) & 255, (data.length >> 8) & 255, data.length & 255, ...[...type].map((c) => c.charCodeAt(0)), ...data, 0, 0, 0, 0];
+const png = (t: Uint8Array) => new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, ...pngChunk('IHDR', new Array(13).fill(0)), ...pngChunk('eXIf', [...t]), ...pngChunk('IEND', [])]);
+const webp = (t: Uint8Array, withHeader = false) => {
+  const riff = (type: string, data: number[]) => [...[...type].map((c) => c.charCodeAt(0)), data.length & 255, (data.length >> 8) & 255, (data.length >> 16) & 255, data.length >>> 24, ...data, ...(data.length & 1 ? [0] : [])];
+  const body = [...[...'WEBP'].map((c) => c.charCodeAt(0)), ...riff('VP8X', new Array(10).fill(0)), ...riff('EXIF', [...(withHeader ? EXIF : []), ...t])];
+  return new Uint8Array([0x52, 0x49, 0x46, 0x46, body.length & 255, (body.length >> 8) & 255, (body.length >> 16) & 255, body.length >>> 24, ...body]);
+};
+
+describe('the date taken, read at upload (gallery spec §4)', () => {
+  it('reads DateTimeOriginal before DateTime, in both byte orders', () => {
+    for (const little of [true, false]) {
+      const t = tiff({ little, dateTime: '2023:01:02 10:00:00', original: '2021:07:15 18:02:11' });
+      expect(takenFromTiff(t), String(little)).toBe('2021-07-15');
+      expect(takenFromTiff(tiff({ little, dateTime: '2023:01:02 10:00:00' }))).toBe('2023-01-02');
+      expect(takenFromTiff(tiff({ little, original: '2020:02:29 00:00:00' }))).toBe('2020-02-29');
+    }
+  });
+
+  it('finds the block in a JPEG, a PNG, a WebP, a TIFF and (by its header) a HEIC', () => {
+    const t = tiff({ original: '2019:12:31 23:59:59' });
+    expect(takenOf(jpeg(t))).toBe('2019-12-31');
+    expect(takenOf(png(t))).toBe('2019-12-31');
+    expect(takenOf(webp(t))).toBe('2019-12-31');
+    expect(takenOf(webp(new Uint8Array([...t, 0]), true))).toBe('2019-12-31');
+    expect(takenOf(t)).toBe('2019-12-31');
+    const heic = new Uint8Array([0, 0, 0, 24, ...[...'ftypheic'].map((c) => c.charCodeAt(0)), 1, 2, 3, ...EXIF, ...t]);
+    expect(takenOf(heic)).toBe('2019-12-31');
+    expect(exifBlock(jpeg(t))).toEqual(t);
+  });
+
+  it('gives no date for one that has none, a camera\'s zeros, an impossible day or broken bytes', () => {
+    expect(takenOf(jpeg(tiff({})))).toBeNull();
+    expect(takenOf(jpeg(tiff({ original: '0000:00:00 00:00:00' })))).toBeNull();
+    expect(takenOf(jpeg(tiff({ original: '2023:02:30 10:00:00' })))).toBeNull();
+    expect(takenOf(jpeg(tiff({ original: '2023:02:30 10:00:00', dateTime: '2023:03:01 10:00:00' })))).toBe('2023-03-01');
+    expect(takenOf(new Uint8Array([0xff, 0xd8, 0xff, 0xe1, 0xff, 0xff, ...EXIF]))).toBeNull();
+    const t = tiff({ original: '2019:12:31 23:59:59' });
+    expect(takenOf(t.subarray(0, 30))).toBeNull();
+    expect(takenOf(new Uint8Array(0))).toBeNull();
+    expect([exifDay('2024-07-15'), exifDay('1799:01:01'), exifDay('not a date')]).toEqual(['2024-07-15', null, null]);
+  });
+
+  it('reads what a real encoder writes (sharp\'s EXIF in a JPEG and a WebP)', async () => {
+    const base = sharp({ create: { width: 8, height: 8, channels: 3, background: '#888' } });
+    const both = { IFD0: { DateTime: '2022:05:06 07:08:09' }, IFD2: { DateTimeOriginal: '2018:09:10 11:12:13' } };
+    expect(takenOf(await base.clone().jpeg().withExif(both).toBuffer())).toBe('2018-09-10');
+    expect(takenOf(await base.clone().webp().withExif(both).toBuffer())).toBe('2018-09-10');
+    expect(takenOf(await base.clone().jpeg().withExif({ IFD0: { DateTime: '2022:05:06 07:08:09' } }).toBuffer())).toBe('2022-05-06');
+    expect(takenOf(await base.clone().jpeg().toBuffer())).toBeNull();
   });
 });

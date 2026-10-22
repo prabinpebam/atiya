@@ -214,7 +214,7 @@ export default function editor() {
               // a picture's master (an upload, a crop) is never a module, but a new one made the dev server
               // reload every open page, losing unsaved typing in other tabs; the store tells the pages itself,
               // and the sidecar beside each master is what they show (documentation/editor/spec.md §8.4)
-              ...(command === 'dev' ? { watch: { ignored: [/[\\/](content|private-pages)[\\/]media[\\/].+\.(?:webp|jpe?g|png|avif|gif|pdf|mp4|webm)$/i] } } : {}),
+              ...(command === 'dev' ? { watch: { ignored: [/[\\/](content|private-pages)[\\/]media[\\/].+\.(?:webp|jpe?g|png|avif|gif|svg|pdf|mp4|webm)$/i] } } : {}),
             },
           },
         });

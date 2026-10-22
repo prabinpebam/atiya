@@ -1,0 +1,12 @@
+{
+  "kind": "image",
+  "file": "p15.webp",
+  "alt": "Kites over a roof.",
+  "visibility": "public",
+  "facts": {
+    "width": 1600,
+    "height": 2400,
+    "bg": "rgb(210 120 80)",
+    "bytes": 415000
+  }
+}

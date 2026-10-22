@@ -6,6 +6,7 @@
 import type { Article, Block } from '../../content/schema';
 import { paragraphsOf, parseMarkdown, plainText, serializeBlocks, type Inline } from '../../content/markdown';
 import { withoutKeys } from './keys';
+import { parseVideoUrl, type ProviderVideo } from '../../content/providers';
 
 export type Body = Block[];
 
@@ -127,6 +128,7 @@ const KIND_LABEL: Record<Block['type'], string> = {
   divider: 'Divider',
   collection: 'Collection',
   table: 'Table',
+  album: 'Album',
 };
 
 /** The block's kind as the editor names it ("Heading 2", "Paragraph"). */
@@ -160,6 +162,8 @@ export function excerptOf(b: Block, alt: (mediaId: string) => string | undefined
       return cut(b.caption ?? b.columns.map((c) => plainText(c)).join(', '));
     case 'divider':
       return '';
+    case 'album':
+      return cut(b.album);
   }
 }
 
@@ -183,15 +187,8 @@ export function dropTarget(middles: number[], y: number, from: number): number {
   return to === from ? -1 : to;
 }
 
-/** A YouTube or Vimeo address as the video block's embed, or null. */
-export function parseVideo(url: string): { provider: 'youtube' | 'vimeo'; id: string } | null {
-  const u = url.trim();
-  let m = /^(?:https?:\/\/)?(?:www\.|m\.)?(?:youtube\.com\/(?:watch\?(?:.*&)?v=|embed\/|shorts\/)|youtu\.be\/|youtube-nocookie\.com\/embed\/)([\w-]{6,})/i.exec(u);
-  if (m) return { provider: 'youtube', id: m[1] };
-  m = /^(?:https?:\/\/)?(?:www\.|player\.)?vimeo\.com\/(?:video\/)?(\d+)/i.exec(u);
-  if (m) return { provider: 'vimeo', id: m[1] };
-  return null;
-}
+/** A YouTube or Vimeo address as the video block's embed, or null (the providers' patterns: content/providers.ts). */
+export const parseVideo = (url: string): ProviderVideo | null => parseVideoUrl(url);
 
 /** "2:20" or "140" as seconds; empty is undefined; anything else is null (not a length). */
 export function parseDuration(text: string): number | undefined | null {

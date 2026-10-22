@@ -1,0 +1,12 @@
+{
+  "kind": "image",
+  "file": "p11.webp",
+  "alt": "A tea garden in mist.",
+  "visibility": "public",
+  "facts": {
+    "width": 2400,
+    "height": 1600,
+    "bg": "rgb(210 120 80)",
+    "bytes": 411000
+  }
+}

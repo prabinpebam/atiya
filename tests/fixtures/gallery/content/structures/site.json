@@ -1,0 +1,27 @@
+{
+  "home": {
+    "id": "home",
+    "kind": "hub",
+    "slug": "",
+    "title": "Home",
+    "children": [
+      {
+        "id": "photos",
+        "kind": "hub",
+        "slug": "photos",
+        "title": "Photos",
+        "view": "albums",
+        "children": [
+          {
+            "id": "fixture-album",
+            "kind": "item",
+            "item": {
+              "type": "article",
+              "id": "fixture-album"
+            }
+          }
+        ]
+      }
+    ]
+  }
+}

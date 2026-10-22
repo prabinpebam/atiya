@@ -11,7 +11,8 @@
  *    a workflow's log is public (--verbose prints it, for a build on this computer);
  * 2. checks the sealer ran, and prints its counts (all it prints is counts);
  * 3. checks for leaks (scripts/verify-sealed.mjs);
- * 4. checks the bundle budgets when the site has the planet (scripts/size-report.mjs --prod).
+ * 4. checks the bundle budgets when the site has the planet (scripts/size-report.mjs --prod);
+ * 5. weighs the site against GitHub Pages' 1 GB: a warning past 750 MB, a failure past 950 MB.
  *
  * The build's environment (SITE_URL, BASE_PATH) is the caller's. Exits 1 at the first step that fails.
  */
@@ -23,6 +24,7 @@ import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { planetOn } from '../integrations/features.mjs';
 import { telemetryNote } from '../integrations/services.mjs';
+import { weighDir, weightVerdict } from './lib/siteWeight.mjs';
 
 const ROOT = resolve(fileURLToPath(new URL('..', import.meta.url)));
 const arg = (/** @type {string} */ k) => {
@@ -61,6 +63,10 @@ if (planetOn(join(ROOT, 'content'))) {
   console.log('Checking the bundle budgets…');
   if (!node(['scripts/size-report.mjs', '--prod'])) fail('A bundle budget was missed: nothing is published.');
 } else console.log('Just the site: no planet budgets to check.');
+
+const weight = weightVerdict(weighDir(join(ROOT, 'dist')));
+if (weight.level === 'fail') fail(weight.words);
+console.log(weight.level === 'warn' ? `${ci ? '::warning::' : 'Note: '}${weight.words}` : weight.words);
 
 // a telemetry key left out because of the address is said, not lost silently (it isn't a reason to stop)
 try {

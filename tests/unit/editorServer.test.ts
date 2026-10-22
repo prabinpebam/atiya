@@ -14,7 +14,7 @@ import { pathToFileURL } from 'node:url';
 import sharp from 'sharp';
 import { jsonBytes, readDoc } from '../../src/site/editor/server/store';
 import { createArticle, deleteArticle, saveArticle } from '../../src/site/editor/server/articles';
-import { cropMedia, cropSource, deleteMedia, MAX_BYTES, MAX_SIDE, MAX_UPLOAD, parseUploadCrop, removeDark, replaceMaster, saveSidecar, setDark, upload, uploadVideo } from '../../src/site/editor/server/media';
+import { cropMedia, cropSource, deleteMedia, findFocus, makeStandard, MAX_BYTES, MAX_SIDE, MAX_UPLOAD, parseUploadCrop, removeDark, replaceMaster, saveSidecar, setDark, upload, uploadVideo } from '../../src/site/editor/server/media';
 import { MAX_GIF_BYTES, MAX_VIDEO_BYTES } from '../../src/site/editor/model/upload';
 import { byteRange } from '../../integrations/content-files.mjs';
 import { asCommitted, changes, committedJson, discard, pendingCount, publish, push } from '../../src/site/editor/server/git';
@@ -253,6 +253,118 @@ describe('uploads', () => {
   it("read the form's crop only when it's a rectangle in a size", () => {
     expect(parseUploadCrop(JSON.stringify({ x: 1, y: 2, width: 3, height: 4, of: { width: 10, height: 10 } }))).toEqual({ x: 1, y: 2, width: 3, height: 4, of: { width: 10, height: 10 } });
     for (const bad of [null, '', 'nope', JSON.stringify({ x: 1, y: 2, width: 0, height: 4, of: { width: 10, height: 10 } }), JSON.stringify({ x: -1, y: 0, width: 3, height: 4, of: { width: 10, height: 10 } }), JSON.stringify({ x: 0, y: 0, width: 3, height: 4 })]) expect(parseUploadCrop(bad)).toBeNull();
+  });
+});
+
+describe('gallery uploads: drawings, refused formats, the date taken, the focus point, kept large (gallery spec §4)', () => {
+  const svg = (inner: string) => Buffer.from(`<svg xmlns="http://www.w3.org/2000/svg" width="64" height="32" viewBox="0 0 64 32">${inner}</svg>`);
+  const noise = (w: number, h: number) => {
+    const raw = Buffer.alloc(w * h * 3);
+    let s = 7;
+    for (let i = 0; i < raw.length; i++) {
+      s = (Math.imul(s, 1664525) + 1013904223) >>> 0;
+      raw[i] = s >>> 24;
+    }
+    return sharp(raw, { raw: { width: w, height: h, channels: 3 } }).png().toBuffer();
+  };
+
+  it('keeps an SVG as a drawing when asked: cleaned, with what was removed, no focus or date, and never cropped', async () => {
+    const r = await upload({ file: { name: 'Mark.svg', bytes: svg('<script>alert(1)</script><circle cx="16" cy="16" r="12" fill="#c33" onclick="x()"/>') }, owner: 'shared', alt: 'A red dot', svgAs: 'drawing' });
+    expect(r).toMatchObject({ ok: true, id: 'shared/mark', removed: ['scripts', 'event handlers'] });
+    const kept = readFileSync(join(content, 'media/shared/mark.svg'), 'utf8');
+    expect(kept).toContain('<circle cx="16" cy="16" r="12" fill="#c33"/>');
+    expect(kept).not.toMatch(/script|onclick/);
+    expect(existsSync(join(content, 'media/shared/mark.webp'))).toBe(false);
+    const sc = readDoc<Record<string, unknown>>('/content/media/shared/mark.json')!.value;
+    expect(sc).toMatchObject({ file: 'mark.svg', facts: { width: 64, height: 32 } });
+    expect(sc).not.toHaveProperty('focus');
+    expect(sc).not.toHaveProperty('large');
+    expect(JSON.stringify(await cropMedia('shared/mark', { x: 0, y: 0, width: 10, height: 10 }))).toMatch(/drawing/);
+    expect(JSON.stringify(await findFocus('shared/mark'))).toMatch(/set by hand/);
+    // its dark version is a drawing too
+    expect(await setDark('shared/mark', await png(64, 32))).toMatchObject({ ok: false, status: 422 });
+    expect(await setDark('shared/mark', svg('<circle cx="16" cy="16" r="12" fill="#fcc"/>'))).toMatchObject({ ok: true });
+    expect(readDoc<Record<string, { file: string }>>('/content/media/shared/mark.json')!.value.dark.file).toBe('mark.dark.svg');
+  });
+
+  it('refuses a drawing it can\'t make safe, or a crop of one, and writes nothing; a picture can still be made of it', async () => {
+    const outside = svg('<image href="https://evil.example/x.png" width="10" height="10"/>');
+    expect(JSON.stringify(await upload({ file: { name: 'x.svg', bytes: outside }, owner: 'shared', alt: 'X', svgAs: 'drawing' }))).toMatch(/outside its own file/);
+    const crop = { x: 0, y: 0, width: 10, height: 10, of: { width: 64, height: 32 } };
+    expect(await upload({ file: { name: 'y.svg', bytes: svg('<rect width="5" height="5"/>') }, owner: 'shared', alt: 'Y', svgAs: 'drawing', crop })).toMatchObject({ ok: false, status: 422 });
+    expect(JSON.stringify(await upload({ file: { name: 'z.png', bytes: await png(10, 10) }, owner: 'shared', alt: 'Z', svgAs: 'drawing' }))).toMatch(/only an SVG/);
+    expect(existsSync(join(content, 'media/shared/x.svg'))).toBe(false);
+    expect(existsSync(join(content, 'media/shared/y.svg'))).toBe(false);
+    expect(await upload({ file: { name: 'y.svg', bytes: svg('<rect width="5" height="5"/>') }, owner: 'shared', alt: 'Y', svgAs: 'picture' })).toMatchObject({ ok: true });
+    expect(readDoc<{ file: string }>('/content/media/shared/y.json')!.value.file).toBe('y.webp');
+  });
+
+  it('refuses JPEG XL, camera RAW and Photoshop files by name or by their own bytes, saying what to do', async () => {
+    const psd = Buffer.concat([Buffer.from('8BPS'), Buffer.alloc(40)]);
+    const jxl = Buffer.from([0xff, 0x0a, 0, 0, 0, 0, 0, 0]);
+    expect(JSON.stringify(await upload({ file: { name: 'layers.bin', bytes: psd }, owner: 'shared', alt: 'P' }))).toMatch(/Photoshop file.*Export it as PNG or JPEG/);
+    expect(JSON.stringify(await upload({ file: { name: 'new', bytes: jxl }, owner: 'shared', alt: 'J' }))).toMatch(/JPEG XL/);
+    expect(JSON.stringify(await upload({ file: { name: 'DSC_1.NEF', bytes: await png(10, 10) }, owner: 'shared', alt: 'R' }))).toMatch(/camera RAW/);
+    expect(existsSync(join(content, 'media/shared'))).toBe(false);
+  });
+
+  it('reads the day it was taken from its EXIF, else takes the one the browser read, never a day after today', async () => {
+    const photo = await sharp(await noise(64, 48)).jpeg().withExif({ IFD0: { DateTime: '2022:05:06 07:08:09' }, IFD2: { DateTimeOriginal: '2018:09:10 11:12:13' } }).toBuffer();
+    await upload({ file: { name: 'camera.jpg', bytes: photo }, owner: 'shared', alt: 'C', taken: '2001-01-01' });
+    expect(readDoc<{ taken?: string }>('/content/media/shared/camera.json')!.value.taken).toBe('2018-09-10');
+    // a HEIC turned into a PNG in the browser: the browser read the date first
+    await upload({ file: { name: 'phone.png', bytes: await png(20, 20) }, owner: 'shared', alt: 'P', taken: '2020-01-02' });
+    expect(readDoc<{ taken?: string }>('/content/media/shared/phone.json')!.value.taken).toBe('2020-01-02');
+    await upload({ file: { name: 'later.png', bytes: await png(20, 20) }, owner: 'shared', alt: 'L', taken: '2999-01-01' });
+    await upload({ file: { name: 'nonsense.png', bytes: await png(20, 20) }, owner: 'shared', alt: 'N', taken: '2023-02-30' });
+    expect(readDoc('/content/media/shared/later.json')!.value).not.toHaveProperty('taken');
+    expect(readDoc('/content/media/shared/nonsense.json')!.value).not.toHaveProperty('taken');
+  });
+
+  it('finds the focus point of a new upload where its detail is, none for one flat colour, and again on asking without saving', async () => {
+    const detail = await sharp({ create: { width: 800, height: 400, channels: 3, background: '#777' } })
+      .composite([{ input: await noise(150, 150), left: 600, top: 220 }])
+      .png()
+      .toBuffer();
+    await upload({ file: { name: 'detail.png', bytes: detail }, owner: 'shared', alt: 'D' });
+    const focus = readDoc<{ focus?: string }>('/content/media/shared/detail.json')!.value.focus!;
+    const [x, y] = focus.split(' ').map((v) => Number.parseFloat(v));
+    expect(focus).toMatch(/^\d+% \d+%$/);
+    expect(x).toBeGreaterThan(60);
+    expect(y).toBeGreaterThan(50);
+    await upload({ file: { name: 'flat.png', bytes: await png(800, 400) }, owner: 'shared', alt: 'F' });
+    expect(readDoc('/content/media/shared/flat.json')!.value).not.toHaveProperty('focus');
+    const before = readFileSync(join(content, 'media/shared/detail.json'), 'utf8');
+    expect(await findFocus('shared/detail')).toEqual({ ok: true, versions: {}, focus });
+    expect(readFileSync(join(content, 'media/shared/detail.json'), 'utf8')).toBe(before);
+    expect(await findFocus('shared/none')).toMatchObject({ ok: false, status: 422 });
+  });
+
+  it('keeps a picture large when asked (up to 3840 px), only when it is bigger than 2560, and Make it standard saves it again at 2560', async () => {
+    const big = await png(4800, 2400);
+    expect(await upload({ file: { name: 'panorama.png', bytes: big }, owner: 'shared', alt: 'P', large: true })).toMatchObject({ ok: true });
+    let meta = await sharp(readFileSync(join(content, 'media/shared/panorama.webp'))).metadata();
+    expect([meta.width, meta.height]).toEqual([3840, 1920]);
+    expect(readDoc('/content/media/shared/panorama.json')!.value).toMatchObject({ large: true, facts: { width: 3840, height: 1920 } });
+    // a picture no bigger than a standard one isn't kept large, whatever was asked
+    await upload({ file: { name: 'small.png', bytes: await png(2000, 1000) }, owner: 'shared', alt: 'S', large: true });
+    expect(readDoc('/content/media/shared/small.json')!.value).not.toHaveProperty('large');
+    // the details form can't make it large: only an upload or a Replace with the original can
+    const sc = readDoc<Record<string, unknown>>('/content/media/shared/small.json')!;
+    expect(await saveSidecar('shared/small', { ...sc.value, large: true } as never, { '/content/media/shared/small.json': sc.version })).toMatchObject({ ok: true });
+    expect(readDoc('/content/media/shared/small.json')!.value).not.toHaveProperty('large');
+
+    expect(await makeStandard('shared/panorama')).toMatchObject({ ok: true });
+    meta = await sharp(readFileSync(join(content, 'media/shared/panorama.webp'))).metadata();
+    expect([meta.width, meta.height]).toEqual([2560, 1280]);
+    const after = readDoc<Record<string, unknown>>('/content/media/shared/panorama.json')!.value;
+    expect(after).not.toHaveProperty('large');
+    expect(after).toMatchObject({ alt: 'P', facts: { width: 2560, height: 1280 } });
+    expect(JSON.stringify(await makeStandard('shared/panorama'))).toMatch(/already a standard picture/);
+
+    // Replace with the original, kept large, makes it large again
+    expect(await replaceMaster('shared/panorama', big, { name: 'panorama.png', large: true })).toMatchObject({ ok: true });
+    expect(readDoc('/content/media/shared/panorama.json')!.value).toMatchObject({ large: true, facts: { width: 3840 } });
   });
 });
 

@@ -4,6 +4,7 @@
  * set's and a collection's fields, the page's settings) so each draws the same choices and IDs.
  */
 import type { Article, Block } from '../../content/schema';
+import { shareUrl } from '../../content/providers';
 
 /** A picture a form shows, by media ID: its thumbnail and its words. */
 export interface Thumb {
@@ -29,8 +30,7 @@ export const fieldId = (i: number | string, f: string): string => `f-${i}-${f.re
 export const duration = (s?: number): string => (s ? `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}` : '');
 
 /** An embedded video's address, as the person would paste it. */
-export const videoUrl = (b: Extract<Block, { type: 'video' }>): string =>
-  !b.embed ? '' : b.embed.provider === 'youtube' ? `https://youtu.be/${b.embed.id}` : `https://vimeo.com/${b.embed.id}`;
+export const videoUrl = (b: Extract<Block, { type: 'video' }>): string => (!b.embed ? '' : shareUrl(b.embed.provider, b.embed.id));
 
 /** The kinds of page a new page or a page's settings offer (a talk is its own, and keeps its kind). */
 export const PAGE_KINDS: Choice[] = [

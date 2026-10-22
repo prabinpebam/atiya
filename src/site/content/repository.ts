@@ -9,6 +9,7 @@ import { loadContent, loadContentLeavingOut, type ContentIndex, type MediaRecord
 import { withBase } from '../design/meta';
 import { placeRoutes } from './navigation';
 import { timed } from './timing';
+import { resolveAlbum, type ResolvedItem } from './album';
 import { BUILTIN_MODES } from '../modes/builtin';
 import type { ModeData } from '../modes/contract';
 import { buildModeData } from '../modes/data';
@@ -195,4 +196,11 @@ export const isVideoMedia = (id: string): boolean => content().videos.has(id);
 export function videoHref(id: string): string {
   const v = getVideo(id);
   return withBase(`/media/${id}.${v.file.split('.').pop()}`);
+}
+
+/** A gallery page's album with each item's media looked up (gallery spec §3): undefined for any other page. */
+export function getAlbum(pageId: string): { album: NonNullable<Article['album']>; items: ResolvedItem<MediaRecord, VideoRecord>[] } | undefined {
+  const c = content();
+  const a = c.articles.get(pageId);
+  return a?.album ? resolveAlbum(a.album, c.media, c.videos) : undefined;
 }

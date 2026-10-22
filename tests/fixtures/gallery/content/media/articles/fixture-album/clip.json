@@ -1,0 +1,20 @@
+{
+  "kind": "video",
+  "file": "clip.mp4",
+  "title": "A walk through the market",
+  "width": 1920,
+  "height": 1080,
+  "duration": 42,
+  "poster": {
+    "file": "clip.poster.webp"
+  },
+  "captions": [
+    {
+      "file": "clip.en.vtt",
+      "srclang": "en",
+      "label": "English",
+      "default": true
+    }
+  ],
+  "visibility": "public"
+}

@@ -1,0 +1,12 @@
+{
+  "kind": "image",
+  "file": "p10.webp",
+  "alt": "Boats tied at a jetty.",
+  "visibility": "public",
+  "facts": {
+    "width": 2400,
+    "height": 1600,
+    "bg": "rgb(60 80 120)",
+    "bytes": 410000
+  }
+}
