@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { badgeOf, cellHref, cellName, clockOf, levelRows, PROVIDER_NAMES, spokenLength } from '../../src/site/scripts/albumGrid';
-import { albumCells, albumDateWords, albumMeasure, cellPicture, EMBED_SHAPE } from '../../src/site/content/albumPage';
+import { albumCells, albumDateWords, albumMeasure, cellPicture, EMBED_SHAPE, itemFragment } from '../../src/site/content/albumPage';
+import { renderMarkdown } from '../../src/site/content/markdown';
 import { resolveAlbum, type AlbumMedia } from '../../src/site/content/album';
 import { PROVIDERS, pageUrl } from '../../src/site/content/providers';
 import { justifyGallery } from '../../src/site/scripts/justifiedGallery';
@@ -186,5 +187,14 @@ describe('album page: the opening', () => {
     expect(albumDateWords(ALBUM, lookup, '2026-06-01')).toBe('March to May 2026');
     expect(albumDateWords({ ...ALBUM, dates: false }, lookup, '2026-06-01')).toBe('1 June 2026');
     expect(albumDateWords({ items: [] }, lookup)).toBeUndefined();
+  });
+});
+
+describe('album page: links to its own items', () => {
+  const album = { items: [{ id: 'plan', media: 'articles/a/plan' }] } as unknown as Album;
+  it('links to an item the album has, and only to one it has', () => {
+    expect(renderMarkdown('See [the plan](#item-plan).', { fragment: itemFragment(album) })).toContain('<a href="#item-plan">the plan</a>');
+    expect(() => renderMarkdown('See [it](#item-gone).', { fragment: itemFragment(album) })).toThrow(/an item of this album/);
+    expect(() => renderMarkdown('See [the plan](#item-plan).')).toThrow(/links may only go/);
   });
 });

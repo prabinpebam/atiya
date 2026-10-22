@@ -86,7 +86,7 @@ const bgOf = (t: BandTile) => {
       tiles.map((t, i) => (
         <li class="tile" style={placeStyle(t.place, t.phone)} data-tile data-item-id={t.id} data-kind={t.kind} data-play={t.motion ? '' : undefined} data-on-phones={t.phone ? undefined : 'false'}>
           <a
-            class="link"
+            class="tile-link"
             href={t.href}
             aria-label={t.name}
             data-full={t.full?.src}
@@ -96,6 +96,11 @@ const bgOf = (t: BandTile) => {
             data-caption={t.full?.caption}
             data-alt={t.full?.alt}
             data-album-title={title}
+            data-lightbox="band"
+            data-kind={t.kind}
+            data-item-id={t.id}
+            data-index={t.index}
+            data-count={total}
           >
             {t.still ? (
               <Image src={t.still.src} srcset={t.still.srcset} alt="" width={t.still.width} height={t.still.height} sizes={tileSizes(t.place.w, t.phone?.w)} fill display={t.display ?? (t.kind === 'drawing' ? 'fit' : 'fill')} focus={t.focus} dark={t.still.dark} bg={bgOf(t)} drawing={t.kind === 'drawing'} priority={i === largest} />
@@ -209,7 +214,7 @@ const bgOf = (t: BandTile) => {
     min-inline-size: 0;
   }
 
-  .link {
+  .tile-link {
     position: relative;
     display: block;
     block-size: 100%;
@@ -274,16 +279,16 @@ const bgOf = (t: BandTile) => {
   }
 
   @media (hover: hover) {
-    .link:hover .badge {
+    .tile-link:hover .badge {
       transform: scale(var(--scale-lift));
     }
   }
 
-  .link:active .badge {
+  .tile-link:active .badge {
     transform: scale(var(--scale-lift));
   }
 
-  .link:active {
+  .tile-link:active {
     transform: scale(var(--scale-press-large));
   }
 
@@ -319,7 +324,7 @@ const bgOf = (t: BandTile) => {
       display: none;
     }
 
-    .link:active {
+    .tile-link:active {
       transform: none;
     }
   }

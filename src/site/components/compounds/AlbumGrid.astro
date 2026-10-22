@@ -57,7 +57,7 @@ const cellSizes = story ? sizes(['wide', '96vw'], 'wide') : sizes(['sm', '50vw']
           <li class="cell" id={`item-${cell.id}`} data-album-cell data-kind={cell.kind} data-width={cell.width} data-height={cell.height} style={`--item-w: ${cell.width}; --item-h: ${cell.height}`}>
             <figure class="wrap">
               <a
-                class="link"
+                class="cell-link"
                 href={href}
                 target={policy.target}
                 rel={policy.rel}
@@ -76,6 +76,12 @@ const cellSizes = story ? sizes(['wide', '96vw'], 'wide') : sizes(['sm', '50vw']
                 data-video-type={cell.video?.type}
                 data-embed-src={cell.embed ? playerUrl(cell.embed.provider, cell.embed.id, { autoplay: true }) : undefined}
                 data-download={cell.download}
+                data-stage={p?.stage}
+                data-still={cell.kind === 'animated' ? p?.poster : undefined}
+                data-still-dark={cell.kind === 'animated' ? p?.dark?.poster : undefined}
+                data-duration={cell.duration}
+                data-tracks={cell.video?.tracks ? JSON.stringify(cell.video.tracks) : undefined}
+                data-loop={cell.video?.loop ? '' : undefined}
               >
                 {p ? (
                   <Image
@@ -173,7 +179,7 @@ const cellSizes = story ? sizes(['wide', '96vw'], 'wide') : sizes(['sm', '50vw']
     margin: 0;
   }
 
-  .link {
+  .cell-link {
     position: relative;
     display: block;
     border-radius: var(--c-image-radius);
@@ -183,13 +189,13 @@ const cellSizes = story ? sizes(['wide', '96vw'], 'wide') : sizes(['sm', '50vw']
   }
 
   @media (hover: hover) {
-    .link:hover {
+    .cell-link:hover {
       z-index: var(--layer-raised);
       transform: translateY(calc(var(--space-0-5) * -1));
     }
   }
 
-  .link:active {
+  .cell-link:active {
     transform: translateY(0);
   }
 
@@ -230,7 +236,7 @@ const cellSizes = story ? sizes(['wide', '96vw'], 'wide') : sizes(['sm', '50vw']
     min-width: 0;
   }
 
-  .album-grid[data-layout='grid'] .link {
+  .album-grid[data-layout='grid'] .cell-link {
     height: var(--c-album-grid-row-height);
   }
 
@@ -248,7 +254,7 @@ const cellSizes = story ? sizes(['wide', '96vw'], 'wide') : sizes(['sm', '50vw']
     transform: translate(var(--cell-left), var(--cell-top));
   }
 
-  .album-grid[data-layout='grid'] .list[data-ready] .link {
+  .album-grid[data-layout='grid'] .list[data-ready] .cell-link {
     height: var(--cell-height);
   }
 
@@ -272,7 +278,7 @@ const cellSizes = story ? sizes(['wide', '96vw'], 'wide') : sizes(['sm', '50vw']
   }
 
   /* a portrait narrower, so it's never taller than the screen below the header */
-  .album-grid[data-layout='story'] .link {
+  .album-grid[data-layout='story'] .cell-link {
     justify-self: center;
     width: min(100%, (100dvh - var(--size-chrome-block) - var(--space-12)) * var(--item-w) / var(--item-h));
   }
@@ -292,7 +298,7 @@ const cellSizes = story ? sizes(['wide', '96vw'], 'wide') : sizes(['sm', '50vw']
   }
 
   @container (width < 36rem) {
-    .album-grid[data-layout='grid'] .link {
+    .album-grid[data-layout='grid'] .cell-link {
       height: var(--c-album-grid-row-height-small);
     }
 

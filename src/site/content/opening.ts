@@ -4,10 +4,10 @@
  * time; a page opens with its words only; a gallery counts its pictures. The site's Page and the planet's
  * frame both open a page with it, so a page reads the same in both (§6.1).
  */
-import { canonicalPath, content, documentHref, getAlbum, getPerson, getSite } from './repository';
+import { canonicalPath, captionHrefs, content, documentHref, getAlbum, getPerson, getSite } from './repository';
 import { picture, video } from './pictures';
 import { cardPicture as albumCardPicture, type MediaLookup } from './album';
-import { albumCells, albumDateWords, albumMeasure } from './albumPage';
+import { albumCells, albumDateWords, albumMeasure, itemFragment } from './albumPage';
 import { renderMarkdown } from './markdown';
 import { withBase } from '../design/meta';
 import type { AlbumCell } from '../scripts/albumGrid';
@@ -127,9 +127,9 @@ export async function albumOf(article: Article): Promise<AlbumView | undefined> 
   const slot = layout === 'story' ? 'wide' : 'gallery';
   return {
     title: article.title,
-    ...(album.description ? { introduction: renderMarkdown(album.description, { resolveRef }) } : {}),
+    ...(album.description ? { introduction: renderMarkdown(album.description, { resolveRef, fragment: itemFragment(album) }) } : {}),
     layout,
     captions: album.captions === true,
-    items: await albumCells(album, items, { pictureOf: (id) => picture(id, slot), videoOf: (id) => video(id, slot), resolveRef }),
+    items: await albumCells(album, items, { pictureOf: (id) => picture(id, slot), videoOf: (id) => video(id, slot), resolveRef, tracksOf: captionHrefs }),
   };
 }

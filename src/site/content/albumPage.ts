@@ -18,6 +18,8 @@ export interface CellSources {
   videoOf: (id: string) => Promise<VideoFile>;
   /** Turns a `ref:` link in a description into an address. */
   resolveRef?: (ref: string) => string | undefined;
+  /** A video file's caption tracks, for the lightbox's player (repository.ts `captionHrefs`). */
+  tracksOf?: (id: string) => { src: string; srclang: string; label: string; default?: boolean }[];
 }
 
 /** A picture as a cell shows it (a poster has no alt: its link is named by the video's title). */
@@ -31,6 +33,7 @@ export function cellPicture(p: Picture, alt = p.alt): AlbumCellPicture {
     bg: p.bg,
     alt,
     full: p.largest?.src ?? p.full,
+    ...(p.largest && p.largest.src !== p.full ? { stage: p.full } : {}),
     thumb: p.thumb,
     ...(p.poster ? { poster: p.poster } : {}),
     ...(p.focus ? { focus: p.focus } : {}),
@@ -39,13 +42,19 @@ export function cellPicture(p: Picture, alt = p.alt): AlbumCellPicture {
   };
 }
 
+/** An album's words may link to its own items (`#item-<id>`), and only to items it has. */
+export const itemFragment = (album: Album) => {
+  const ids = new Set(album.items.map((i) => `item-${i.id}`));
+  return (fragment: string) => ids.has(fragment);
+};
+
 /**
  * Every item of an album as its page's cells, in album order: its picture (or poster), its words and its
  * link's target. An item whose media isn't there is left out (the content check refuses it on a published
  * page). The dates are left out when the album hides them.
  */
 export async function albumCells<I extends AlbumMedia, V extends AlbumMedia>(album: Album, items: readonly ResolvedItem<I, V>[], from: CellSources): Promise<AlbumCell[]> {
-  const words = (md: string | undefined) => (md ? renderMarkdown(md, { resolveRef: from.resolveRef }) : undefined);
+  const words = (md: string | undefined) => (md ? renderMarkdown(md, { resolveRef: from.resolveRef, fragment: itemFragment(album) }) : undefined);
   const cells = await Promise.all(
     items.map(async ({ item, kind, image }): Promise<AlbumCell | undefined> => {
       if (!kind) return undefined;
@@ -79,7 +88,7 @@ export async function albumCells<I extends AlbumMedia, V extends AlbumMedia>(alb
           ...common,
           width: v.width,
           height: v.height,
-          video: { src: v.src, type: v.type },
+          video: { src: v.src, type: v.type, ...(from.tracksOf?.(item.media!).length ? { tracks: from.tracksOf(item.media!) } : {}), ...(item.loop ? { loop: true } : {}) },
           title: item.title ?? v.title,
           ...(v.duration ? { duration: v.duration } : {}),
           ...((item.caption ?? v.caption) ? { caption: item.caption ?? v.caption } : {}),

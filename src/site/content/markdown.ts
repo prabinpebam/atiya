@@ -40,6 +40,8 @@ export interface MarkdownOptions {
   resolveRef?: (ref: string) => string | undefined;
   /** Keeps each link's written target on it (data-md-href), so the editor can write it back unchanged. */
   annotate?: boolean;
+  /** Allows a link to a place on the same page (`#item-plan`) when it returns true for the fragment (`item-plan`). */
+  fragment?: (id: string) => boolean;
 }
 
 const ESCAPABLE = new Set(['\\', '*', '_', '~', '`', '[', ']', '-', '.']);
@@ -346,7 +348,8 @@ function renderInline(nodes: Inline[], opts: MarkdownOptions): string {
             target = opts.resolveRef?.(n.href.slice(4));
             if (!target) throw new Error(`unknown link target: ${n.href}`);
           } else if (SAFE_HREF.test(n.href)) target = n.href;
-          else throw new Error(`links may only go to https, http, mailto or ref: (${n.href})`);
+          else if (n.href.startsWith('#') && opts.fragment?.(n.href.slice(1))) target = n.href;
+          else throw new Error(`links may only go to https, http, mailto or ref:${opts.fragment ? ', or an item of this album' : ''} (${n.href})`);
           const written = opts.annotate ? ` data-md-href="${escapeHtml(n.href)}"` : '';
           const policy = linkAttrs(target);
           const tab = policy.newTab ? ` target="${policy.target}" rel="${policy.rel}"` : '';
