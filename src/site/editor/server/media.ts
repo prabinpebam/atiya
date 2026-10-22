@@ -868,15 +868,15 @@ export async function cropMedia(id: string, rect: Rect, opts: { copy?: boolean }
   return res.ok ? { ...res, id: newId, width: master.width, height: master.height } : res;
 }
 
-/** Deletes a picture (its sidecar, master and dark version), a video (its sidecar, file and poster) or a linked video (its sidecar and poster). The content check refuses it while anything refers to it. */
-export async function deleteMedia(id: string): Promise<Result> {
+/** What deleting a library item writes: its sidecar and every file beside it (master, dark version, posters), each against its version; or why it can't. */
+export function deletionOf(id: string): { ok: true; changes: Change[]; ifMatch: Record<string, string | null> } | Result {
   if (!MEDIA_ID.test(id)) return refuse('content/media', 'not a media id');
   const key = `${baseOf(id)}${id}.json`;
   const sc = readDoc<ImageMedia | VideoMedia | EmbedMedia>(key);
   if (!sc) return refuse(key.slice(1), "doesn't exist");
   if (sc.value.kind === 'embed') {
     const posterKey = key.replace(/[^/]+\.json$/, sc.value.poster.file);
-    return commit({ changes: [{ key, bytes: null }, { key: posterKey, bytes: null }], ifMatch: { [key]: sc.version, [posterKey]: versionOf(readFile(posterKey)) } });
+    return { ok: true, changes: [{ key, bytes: null }, { key: posterKey, bytes: null }], ifMatch: { [key]: sc.version, [posterKey]: versionOf(readFile(posterKey)) } };
   }
   const masterKey = key.replace(/[^/]+\.json$/, sc.value.file);
   const extraKeys =
@@ -891,5 +891,12 @@ export async function deleteMedia(id: string): Promise<Result> {
   ];
   const ifMatch: Record<string, string | null> = { [key]: sc.version, [masterKey]: versionOf(readFile(masterKey)) };
   for (const extraKey of presentExtras) ifMatch[extraKey] = versionOf(readFile(extraKey));
-  return commit({ changes, ifMatch });
+  return { ok: true, changes, ifMatch };
+}
+
+/** Deletes a picture (its sidecar, master and dark version), a video (its sidecar, file and poster) or a linked video (its sidecar and poster). The content check refuses it while anything refers to it. */
+export async function deleteMedia(id: string): Promise<Result> {
+  const d = deletionOf(id);
+  if (!('changes' in d)) return d;
+  return commit({ changes: d.changes, ifMatch: d.ifMatch });
 }

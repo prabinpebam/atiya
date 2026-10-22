@@ -4,10 +4,11 @@
  * Access screen's groups, dates and lines), the store's grant rules (a grant may be deleted, no ID reused,
  * a withdrawn grant left as it is), the public commit message, and the server's operations on a copy of
  * both folders: making, changing, withdrawing and deleting grants, making a page private and public again
- * in its place, moving and ordering a section's pages, and what a page's Share dialog lists.
+ * in its place, moving and ordering a section's pages, what a page's Share dialog lists, and making an album
+ * public with its pictures and private again.
  */
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { cpSync, existsSync, mkdtempSync, readFileSync, rmSync } from 'node:fs';
+import { cpSync, existsSync, mkdtempSync, readFileSync, readdirSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import {
@@ -385,5 +386,45 @@ describe('the operations, on a copy of both folders', () => {
     expect((await access.setPageAccess(made.id!, 'open')).ok).toBe(true);
     expect(existsSync(join(dir, 'content/articles', `${made.id}.json`))).toBe(true);
     expect(order('side-projects').find((p) => p.id === made.id)?.access).toBe('open');
+  });
+
+  it('a grant can open a private album; the Access screen lists it among the pages, called an album', async () => {
+    const view = access.sharingView();
+    expect(view.pages.find((p) => p.id === 'fx-private-album')).toMatchObject({ kind: 'album', title: 'Fixture private album: kites over the tidewater flats', published: true });
+    expect(pageHint(true, 'album')).toBe('Album. Published');
+    const g = await access.createGrant({ kind: 'link', recipient: { name: 'Album reader' }, purpose: '', scope: { pages: ['fx-private-album'] } });
+    expect(g.ok).toBe(true);
+    expect(access.sharingView('fx-private-album').grants.map((x) => x.id)).toContain(g.grant!.id);
+  });
+
+  it('makes a private album public with its pictures, in one transaction, and private again with its own folder (gallery §12, V52)', async () => {
+    const id = 'fx-private-album';
+    const reader = grants().find((g) => (g as { recipient?: { name?: string } }).recipient?.name === 'Album reader' && g.scope.pages?.includes(id))!;
+    // its pictures are private ones from elsewhere: refused, saying so, until they may move into its folder
+    const refused = await access.setAlbumAccess(id, 'open');
+    expect(refused.ok).toBe(false);
+    expect(refusal(refused)).toMatchObject({ path: 'move' });
+    expect(refusal(refused)?.message).toMatch(/V52/);
+    expect(existsSync(join(dir, `private/albums/${id}.json`))).toBe(true);
+    const moved = await access.setAlbumAccess(id, 'open', { moveIn: true });
+    expect(moved.ok, JSON.stringify('issues' in moved ? moved.issues : '')).toBe(true);
+    expect(existsSync(join(dir, `private/albums/${id}.json`))).toBe(false);
+    const open = json<{ items: { media?: string }[] }>(join(dir, `content/albums/${id}.json`));
+    expect(open.items.map((i) => i.media)).toEqual([`albums/${id}/kite`, `albums/${id}/reel`, `albums/${id}/shore`]);
+    for (const f of ['kite.json', 'kite.webp', 'kite.dark.webp', 'reel.mp4', 'reel.poster.webp', 'reel.en.vtt', 'shore.webp'])
+      expect(existsSync(join(dir, `content/media/albums/${id}/${f}`)), f).toBe(true);
+    expect(existsSync(join(dir, `private/media/articles/${id}/kite.webp`))).toBe(false);
+    expect(order('talks').find((p) => p.id === id)?.access).toBe('open');
+    expect(privateNode(overlayNow(), id)).toBeUndefined();
+    // a grant opens private things only (V26): it stops naming the album
+    expect(grants().find((x) => x.id === reader.id)?.scope.pages ?? []).not.toContain(id);
+    // private again: the album and its own folder move back, in its place
+    expect((await access.setAlbumAccess(id, 'private')).ok).toBe(true);
+    expect(existsSync(join(dir, `private/albums/${id}.json`))).toBe(true);
+    expect(existsSync(join(dir, `content/albums/${id}.json`))).toBe(false);
+    expect(existsSync(join(dir, `private/media/albums/${id}/reel.en.vtt`))).toBe(true);
+    expect(existsSync(join(dir, `content/media/albums/${id}`)) && readdirSync(join(dir, `content/media/albums/${id}`)).length).toBeFalsy();
+    expect(order('talks').find((p) => p.id === id)?.access).toBe('private');
+    expect((await access.setAlbumAccess('nope', 'open')).ok).toBe(false);
   });
 });

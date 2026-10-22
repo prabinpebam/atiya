@@ -23,9 +23,11 @@ interface Props {
   albums?: { id: string; title: string }[];
   /** Whether the album itself allows downloads (Downloads: what Follow the album means). */
   albumDownload?: boolean;
+  /** Where the selection is: an album (the default; its items stay in it too) or the library (the Media screen). */
+  from?: 'album' | 'library';
 }
 
-const { kind, albums = [], albumDownload = false } = Astro.props;
+const { kind, albums = [], albumDownload = false, from = 'album' } = Astro.props;
 const NEW = '+new';
 const ICONS = { album: 'collection', date: 'calendar', place: 'location', download: 'download' } as const;
 const SAVES = { album: 'Add to album', date: 'Set the date', place: 'Set the place', download: 'Set downloads' };
@@ -41,9 +43,11 @@ const choices = [...albums.map((a) => ({ value: a.id, label: a.title })), { valu
         <span data-bulk-new hidden={choices[0].value !== NEW}>
           <TextField label="The new album's title" name="title" maxlength={120} />
         </span>
-        <Text variant="small" tone="muted">
-          They stay in this album too.
-        </Text>
+        {from === 'album' && (
+          <Text variant="small" tone="muted">
+            They stay in this album too.
+          </Text>
+        )}
       </Fragment>
     )
   }
@@ -84,5 +88,5 @@ const choices = [...albums.map((a) => ({ value: a.id, label: a.title })), { valu
   import { each } from '../../scripts/page';
   import { initAlbumActions } from '../scripts/albumActions';
 
-  each<HTMLElement>('[data-album-editor]', (root, signal) => initAlbumActions(root, signal));
+  each<HTMLElement>('[data-album-editor], [data-media-library]', (root, signal) => initAlbumActions(root, signal));
 </script>

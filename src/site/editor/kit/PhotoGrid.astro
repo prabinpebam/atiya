@@ -47,6 +47,10 @@ export interface PhotoCell {
   cover?: boolean;
   /** Its library item's ID (for its name when it has no alt text). */
   media?: string;
+  /** Its header in place of the day taken (the library's months: "March 2026", "No date, added May 2026"). */
+  group?: string;
+  /** It's in private-pages/ (the library tags it Private). */
+  private?: boolean;
 }
 
 interface Props {
@@ -71,13 +75,14 @@ const BADGE: Partial<Record<PhotoCell['kind'], { icon: 'video' | 'link' | 'anima
   drawing: { icon: 'pen', words: 'Drawing' },
 };
 const dayWords = (d?: string) => (d ? new Date(`${d}T12:00:00Z`).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' }) : 'No date');
-// the days in the order shown: a run of items taken the same day is one group
-const groups: { day?: string; cells: PhotoCell[] }[] = [];
+// the days (or the groups the cells name) in the order shown: a run of items in the same one is one group
+const groups: { day?: string; label?: string; cells: PhotoCell[] }[] = [];
 for (const c of cells) {
   const last = groups[groups.length - 1];
-  if (days && last && last.day === c.taken) last.cells.push(c);
+  const day = c.group ?? c.taken;
+  if (days && last && last.day === day) last.cells.push(c);
   else if (!days && last) last.cells.push(c);
-  else groups.push({ ...(days ? { day: c.taken } : {}), cells: [c] });
+  else groups.push({ ...(days ? { day, label: c.group ?? dayWords(c.taken) } : {}), cells: [c] });
 }
 const nameOf = (c: PhotoCell) => {
   if (c.kind === 'text') return `Text: ${c.text ?? ''}`;
@@ -108,7 +113,7 @@ const first = cells[0]?.id;
       <div class="day" role={days ? 'group' : 'none'} aria-labelledby={days ? `${id}-day-${gi}` : undefined} data-photo-day={g.day ?? ''}>
         {days && (
           <p class="day-label" id={`${id}-day-${gi}`}>
-            {dayWords(g.day)}
+            {g.label}
           </p>
         )}
         <ul class="cells" role="none" data-photo-cells>
@@ -147,6 +152,7 @@ const first = cells[0]?.id;
                   </span>
                 )}
                 {c.cover && <Tag size="sm" tone="highlight">Cover</Tag>}
+                {c.private && <Tag size="sm" icon="lock">Private</Tag>}
                 {c.needsAlt && <Tag size="sm" tone="negative" icon="error">Needs alt text</Tag>}
               </span>
             </li>

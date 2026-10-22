@@ -1,10 +1,22 @@
 ---
-/** Edit mode's media library (documentation/editor/spec.md §6). Dev only: injected by integrations/editor.mjs. */
+/**
+ * Edit mode's media library (documentation/editor/spec.md §6; documentation/gallery/spec.md §9.9): the timeline by
+ * month taken (the default), with the open item's words (MediaInfo) and tools (MediaDetails) beside it, or the
+ * list (`?view=list`, the folders, search and the upload form). Dev only: injected by integrations/editor.mjs.
+ */
 import EditorLayout from '../EditorLayout.astro';
 import MediaGrid from '../components/MediaGrid.astro';
 import MediaDetails, { type PictureDetails, type VideoDetails } from '../components/MediaDetails.astro';
 import ContentIssues from '../components/ContentIssues.astro';
 import CropDialog from '../components/CropDialog.astro';
+import MediaLibrary from '../components/MediaLibrary.astro';
+import MediaInfo from '../components/MediaInfo.astro';
+import AlbumBulk from '../components/AlbumBulk.astro';
+import Dialog from '../../components/compounds/Dialog.astro';
+import Button from '../../components/fundamentals/Button.astro';
+import { libraryCells, libraryItem } from '../server/mediaLibrary';
+import { libraryFilter } from '../model/library';
+import { withBase } from '../../design/meta';
 import { load, mediaCards, references } from '../server/screens';
 import { readDoc } from '../server/store';
 import { picture, video as videoFile } from '../../content/pictures';
@@ -21,12 +33,21 @@ const wanted = Astro.url.searchParams.get('id');
 const asked = regionsAsked(Astro.request.headers.get(REGIONS_HEADER));
 const drawGrid = wants(asked, 'media-grid', 'screen');
 const drawDetails = wants(asked, 'media-details', 'screen');
+const drawInfo = wants(asked, 'media-info', 'screen');
+// the timeline (gallery spec §9.9) is the default; the list stays as a view
+const list = Astro.url.searchParams.get('view') === 'list';
+const filter = libraryFilter(Astro.url.searchParams.get('show'));
 let details: PictureDetails | null = null;
 let video: VideoDetails | null = null;
 let usedIn: { label: string; href: string }[] = [];
 let copies: string[] = [];
 let original: { id: string; exists: boolean } | undefined;
-const cards = loaded.ok && drawGrid ? await mediaCards(loaded.index) : [];
+const cards = loaded.ok && drawGrid && list ? await mediaCards(loaded.index) : [];
+const cells = loaded.ok && drawGrid && !list ? await libraryCells(loaded.index, filter) : [];
+const info = loaded.ok && drawInfo && !list && wanted ? await libraryItem(loaded.index, wanted) : null;
+const albums = loaded.ok && !list ? [...loaded.index.albums.values()].map((a) => ({ id: a.id, title: a.title })).sort((a, b) => a.title.localeCompare(b.title)) : [];
+const listHref = withBase('/_edit/media/?view=list');
+const timelineHref = withBase('/_edit/media/');
 if (loaded.ok && drawDetails && wanted && loaded.index.videos.has(wanted)) {
   const rec = loaded.index.videos.get(wanted)!;
   const key = `${rec.origin === 'private' ? '/private' : '/content'}/media/${wanted}.json`;
@@ -47,8 +68,36 @@ if (loaded.ok && drawDetails && wanted && loaded.index.media.has(wanted)) {
 }
 ---
 
-<EditorLayout title="Media" screen="media" heading="Media" intro="Every picture and video, by folder: everyone's in content/media/, and private pages' (tagged Private) in private-pages/media/. Choose one for its details; an upload here goes to the shared folder." asideLabel="Details">
-  {loaded.ok ? drawGrid && <MediaGrid mode="library" media={cards} owner="shared" selected={(details ?? video)?.id ?? wanted ?? undefined} /> : <ContentIssues issues={loaded.issues} />}
-  {loaded.ok && drawDetails && <MediaDetails slot="aside" picture={details} video={video} usedIn={usedIn} copies={copies} original={original} />}
+<EditorLayout
+  title="Media"
+  screen="media"
+  heading="Media"
+  intro={list ? "Every picture and video, by folder: everyone's in content/media/, and private pages' (tagged Private) in private-pages/media/. Choose one for its details; an upload here goes to the shared folder." : 'Your library: every picture and video, by the month taken, newest first. Choose one for its details, or several to add them to an album, date them or delete them.'}
+  asideLabel="Details"
+>
+  <Fragment slot="tools">
+    {list ? <Button variant="secondary" size="sm" icon="gallery" href={timelineHref}>Timeline</Button> : <Button variant="secondary" size="sm" icon="upload" href={listHref}>Upload or list</Button>}
+  </Fragment>
+  {
+    !loaded.ok ? (
+      <ContentIssues issues={loaded.issues} />
+    ) : list ? (
+      drawGrid && <MediaGrid mode="library" media={cards} owner="shared" selected={(details ?? video)?.id ?? wanted ?? undefined} />
+    ) : (
+      <MediaLibrary cells={cells} filter={filter} selected={wanted ?? undefined}>
+        <Dialog id="album-add-to" title="Add to album">
+          <AlbumBulk kind="album" albums={albums} from="library" />
+        </Dialog>
+        <Dialog id="album-date" title="Set the date taken" size="sm">
+          <AlbumBulk kind="date" from="library" />
+        </Dialog>
+        <Dialog id="album-place" title="Set the place" size="sm">
+          <AlbumBulk kind="place" from="library" />
+        </Dialog>
+      </MediaLibrary>
+    )
+  }
+  {loaded.ok && !list && <Fragment slot="aside"><div data-region="media-info">{info && <MediaInfo item={info} library />}</div></Fragment>}
+  {loaded.ok && drawDetails && <MediaDetails slot="aside" picture={details} video={video} usedIn={usedIn} copies={copies} original={original} words={list} />}
   {loaded.ok && <CropDialog />}
 </EditorLayout>

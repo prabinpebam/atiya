@@ -24,7 +24,7 @@ describe('change summaries on Save to remote (documentation/editor/spec.md §7.2
     expect(pageChanged(page(), page({ title: 'New', slug: 'n', hero: { media: 'x/y' } }))).toBe('Address, title and 1 more changed');
     expect(pageChanged(page(), page({ updatedAt: '2026-02-02' }))).toBe('Dates updated');
     expect(pageChanged(page(), page())).toBe('Formatting only');
-    expect(pageChanged(undefined, page({ kind: 'gallery', status: 'draft' }))).toBe('New gallery');
+    expect(pageChanged(undefined, page({ kind: 'page', status: 'draft' }))).toBe('New page');
     expect(pageChanged(undefined, page())).toBe('New article, published');
     const body = [p('one', 'k1'), p('two', 'k2'), { type: 'divider', key: 'k3' }];
     expect(pageChanged(page({ body }), page({ title: 'T', body: [p('one!', 'k1'), body[1], body[2], { type: 'heading', text: 'H', key: 'k4' }] }))).toBe('Title changed, a paragraph changed, a heading added');

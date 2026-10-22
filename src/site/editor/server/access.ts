@@ -6,7 +6,7 @@
  * store transaction, checked whole; the grants' history is enforced by the store (no ID or working code's
  * name reused, a withdrawn grant left as it is but for its purpose and notes).
  */
-import { type AccessMessage, type Article, type HubNode, type Overlay, type PlanetStructure, type SiteNode, type SiteStructure } from '../../content/schema';
+import { type AccessMessage, type Album, type Article, type HubNode, type Overlay, type PlanetStructure, type SiteNode, type SiteStructure } from '../../content/schema';
 import { commit, jsonBytes, readDoc, readFile, versionOf, type Change, type Result } from './store';
 import { articleKey, OVERLAY, STRUCTURE } from './articles';
 import { generateCode } from '../../access/codes';
@@ -16,8 +16,10 @@ import type { Grant } from '../../access/types';
 import { endDateIssue, endOfDay, fillMessage, insertAfter, localIso, longDate, magicLink, movePages, openBefore, placePrivate, privateNode, reorderSection, sectionOrder, takenNames, unplacePrivate, type PageAccess, type SharingView } from '../model/access';
 import { nodeIds, sectionOf, unplace } from '../model/structure';
 import { unique } from '../model/ids';
-import { isPublished, mediaUsed, videosUsed } from '../../content/load';
-import { readSnapshot } from '../../content/source';
+import { isAlbumPublished, isPublished, mediaUsed, videosUsed } from '../../content/load';
+import { hasPrivate, privateRoot, readSnapshot } from '../../content/source';
+import { isMediaItem } from '../../content/album';
+import { albumKey, albumRefusal } from './albums';
 import { content } from '../../content/repository';
 
 export const ACCESS = '/private/access.json';
@@ -182,31 +184,57 @@ export async function deleteGrant(id: string): Promise<Result> {
   return commit({ changes: [{ key: ACCESS, bytes: jsonBytes({ grants: doc.value.grants.filter((g) => g.id !== id) }) }], ifMatch: { [ACCESS]: doc.version } });
 }
 
+type Folder = 'content' | 'private';
+type Snapshot = ReturnType<typeof readSnapshot>;
+
+/** A library item's files in a folder: its sidecar, its master and its versions (dark, poster, caption tracks). */
+function itemFiles(snap: Snapshot, id: string, from: Folder): string[] {
+  const sidecar = `/${from}/media/${id}.json`;
+  if (!(sidecar in snap.docs)) return [];
+  const dir = `/${from}/media/${id.slice(0, id.lastIndexOf('/') + 1)}`;
+  const name = id.slice(id.lastIndexOf('/') + 1);
+  const version = new RegExp(`^${name}(?:\\.dark(?:\\.poster)?|\\.poster|\\.[a-z]{2,3}(?:-[a-z0-9]+)*)?\\.\\w+$`);
+  return [sidecar, ...[...snap.masters].filter((m) => m.startsWith(dir) && version.test(m.slice(dir.length)))];
+}
+
+/** The documents other than `skip` that use the library item `id`, under `under` (a folder's prefix) when given. */
+function usersOf(snap: Snapshot, id: string, skip: Set<string>, under?: string): string[] {
+  const needle = `"${id}"`;
+  return Object.entries(snap.docs)
+    .filter(([k, v]) => !skip.has(k) && (!under || k.startsWith(under)) && JSON.stringify(v).includes(needle))
+    .map(([k]) => k);
+}
+
+/** What a document is called, for a refusal: its title, else its file. */
+function nameOf(snap: Snapshot, key: string): string {
+  const t = (snap.docs[key] as { title?: unknown } | undefined)?.title;
+  return typeof t === 'string' ? `"${t}"` : key.replace(/^\/(content|private)\//, '');
+}
+
 /** The media files an article uses that nothing else does, in its folder: each picture's sidecar, master and versions. */
-function mediaFiles(article: Article, from: 'content' | 'private', onlyIfUnshared: boolean): string[] {
+function mediaFiles(article: Article, from: Folder, onlyIfUnshared: boolean): string[] {
   const snap = readSnapshot();
   const self = `/${from}/articles/${article.id}.json`;
   const others = JSON.stringify(Object.entries(snap.docs).filter(([k]) => k !== self));
   const ids = new Set([...mediaUsed(article), ...videosUsed(article)]);
   const out: string[] = [];
   for (const id of ids) {
-    const sidecar = `/${from}/media/${id}.json`;
-    if (!(sidecar in snap.docs)) continue;
     if (onlyIfUnshared && others.includes(`"${id}"`)) continue;
-    out.push(sidecar);
-    const dir = `/${from}/media/${id.slice(0, id.lastIndexOf('/') + 1)}`;
-    const name = id.slice(id.lastIndexOf('/') + 1);
-    for (const m of snap.masters) if (m.startsWith(dir) && new RegExp(`^${name}(?:\\.dark(?:\\.poster)?|\\.poster)?\\.\\w+$`).test(m.slice(dir.length))) out.push(m);
+    out.push(...itemFiles(snap, id, from));
   }
   return out;
 }
 
 /** Moves files from one folder to the other within a change set (the same bytes, a new key). */
-function move(keys: string[], to: 'content' | 'private', changes: Change[], ifMatch: Record<string, string | null>) {
-  for (const key of keys) {
+function move(keys: string[], to: Folder, changes: Change[], ifMatch: Record<string, string | null>) {
+  relocate(keys.map((key) => [key, key.replace(/^\/(content|private)\//, `/${to}/`)]), changes, ifMatch);
+}
+
+/** Moves each file to its new key within a change set (the same bytes). */
+function relocate(pairs: [string, string][], changes: Change[], ifMatch: Record<string, string | null>) {
+  for (const [key, dest] of pairs) {
     const bytes = readFile(key);
     if (!bytes) continue;
-    const dest = key.replace(/^\/(content|private)\//, `/${to}/`);
     changes.push({ key, bytes: null }, { key: dest, bytes });
     ifMatch[key] = versionOf(bytes);
     ifMatch[dest] = versionOf(readFile(dest));
@@ -214,6 +242,14 @@ function move(keys: string[], to: 'content' | 'private', changes: Change[], ifMa
 }
 
 export type { PageAccess };
+
+/** What changes access: a page or an album, its file, and how its files move (a refusal when they can't). */
+interface Subject {
+  ref: { type: 'article' | 'album'; id: string };
+  key: string;
+  /** Puts its file's and its media's moves into the change set; a refusal stops the whole change. */
+  moveFiles: (from: Folder, to: Folder, changes: Change[], ifMatch: Record<string, string | null>) => Result | undefined;
+}
 
 /**
  * Makes a page open or private (spec §8.2), in one transaction: its file and the media only it uses move
@@ -224,6 +260,89 @@ export async function setPageAccess(id: string, to: PageAccess, section?: string
   const key = articleKey(id);
   const art = readDoc<Article>(key);
   if (!art) return refuse(key, "doesn't exist");
+  return setAccess(
+    {
+      ref: { type: 'article', id },
+      key,
+      moveFiles: (from, dest, changes, ifMatch) => {
+        move([key, ...mediaFiles(art.value, from, from === 'content')], dest, changes, ifMatch);
+        return undefined;
+      },
+    },
+    to,
+    section,
+  );
+}
+
+/**
+ * Makes an album open or private (gallery spec §12, §9.2.1), in one transaction, as `setPageAccess` moves a page:
+ * its file and its own folder of pictures (`media/albums/<id>/`) move between content/ and private-pages/, and it
+ * keeps its place in its section. A library picture it uses from elsewhere stays where it is: a private album may
+ * use an open one; an open album never a private one (V52), so making it open is refused while it holds one,
+ * naming it, unless `moveIn` asks for the pictures used nowhere else to move into this album's folder. Its own
+ * pictures never change who can see them silently: one another open page uses keeps the album open (and one
+ * another private page uses keeps it private), saying which.
+ */
+export async function setAlbumAccess(id: string, to: PageAccess, opts: { moveIn?: boolean } = {}): Promise<Result> {
+  const key = albumKey(id);
+  const al = readDoc<Album>(key);
+  if (!al) return refuse(key, "doesn't exist");
+  if (to === 'private') {
+    if (!hasPrivate(privateRoot())) return refuse(OVERLAY, "private-pages/ isn't set up: run scripts/setup-private-pages.ps1 first", 'access');
+    const why = albumRefusal(id, 'private');
+    if (why) return refuse(key, why, 'access');
+  }
+  const ownDir = (f: Folder) => `/${f}/media/albums/${id}/`;
+  const moveFiles: Subject['moveFiles'] = (from, dest, changes, ifMatch) => {
+    const snap = readSnapshot();
+    const label = (mid: string) => `"${mid.slice(mid.lastIndexOf('/') + 1)}"`;
+    // its own folder: every file in it, and the library items whose sidecars are there
+    const own = [...Object.keys(snap.docs), ...snap.masters].filter((k) => k.startsWith(ownDir(from)));
+    const ownItems = own.filter((k) => k.endsWith('.json') && k in snap.docs).map((k) => k.slice(`/${from}/media/`.length, -'.json'.length));
+    const skip = new Set([key, ...own]);
+    // what can see the pictures now stays able to: none of its own is also on a page on the other side
+    for (const mid of ownItems) {
+      const users = usersOf(snap, mid, skip, `/${from}/`);
+      if (users.length)
+        return refuse(key, `${label(mid)} is in this album's folder and also on ${nameOf(snap, users[0]!)}, which ${from === 'content' ? 'everyone can see' : 'is private'}: take it off there first`, 'access');
+    }
+    let album = al.value;
+    const pairs: [string, string][] = own.map((k) => [k, k.replace(/^\/(content|private)\//, `/${dest}/`)]);
+    if (dest === 'content') {
+      // the private pictures it uses from elsewhere (V52)
+      const outside = [...new Set(album.items.filter(isMediaItem).map((i) => i.media))].filter((mid) => !ownItems.includes(mid) && `/private/media/${mid}.json` in snap.docs);
+      const shared = outside.filter((mid) => usersOf(snap, mid, new Set([key, `/private/media/${mid}.json`])).length);
+      if (shared.length) {
+        const users = usersOf(snap, shared[0]!, new Set([key, `/private/media/${shared[0]}.json`]));
+        return refuse(key, `${shared.map(label).join(', ')} ${shared.length > 1 ? 'are private pictures' : 'is a private picture'} also on ${nameOf(snap, users[0]!)}: an open album can't show ${shared.length > 1 ? 'them' : 'it'} (V52). Take ${shared.length > 1 ? 'them' : 'it'} out of this album first`, 'access');
+      }
+      if (outside.length && !opts.moveIn)
+        return refuse(key, `${outside.map(label).join(', ')} ${outside.length > 1 ? 'are private pictures' : 'is a private picture'} from elsewhere: an open album can't show ${outside.length > 1 ? 'them' : 'it'} (V52). Move ${outside.length > 1 ? 'them' : 'it'} into this album's folder to make it public with ${outside.length > 1 ? 'them' : 'it'}`, 'move');
+      // moved into this album's own folder (its ID is its new place there); the album's items follow
+      const renamed = new Map<string, string>();
+      for (const mid of outside) {
+        const next = `albums/${id}/${mid.slice(mid.lastIndexOf('/') + 1)}`;
+        if (`/content/media/${next}.json` in snap.docs || `/private/media/${next}.json` in snap.docs || [...renamed.values()].includes(next))
+          return refuse(key, `this album's folder already holds a picture called ${label(next)}: rename one first`, 'move');
+        renamed.set(mid, next);
+        const dir = `/private/media/${mid.slice(0, mid.lastIndexOf('/') + 1)}`;
+        for (const f of itemFiles(snap, mid, 'private')) pairs.push([f, `${ownDir('content')}${f.slice(dir.length)}`]);
+      }
+      if (renamed.size) album = { ...album, items: album.items.map((i) => (isMediaItem(i) && renamed.has(i.media) ? { ...i, media: renamed.get(i.media)! } : i)) };
+    }
+    relocate(pairs, changes, ifMatch);
+    const destKey = `/${dest === 'private' ? 'private' : 'content'}/albums/${id}.json`;
+    changes.push({ key, bytes: null }, { key: destKey, bytes: album === al.value ? readFile(key)! : jsonBytes(album) });
+    ifMatch[key] = al.version;
+    ifMatch[destKey] = versionOf(readFile(destKey));
+    return undefined;
+  };
+  return setAccess({ ref: { type: 'album', id }, key, moveFiles }, to);
+}
+
+async function setAccess(subject: Subject, to: PageAccess, section?: string): Promise<Result> {
+  const { ref } = subject;
+  const id = ref.id;
   const s = readDoc<SiteStructure>(STRUCTURE);
   if (!s) return refuse(STRUCTURE, 'missing');
   const o = overlayDoc();
@@ -233,7 +352,6 @@ export async function setPageAccess(id: string, to: PageAccess, section?: string
   // a private page moved to another section stays private, at the end of its new section
   const moving = from === 'private' && to === 'private' && !!section && section !== priv!.section;
   if (from === to && !moving) return { ok: true, versions: {} };
-  const ref = { type: 'article' as const, id };
   const changes: Change[] = [];
   const ifMatch: Record<string, string | null> = {};
   let structure = s.value;
@@ -243,11 +361,12 @@ export async function setPageAccess(id: string, to: PageAccess, section?: string
     const where = sectionOf(structure, ref) ?? section;
     if (!where) return refuse(STRUCTURE, 'a private page is in a section, like any page: put it in one first', 'section');
     const order = sectionOrder(structure, overlay, where).map((p) => p.id);
-    const publicNode = findNode(structure, id);
+    const publicNode = findNode(structure, ref);
     const nodeId = publicNode?.id ?? id;
     structure = unplace(structure, ref);
     nextOverlay = placePrivate(overlay, where, { id: nodeId, token: token(), item: ref }, order.includes(nodeId) ? order : [...order, nodeId]);
-    move([key, ...mediaFiles(art.value, 'content', true)], 'private', changes, ifMatch);
+    const stop = subject.moveFiles('content', 'private', changes, ifMatch);
+    if (stop) return stop;
   } else if (to === 'open') {
     const where = priv!.section;
     const nodeId = priv!.node.id;
@@ -257,7 +376,8 @@ export async function setPageAccess(id: string, to: PageAccess, section?: string
     // it keeps its place in the section's full order, now as an open page
     nextOverlay = unplacePrivate(overlay, id);
     nextOverlay = { ...nextOverlay, sections: nextOverlay.sections.map((x) => (x.section === where ? { ...x, order: fullOrder } : x)) };
-    move([key, ...mediaFiles(art.value, 'private', false)], 'content', changes, ifMatch);
+    const stop = subject.moveFiles('private', 'content', changes, ifMatch);
+    if (stop) return stop;
     // grants that named it alone no longer can (V26): it's open to everyone now
     const g = grantsDoc();
     if (g && g.value.grants.some((x) => x.scope.pages?.includes(id))) {
@@ -278,8 +398,8 @@ export async function setPageAccess(id: string, to: PageAccess, section?: string
   return commit({ changes, ifMatch });
 }
 
-function findNode(structure: SiteStructure, id: string): SiteNode | undefined {
-  for (const c of structure.home.children ?? []) if (c.kind === 'hub') for (const k of c.children ?? []) if (k.kind === 'item' && k.item.id === id) return k;
+function findNode(structure: SiteStructure, ref: { type: string; id: string }): SiteNode | undefined {
+  for (const c of structure.home.children ?? []) if (c.kind === 'hub') for (const k of c.children ?? []) if (k.kind === 'item' && k.item.type === ref.type && k.item.id === ref.id) return k;
   return undefined;
 }
 
@@ -347,9 +467,15 @@ export function sharingView(page?: string): SharingView {
   const hubs = (s.home.children ?? []).filter((c): c is HubNode => c.kind === 'hub');
   const sectionTitle = (id: string) => hubs.find((h) => h.id === id)?.title ?? id;
   const article = (id: string) => index.articles.get(id);
-  const title = (id: string) => article(id)?.title ?? id;
+  // a grant names an album as it names a page (gallery spec §12): read from its own file, open or private
+  const album = (id: string) => index.albums.get(id);
+  const title = (id: string) => article(id)?.title ?? album(id)?.title ?? id;
   const pages = (o?.sections ?? []).flatMap((x) =>
     x.pages.map((p) => {
+      if (p.item.type === 'album') {
+        const al = album(p.item.id);
+        return { id: p.item.id, title: title(p.item.id), section: sectionTitle(x.section), sectionId: x.section, published: !!al && isAlbumPublished(al), kind: 'album' as const };
+      }
       const a = article(p.item.id);
       return { id: p.item.id, title: title(p.item.id), section: sectionTitle(x.section), sectionId: x.section, published: !!a && isPublished(a) };
     }),

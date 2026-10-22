@@ -19,3 +19,7 @@ import { DRAWING, LARGE_PICTURE, PICTURE } from './samples';
 <Example title="Nothing chosen" description="What it says until a picture or a video is chosen." layout="block">
   <MediaDetails picture={null} usedIn={[]} />
 </Example>
+
+<Example title="Beside the library's info" description="The Media screen's timeline: the words, Used in and Delete are the info panel's, so only the focus and the tools are here." layout="block">
+  <MediaDetails picture={PICTURE} usedIn={[]} words={false} />
+</Example>

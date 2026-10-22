@@ -30,6 +30,7 @@ import { albumCounts, albumDates, countWords, dateSpan } from '../../content/alb
 import { settingsOf } from '../model/album';
 import { albumPath } from '../../content/repository';
 import { withBase } from '../../design/meta';
+import { hasPrivate, privateRoot } from '../../content/source';
 import type { Album, Overlay, SiteStructure } from '../../content/schema';
 
 export const prerender = false;
@@ -93,7 +94,7 @@ const ORDERS = [
 <EditorLayout title={album.title} screen="album" nav={false} column>
   <Fragment slot="title">
     <Link href={withBase('/_edit/albums/')} variant="quiet">Albums</Link>
-    <span data-album-heading><Text as="span" variant="ui"><strong>{album.title}</strong></Text></span>
+    <span data-album-heading data-title-line title={album.title}><Text as="span" variant="ui"><strong>{album.title}</strong></Text></span>
     {priv && <Tag size="sm" tone="highlight" icon="key">Private</Tag>}
   </Fragment>
   <Fragment slot="tools">
@@ -129,7 +130,7 @@ const ORDERS = [
           </Fragment>
         </Dialog>
         <Dialog id="album-settings" title="Album settings">
-          <AlbumSettings layout={settings.layout} captions={settings.captions} dates={settings.dates} download={settings.download} large={settings.large} section={section} sections={sections} private={priv} path={path} />
+          <AlbumSettings layout={settings.layout} captions={settings.captions} dates={settings.dates} download={settings.download} large={settings.large} section={section} sections={sections} private={priv} protectable={hasPrivate(privateRoot())} path={path} />
         </Dialog>
         <Dialog id="album-text" title="Text card">
           <AlbumAdd kind="text" />

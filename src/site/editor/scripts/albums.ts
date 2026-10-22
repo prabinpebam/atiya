@@ -81,6 +81,14 @@ export function initAlbums(root: HTMLElement, signal: AbortSignal) {
   );
 
   document.querySelector('[data-albums-new]')?.addEventListener('click', () => newAlbum(), { signal });
+
+  // New album from the action center (gallery spec §9.10): the address asks for one; made once, never on a reload
+  const url = new URL(location.href);
+  if (url.searchParams.get('new') === '1') {
+    url.searchParams.delete('new');
+    history.replaceState(history.state, '', url);
+    void newAlbum();
+  }
 }
 
 /** New album: an untitled draft in the gallery, made at once and opened with its title selected (§9.1). */

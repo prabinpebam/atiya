@@ -79,7 +79,7 @@ export function blocksChanged(before: unknown[], after: unknown[]): string[] {
   return [...say(changed, 'changed'), ...say(added, 'added'), ...say(removed, 'removed'), ...(moved ? ['blocks reordered'] : [])];
 }
 
-const PAGE_KIND: Record<string, string> = { note: 'article', page: 'page', gallery: 'gallery' };
+const PAGE_KIND: Record<string, string> = { note: 'article', page: 'page' };
 
 /** A page compared with its last commit. */
 export function pageChanged(before: unknown, after: unknown): string | null {

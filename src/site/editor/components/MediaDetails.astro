@@ -85,9 +85,11 @@ interface Props {
   copies?: string[];
   /** A cropped copy's original: its media ID, and whether it's still there. */
   original?: { id: string; exists: boolean };
+  /** Its words, Used in and Delete (the list view); left out beside the library's info panel, which has them. */
+  words?: boolean;
 }
 
-const { picture, video, usedIn, copies = [], original } = Astro.props;
+const { picture, video, usedIn, copies = [], original, words = true } = Astro.props;
 const media = (id: string) => withBase(`/_edit/media/?id=${id}`);
 const sc = picture?.sidecar;
 const animated = !!(sc?.animation || sc?.dark?.animation);
@@ -115,6 +117,7 @@ const videoFacts = vs ? [`${vs.width} \u00d7 ${vs.height}`, vs.duration ? clock(
             {isPrivate && <Tag size="sm" tone="highlight" icon="key">Private</Tag>}
           </div>
           <Video src={video.type === 'video/mp4' ? video.src : undefined} webm={video.type === 'video/webm' ? video.src : undefined} label={vs.title} poster={video.poster} width={vs.width} height={vs.height} />
+          {words && (<Fragment>
           <TextField label="Title" name="title" value={vs.title} hint="What the video is, in a few words: it names the player for someone who can't see it (250 characters at most)." />
           <TextField label="Caption" name="caption" value={vs.caption ?? ''} multiline rows={2} optional hint="Shown centred under the video, unless a page gives its own." />
           <TextField label="Credit" name="credit" value={vs.credit ?? ''} optional hint="Who made it, as it should be shown." />
@@ -125,24 +128,21 @@ const videoFacts = vs ? [`${vs.width} \u00d7 ${vs.height}`, vs.duration ? clock(
           <ActionBar align="end">
             <Button variant="primary" type="submit">Save the details</Button>
           </ActionBar>
+          </Fragment>)}
         </Form>
 
-        <section class="part" aria-labelledby="media-used-title">
+        {words && (<section class="part" aria-labelledby="media-used-title">
           <Heading level={3} size="ui" id="media-used-title">Used in</Heading>
           {usedIn.length ? (
             <PlainList gap="sm">
-              {usedIn.map((r) => (
-                <li>
-                  <Link href={withBase(`/_edit/${r.href}`)} variant="standalone">{r.label}</Link>
-                </li>
-              ))}
+              {usedIn.map((r) => <li><Link href={withBase(`/_edit/${r.href}`)} variant="standalone">{r.label}</Link></li>)}
             </PlainList>
           ) : (
             <Text variant="ui" tone="muted">Nothing uses it yet.</Text>
           )}
-        </section>
+        </section>)}
 
-        <section class="part" aria-labelledby="media-delete-title">
+        {words && (<section class="part" aria-labelledby="media-delete-title">
           <Heading level={3} size="ui" id="media-delete-title">Delete</Heading>
           {usedIn.length ? (
             <Text variant="small" tone="muted">It can't be deleted while something uses it. Take it out of what's listed under Used in first.</Text>
@@ -159,7 +159,7 @@ const videoFacts = vs ? [`${vs.width} \u00d7 ${vs.height}`, vs.duration ? clock(
               <Button variant="primary" icon="delete" data-editor-media-delete="">Delete it</Button>
             </Fragment>
           </Dialog>
-        </section>
+        </section>)}
         <script is:inline type="application/json" data-editor-media-state set:html={state} />
       </>
     ) : picture && sc ? (
@@ -186,6 +186,7 @@ const videoFacts = vs ? [`${vs.width} \u00d7 ${vs.height}`, vs.duration ? clock(
             </ActionBar>
           </div>
           <HiddenField name="focus" value={sc.focus ?? ''} />
+          {words && (<Fragment>
           <TextField label="Alt text" name="alt" value={sc.alt ?? ''} multiline rows={3} hint={'What it shows, for someone who can\u2019t see it: 250 characters at most, and never \u201cimage of\u201d.'} />
           <AltSuggestion ask />
           <Checkbox label="It's decorative: it adds nothing a reader would miss" name="decorative" checked={!!sc.decorative} />
@@ -195,26 +196,23 @@ const videoFacts = vs ? [`${vs.width} \u00d7 ${vs.height}`, vs.duration ? clock(
           <TextField label="Licence" name="licence.name" value={sc.licence?.name ?? ''} optional hint="CC BY 4.0, All rights reserved, and so on." />
           <TextField label="Licence address" name="licence.url" type="url" value={sc.licence?.url ?? ''} optional />
           <TextField label="Source" name="source" type="url" value={sc.source ?? ''} optional hint="Where it came from, if someone else made it." />
+          </Fragment>)}
           <IssueNote data-editor-form-issue="" />
           <ActionBar align="end">
-            <Button variant="primary" type="submit">Save the details</Button>
+            <Button variant={words ? 'primary' : 'secondary'} type="submit">{words ? 'Save the details' : 'Save the focus'}</Button>
           </ActionBar>
         </Form>
 
-        <section class="part" aria-labelledby="media-used-title">
+        {words && (<section class="part" aria-labelledby="media-used-title">
           <Heading level={3} size="ui" id="media-used-title">Used in</Heading>
           {usedIn.length ? (
             <PlainList gap="sm">
-              {usedIn.map((r) => (
-                <li>
-                  <Link href={withBase(`/_edit/${r.href}`)} variant="standalone">{r.label}</Link>
-                </li>
-              ))}
+              {usedIn.map((r) => <li><Link href={withBase(`/_edit/${r.href}`)} variant="standalone">{r.label}</Link></li>)}
             </PlainList>
           ) : (
             <Text variant="ui" tone="muted">Nothing uses it yet.</Text>
           )}
-        </section>
+        </section>)}
 
         {sc.large && (
           <section class="part" aria-labelledby="media-size-title" data-editor-media-size>
@@ -223,8 +221,7 @@ const videoFacts = vs ? [`${vs.width} \u00d7 ${vs.height}`, vs.duration ? clock(
             <ActionBar align="end">
               <Button variant="secondary" icon="compress" data-editor-media-standard="">Make it standard</Button>
             </ActionBar>
-          </section>
-        )}
+          </section>)}
 
         <section class="part" aria-labelledby="media-crop-title">
           <Heading level={3} size="ui" id="media-crop-title">Crop</Heading>
@@ -305,7 +302,7 @@ const videoFacts = vs ? [`${vs.width} \u00d7 ${vs.height}`, vs.duration ? clock(
           </ActionBar>
         </form>
 
-        <section class="part" aria-labelledby="media-delete-title">
+        {words && (<section class="part" aria-labelledby="media-delete-title">
           <Heading level={3} size="ui" id="media-delete-title">Delete</Heading>
           {usedIn.length ? (
             <Text variant="small" tone="muted">It can't be deleted while something uses it. Take it out of what's listed under Used in first.</Text>
@@ -322,7 +319,7 @@ const videoFacts = vs ? [`${vs.width} \u00d7 ${vs.height}`, vs.duration ? clock(
               <Button variant="primary" icon="delete" data-editor-media-delete="">Delete it</Button>
             </Fragment>
           </Dialog>
-        </section>
+        </section>)}
         <script is:inline type="application/json" data-editor-media-state set:html={state} />
       </>
     ) : (

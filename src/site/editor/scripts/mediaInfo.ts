@@ -29,7 +29,8 @@ export function initMediaInfo(panel: HTMLElement, signal: AbortSignal) {
     return;
   }
   if (!state?.media) return;
-  const root = panel.closest<HTMLElement>('[data-album-editor]');
+  // in an album, the editor hears it; in the library (spec §9.9), the library does
+  const root = panel.closest<HTMLElement>('[data-album-editor]') ?? document.querySelector<HTMLElement>('[data-media-library]');
   const send = (type: string, detail: unknown) => root?.dispatchEvent(new CustomEvent(type, { detail }));
   const problem = panel.querySelector<HTMLElement>('[data-info-problem]');
   const say = (text: string) => {
@@ -86,11 +87,23 @@ export function initMediaInfo(panel: HTMLElement, signal: AbortSignal) {
       say('');
       state.media.version = (r.data.versions as Record<string, string> | undefined)?.[state.media.key] ?? state.media.version;
       state.media.sidecar = next;
+      document.dispatchEvent(new CustomEvent('media:saved', { detail: { key: state.media.key, version: state.media.version, sidecar: next } }));
       saveStatus.saved('Saved its words: every album and page that shows it has them now');
       // the grid's alt text marks and the facts line follow
       if (!more()) send('album:redraw', null);
       return 'ok';
     },
+  );
+  // the same sidecar saved beside it (the library's focus point): its new version, so the next save isn't refused
+  document.addEventListener(
+    'media:saved',
+    (e) => {
+      const d = (e as CustomEvent<{ key: string; version: string; sidecar: typeof state.media.sidecar }>).detail;
+      if (d.key !== state.media.key || d.version === state.media.version) return;
+      state.media.version = d.version;
+      state.media.sidecar = d.sidecar;
+    },
+    { signal },
   );
   const now = () => {
     clearTimeout(timer);

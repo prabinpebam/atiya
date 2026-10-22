@@ -125,6 +125,7 @@
     "c.editor.scope-list": {"v":"26rem"},
     "c.editor.section-list": {"v":"18rem"},
     "c.editor.thumb": {"v":"9rem"},
+    "c.editor.title-min": {"v":"8rem"},
     "c.editor.topbar": {"v":"4rem"},
     "c.editor.upload-preview": {"v":"14rem"},
     "c.gallery.row-height": {"v":"14rem"},
@@ -529,6 +530,12 @@
           }
         ],
         "c.editor.photo-cell": [
+          null,
+          {
+            "v": "8rem"
+          }
+        ],
+        "c.editor.title-min": [
           null,
           {
             "v": "8rem"

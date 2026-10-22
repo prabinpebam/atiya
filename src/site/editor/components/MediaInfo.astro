@@ -34,9 +34,11 @@ interface Props {
   item: ViewerItem;
   /** It's a review of alt text (Enter in the alt text field saves and moves on). */
   review?: boolean;
+  /** Shown in the library (spec §9.9), not in an album: no "In this album" settings and no tools (the details beside it hold them), and every use listed under Used in. */
+  library?: boolean;
 }
 
-const { item, review = false } = Astro.props;
+const { item, review = false, library = false } = Astro.props;
 const media = item.media;
 const sc = (media?.sidecar ?? {}) as Record<string, unknown> & { licence?: { name?: string; url?: string } };
 const kind: WordsKind | null = media ? (media.sidecar.kind as WordsKind) : null;
@@ -94,6 +96,7 @@ const uid = `info-${item.id}`;
           </details>
           <StatusNote live="polite" data-info-problem="" />
         </Fieldset>
+        {!library && (
         <Fieldset legend="In this album">
           {kind !== 'embed' && <Select label="Downloads" options={DOWNLOADS} value={download} name="download" hint="Whether the lightbox offers its original file here." data-info-download="" />}
           {kind === 'embed' && (
@@ -111,7 +114,8 @@ const uid = `info-${item.id}`;
             </Fragment>
           )}
         </Fieldset>
-        {(kind === 'image' || kind === 'embed') && (
+        )}
+        {!library && (kind === 'image' || kind === 'embed') && (
           <ActionBar gap="sm">
             {kind === 'image' && item.kind !== 'drawing' && (
               <Button variant="secondary" size="sm" icon="focus" data-info-focus="">
@@ -138,11 +142,16 @@ const uid = `info-${item.id}`;
       </Fragment>
     )
   }
+  {library && item.uses.length === 0 && (
+    <Text variant="small" tone="muted">
+      Not in any album or page yet.
+    </Text>
+  )}
   {
     item.uses.length > 0 && (
       <section class="part">
         <Heading level={3} size="ui">
-          Also in
+          {library ? 'Used in' : 'Also in'}
         </Heading>
         <PlainList>
           {item.uses.map((u) => (

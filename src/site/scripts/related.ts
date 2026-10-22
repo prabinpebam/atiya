@@ -18,8 +18,8 @@ export interface RelatedCandidate {
   publishedAt?: string;
 }
 
-/** Stories the end of a page can suggest: articles and talks, and galleries; a plain page (the résumé) isn't one. */
-export const isStory = (c: Pick<RelatedCandidate, 'kind'>) => c.kind === 'note' || c.kind === 'talk' || c.kind === 'gallery';
+/** Stories the end of a page can suggest: articles and talks; a plain page (the résumé) isn't one. */
+export const isStory = (c: Pick<RelatedCandidate, 'kind'>) => c.kind === 'note' || c.kind === 'talk';
 
 /** How many candidates a page carries, ranked, for the browser to choose from. */
 export const RELATED_CANDIDATES = 8;

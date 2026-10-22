@@ -26,7 +26,7 @@ describe('ranking related stories', () => {
     expect(ranked.slice(2)).toEqual(['d', 'e']); // only side-project in common (and the section), then the newest elsewhere
     expect(ranked).not.toContain('a');
     expect(ranked).not.toContain('r');
-    expect([isStory({ kind: 'note' }), isStory({ kind: 'talk' }), isStory({ kind: 'gallery' }), isStory({ kind: 'page' })]).toEqual([true, true, true, false]);
+    expect([isStory({ kind: 'note' }), isStory({ kind: 'talk' }), isStory({ kind: 'gallery' }), isStory({ kind: 'page' })]).toEqual([true, true, false, false]);
   });
 
   it("puts the author's own picks first, in their order, and keeps to the maximum", () => {

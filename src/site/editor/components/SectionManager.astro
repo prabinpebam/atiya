@@ -165,7 +165,7 @@ const count = (n: number) => `${n} ${n === 1 ? 'page' : 'pages'}`;
                   </ActionBar>
                   <ol class="rows" data-manager-list={s.id} hidden={s.pages.length === 0}>
                     {s.pages.map((p) => (
-                      <li class="page-row" data-drop-line="flush" data-manager-row={p.id} data-name={p.title} data-title={p.title.toLowerCase()} data-published={p.published ? '' : undefined} data-private={p.private ? '' : undefined}>
+                      <li class="page-row" data-drop-line="flush" data-manager-row={p.id} data-name={p.title} data-album={p.kind === 'Album' ? '' : undefined} data-title={p.title.toLowerCase()} data-published={p.published ? '' : undefined} data-private={p.private ? '' : undefined}>
                         <IconButton label={`Move ${p.title}`} icon="drag" size="sm" tooltip="none" disabled={!p.movable} data-manager-grip={p.id} />
                         <span class="pick">
                           <Checkbox label={p.title} hint={[p.kind, p.note].filter(Boolean).join(' · ')} disabled={!p.movable} data-manager-pick={p.id} />

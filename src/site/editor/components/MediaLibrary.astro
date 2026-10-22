@@ -1,0 +1,125 @@
+---
+/**
+ * The library (documentation/gallery/spec.md §9.9): every picture, video file and linked video on one timeline,
+ * by the month taken (newest first, those without a date by the month added), in the same grid as an album's (the
+ * kit's PhotoGrid: click, Shift, Ctrl, the keys). A filter narrows it; a selection bar acts on what's chosen: Add
+ * to album, Set the date, Set the place, Delete (which first names the albums it leaves, and is refused while a
+ * page uses it). Add link makes a linked video. The page puts the open item's details and the bulk dialogs in its
+ * slot; scripts/mediaLibrary.ts selects, opens and deletes.
+ * @tier editor
+ * @a11y The grid is a multi-select listbox grouped by month; the selection bar is a labelled toolbar whose count is
+ * a polite live region; Delete always asks first, in a dialog that says what goes.
+ * @key Ctrl+A: selects every item shown
+ * @key Escape: clears the selection
+ * @key Enter: opens the focused item's details
+ * @key Delete: asks to delete the selection from the library
+ */
+import Button from '../../components/fundamentals/Button.astro';
+import Select from '../../components/fundamentals/Select.astro';
+import Text from '../../components/fundamentals/Text.astro';
+import TextField from '../../components/fundamentals/TextField.astro';
+import Dialog from '../../components/compounds/Dialog.astro';
+import PhotoGrid, { type PhotoCell } from '../kit/PhotoGrid.astro';
+import StatusNote from '../kit/StatusNote.astro';
+import { LIBRARY_FILTERS, type LibraryFilter } from '../model/library';
+import { stableId } from '../../design/stableId';
+
+interface Props {
+  /** The items the filter shows, in timeline order, each with its month (`group`) and where it's used (Delete's words). */
+  cells: (PhotoCell & { albums: string[]; articles: string[] })[];
+  /** The filter chosen (the address's `show`). */
+  filter: LibraryFilter;
+  /** The item open in the details beside it, picked in the grid. */
+  selected?: string;
+}
+
+const { cells, filter, selected } = Astro.props;
+const uid = stableId(Astro, 'MediaLibrary');
+const ids = { delete: `library-delete-${uid}`, link: `library-link-${uid}` };
+const uses = Object.fromEntries(cells.map((c) => [c.id, { albums: c.albums, articles: c.articles }]));
+const label = LIBRARY_FILTERS.find((f) => f.value === filter)?.label ?? 'Everything';
+const shown = `${cells.length} ${cells.length === 1 ? 'item' : 'items'}${filter === 'all' ? '' : ` \u00b7 ${label}`}`;
+---
+
+<div class="library" data-media-library data-busy-line data-library-delete={ids.delete} data-library-link={ids.link}>
+  <div class="head">
+    <Select label="Show" size="sm" options={[...LIBRARY_FILTERS]} value={filter} data-library-filter="" />
+    <Button variant="secondary" size="sm" icon="link" data-dialog-open={ids.link}>Add link</Button>
+  </div>
+  <div class="selbar" role="toolbar" aria-label="Selected items" data-library-selbar hidden>
+    <Text as="span" variant="label"><span role="status" data-library-count>0 selected</span></Text>
+    <Button size="sm" variant="secondary" icon="collection" data-library-act="album">Add to album</Button>
+    <Button size="sm" variant="secondary" icon="calendar" data-library-act="date">Set the date</Button>
+    <Button size="sm" variant="secondary" icon="location" data-library-act="place">Set the place</Button>
+    <Button size="sm" variant="secondary" icon="delete" data-library-act="delete">Delete</Button>
+    <Button size="sm" variant="quiet" icon="close" data-library-act="clear">Clear selection</Button>
+  </div>
+  <div class="timeline" data-region="media-grid" data-library-selected={selected ?? ''}>
+    <script is:inline type="application/json" data-library-uses set:html={JSON.stringify(uses).replace(/</g, '\\u003c')} />
+    <Text variant="small" tone="muted">{shown}</Text>
+    <PhotoGrid label={`Your library: ${label}`} cells={cells} days empty={filter === 'all' ? 'Nothing in your library yet: upload in the list view, or add a link' : 'Nothing here under this filter'} />
+  </div>
+  <Dialog id={ids.delete} title="Delete from your library?" size="sm">
+    <Text variant="ui"><span data-library-delete-words>The selected items will be deleted.</span></Text>
+    <Fragment slot="actions">
+      <span data-library-delete-ok><Button variant="primary" icon="delete" data-library-delete-confirm="">Delete</Button></span>
+    </Fragment>
+  </Dialog>
+  <Dialog id={ids.link} title="Add a YouTube or Vimeo video">
+    <TextField label="Address" name="url" type="url" hint="The video's address on YouTube or Vimeo: it's added to your library as a linked video." data-library-link-url="" />
+    <StatusNote live="polite" data-library-link-problem="" />
+    <Fragment slot="actions">
+      <Button variant="primary" icon="plus" data-library-link-add="">Add video</Button>
+    </Fragment>
+  </Dialog>
+  <slot />
+</div>
+
+<script>
+  import { each } from '../../scripts/page';
+  import { initLibraryScreen } from '../scripts/mediaLibrary';
+  import { initMediaInfo } from '../scripts/mediaInfo';
+
+  each<HTMLElement>('[data-media-library]', (root, signal) => initLibraryScreen(root, signal));
+  // the open item's words, beside the timeline (the page puts MediaInfo there)
+  each<HTMLElement>('[data-media-info]', (form, signal) => initMediaInfo(form, signal));
+</script>
+
+<style>
+  .library {
+    display: grid;
+    gap: var(--space-4);
+  }
+
+  .head {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-3);
+    align-items: end;
+    justify-content: space-between;
+  }
+
+  .selbar {
+    position: sticky;
+    inset-block-start: 0;
+    z-index: var(--layer-raised);
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-2) var(--space-3);
+    padding: var(--space-2);
+    border-radius: var(--radius-lg);
+    background: var(--color-bg-raised);
+    box-shadow: var(--shadow-sm);
+  }
+
+  /* hidden, it keeps its room: showing it never moves the grid under a double-click */
+  .selbar[hidden] {
+    visibility: hidden;
+  }
+
+  .timeline {
+    display: grid;
+    gap: var(--space-2);
+  }
+</style>

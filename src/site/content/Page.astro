@@ -162,6 +162,7 @@ const sealedPages = privateBands ? privatePages.filter((l) => !privateBands.hidd
       next={next}
       sealed={sealed}
       shows={shows}
+      canonical={access === 'open' && route && !editable ? route.path : undefined}
     >
       <slot name="page-end" slot="page-end" />
     </AlbumLayout>

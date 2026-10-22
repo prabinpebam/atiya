@@ -8,6 +8,10 @@ import { OTHER_ALBUMS } from './samples';
   <AlbumBulk kind="album" albums={OTHER_ALBUMS} />
 </Example>
 
+<Example title="Add to album, from the library" description="The Media screen's selection: no album of their own to stay in.">
+  <AlbumBulk kind="album" albums={OTHER_ALBUMS} from="library" />
+</Example>
+
 <Example title="Set the date taken" description="One date for every selected item, saved on each.">
   <AlbumBulk kind="date" />
 </Example>

@@ -58,13 +58,15 @@ interface Props {
   sealed?: { access: 'private'; id: string; contact: string; privacy?: string };
   /** The albums the page shows (dev only): a change to another album's files doesn't reload it. */
   shows?: string[];
+  /** The album's address on the site (gallery spec §14), a path the base is added to; on the planet the frame's own canonical wins. */
+  canonical?: string;
 }
 
-const { title, description, image, imageAlt, nav, footer, action, crumbs, header, album, prev, next, frame, sealed, shows } = Astro.props;
+const { title, description, image, imageAlt, nav, footer, action, crumbs, header, album, prev, next, frame, sealed, shows, canonical } = Astro.props;
 const sealing = !!sealed && import.meta.env.PROD;
 ---
 
-<PageShell title={title} description={description} image={image} imageAlt={imageAlt} frame={frame ? 'planet' : 'site'} canonical={frame?.canonical} sealed={sealed?.access} shows={shows} preload={header.standfirst ? ['display', 'display-italic', 'text', 'ui'] : ['display', 'text', 'ui']}>
+<PageShell title={title} description={description} image={image} imageAlt={imageAlt} frame={frame ? 'planet' : 'site'} canonical={frame?.canonical ?? (sealed ? undefined : canonical)} sealed={sealed?.access} shows={shows} preload={header.standfirst ? ['display', 'display-italic', 'text', 'ui'] : ['display', 'text', 'ui']}>
   {frame ? <PlaceBar frame={frame} /> : <SiteHeader nav={nav} action={action} access />}
   <main id="main" class="page" tabindex="-1">
     {

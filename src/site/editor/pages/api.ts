@@ -251,6 +251,13 @@ const handle: APIRoute = async ({ request, params, url }) => {
         return result(await saveAlbum({ id, album: b.album, ifMatch: b.ifMatch ?? {} }));
       }
       if (method === 'PUT' && id && parts[2] === 'section') return result(await moveAlbum(id, (await body<{ section: string }>(request)).section));
+      // who can see it (§9.2.1, §12): its file and its own pictures move between content/ and private-pages/
+      if (method === 'PUT' && id && parts[2] === 'access') {
+        const b = await body<{ access: PageAccess; moveIn?: boolean }>(request);
+        if (!['open', 'private'].includes(b.access)) return json({ ok: false, issues: [{ file: 'private/structures/overlay.json', message: 'open or private' }] }, 422);
+        const { setAlbumAccess } = await import('../server/access');
+        return result(await setAlbumAccess(id, b.access, { moveIn: b.moveIn === true }));
+      }
       if (method === 'DELETE' && id) {
         const b = request.headers.get('content-type')?.includes('json') ? await body<{ ifMatch?: Record<string, string | null> }>(request) : {};
         return result(await deleteAlbum(id, b.ifMatch ?? {}));
@@ -367,6 +374,14 @@ const handle: APIRoute = async ({ request, params, url }) => {
       const b = await body<{ url?: unknown; album?: unknown; private?: unknown }>(request).catch(() => ({}) as { url?: unknown; album?: unknown; private?: unknown });
       const r = await addLinkedVideo({ url: String(b.url ?? ''), ...(typeof b.album === 'string' && b.album ? { album: b.album } : {}), ...(b.private === true ? { private: true } : {}) });
       return r.ok ? json({ ok: true, versions: r.versions, id: r.id, existing: r.existing, title: r.title }) : json({ ok: false, error: r.issues[0]?.message ?? 'not linked', issues: r.issues }, r.status);
+    }
+    // deleting from the library (gallery spec §9.9): taken out of every album that holds them, refused while a page uses one
+    if (method === 'POST' && path === 'media-delete') {
+      const { deleteFromLibrary } = await import('../server/mediaLibrary');
+      const b = await body<{ ids?: unknown }>(request).catch(() => ({}) as { ids?: unknown });
+      const ids = Array.isArray(b.ids) ? b.ids.filter((v): v is string => typeof v === 'string') : [];
+      const r = await deleteFromLibrary(content(), ids);
+      return r.ok ? json({ ok: true, versions: r.versions, albums: r.albums ?? 0 }) : json({ ok: false, issues: r.issues }, r.status);
     }
     // several library items' date, place or alt text in one save (gallery spec §9.3 Set the date and place, §9.5 Accept all)
     if (method === 'PUT' && path === 'media-words') {

@@ -1,0 +1,14 @@
+---
+import Example from '../../library/Example.astro';
+import MediaLibrary from '../components/MediaLibrary.astro';
+import { LIBRARY_CELLS } from './samples';
+---
+<Example title="The timeline" description="Every item by the month taken, newest first, then those without a date by the month added; the selection bar shows when something is selected." layout="block">
+  <MediaLibrary cells={LIBRARY_CELLS} filter="all" />
+</Example>
+<Example title="Filtered" description="Only what a filter shows: here, the items not in any album." layout="block">
+  <MediaLibrary cells={LIBRARY_CELLS.filter((c) => c.albums.length === 0)} filter="not-in-album" />
+</Example>
+<Example title="Nothing under a filter" description="The grid's empty state." layout="block">
+  <MediaLibrary cells={[]} filter="needs-alt" />
+</Example>

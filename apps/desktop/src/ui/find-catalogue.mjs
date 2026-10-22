@@ -6,7 +6,7 @@
 /**
  * @typedef {{ value: string, label: string }} Choice
  * @typedef {{ control: 'switch' } | { control: 'choice', options: Choice[] } | { control: 'slider', min: number, max: number, step: number, unit: string } | { control: 'text', max: number }} Control
- * @typedef {{ kind: 'action', id: string } | { kind: 'command', id: string, value?: string } | { kind: 'setting', id: string } | { kind: 'page' | 'section' | 'media' | 'go', id: string } | { kind: 'switch', id: string } | { kind: 'sign-out' }} Target
+ * @typedef {{ kind: 'action', id: string } | { kind: 'command', id: string, value?: string } | { kind: 'setting', id: string } | { kind: 'page' | 'album' | 'section' | 'media' | 'go', id: string } | { kind: 'switch', id: string } | { kind: 'sign-out' }} Target
  * @typedef {import('./find-rank.mjs').FindItem & {
  *   icon: string, about?: string, target: Target, second?: { label: string, keys: string },
  *   setting?: { value: unknown, version?: string | null, screen?: string, restarts?: boolean } & Control,
@@ -160,6 +160,22 @@ export function contentResults(index) {
       open: 'Edit page',
       target: { kind: 'page', id: p.id },
       ...(p.path ? { second: { label: 'View on site', keys: 'Ctrl+Enter' } } : {}),
+    });
+  for (const a of index.albums ?? [])
+    out.push({
+      key: `album:${a.id}`,
+      group: 'pages',
+      title: a.title,
+      words: [a.summary ?? '', 'album', 'gallery', 'photos', a.statusLabel ?? ''],
+      detail: ['Album', `${a.items} ${a.items === 1 ? 'item' : 'items'}`, a.statusLabel, a.private ? 'Private' : ''].filter(Boolean).join(' · '),
+      about: a.summary ?? '',
+      icon: 'collection',
+      facts: ['Album', a.statusLabel, a.private ? 'Private' : ''].filter(Boolean),
+      picture: a.picture ?? null,
+      private: !!a.private,
+      open: 'Edit album',
+      target: { kind: 'album', id: a.id },
+      ...(a.path ? { second: { label: 'View on site', keys: 'Ctrl+Enter' } } : {}),
     });
   for (const s of index.sections ?? [])
     out.push({

@@ -61,7 +61,7 @@ if (loaded.ok && doc) {
   ];
   settings = [
     { id: s.home.id, title: s.home.title, navLabel: s.home.navLabel, summary: s.home.summary, slug: '', view: 'tiles', inNav: false, path: '/', home: true },
-    ...hubs.map((h) => ({ id: h.id, title: h.title, navLabel: h.navLabel, summary: h.summary, slug: h.slug, view: h.view ?? 'tiles', inNav: inMenu(s, h.id), path: pathOf(h.id) })),
+    ...hubs.map((h) => ({ id: h.id, title: h.title, navLabel: h.navLabel, summary: h.summary, slug: h.slug, view: h.view ?? 'tiles', ...(h.albumOrder ? { albumOrder: h.albumOrder } : {}), inNav: inMenu(s, h.id), path: pathOf(h.id) })),
   ];
   const asked = Astro.url.searchParams.get('section');
   selected = sections.some((x) => x.id === asked) ? asked! : (hubs[0]?.id ?? s.home.id);

@@ -25,6 +25,8 @@ export interface SectionSettings {
   summary?: string;
   slug: string;
   view: string;
+  /** A gallery's order of its albums (the view Albums only; left out, newest first: gallery spec §2.2). */
+  albumOrder?: string;
   inNav: boolean;
   /** Its address, without the base. */
   path: string;
@@ -45,6 +47,11 @@ interface Props {
 
 const { sections, selected, structure, version } = Astro.props;
 const order = sections.filter((s) => !s.home);
+const ALBUM_ORDERS = [
+  { value: 'newest', label: 'Newest first' },
+  { value: 'oldest', label: 'Oldest first' },
+  { value: 'custom', label: 'Your order' },
+];
 const state = JSON.stringify({ structure, version }).replace(/</g, '\\u003c');
 ---
 
@@ -58,6 +65,7 @@ const state = JSON.stringify({ structure, version }).replace(/</g, '\\u003c');
           <TextField label="Summary" name="summary" value={s.summary ?? ''} multiline rows={2} optional hint={s.home ? 'The line under the name on the home page (at most 160 characters).' : 'The standfirst under its title (at most 160 characters).'} />
           {!s.home && <TextField label="Slug" name="slug" value={s.slug} required hint={`Its address: ${s.path}. Changed, the old addresses (its own and its pages') simply go.`} />}
           {!s.home && <Select label="View" name="view" value={s.view} options={VIEWS} hint="How it lists its pages." />}
+          {!s.home && s.view === 'albums' && <Select label="Order of albums" name="albumOrder" value={s.albumOrder ?? 'newest'} options={ALBUM_ORDERS} hint="How the gallery orders its albums. Your order is the one the Albums screen and the list here keep." />}
           {!s.home && <Switch label="In the navigation" name="inNav" checked={s.inNav} data-sections-in-nav="" />}
           {!s.home && (
             <ActionBar gap="sm">

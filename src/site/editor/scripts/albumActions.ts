@@ -2,7 +2,8 @@
  * What the album editor's selection (and the viewer's Add to album) does to several items at once
  * (components/AlbumBulk.astro; documentation/gallery/spec.md §9.3): Add to album (another, or a new one), Set the
  * date and Set the place (on each picture's own words, §4, in one save) and Downloads (this album's, handed to the
- * album editor's save). `album:selection` opens the dialog for the chosen items.
+ * album editor's save). `album:selection` opens the dialog for the chosen items. In the library (the Media screen,
+ * §9.9) the chosen items are library items already, and there's no album of their own.
  */
 import { announce, api, describeIssue, saveStatus, startTask } from './client';
 import { batchProblem, type WordsChange } from '../model/albumViewer';
@@ -21,8 +22,10 @@ export function initAlbumActions(root: HTMLElement, signal: AbortSignal) {
       return null;
     }
   };
-  /** The library items behind the chosen album items (a text card has none). */
+  const library = root.matches('[data-media-library]');
+  /** The library items behind the chosen album items (a text card has none); in the library, the chosen items themselves. */
   const mediaOf = (chosen: string[]) => {
+    if (library) return chosen;
     const items = album()?.album.items ?? [];
     return chosen.flatMap((id) => {
       const it = items.find((i) => i.id === id);
@@ -107,7 +110,8 @@ export function initAlbumActions(root: HTMLElement, signal: AbortSignal) {
       void task.done();
       dialog(what)?.close();
       const skipped = r.data.skipped ? ` ${r.data.skipped} ${r.data.skipped === 1 ? 'was' : 'were'} already there.` : '';
-      return saveStatus.saved(`Added ${many(r.data.added, 'item')} to the album; they stay in this one too.${skipped}`);
+      if (library) root.dispatchEvent(new CustomEvent('album:redraw'));
+      return saveStatus.saved(`Added ${many(r.data.added, 'item')} to the album${library ? '' : '; they stay in this one too'}.${skipped}`);
     }
     const changes: WordsChange[] = media.map((id) => ({ id, words: what === 'date' ? { taken: value('taken') } : { place: value('place') } }));
     const problem = batchProblem(changes);

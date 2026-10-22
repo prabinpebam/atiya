@@ -124,6 +124,17 @@ export function initMediaDetails(root: HTMLElement, signal: AbortSignal) {
   };
   // Suggest beside an empty alt text field (gallery spec §9.6)
   initAltSuggest(form, signal, { media: () => state.id });
+  // its words saved beside it (the library's info panel): the new version, so the focus point's save isn't refused
+  document.addEventListener(
+    'media:saved',
+    (e) => {
+      const d = (e as CustomEvent<{ key: string; version: string; sidecar: ImageMedia }>).detail;
+      if (d.key !== state.key || d.version === state.version) return;
+      state.version = d.version;
+      state.sidecar = d.sidecar;
+    },
+    { signal },
+  );
 
   // ---------- the focus point ----------
   let focus: [number, number] | null = state.sidecar.focus ? (state.sidecar.focus.split(' ').map((v) => parseInt(v, 10)) as [number, number]) : null;
@@ -188,17 +199,21 @@ export function initMediaDetails(root: HTMLElement, signal: AbortSignal) {
       e.preventDefault();
       const d = new FormData(form);
       const text = (k: string) => String(d.get(k) ?? '').trim();
-      const decorative = d.get('decorative') !== null;
-      const alt = text('alt');
-      if (!decorative && !alt) return say(form, 'Say what the picture shows (its alt text), or mark it decorative.');
+      // beside the library's info panel, the form holds only the focus point: its words are saved there
+      const focusOnly = !form.querySelector('[name="alt"]');
+      const decorative = focusOnly ? !!state.sidecar.decorative : d.get('decorative') !== null;
+      const alt = focusOnly ? (state.sidecar.alt ?? '') : text('alt');
+      if (!focusOnly && !decorative && !alt) return say(form, 'Say what the picture shows (its alt text), or mark it decorative.');
       if (alt.length > 250) return say(form, `The alt text is ${alt.length} characters: keep it to 250.`);
-      if (/^(image|picture|photo) of\b/i.test(alt)) return say(form, 'Start the alt text with what it shows, not "image of".');
+      if (!focusOnly && /^(image|picture|photo) of\b/i.test(alt)) return say(form, 'Start the alt text with what it shows, not "image of".');
       // a copy of what's on disk, so its keys keep their order (and the diff shows only what changed)
       const next: ImageMedia = { ...state.sidecar, file: state.sidecar.file };
       const put = <K extends 'alt' | 'caption' | 'credit' | 'source' | 'focus' | 'taken'>(k: K, v: string) => {
         if (v) next[k] = v;
         else delete next[k];
       };
+      if (focusOnly) put('focus', text('focus'));
+      else {
       put('alt', alt);
       if (decorative) next.decorative = true;
       else delete next.decorative;
@@ -207,6 +222,7 @@ export function initMediaDetails(root: HTMLElement, signal: AbortSignal) {
       if (licence.name) next.licence = JSON.parse(JSON.stringify(licence));
       else if (licence.url) return say(form, 'Name the licence, or leave its address empty.');
       else delete next.licence;
+      }
       say(form, '');
       const button = form.querySelector<HTMLButtonElement>('button[type="submit"]');
       if (button?.getAttribute('aria-busy') === 'true') return;
@@ -222,6 +238,7 @@ export function initMediaDetails(root: HTMLElement, signal: AbortSignal) {
       // saved: said at once, and the card changed in place (§3.6); the grid and the details confirm it quietly
       state.version = r.data.versions?.[state.key] ?? state.version;
       state.sidecar = next;
+      document.dispatchEvent(new CustomEvent('media:saved', { detail: { key: state.key, version: state.version, sidecar: next } }));
       delete form.dataset.unsaved;
       updateCard(state.id, next.alt ?? '', !!next.decorative);
       saveStatus.saved(`Saved the details of ${nameOf(state.id)}: every page that shows it has them now`);

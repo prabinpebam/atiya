@@ -8,7 +8,7 @@ import { remember } from '../ui/find-rank.mjs';
 
 /** An id the panel may name: a page's, a section's, a picture's (which may sit in folders), a screen's. */
 const ID = /^[a-z0-9][a-z0-9._-]*(\/[a-z0-9][a-z0-9._-]*)*$/i;
-const KINDS = new Set(['action', 'command', 'setting', 'page', 'section', 'media', 'go', 'switch', 'sign-out']);
+const KINDS = new Set(['action', 'command', 'setting', 'page', 'album', 'section', 'media', 'go', 'switch', 'sign-out']);
 
 /**
  * A target from the frame, checked: a known kind, an id of the right shape and length; null otherwise.
@@ -33,7 +33,7 @@ export function checkTarget(t) {
  * Where a page, section, picture or screen opens: edit mode, or the site (`alt`, Ctrl+Enter), at a path built
  * from the index. Null when the index doesn't hold it.
  * @param {{ kind: string, id: string, alt: boolean }} t
- * @param {{ pages?: Entry[], sections?: Entry[], media?: Entry[], screens?: Entry[], settings?: Entry[] } | null | undefined} index edit mode's answer to GET /_edit/api/find
+ * @param {{ pages?: Entry[], albums?: Entry[], sections?: Entry[], media?: Entry[], screens?: Entry[], settings?: Entry[] } | null | undefined} index edit mode's answer to GET /_edit/api/find
  * @returns {{ view: 'editor' | 'site', path: string } | null}
  */
 export function addressFor(t, index) {
@@ -46,6 +46,12 @@ export function addressFor(t, index) {
     if (!p) return null;
     if (t.alt) return onSite(sitePath(p.path));
     return { view: 'editor', path: `/_edit/articles/${enc(p.id)}/` };
+  }
+  if (t.kind === 'album') {
+    const a = (index?.albums ?? []).find((x) => x.id === t.id);
+    if (!a) return null;
+    if (t.alt) return onSite(sitePath(a.path));
+    return { view: 'editor', path: `/_edit/albums/${enc(a.id)}/` };
   }
   if (t.kind === 'section') {
     const s = (index?.sections ?? []).find((x) => x.id === t.id);

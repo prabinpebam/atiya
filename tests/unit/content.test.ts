@@ -944,6 +944,22 @@ describe('a page opens as its kind reads', () => {
     expect(pageMeasure(article.parse({ ...base, kind: 'page', body: [words] }))).toBeUndefined();
     expect(article.safeParse({ ...base, kind: 'gallery', body: pictures }).success).toBe(false);
   });
+
+  it("the first build's album is gone from the code: no gallery kind, showcase, arranger or item words (DoD 49)", () => {
+    const files = walk(join(ROOT, 'src')).filter((f) => /\.(ts|tsx|astro|mjs)$/.test(f));
+    const hits = (re: RegExp, keep: (file: string) => boolean = () => false) =>
+      files.filter((f) => !keep(relative(ROOT, f).split(sep).join('/')) && re.test(readFileSync(f, 'utf8'))).map((f) => relative(ROOT, f).split(sep).join('/'));
+    // V43 refuses the old kind; nothing else may accept or branch on it
+    expect(hits(/kind\s*[!=]==?\s*'gallery'|kind:\s*'gallery'/, (f) => f === 'src/site/content/load.ts' || f === 'src/site/scripts/articleMinimap.ts')).toEqual([]);
+    // "showcase" is the home views' spine only, never an album's
+    expect(hits(/showcase/i, (f) => /^src\/site\/(home\/|content\/(load|repository|homeView)\.ts|access\/wordlist\.ts|editor\/model\/home\.ts)/.test(f))).toEqual([]);
+    expect(hits(/AlbumItemDetails|AlbumArranger|AlbumUpFront|['"]up-front['"]/)).toEqual([]);
+    expect(hits(/\.album\b|import\s+Album|<Album/, (f) => f !== 'src/site/layouts/ArticleLayout.astro')).toEqual([]);
+    // an album's item holds no words of its own and no embed: a picture's words are its sidecar's
+    const item = readFileSync(join(ROOT, 'src/site/content/schema.ts'), 'utf8').match(/export const albumMediaItem = z\.strictObject\(\{([\s\S]*?)\}\);/)?.[1] ?? '';
+    expect(item).toMatch(/media: mediaId/);
+    expect(item).not.toMatch(/\b(caption|description|place|alt|embed|title):/);
+  });
 });
 
 describe('the real content is three levels, with its navigation and redirects', () => {

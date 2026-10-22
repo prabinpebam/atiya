@@ -7,7 +7,7 @@ import { appActions, appSettings, contentResults, screenControls, SUGGESTED } fr
 
 const LABELS = { top: 'Top hit', recent: 'Recent', suggested: 'Suggested', actions: 'Actions', screen: 'This screen', settings: 'Settings', pages: 'Pages', sections: 'Sections', media: 'Pictures and videos', go: 'Go to' };
 const NOUNS = { actions: 'actions', screen: 'controls', settings: 'settings', pages: 'pages', sections: 'sections', media: 'pictures and videos', go: 'screens' };
-const NAVIGATES = new Set(['page', 'section', 'media', 'go', 'switch', 'command']);
+const NAVIGATES = new Set(['page', 'album', 'section', 'media', 'go', 'switch', 'command']);
 const NAVIGATING_ACTIONS = new Set(['show-editor', 'show-site', 'new-page', 'check', 'new-site', 'sign-in']);
 const READY = new Set(['ready', 'external']);
 

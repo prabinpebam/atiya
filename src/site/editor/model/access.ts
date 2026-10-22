@@ -24,6 +24,8 @@ export interface ScopePage {
   section: string;
   sectionId: string;
   published: boolean;
+  /** An album (gallery spec §12: a grant names an album as it names a page); left out, a page. */
+  kind?: 'album';
 }
 
 /** What the sharing panel and the Access screen show (made by the server's `sharingView`). */
@@ -158,7 +160,7 @@ export function scopeChoices(options: { sections: ScopeSection[] }, scope: Grant
 }
 
 /** What a private page's choice says under it: published, or that it opens once it is. */
-export const pageHint = (published: boolean): string => (published ? 'Published' : 'Not published yet: it opens once it is');
+export const pageHint = (published: boolean, kind: 'page' | 'album' = 'page'): string => `${kind === 'album' ? 'Album. ' : ''}${published ? 'Published' : 'Not published yet: it opens once it is'}`;
 
 /** Everything a grant can be found by in the Access screen's list, lowercased: who, why, notes, its code's name, what it opens. */
 export function findText(g: ListedGrant): string {

@@ -10,6 +10,7 @@ const INDEX = {
     { id: 'draft-one', title: 'A draft', kindLabel: 'Article', statusLabel: 'Draft', section: null, path: null, summary: 'Not yet.', text: '', picture: null, private: true },
   ],
   sections: [{ id: 'writing', title: 'Writing', path: '/writing/', pages: 4 }],
+  albums: [{ id: 'harbour', title: 'Harbour walks', summary: 'By the sea.', statusLabel: 'Published', private: false, items: 3, path: '/gallery/harbour/', picture: null }],
   media: [{ id: 'articles/designup/stage', kind: 'image', title: 'On stage', caption: '', ownerLabel: 'My journey with DesignUp', width: 1600, height: 900 }],
   screens: [
     { id: 'articles', label: 'Pages', href: '/_edit/articles/', words: ['articles'] },
@@ -33,6 +34,10 @@ describe('what the panel may ask for', () => {
     expect(addressFor({ kind: 'page', id: 'draft-one', alt: true }, INDEX)).toBeNull();
     expect(addressFor({ kind: 'page', id: 'nowhere', alt: false }, INDEX)).toBeNull();
     expect(addressFor({ kind: 'section', id: 'writing', alt: false }, INDEX)).toEqual({ view: 'editor', path: '/_edit/sections/?section=writing' });
+    // an album opens in its album editor, or its page on the site (gallery spec §9.10)
+    expect(addressFor({ kind: 'album', id: 'harbour', alt: false }, INDEX)).toEqual({ view: 'editor', path: '/_edit/albums/harbour/' });
+    expect(addressFor({ kind: 'album', id: 'harbour', alt: true }, INDEX)).toEqual({ view: 'site', path: '/gallery/harbour/' });
+    expect(contentResults(INDEX).find((r) => r.key === 'album:harbour')).toMatchObject({ group: 'pages', title: 'Harbour walks', facts: ['Album', 'Published'] });
     expect(addressFor({ kind: 'media', id: 'articles/designup/stage', alt: false }, INDEX)).toEqual({ view: 'editor', path: '/_edit/media/?id=articles%2Fdesignup%2Fstage' });
     expect(addressFor({ kind: 'go', id: 'articles', alt: false }, INDEX)).toEqual({ view: 'editor', path: '/_edit/articles/' });
     // a screen's address must be edit mode's own

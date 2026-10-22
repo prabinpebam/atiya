@@ -109,3 +109,17 @@
   gap: var(--space-8);
   min-inline-size: 0;
 }
+
+/* ---------- a long name in the header's title (the album editor's): one line, cut with an ellipsis, its whole
+   name in its tooltip, so a crowded tools row never stacks it a word a line ---------- */
+[data-title-line] {
+  overflow: hidden;
+  min-inline-size: 0;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* the Text inside (its scoped text-wrap outranks a plain child selector) */
+[data-title-line] > [data-variant][data-tone] {
+  text-wrap: nowrap;
+}

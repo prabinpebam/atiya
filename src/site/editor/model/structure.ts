@@ -136,11 +136,13 @@ export function reorder(structure: SiteStructure, hubId: string, from: number, t
 }
 
 /** Changes a hub's own fields. */
-export function updateHub(structure: SiteStructure, hubId: string, fields: Partial<Pick<HubNode, 'title' | 'navLabel' | 'summary' | 'slug' | 'view'>>): SiteStructure {
+export function updateHub(structure: SiteStructure, hubId: string, fields: Partial<Pick<HubNode, 'title' | 'navLabel' | 'summary' | 'slug' | 'view' | 'albumOrder'>>): SiteStructure {
   return mapHubs(structure, (h) => {
     if (h.id !== hubId) return h;
     const next: HubNode = { ...h, ...fields };
     for (const k of ['navLabel', 'summary'] as const) if (!next[k]) delete next[k];
+    // a gallery's order of its albums is for the view Albums only (V53)
+    if (next.view !== 'albums' || !next.albumOrder) delete next.albumOrder;
     return next;
   });
 }

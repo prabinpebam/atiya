@@ -50,8 +50,8 @@ export interface StoreOptions {
 export const versionOf = (bytes: Buffer | null): string | null => (bytes ? createHash('sha1').update(bytes).digest('hex') : null);
 export const jsonBytes = (value: unknown): Buffer => Buffer.from(`${JSON.stringify(value, null, 2)}\n`, 'utf8');
 
-/** A resource path the content model allows: lowercase kebab-case folders and names, known extensions (including dark versions and animation posters), in content/ or private-pages/. */
-const KEY = /^\/(?:content|private)\/(?:[a-z0-9]+(?:-[a-z0-9]+)*\/)*[a-z0-9]+(?:-[a-z0-9]+)*(?:\.json|\.pdf|\.mp4|\.webm|\.woff2|(?:\.dark(?:\.poster)?|\.poster)?\.(?:webp|jpe?g|png|avif|gif|svg))$/;
+/** A resource path the content model allows: lowercase kebab-case folders and names, known extensions (including dark versions, animation posters and a video's caption tracks), in content/ or private-pages/. */
+const KEY = /^\/(?:content|private)\/(?:[a-z0-9]+(?:-[a-z0-9]+)*\/)*[a-z0-9]+(?:-[a-z0-9]+)*(?:\.json|\.pdf|\.mp4|\.webm|\.woff2|\.[a-z]{2,3}(?:-[a-z0-9]+)*\.vtt|(?:\.dark(?:\.poster)?|\.poster)?\.(?:webp|jpe?g|png|avif|gif|svg))$/;
 
 /** The absolute path of a key, or null when the key isn't one the content model allows or leaves its folder. */
 export function pathOf(key: string, root = contentRoot(), priv = privateRoot()): string | null {

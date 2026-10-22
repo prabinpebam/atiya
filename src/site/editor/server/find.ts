@@ -6,6 +6,7 @@
 import type { ContentIndex } from '../../content/load';
 import type { SiteSettings } from '../../content/schema';
 import { picture, video } from '../../content/pictures';
+import { coverLead, isMediaItem } from '../../content/album';
 import { timed } from '../../content/timing';
 import { SITE_FEATURES, withBase } from '../../design/meta';
 import { BUILTIN_MODES } from '../../modes/builtin';
@@ -59,12 +60,28 @@ export function findIndex(index: ContentIndex) {
         const route = index.routes.find((r) => r.node.kind === 'hub' && r.node.id === h.id);
         return { id: h.id, title: h.title, path: route?.published === false ? null : h.path, pages: pages.filter((p) => p.section?.id === h.id).length };
       });
+    // the site's albums (gallery spec §9.10), each opened in its album editor
+    const albums = [...index.albums.values()].map((a) => {
+      const route = index.routes.find((r) => r.node.kind === 'item' && r.node.item.type === 'album' && r.node.item.id === a.id);
+      const lead = coverLead(a) ?? a.items.find(isMediaItem)?.media;
+      return {
+        id: a.id,
+        title: a.title,
+        summary: a.summary ?? '',
+        status: a.status,
+        statusLabel: a.status === 'published' ? STATUS_LABEL.published : STATUS_LABEL.draft,
+        private: index.origins.get(a.id) === 'private',
+        items: a.items.filter(isMediaItem).length,
+        path: route?.published ? route.path : null,
+        picture: lead && index.media.has(lead) ? lead : null,
+      };
+    });
     const media = [
       ...[...index.media.values()].map((m) => ({ id: m.id, kind: 'image' as const, title: m.alt ?? '', caption: m.caption ?? '', decorative: !!m.decorative, owner: ownerOf(m.id), ownerLabel: ownerLabel(index, ownerOf(m.id)), private: m.origin === 'private' })),
       ...[...index.videos.values()].map((v) => ({ id: v.id, kind: 'video' as const, title: v.title, caption: v.caption ?? '', decorative: false, owner: ownerOf(v.id), ownerLabel: ownerLabel(index, ownerOf(v.id)), private: v.origin === 'private', width: v.width, height: v.height, ...(v.duration ? { duration: v.duration } : {}) })),
     ];
     const screens = [...editScreens(SITE_FEATURES), ...SCREEN_PLACES].map((s) => ({ id: s.id, label: s.label, href: withBase(`/_edit/${s.path}`), words: s.words, about: s.about, icon: s.icon }));
-    return { ok: true as const, pages, sections, media, screens, settings: settingsNow() };
+    return { ok: true as const, pages, sections, albums, media, screens, settings: settingsNow() };
   });
 }
 

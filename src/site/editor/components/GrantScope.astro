@@ -55,7 +55,7 @@ const { line, sections } = scopeChoices(options, scope);
             {s.pages.length > 0 && (
               <ul class="pages">
                 {s.pages.map((p) => (
-                  <li data-scope-page={p.id} data-title={p.title.toLowerCase()} data-name={p.title} data-hint={pageHint(p.published)}>
+                  <li data-scope-page={p.id} data-title={p.title.toLowerCase()} data-name={p.title} data-hint={pageHint(p.published, p.kind)}>
                     <Checkbox
                       id={`${prefix}-page-${p.id}`}
                       name="pages"
@@ -63,7 +63,7 @@ const { line, sections } = scopeChoices(options, scope);
                       checked={s.all || s.own.has(p.id)}
                       disabled={s.all}
                       label={p.title}
-                      hint={s.all ? `Opened by ${s.title}` : pageHint(p.published)}
+                      hint={s.all ? `Opened by ${s.title}` : pageHint(p.published, p.kind)}
                       data-own={s.own.has(p.id) ? 'true' : 'false'}
                     />
                   </li>

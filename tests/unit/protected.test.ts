@@ -12,6 +12,8 @@ import { ContentError, loadContent } from '../../src/site/content/load';
 import { withOverlay, RESERVED } from '../../src/site/content/routes';
 import { placeRoutes } from '../../src/site/content/navigation';
 import type { Article } from '../../src/site/content/schema';
+import { covers } from '../../src/site/access/grants';
+import type { Grant } from '../../src/site/access/types';
 
 const ROOT = join(__dirname, '../..');
 const FIXTURES = join(ROOT, 'tests/fixtures/private-pages');
@@ -167,6 +169,20 @@ describe('the rules (V23 to V32)', () => {
     expect(problems((d) => (d['/private/access.json'].grants[1].scope.pages = ['khonjel']))).toMatch(/"khonjel" isn't a private page \(V26\)/);
     expect(problems((d) => (d['/private/access.json'].grants[1].scope.pages = ['fx-private-one']))).toBe('');
     expect(problems((d) => (d['/private/access.json'].grants[2].scope = { pages: ['fx-private-alpha'], sections: ['work'] }))).toBe('');
+  });
+
+  it('V26: a grant opens a private album as it opens a page: named, or by its section (gallery §12)', () => {
+    const s = snap();
+    const overlay = s.docs['/private/structures/overlay.json'] as { sections: { section: string; pages: { item: { type: string; id: string } }[] }[] };
+    // what the sealer's keyrings are made from (integrations/seal.mjs)
+    const pages = overlay.sections.flatMap((x) => x.pages.map((p) => ({ id: p.item.id, section: x.section, access: 'private' as const })));
+    const album = overlay.sections.flatMap((x) => x.pages).find((p) => p.item.type === 'album')!.item.id;
+    const grants = (s.docs['/private/access.json'] as { grants: Grant[] }).grants;
+    expect(covers(grants.find((g) => g.scope.pages?.includes(album))!, pages)).toContain(album);
+    const section = pages.find((p) => p.id === album)!.section;
+    expect(covers({ ...grants[0], scope: { sections: [section] } }, pages)).toContain(album);
+    expect(covers({ ...grants[0], scope: { pages: ['fx-private-one'] } }, pages)).not.toContain(album);
+    expect(problems((d) => (d['/private/access.json'].grants[1].scope.pages = [album]))).toBe('');
   });
 
   it('V28: a private page is never on the planet, even in a section a building shows', () => {

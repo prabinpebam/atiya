@@ -72,7 +72,7 @@ export function initSections(root: HTMLElement, signal: AbortSignal) {
       })();
       return;
     }
-    const items = m.pages.map((id) => ({ type: 'article' as const, id }));
+    const items = m.pages.map((id) => ({ type: root.querySelector(`[data-manager-row="${id}"][data-album]`) ? ('album' as const) : ('article' as const), id }));
     let next: SiteStructure;
     if (m.to === '_off') next = items.reduce((s, item) => unplace(s, item), state.structure);
     else {
@@ -124,6 +124,8 @@ export function initSections(root: HTMLElement, signal: AbortSignal) {
       if (slug !== undefined) fields.slug = slug;
       const view = get('view');
       if (view === 'features' || view === 'list' || view === 'tiles' || view === 'bento' || view === 'albums') fields.view = view;
+      const albumOrder = get('albumOrder');
+      if (albumOrder === 'newest' || albumOrder === 'oldest' || albumOrder === 'custom') fields.albumOrder = albumOrder;
       let next = updateHub(state.structure, hub, fields);
       // its entry in the top navigation (the same menu the Navigation screen edits)
       if (nav) next = setInMenu(next, hub, nav.checked);

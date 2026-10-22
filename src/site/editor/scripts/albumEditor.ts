@@ -16,6 +16,7 @@ import { takenOf } from '../model/exif';
 import { TAB, announce, api, describeIssue, editorUrl, onContentChange, saveStatus, startTask, swapRegions } from './client';
 import { fillPicker } from './picker';
 import { initAlbumCover } from './albumCover';
+import { rowStep } from './photoSelection';
 
 interface AlbumState {
   id: string;
@@ -602,7 +603,11 @@ export function initAlbumEditor(root: HTMLElement, signal: AbortSignal) {
     typingTimer = window.setTimeout(() => {
       if (field === 'title' && !value.trim()) return saveStatus.failed('Give the album a title.');
       change(setWords(doc, { [field]: value }), '', { typing: true });
-      if (field === 'title') document.querySelectorAll('[data-album-heading]').forEach((h) => (h.textContent = value.trim()));
+      if (field === 'title')
+        document.querySelectorAll<HTMLElement>('[data-album-heading]').forEach((h) => {
+          (h.querySelector('strong') ?? h).textContent = value.trim();
+          h.title = value.trim();
+        });
     }, 500);
   };
   root.addEventListener(
@@ -617,7 +622,42 @@ export function initAlbumEditor(root: HTMLElement, signal: AbortSignal) {
   root.addEventListener('focusout', () => (typingStep = false), { signal });
 
   // ---------- settings ----------
+  const ACCESS_ASK: Record<'open' | 'private', string> = {
+    open: 'Make this album public? It and its own pictures move back to content/, and once you save to remote, they’re on the site for everyone and in the public repository’s history.',
+    private: 'Make this album private? It and its own pictures move to private-pages/, and it’s listed in its section only for readers you share it with, from Access. If it was published openly before, that earlier version stays in the public repository’s history.',
+  };
+  const MOVE_IN_ASK = 'Move these private pictures into this album’s folder? They become public with the album, and nothing else uses them.';
+  const access = async (to: 'open' | 'private') => {
+    const select = root.querySelector<HTMLElement>('[data-album-setting="access"]');
+    const now = state.key.startsWith('/private/') ? 'private' : 'open';
+    const back = () => select?.dispatchEvent(new CustomEvent('select-set', { detail: { value: now } }));
+    if (to === now) return;
+    if (queue.pending || JSON.stringify(doc) !== JSON.stringify(saved)) {
+      back();
+      return announce('Your last change is still saving: try again in a moment.', 'negative');
+    }
+    if (!confirm(ACCESS_ASK[to])) return back();
+    const task = startTask(to === 'open' ? 'Making the album public…' : 'Making the album private…', { el: select });
+    let r = await api('PUT', `albums/${state.id}/access`, { access: to });
+    // an open album never shows a private picture (V52): ones nothing else uses can move into its folder
+    if (!r.ok && (r.data.issues ?? []).some((i) => i.path === 'move')) {
+      const why = (r.data.issues ?? []).map((i) => i.message).join(' ');
+      if (confirm(`${why}.\n\n${MOVE_IN_ASK}`)) r = await api('PUT', `albums/${state.id}/access`, { access: to, moveIn: true });
+    }
+    if (!r.ok) {
+      task.failed();
+      back();
+      const why = (r.data.issues ?? []).map((i) => i.message).join(' ') || 'Who can see it wasn’t changed.';
+      saveStatus.failed(`Not changed: ${why}`);
+      return announce(why, 'negative');
+    }
+    void task.done();
+    // its file moved folders: the editor is drawn again from its new place
+    saveStatus.carry(to === 'open' ? 'Made public' : 'Made private');
+    location.reload();
+  };
   const setting = async (name: string, value: string | boolean) => {
+    if (name === 'access') return access(value === 'private' ? 'private' : 'open');
     if (name === 'section') {
       if (!value) return;
       const task = startTask('Moving the album…', { el: root.querySelector('[data-album-setting="section"]') });
@@ -760,19 +800,6 @@ export function initAlbumEditor(root: HTMLElement, signal: AbortSignal) {
     title?.select();
     history.replaceState(history.state, '', location.pathname);
   }
-}
-
-/** Up or down a row of the grid as it's drawn (days flow side by side): the offset to the nearest cell in the next row, 0 at an edge. */
-function rowStep(all: HTMLElement[], at: number, dir: 1 | -1): number {
-  const box = (el: HTMLElement) => el.getBoundingClientRect();
-  const here = box(all[at]!);
-  const x = here.left + here.width / 2;
-  const beyond = all.map((el, i) => ({ i, r: box(el) })).filter(({ r }) => (dir > 0 ? r.top > here.bottom - 1 : r.bottom < here.top + 1));
-  if (!beyond.length) return 0;
-  const rowTop = dir > 0 ? Math.min(...beyond.map(({ r }) => r.top)) : Math.max(...beyond.map(({ r }) => r.top));
-  const row = beyond.filter(({ r }) => Math.abs(r.top - rowTop) < 1);
-  const best = row.reduce((a, b) => (Math.abs(b.r.left + b.r.width / 2 - x) < Math.abs(a.r.left + a.r.width / 2 - x) ? b : a));
-  return best.i - at;
 }
 
 /** A multipart POST to the media API with its upload's progress (fetch can't report it). */
