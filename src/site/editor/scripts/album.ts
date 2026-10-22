@@ -15,6 +15,7 @@ import { takenOf } from '../model/exif';
 import { TAB, announce, api, describeIssue, onContentChange, saveStatus, startTask, swapRegions } from './client';
 import { fillPicker } from './picker';
 import { initRichFields } from './richtext';
+import { initAltSuggest, initUseAll } from './altSuggest';
 
 interface AlbumState {
   id: string;
@@ -450,8 +451,18 @@ export function initAlbum(root: HTMLElement, signal: AbortSignal) {
       row.querySelector('[data-album-batch-note]')!.textContent = note ? ` ${note}` : video ? ' A video: its alt text is its title.' : '';
       if (note) row.querySelectorAll<HTMLInputElement>('input').forEach((i) => (i.disabled = true));
       list.append(row);
+      // a picture's alt text suggested (gallery spec §9.6), only its bytes sent; Use all suggestions shows once one is
+      if (!note && !video) {
+        const offer = initAltSuggest(row, signal, { file: () => file, owner: () => state.owner });
+        void offer?.suggest().then((shown) => {
+          const wrap = form.querySelector<HTMLElement>('[data-alt-use-all-wrap]');
+          if (shown && wrap && row.isConnected) wrap.hidden = false;
+        });
+      }
       return { file, row, note };
     });
+    const useAll = form.querySelector<HTMLElement>('[data-alt-use-all-wrap]');
+    if (useAll) useAll.hidden = true;
     const go = form.querySelector<HTMLButtonElement>('[data-album-upload-go]');
     if (go) go.disabled = !batch.some((b) => !b.note);
     issue(form, '');
@@ -461,6 +472,15 @@ export function initAlbum(root: HTMLElement, signal: AbortSignal) {
     const t = e.target as HTMLInputElement;
     if (t.closest('[data-album-files]') && t.files) startBatch([...t.files]);
   });
+  const batchForm = uploadForm();
+  if (batchForm) {
+    initUseAll(batchForm, signal);
+    on(batchForm, 'click', (e) => {
+      if (!(e.target as Element).closest('[data-alt-use-all]')) return;
+      const wrap = batchForm.querySelector<HTMLElement>('[data-alt-use-all-wrap]');
+      if (wrap) wrap.hidden = true;
+    });
+  }
   const uploadBatch = async (form: HTMLFormElement) => {
     const todo = batch.filter((b) => !b.note);
     const alt = (b: (typeof batch)[number]) => b.row.querySelector<HTMLInputElement>('[data-album-batch-alt] input, input[name="alt"]')?.value.trim() ?? '';

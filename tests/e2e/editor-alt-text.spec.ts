@@ -114,6 +114,36 @@ test.describe('editor: suggested alt text', () => {
     expect(readJson(join(FIXTURE, `content/media/articles/${ARTICLE}/tshirt.json`)).alt).toBe(STAND_IN_ALT);
   });
 
+  test('an album\'s batch upload: each picture suggested, Use all suggestions takes them all, then they upload', async ({ page }) => {
+    seesPictures();
+    await page.goto('/_edit/articles/fixture-album/?view=items&item=short');
+    await expect(page.locator('[data-editor-album]')).toBeVisible();
+    await page.locator('[data-album-add="upload"]').click();
+    const dialog = page.locator('#album-upload');
+    await expect(dialog).toBeVisible();
+    const one = await picture();
+    const two = await sharp({ create: { width: 1200, height: 900, channels: 3, background: { r: 200, g: 60, b: 40 } } }).jpeg().toBuffer();
+    await dialog.locator('input[type="file"]').setInputFiles([
+      { name: 'one.jpg', mimeType: 'image/jpeg', buffer: one },
+      { name: 'two.jpg', mimeType: 'image/jpeg', buffer: two },
+    ]);
+    const rows = dialog.locator('[data-album-batch] li');
+    await expect(rows).toHaveCount(2);
+    await expect(offer(rows.nth(0))).toBeVisible({ timeout: 30_000 });
+    await expect(offer(rows.nth(1))).toBeVisible({ timeout: 30_000 });
+    const useAll = dialog.getByRole('button', { name: 'Use all suggestions' });
+    await expect(useAll).toBeVisible();
+    await useAll.click();
+    await expect(rows.nth(0).getByLabel('Alt text')).toHaveValue(STAND_IN_ALT);
+    await expect(rows.nth(1).getByLabel('Alt text')).toHaveValue(STAND_IN_ALT);
+    await expect(useAll).toBeHidden();
+    await dialog.locator('[data-album-upload-go]').click();
+    await expect(dialog).toBeHidden({ timeout: 30_000 });
+    await expect.poll(() => readJson(join(FIXTURE, 'content/articles/fixture-album.json')).album.items.length, { timeout: 15_000 }).toBe(23);
+    const added = readJson(join(FIXTURE, 'content/articles/fixture-album.json')).album.items.slice(-2);
+    for (const it of added) expect(readJson(join(FIXTURE, 'content/media', `${it.media}.json`)).alt).toBe(STAND_IN_ALT);
+  });
+
   test('turned off on the AI screen, nothing is suggested and no picture is sent', async ({ page }) => {
     seesPictures();
     await page.goto('/_edit/ai/');

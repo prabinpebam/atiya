@@ -2,7 +2,8 @@
 /**
  * The album's two ways to add something new (documentation/gallery/spec.md §9.2), each the body of its dialog:
  * Upload, a batch of files with each one's alt text (and caption) asked before it goes, the day each was taken read
- * from the file; and Add a video link, a YouTube or Vimeo address whose title, shape and poster are taken from its
+ * from the file, each picture's alt text suggested when the writer sees pictures (Use all suggestions takes them
+ * all); and Add a video link, a YouTube or Vimeo address whose title, shape and poster are taken from its
  * provider (the poster kept as the site's own picture). The batch's rows are copies of one template, filled by
  * scripts/album.ts; every item is added to the album as soon as its file is in.
  * @tier editor
@@ -18,6 +19,7 @@ import Form from '../kit/Form.astro';
 import FormFoot from '../kit/FormFoot.astro';
 import IssueNote from '../kit/IssueNote.astro';
 import StatusNote from '../kit/StatusNote.astro';
+import AltSuggestion from '../kit/AltSuggestion.astro';
 import { CAPTION_MAX } from '../../content/schema';
 
 interface Props {
@@ -40,6 +42,7 @@ const { kind } = Astro.props;
             <span data-album-batch-note="" />
           </Text>
           <TextField label="Alt text" name="alt" maxlength={250} required hint="What it shows, for someone who can't see it." data-album-batch-alt="" />
+          <AltSuggestion />
           <TextField label="Caption" name="caption" maxlength={CAPTION_MAX} optional data-album-batch-caption="" />
         </li>
       </template>
@@ -47,6 +50,7 @@ const { kind } = Astro.props;
       <IssueNote data-album-form-issue="" />
       <FormFoot inset="lg">
         <ActionBar align="end">
+          <span data-alt-use-all-wrap="" hidden><Button variant="quiet" data-alt-use-all="">Use all suggestions</Button></span>
           <Button variant="quiet" data-dialog-close="">Cancel</Button>
           <Button variant="primary" type="submit" icon="upload" data-album-upload-go="" disabled>Upload them</Button>
         </ActionBar>
