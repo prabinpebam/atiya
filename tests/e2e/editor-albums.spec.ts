@@ -193,3 +193,144 @@ test.describe('editor: albums', () => {
     await expect(page.locator('[data-album-details="p08"]')).toBeVisible();
   });
 });
+
+/**
+ * The band arranger, Up front (documentation/gallery/spec.md §9.3, §18; plan G6, Definition of Done rows 20 to 22):
+ * the fixture's band is p01 8×4 at 0,0; clip and anim 4×2 at 8,0 and 8,2; plan, p02 and talk 4×3 along row 4 (talk
+ * not on phones); p03 and p04 wait in the tray.
+ */
+type Tile = { item: string; x: number; y: number; w: number; h: number };
+const showcase = (): { tiles: Tile[]; phone?: { tiles: Tile[] } } => readJson(albumFile()).album.showcase;
+const bandTile = (id: string) => showcase().tiles.find((t) => t.item === id);
+const live = (page: Page) => page.locator('[data-arranger-live]');
+const arrTile = (page: Page, id: string) => page.locator(`[data-arranger-tile="${id}"]`);
+const arrPlace = (page: Page, id: string) => page.locator(`[data-arranger-place="${id}"]`);
+
+/** The album's Up front view, its band drawn, tall enough that a drag stays on the page. */
+async function openFront(page: Page) {
+  await page.setViewportSize({ width: 1280, height: 1400 });
+  await page.goto(`/_edit/articles/${ALBUM}/?view=front`);
+  await expect(page.locator('[data-album-arranger] [data-arranger-canvas]')).toBeVisible();
+  await expect(page.locator('[data-arranger-place]')).toHaveCount(6);
+}
+
+/** A point of an element's box: its centre, or the middle of its right or bottom edge. */
+async function pointOf(loc: ReturnType<Page['locator']>, at: 'centre' | 'right' | 'bottom' = 'centre') {
+  const b = (await loc.boundingBox())!;
+  return { x: at === 'right' ? b.x + b.width - 1 : b.x + b.width / 2, y: at === 'bottom' ? b.y + b.height - 1 : b.y + b.height / 2 };
+}
+
+/** One cell of the grid, in pixels: from two tiles' left edges, 8 columns apart. */
+async function pitchOf(page: Page) {
+  const a = (await arrPlace(page, 'p01').boundingBox())!;
+  const b = (await arrPlace(page, 'clip').boundingBox())!;
+  return (b.x - a.x) / 8;
+}
+
+/** The mouse pressed at `from`, moved past the drag's threshold to `to` in steps, and, unless kept, let go. */
+async function drag(page: Page, from: { x: number; y: number }, to: { x: number; y: number }, keep = false) {
+  await page.mouse.move(from.x, from.y);
+  await page.mouse.down();
+  await page.mouse.move(from.x + (to.x - from.x) / 4 + 6, from.y + (to.y - from.y) / 4 + 6, { steps: 2 });
+  await page.mouse.move(to.x, to.y, { steps: 8 });
+  if (!keep) await page.mouse.up();
+}
+
+test.describe('editor: albums', () => {
+  test.describe.configure({ mode: 'serial' });
+  test.beforeEach(() => reset());
+  test.afterAll(() => reset());
+
+  test('the arranger by drag: a tile dropped on its twin swaps with it, a handle resizes it, and a refused drop says why', async ({ page }) => {
+    await openFront(page);
+    // clip dropped on anim (the same size): the two swap, nothing else moves
+    await drag(page, await pointOf(arrTile(page, 'clip')), await pointOf(arrTile(page, 'anim')));
+    await saved(page);
+    expect(bandTile('clip')).toMatchObject({ x: 8, y: 2, w: 4, h: 2 });
+    expect(bandTile('anim')).toMatchObject({ x: 8, y: 0, w: 4, h: 2 });
+    await expect(live(page)).toContainText('columns 9 to 12, rows 3 to 4');
+
+    // plan's right handle dragged 4 cells: 8 columns wide, snapped, and p02 pushed down out of its way
+    const pitch = await pitchOf(page);
+    const right = await pointOf(arrPlace(page, 'plan').locator('[data-arranger-handle="right"]'), 'right');
+    await drag(page, right, { x: right.x + 4 * pitch, y: right.y });
+    await saved(page);
+    expect(bandTile('plan')).toMatchObject({ x: 0, y: 4, w: 8, h: 3 });
+    expect(bandTile('p02')).toMatchObject({ x: 4, y: 7 });
+
+    // p01 made 10 rows tall would push the band past 12 rows: the outline says no, and nothing changes
+    const before = showcase();
+    const bottom = await pointOf(arrPlace(page, 'p01').locator('[data-arranger-handle="bottom"]'), 'bottom');
+    await drag(page, bottom, { x: bottom.x, y: bottom.y + 6 * pitch }, true);
+    await expect(page.locator('[data-arranger-outline][data-refused]')).toBeVisible();
+    await page.mouse.up();
+    await expect(status(page)).toContainText('Not saved: That would push the band past 12 rows');
+    await expect(live(page)).toContainText('past 12 rows');
+    expect(showcase()).toEqual(before);
+    await expect(page.locator('[data-arranger-outline]')).toBeHidden();
+  });
+
+  test('the arranger by keyboard: arrows move the chosen tile, Shift with them resizes it, each said; a refusal says why; Undo puts it back', async ({ page }) => {
+    await openFront(page);
+    await arrTile(page, 'clip').press('ArrowDown');
+    await expect(live(page)).toContainText('columns 9 to 12, rows 3 to 4');
+    await saved(page);
+    expect(bandTile('clip')).toMatchObject({ x: 8, y: 2 });
+    expect(bandTile('anim')).toMatchObject({ x: 8, y: 0 });
+    await expect(arrTile(page, 'clip')).toHaveAttribute('aria-pressed', 'true');
+
+    await arrTile(page, 'clip').press('Shift+ArrowLeft');
+    await expect(live(page)).toContainText('columns 9 to 11, rows 3 to 4');
+    await saved(page);
+    expect(bandTile('clip')).toMatchObject({ w: 3, h: 2 });
+
+    const before = showcase();
+    await arrTile(page, 'p01').press('ArrowUp');
+    await expect(live(page)).toHaveText("It's already in the top row.");
+    await expect(status(page)).toContainText("Not saved: It's already in the top row.");
+    expect(showcase()).toEqual(before);
+
+    await page.locator('[data-album-arranger] [data-editor-undo]').click();
+    await saved(page);
+    expect(bandTile('clip')).toMatchObject({ x: 8, y: 2, w: 4, h: 2 });
+  });
+
+  test("arranging for phones: the phone's band made the owner's, moved by keyboard, kept in step when an item joins, and Back to automatic", async ({ page }) => {
+    await openFront(page);
+    await page.locator('[data-arranger-show="phone"]').click();
+    await expect(page.locator('[data-arranger-phone-arrange]')).toBeVisible();
+    await expect(page.locator('[data-arranger-show="phone"]')).toHaveAttribute('aria-pressed', 'true');
+    // worked out from the wide band, nothing to drag until it's the owner's
+    await expect(page.locator('[data-arranger-handle]')).toHaveCount(0);
+
+    await page.locator('[data-arranger-phone-arrange]').click();
+    await saved(page);
+    const phone = showcase().phone!.tiles;
+    expect(phone.map((t) => t.item)).not.toContain('talk');
+    expect(phone.every((t) => t.x + t.w <= 6)).toBe(true);
+    await expect(page.locator('[data-arranger-phone-back]')).toBeVisible();
+
+    const last = phone[phone.length - 1];
+    await arrTile(page, last.item).press('Shift+ArrowDown');
+    await saved(page);
+    expect(showcase().phone!.tiles.find((t) => t.item === last.item)).toMatchObject({ h: last.h + 1 });
+    // the wide band is untouched
+    expect(bandTile('p01')).toMatchObject({ x: 0, y: 0, w: 8, h: 4 });
+
+    // an item put up front in the wide band joins the phone's arrangement at its end
+    await page.locator('[data-arranger-show="wide"]').click();
+    await expect(page.locator('[data-arranger-tray-item="p03"]')).toBeVisible();
+    await page.locator('[data-arranger-tray-item="p03"]').click();
+    await saved(page);
+    expect(showcase().tiles.map((t) => t.item)).toContain('p03');
+    expect(showcase().phone!.tiles.at(-1)?.item).toBe('p03');
+    await expect(live(page)).toContainText("joined the phone's arrangement at the end");
+
+    await page.locator('[data-arranger-show="phone"]').click();
+    await page.locator('[data-arranger-phone-back]').click();
+    await saved(page);
+    expect(showcase().phone).toBeUndefined();
+    expect(showcase().tiles.map((t) => t.item)).toContain('p03');
+    await expect(page.locator('[data-arranger-phone-arrange]')).toBeVisible();
+  });
+});

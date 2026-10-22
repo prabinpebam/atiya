@@ -301,3 +301,24 @@ export const ALBUM_CARDS: import('../model/album').AlbumCard[] = [
 
 /** A made-up album's settings: a story, its description, dates hidden and downloads allowed. */
 export const ALBUM_SAMPLE = { layout: 'story', dates: false, download: true, description: 'A spring of walks round the pond and the bridge, **one morning at a time**.', items: ALBUM_CARDS.map((c) => c.item) } as import('../../content/schema').Album;
+
+/** A made-up band for the arranger: the pond large on the left, the bridge and the workshop's film beside it, a hole left free; the harbour and the lost picture wait in the tray. */
+export const ARRANGER_ALBUM = {
+  ...ALBUM_SAMPLE,
+  showcase: {
+    tiles: [
+      { item: 'pond', x: 0, y: 0, w: 6, h: 4, focus: '50% 30%' },
+      { item: 'bridge', x: 6, y: 0, w: 6, h: 2 },
+      { item: 'workshop', x: 6, y: 2, w: 3, h: 2, play: true },
+    ],
+  },
+} as import('../../content/schema').Album;
+
+/** The same band with the owner's own arrangement for phones (made up): the pond across, the two others side by side under it. */
+export const ARRANGER_PHONE_ALBUM = {
+  ...ARRANGER_ALBUM,
+  showcase: {
+    ...ARRANGER_ALBUM.showcase!,
+    phone: { tiles: [{ item: 'pond', x: 0, y: 0, w: 6, h: 3 }, { item: 'bridge', x: 0, y: 3, w: 3, h: 2 }, { item: 'workshop', x: 3, y: 3, w: 3, h: 2 }] },
+  },
+} as import('../../content/schema').Album;

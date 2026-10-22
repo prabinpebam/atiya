@@ -1,0 +1,430 @@
+---
+/**
+ * An album's Up front view (documentation/gallery/spec.md §9.3): the band arranger. The band's tiles on its grid of
+ * square cells (12 columns wide; 6 on a phone, once the phone has its own arrangement), the empty cells hatched,
+ * the items not up front in a tray beside it, and the chosen tile's inspector: its place, how it shows its item, its
+ * focus point, Play in the band and Show on phones. A tile is dragged to a cell or by its handles to a size, both
+ * snapping to the grid and never overlapping; a preset lays them all out; Use the default and Back to automatic
+ * remove the owner's arrangement. Every change is saved at once and undone with Undo (scripts/arranger.ts, its rules
+ * the pure model/arranger.ts). The region is drawn again after a save; the live line stays outside it.
+ * @tier editor
+ * @a11y Every move has its keyboard way: a tile is a button named by its item and its place, chosen with Enter;
+ * the arrow keys move it a cell and Shift with an arrow resizes it, and the status line says each new place or why a
+ * move was refused. The handles and the drag are the pointer's alone (aria-hidden). The tiles are in reading order.
+ * @key ArrowLeft / ArrowRight / ArrowUp / ArrowDown (on a tile): moves it a cell
+ * @key Shift+ArrowLeft / Shift+ArrowRight / Shift+ArrowUp / Shift+ArrowDown (on a tile): makes it a cell narrower, wider, shorter or taller
+ * @key Delete (on a tile): takes it out of the band
+ * @key Arrow keys (on the focus point): moves it 5%
+ * @key Ctrl+Z / Ctrl+Shift+Z or Ctrl+Y: undo, redo
+ */
+import Button from '../../components/fundamentals/Button.astro';
+import Icon from '../../components/fundamentals/Icon.astro';
+import IconButton from '../../components/fundamentals/IconButton.astro';
+import Image from '../../components/fundamentals/Image.astro';
+import Select from '../../components/fundamentals/Select.astro';
+import Switch from '../../components/fundamentals/Switch.astro';
+import Tag from '../../components/fundamentals/Tag.astro';
+import Text from '../../components/fundamentals/Text.astro';
+import TileButton from '../../components/fundamentals/TileButton.astro';
+import ActionBar from '../../components/compounds/ActionBar.astro';
+import { PRESETS, type ArrangerTile, type ArrangerView } from '../model/arranger';
+import type { IconName } from '../../design/icons';
+
+interface Props {
+  /** What it draws: the band shown (wide or phone), its tiles, the tray and the chosen tile (model/arranger.ts `arrangerView`). */
+  view: ArrangerView;
+}
+
+const { view } = Astro.props;
+const { show, chosen } = view;
+const wide = show === 'wide';
+const KIND: Record<ArrangerTile['kind'], IconName> = { picture: 'image', animated: 'animated', drawing: 'pen', video: 'video', embed: 'play', missing: 'error' };
+const nameOf = (t: ArrangerTile) => [t.label, t.place, t.play ? 'plays in the band' : '', t.hidden ? 'not on phones' : ''].filter(Boolean).join(', ');
+const cell = (x: number, y: number, w = 1, h = 1) => `--x: ${x + 1}; --y: ${y + 1}; --w: ${w}; --h: ${h}`;
+const DISPLAY = chosen ? [{ value: 'kind', label: `By kind (${chosen.byKind === 'fit' ? 'Fit' : 'Fill'})` }, { value: 'fill', label: 'Fill' }, { value: 'fit', label: 'Fit' }] : [];
+const [fx, fy] = (chosen?.focus ?? '50% 50%').split(' ');
+---
+
+<div class="arr" data-album-arranger="" data-show={show} data-chosen={chosen?.item ?? ''}>
+  <div class="arr-body" data-region="album-arranger">
+    <div class="arr-main">
+      <ActionBar gap="sm">
+        <Button variant="secondary" size="sm" icon="desktop" aria-pressed={wide ? 'true' : 'false'} data-arranger-show="wide">Wide</Button>
+        <Button variant="secondary" size="sm" icon="phone" aria-pressed={wide ? 'false' : 'true'} data-arranger-show="phone">Phones</Button>
+        {wide && <Select label="Use a preset" hideLabel size="sm" placeholder="Use a preset…" options={PRESETS.map((p) => ({ value: p.id, label: p.name }))} data-arranger-preset="" />}
+        {(wide || view.phoneArranged) && <Button variant="quiet" size="sm" icon="compress" data-arranger-close="">Close gaps</Button>}
+        {wide && view.arranged && <Button variant="quiet" size="sm" icon="restore" data-arranger-default="">Use the default</Button>}
+        {!wide && !view.phoneArranged && <Button variant="primary" size="sm" icon="phone" data-arranger-phone-arrange="">Arrange for phones</Button>}
+        {!wide && view.phoneArranged && <Button variant="quiet" size="sm" icon="restore" data-arranger-phone-back="">Back to automatic</Button>}
+        <IconButton label="Undo" icon="undo" size="sm" data-editor-undo="" />
+        <IconButton label="Redo" icon="redo" size="sm" data-editor-redo="" />
+      </ActionBar>
+      <Text variant="small" tone="muted">
+        {
+          wide
+            ? view.arranged
+              ? 'Your own arrangement. Drag a tile to a cell or by its edges to a size; or choose it and use the arrow keys (Shift to resize).'
+              : 'Worked out from the album: change anything and it becomes your own arrangement.'
+            : view.phoneArranged
+              ? "The phone's own arrangement, 6 columns wide. Items put up front join it at the end."
+              : "Worked out from the wide band: 6 columns, in reading order. Arrange for phones to place the tiles yourself."
+        }
+      </Text>
+      <div class="arr-frame" data-show={show}>
+        <div class="arr-canvas" data-arranger-canvas="" data-columns={view.columns} style={`--columns: ${view.columns}; --rows: ${view.rows}`}>
+          {view.holes.map((h) => <span class="arr-hole" style={cell(h.x, h.y)} />)}
+          {
+            view.tiles.map((t) => (
+              <div class="arr-tile" data-arranger-place={t.item} data-kind={t.kind} data-bytes={t.bytes} data-aspect={String(t.width / t.height)} data-hidden={t.hidden ? '' : undefined} style={cell(t.x, t.y, t.w, t.h)}>
+                <TileButton variant="framed" pressed={chosen?.item === t.item} data-arranger-tile={t.item} aria-label={nameOf(t)}>
+                  <span class="arr-pic">
+                    {t.thumb ? <Image src={t.thumb} alt="" width={t.width} height={t.height} display={t.display} focus={t.focus} fill rounded={false} /> : <Icon name={KIND[t.kind]} size="lg" />}
+                  </span>
+                  {(t.play || t.hidden) && (
+                    <span class="arr-marks">
+                      {t.play && <Tag size="sm" tone="accent" icon="play">Plays</Tag>}
+                      {t.hidden && <Tag size="sm">Not on phones</Tag>}
+                    </span>
+                  )}
+                </TileButton>
+                {(wide || view.phoneArranged) && <span class="arr-handle" data-arranger-handle="right" aria-hidden="true" />}
+                {(wide || view.phoneArranged) && <span class="arr-handle" data-arranger-handle="bottom" aria-hidden="true" />}
+                {(wide || view.phoneArranged) && <span class="arr-handle" data-arranger-handle="corner" aria-hidden="true" />}
+              </div>
+            ))
+          }
+          <span class="arr-outline" data-arranger-outline="" hidden />
+        </div>
+      </div>
+      {
+        view.warnings.length > 0 && (
+          <ul class="arr-warnings" data-arranger-warnings="">
+            {view.warnings.map((w) => (
+              <li>
+                <Icon name="info" />
+                <Text as="span" variant="small">{w}</Text>
+              </li>
+            ))}
+          </ul>
+        )
+      }
+      {
+        wide && (
+          <section class="arr-tray" aria-label="Not up front" data-arranger-tray="">
+            <Text variant="label" as="span">
+              Not up front
+            </Text>
+            {view.full && <Text variant="small" tone="muted">The band holds 12 tiles: take one out to put another up front.</Text>}
+            {view.tray.length ? (
+              <div class="arr-tray-items" data-scrollbar="">
+                {view.tray.map((t) => (
+                  <div class="arr-tray-item" data-arranger-tray-place={t.item}>
+                    <TileButton variant="framed" disabled={view.full} data-arranger-tray-item={t.item} aria-label={`Put ${t.label} up front`}>
+                      <span class="arr-tray-pic">{t.thumb ? <Image src={t.thumb} alt="" width={t.width} height={t.height} ratio="4/3" display="fit" rounded={false} /> : <Icon name={KIND[t.kind]} size="lg" />}</span>
+                    </TileButton>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <Text variant="small" tone="muted">Every item is up front.</Text>
+            )}
+          </section>
+        )
+      }
+    </div>
+    <aside class="arr-inspector" aria-label="The chosen tile" data-arranger-inspector="">
+      {
+        chosen ? (
+          <>
+            <Text variant="ui">
+              <strong>{chosen.label}</strong>
+            </Text>
+            <Text variant="small" tone="muted">
+              <span data-arranger-chosen-place="">{chosen.place}</span>
+            </Text>
+            {(wide || view.phoneArranged) && (
+              <div class="arr-group">
+                <Text variant="label" as="span">Place</Text>
+                <ActionBar gap="sm">
+                  <IconButton label="Move left" icon="arrow-left" size="sm" variant="secondary" data-arranger-move="left" />
+                  <IconButton label="Move right" icon="arrow-right" size="sm" variant="secondary" data-arranger-move="right" />
+                  <IconButton label="Move up" icon="arrow-up" size="sm" variant="secondary" data-arranger-move="up" />
+                  <IconButton label="Move down" icon="arrow-down" size="sm" variant="secondary" data-arranger-move="down" />
+                </ActionBar>
+                <ActionBar gap="sm">
+                  <Button variant="quiet" size="sm" icon="plus" data-arranger-size="right">Wider</Button>
+                  <Button variant="quiet" size="sm" icon="minus" data-arranger-size="left">Narrower</Button>
+                  <Button variant="quiet" size="sm" icon="plus" data-arranger-size="down">Taller</Button>
+                  <Button variant="quiet" size="sm" icon="minus" data-arranger-size="up">Shorter</Button>
+                </ActionBar>
+              </div>
+            )}
+            <div class="arr-group">
+              <Select label="How it shows its item" size="sm" options={DISPLAY} value={chosen.choice} data-arranger-display="" />
+            </div>
+            {chosen.display === 'fill' && chosen.thumb && (
+              <div class="arr-group">
+                <Text variant="label" as="span">Focus point</Text>
+                <div class="arr-focus" data-arranger-focus-box="" style={`--fx: ${fx}; --fy: ${fy}`}>
+                  <TileButton variant="framed" data-arranger-focus={chosen.focus ?? '50% 50%'} aria-label={`Focus point, ${chosen.focus ?? '50% 50%'}${chosen.ownFocus ? ', this tile’s own' : ', the picture’s'}: click where it should be, or move it with the arrow keys`}>
+                    <Image src={chosen.thumb} alt="" width={chosen.width} height={chosen.height} display="fit" rounded={false} />
+                  </TileButton>
+                  <span class="arr-dot" data-arranger-dot="" aria-hidden="true" />
+                </div>
+                <Button variant="quiet" size="sm" icon="restore" disabled={!chosen.ownFocus} data-arranger-focus-reset="">Use the picture’s focus</Button>
+              </div>
+            )}
+            <div class="arr-group">
+              <Switch label="Play in the band" checked={chosen.play} disabled={!chosen.play && !!chosen.noPlay} data-arranger-play="" />
+              {!chosen.play && chosen.noPlay && <Text variant="small" tone="muted">{chosen.noPlay}</Text>}
+              <Switch label="Show on phones" checked={!chosen.hidden} data-arranger-phones="" />
+            </div>
+            {wide && <Button variant="secondary" size="sm" icon="delete" data-arranger-remove="">Take out of the band</Button>}
+          </>
+        ) : (
+          <Text variant="small" tone="muted">Choose a tile to change it: its place and size, how it shows its item, its focus point, Play in the band and Show on phones.</Text>
+        )
+      }
+    </aside>
+  </div>
+  <p class="arr-live" role="status" aria-live="polite" data-arranger-live=""></p>
+</div>
+
+<style>
+  .arr {
+    display: grid;
+    gap: var(--space-3);
+    padding: var(--space-4);
+    min-inline-size: 0;
+  }
+
+  .arr-body {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) var(--c-editor-inspector);
+    gap: var(--space-5);
+    align-items: start;
+  }
+
+  .arr-main,
+  .arr-inspector,
+  .arr-group,
+  .arr-tray {
+    display: grid;
+    align-content: start;
+    gap: var(--space-3);
+    min-inline-size: 0;
+  }
+
+  .arr-inspector {
+    padding: var(--space-4);
+    border: var(--border-hairline) solid var(--color-rule);
+    border-radius: var(--radius-md);
+    background: var(--color-bg-raised);
+  }
+
+  .arr-group {
+    gap: var(--space-2);
+    padding-block-start: var(--space-3);
+    border-block-start: var(--border-hairline) solid var(--color-rule);
+  }
+
+  /* the band's frame: its width is the cells' measure (square cells, a phone's band about an inspector wide) */
+  .arr-frame {
+    container-type: inline-size;
+    min-inline-size: 0;
+  }
+
+  .arr-frame[data-show='phone'] {
+    inline-size: 100%;
+    max-inline-size: var(--c-editor-inspector);
+  }
+
+  .arr-canvas {
+    --arr-cell: calc((100cqi - (var(--columns) - 1) * var(--space-1)) / var(--columns));
+    position: relative;
+    display: grid;
+    grid-template-columns: repeat(var(--columns), minmax(0, 1fr));
+    grid-template-rows: repeat(var(--rows), var(--arr-cell));
+    grid-auto-rows: var(--arr-cell);
+    gap: var(--space-1);
+    border-radius: var(--radius-sm);
+    background: var(--color-bg-sunk);
+    user-select: none;
+  }
+
+  .arr-hole,
+  .arr-tile,
+  .arr-outline {
+    grid-column: var(--x) / span var(--w);
+    grid-row: var(--y) / span var(--h);
+    min-inline-size: 0;
+    min-block-size: 0;
+  }
+
+  .arr-hole {
+    border-radius: var(--radius-xs);
+    background: repeating-linear-gradient(45deg, var(--color-rule) 0 var(--border-strong), transparent var(--border-strong) var(--space-2));
+  }
+
+  .arr-tile {
+    position: relative;
+    display: grid;
+    touch-action: none;
+  }
+
+  .arr-tile[data-dragging] {
+    opacity: var(--opacity-disabled);
+  }
+
+  .arr-pic {
+    position: absolute;
+    inset: var(--space-2);
+    display: grid;
+    place-items: center;
+    overflow: hidden;
+    border-radius: var(--radius-xs);
+    background: var(--color-bg-sunk);
+    pointer-events: none;
+  }
+
+  .arr-marks {
+    position: absolute;
+    inset-block-start: var(--space-3);
+    inset-inline-start: var(--space-3);
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-1);
+    pointer-events: none;
+  }
+
+  .arr-handle {
+    position: absolute;
+    z-index: var(--layer-raised);
+    background: var(--color-accent);
+    opacity: 0;
+    transition: opacity var(--duration-fast) var(--ease-standard);
+  }
+
+  .arr-handle[data-arranger-handle='right'] {
+    inset-block: var(--space-4);
+    inset-inline-end: 0;
+    inline-size: var(--space-1);
+    cursor: ew-resize;
+  }
+
+  .arr-handle[data-arranger-handle='bottom'] {
+    inset-inline: var(--space-4);
+    inset-block-end: 0;
+    block-size: var(--space-1);
+    cursor: ns-resize;
+  }
+
+  .arr-handle[data-arranger-handle='corner'] {
+    inset-block-end: 0;
+    inset-inline-end: 0;
+    inline-size: var(--space-3);
+    block-size: var(--space-3);
+    border-radius: var(--radius-xs);
+    cursor: nwse-resize;
+  }
+
+  @media (hover: hover) {
+    .arr-tile:hover .arr-handle {
+      opacity: 1;
+    }
+  }
+
+  .arr-tile:active .arr-handle,
+  .arr-tile:focus-within .arr-handle,
+  .arr-tile[data-resizing] .arr-handle {
+    opacity: 1;
+  }
+
+  .arr-outline {
+    z-index: var(--layer-raised);
+    border: var(--border-strong) dashed var(--color-accent);
+    border-radius: var(--radius-xs);
+    background: var(--color-accent-soft);
+    pointer-events: none;
+  }
+
+  .arr-outline[data-refused] {
+    border-color: var(--color-negative);
+  }
+
+  .arr-outline[hidden] {
+    display: none;
+  }
+
+  .arr-warnings {
+    display: grid;
+    gap: var(--space-2);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .arr-warnings li {
+    display: flex;
+    align-items: baseline;
+    gap: var(--space-2);
+  }
+
+  .arr-tray-items {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(var(--c-editor-thumb), 1fr));
+    gap: var(--space-2);
+    max-block-size: var(--c-editor-inspector);
+    overflow: auto;
+  }
+
+  .arr-tray-item {
+    touch-action: none;
+    user-select: none;
+  }
+
+  .arr-tray-pic {
+    display: grid;
+    place-items: center;
+    aspect-ratio: 4 / 3;
+    background: var(--color-bg-sunk);
+    pointer-events: none;
+  }
+
+  .arr-focus {
+    position: relative;
+  }
+
+  .arr-dot {
+    position: absolute;
+    inset-block-start: var(--fy);
+    inset-inline-start: var(--fx);
+    inline-size: var(--space-4);
+    block-size: var(--space-4);
+    border: var(--border-strong) solid var(--color-bg);
+    border-radius: var(--radius-round);
+    background: var(--color-accent);
+    translate: -50% -50%;
+    pointer-events: none;
+  }
+
+  .arr-live {
+    min-block-size: var(--space-5);
+    margin: 0;
+    font: var(--type-label);
+    color: var(--color-text-muted);
+  }
+
+  @media (max-width: 56rem) {
+    .arr-body {
+      grid-template-columns: minmax(0, 1fr);
+    }
+  }
+</style>
+
+<script>
+  import { each } from '../../scripts/page';
+  import { initArranger } from '../scripts/arranger';
+
+  each<HTMLElement>('[data-album-arranger]', (el, signal) => initArranger(el, signal));
+</script>

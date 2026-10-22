@@ -21,7 +21,9 @@ import AlbumItems from '../components/AlbumItems.astro';
 import AlbumItemDetails from '../components/AlbumItemDetails.astro';
 import AlbumSettings from '../components/AlbumSettings.astro';
 import AlbumAddForms from '../components/AlbumAddForms.astro';
+import AlbumArranger from '../components/AlbumArranger.astro';
 import { albumItemsView } from '../server/albumItems';
+import { albumArrangerView } from '../server/albumArranger';
 import Dialog from '../../components/compounds/Dialog.astro';
 import IconButton from '../../components/fundamentals/IconButton.astro';
 import Button from '../../components/fundamentals/Button.astro';
@@ -127,6 +129,8 @@ const VIEWS = [
   { id: 'front', label: 'Up front' },
 ] as const;
 const albumView = loaded.ok && view === 'items' && !fragment ? await albumItemsView(loaded.index, owner, article.album ?? { items: [] }, access === 'private', Astro.url.searchParams.get('item')) : null;
+// Up front (gallery spec §9.3): the band arranger, for the wide band or the phone's (?show=phone), with a chosen tile (?tile=)
+const arranger = loaded.ok && view === 'front' && !fragment ? await albumArrangerView(loaded.index, owner, article.album ?? { items: [] }, Astro.url.searchParams.get('show') === 'phone' ? 'phone' : 'wide', Astro.url.searchParams.get('tile')) : null;
 const state = {
   owner,
   id,
@@ -175,12 +179,7 @@ const json = JSON.stringify(state).replace(/</g, '\\u003c');
             </Fragment>
           </AlbumItems>
         ) : (
-          // the arranger's place (gallery plan G6): until then, Up front in Items puts an item in the band's next free place
-          <div data-region="album-arranger" data-album-arranger="">
-            <Text variant="ui" tone="muted">
-              Arranging what's up front comes next. For now, turn on Up front for an item in <Link href={`${Astro.url.pathname}?view=items`}>Items</Link>: it takes the band's next free place.
-            </Text>
-          </div>
+          arranger && <AlbumArranger view={arranger} />
         )}
         <script is:inline type="application/json" data-region="state" data-editor-state set:html={json} />
         <Dialog id="editor-picker" title="Add pictures and videos" size="lg">

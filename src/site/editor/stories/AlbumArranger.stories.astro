@@ -1,0 +1,24 @@
+---
+import Example from '../../library/Example.astro';
+import AlbumArranger from '../components/AlbumArranger.astro';
+import { arrangerView } from '../model/arranger';
+import { ALBUM_CARDS, ALBUM_SAMPLE, ARRANGER_ALBUM, ARRANGER_PHONE_ALBUM } from './samples';
+
+const none = () => undefined;
+---
+
+<Example title="The wide band, arranged" description="The owner's own band on the 12 columns: the pond chosen, its details in the inspector, a hole left free and two items waiting in the tray." layout="block">
+  <AlbumArranger view={arrangerView(ARRANGER_ALBUM, ALBUM_CARDS, none, 'wide', 'pond')} />
+</Example>
+
+<Example title="The default band" description="No arrangement yet: the band is the default one worked out from the album's first items; any change makes it the owner's own." layout="block">
+  <AlbumArranger view={arrangerView({ ...ALBUM_SAMPLE, showcase: undefined }, ALBUM_CARDS, none, 'wide')} />
+</Example>
+
+<Example title="Phones, automatic" description="The phone's band worked out from the wide one: nothing to move until Arrange for phones." layout="block">
+  <AlbumArranger view={arrangerView(ARRANGER_ALBUM, ALBUM_CARDS, none, 'phone')} />
+</Example>
+
+<Example title="Phones, arranged by hand" description="The owner's own phone band on 6 columns, the bridge chosen: tiles move and resize, and Back to automatic drops the arrangement." layout="block">
+  <AlbumArranger view={arrangerView(ARRANGER_PHONE_ALBUM, ALBUM_CARDS, none, 'phone', 'bridge')} />
+</Example>
