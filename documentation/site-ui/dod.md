@@ -40,7 +40,6 @@
 These are recorded in [spec.md](spec.md) §5, each with its reason:
 
 - a native `base-select` path;
-- zoom inside the lightbox;
 - a table of contents for long reads;
 - code highlighting in the library;
 - the real case-study content.

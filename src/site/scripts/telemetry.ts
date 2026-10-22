@@ -118,8 +118,8 @@ function startPostHog(after: Promise<unknown> | undefined) {
     },
     true,
   );
-  // the lightbox's `site:lightbox` (a capture on window hears it sent to the document too); the client keeps only its place and kind
-  window.addEventListener('site:lightbox', (e) => push({ kind: 'lightbox', detail: (e as CustomEvent).detail }), true);
+  // the lightbox's `site:lightbox`, sent to the document; the client keeps only its place and kind
+  d.addEventListener('site:lightbox', (e) => push({ kind: 'lightbox', detail: (e as CustomEvent).detail }));
   d.addEventListener('astro:after-swap', () => {
     shared = false;
     push({ kind: 'pageview' });

@@ -184,7 +184,7 @@ The design library is the full, live version (examples, props, keys, tokens, use
   - **A failed load** is tried twice more (after 0.8 s and 2.4 s), then its place stays quiet.
   - **Once the page has loaded,** every picture still waiting is fetched, nearest the view first, four at a time. One in a sideways scroller (a carousel, a filmstrip, a row gallery) counts as near as its scroller, and a scroller coming into view fetches all its pictures at once, so a slide is there before it's swiped to. A picture held back unseen (`display: none`) waits until it's shown.
   - **A private page's pictures** are all decrypted the same way, nearest first, three at a time, one coming into view jumping the queue, each fetch tried three times (`scripts/sealed.ts`).
-  - **The lightbox** starts a picture's full size when its link is pointed at or focused, and once open fetches the rest of the set, nearest the picture shown first.
+  - **The lightbox** starts a picture's full size when its link is pointed at or focused, and once open warms the rest of the set, nearest the picture shown first: the whole set when it has 24 items or fewer, else the 4 on either side, again after every move.
 
   Videos load their metadata only.
 - **Measured on a phone** (Lighthouse's mobile throttling): LCP under 2.5 s and CLS under 0.1 on the landing, the index and a section ([the mobile audit](mobile-audit.md) §4).

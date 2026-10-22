@@ -294,7 +294,7 @@ export function setupLightbox(dialog: HTMLDialogElement, signal: AbortSignal): L
       dialog.showModal();
       // telemetry's hook (spec §14): where it opened and what, never a title or an address
       const place = group === BAND_GROUP ? 'band' : onAlbumPage ? 'album' : 'page';
-      window.dispatchEvent(new CustomEvent('site:lightbox', { detail: { place, kind: items[index]?.kind ?? 'picture' } }));
+      document.dispatchEvent(new CustomEvent('site:lightbox', { detail: { place, kind: items[index]?.kind ?? 'picture' } }));
       if (mode !== 'none' && !loadedAt && !pushed) {
         history.pushState(entryState(history.state), '', mode === 'hash' ? itemHash(items[index].id!) : undefined);
         pushed = true;
