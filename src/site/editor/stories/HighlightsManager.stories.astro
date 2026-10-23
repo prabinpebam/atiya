@@ -1,0 +1,12 @@
+---
+import Example from '../../library/Example.astro';
+import HighlightsManager from '../components/HighlightsManager.astro';
+import { HIGHLIGHTS, HIGHLIGHT_CHOICES, HIGHLIGHT_DETAILS } from './samples';
+---
+
+<Example title="Ordered public sources" description="A page excerpt, a waiting album and a picture. Move buttons work without dragging; sources stay linked." layout="block" bleed>
+  <HighlightsManager highlights={HIGHLIGHTS} choices={HIGHLIGHT_CHOICES} details={HIGHLIGHT_DETAILS} version="sample" />
+</Example>
+<Example title="Hidden and empty" description="An empty list is deliberate. Hiding highlights keeps the chosen presentation options." layout="block" bleed>
+  <HighlightsManager highlights={{ ...HIGHLIGHTS, enabled: false, items: [] }} choices={HIGHLIGHT_CHOICES} details={{}} version={null} />
+</Example>

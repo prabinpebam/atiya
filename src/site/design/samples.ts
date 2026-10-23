@@ -5,6 +5,17 @@
  */
 import { withBase } from './meta';
 
+/** Made-up public-profile activity for chart and mixed-carousel stories, never real site content. */
+export const CONTRIBUTION_SAMPLE = {
+  login: 'octocat',
+  fetchedAt: '2026-10-23T00:00:00.000Z',
+  through: '2026-10-23',
+  days: Array.from({ length: 365 }, (_, i) => {
+    const count = i % 5 === 0 ? 0 : (i * 17 + 11) % 28;
+    return { date: new Date(Date.UTC(2025, 9, 24 + i)).toISOString().slice(0, 10), count, level: (count === 0 ? 0 : Math.min(4, Math.ceil(count / 7))) as 0 | 1 | 2 | 3 | 4 };
+  }),
+};
+
 export interface SamplePicture {
   slug: string;
   alt: string;

@@ -47,6 +47,8 @@ export function content(): ContentIndex {
 export const getSite = () => content().site;
 /** The person's public-profile GitHub activity; absent sites keep their usual opening. */
 export const getGitHub = () => content().github;
+/** The classic home's optional explicit configuration (not the capability spine's highlights). */
+export const getHighlights = () => content().highlights;
 /** The site structure: the tree of sections and pages, and the navigation. */
 export const getStructure = () => content().structure;
 /** Old addresses and where they now lead. */

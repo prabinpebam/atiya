@@ -1,0 +1,15 @@
+---
+import Example from '../library/Example.astro';
+import HighlightCard from '../components/compounds/HighlightCard.astro';
+import { SAMPLES } from '../design/samples';
+const settings = { display: 'fill' as const };
+---
+<Example title="A page and its excerpt" layout="block" description="The page supplies its lead picture, title and a short verbatim passage.">
+  <HighlightCard title="Finding a shared direction" text="A small team tried three approaches, then chose the one they could explain together." href="#example-page" picture={SAMPLES[1]} settings={settings} />
+</Example>
+<Example title="An album and its cover" layout="block" description="The album's cover and current summary, with a link to the whole album.">
+  <HighlightCard title="An afternoon outdoors" text="A few scenes from the same walk." href="#example-album" picture={SAMPLES[2]} settings={{ display: 'fit', background: true }} />
+</Example>
+<Example title="A picture on its own" layout="block" description="The library's picture and caption, with its full-size file as the link fallback.">
+  <HighlightCard title="The bridge" picture={SAMPLES[4]} settings={settings} />
+</Example>

@@ -14,6 +14,8 @@ The home page has one job: a hiring manager or recruiter who lands on it should 
 >   - curated by rules that are reproducible and explain every pick, with pins and hides on top ([curation](curation.md)); AI helps only while the person edits, and every word it proposes is quoted from their own pages ([AI curation](ai-curation.md));
 >   - made on one edit mode screen, Home, with a first run of about ten minutes ([owner flows](owner-flows.md)), and controls in three layers so the first run needs three answers ([controls](controls.md)).
 
+The classic home's featured area is specified separately in [The highlights carousel](highlights.md): owner-selected custom content, pages, albums and pictures, using the article carousel's controls. It is not the capability spine's curated highlights.
+
 <figure class="slate-figure" data-diagram="home-overview">
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 630" role="img" aria-labelledby="hv-overview__title hv-overview__desc" preserveAspectRatio="xMidYMid meet" data-slate-svg-motion="viewport" data-slate-safe-margin="24">
 <title id="hv-overview__title">Home page views: one capability spine, many ways to present it</title>

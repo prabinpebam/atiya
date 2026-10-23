@@ -43,6 +43,7 @@ const ROUTES = [
   ['/_edit/albums', 'albums.astro'],
   ['/_edit/albums/[id]', 'album.astro'],
   ['/_edit/recommendations', 'recommendations.astro'],
+  ['/_edit/highlights', 'highlights.astro'],
   ['/_edit/settings', 'settings.astro'],
   ['/_edit/access', 'access.astro'],
   ['/_edit/ai', 'ai.astro'],

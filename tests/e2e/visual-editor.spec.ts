@@ -14,7 +14,7 @@ const ROOT = process.cwd();
 const EDITOR = 'http://localhost:4330';
 const MODES = ['light', 'dark'] as const;
 /** The screens that change layout on a phone: the list and its details side by side, or one above the other. */
-const NARROW = new Set(['AccessManager', 'SectionManager', 'RecommendationsManager']);
+const NARROW = new Set(['AccessManager', 'SectionManager', 'RecommendationsManager', 'HighlightsManager']);
 /** Pieces whose examples are live (the test runs, the canvas's frame) or decorative noise (the empty-state pattern). */
 const SKIP = new Set(['CanvasFrame', 'IconPattern', 'TestRuns', 'TestStatus']);
 const slug = (name: string) => name.replace(/([a-z0-9])([A-Z])/g, '$1-$2').toLowerCase();

@@ -39,6 +39,17 @@ const background = z.boolean();
 const rounded = z.boolean();
 /** A drop shadow under it, following its own shape (transparent parts and all). Off by default. */
 const shadow = z.boolean();
+/** The article and home highlight carousels share one presentation contract. */
+export const CAROUSEL_PAGERS = ['dots', 'filmstrip', 'filmstrip-wrap'] as const;
+export const carouselPresentation = {
+  peek: z.boolean().optional(),
+  arrows: z.boolean().optional(),
+  pager: z.enum(CAROUSEL_PAGERS).optional(),
+  display: display.optional(),
+  background: background.optional(),
+  rounded: rounded.optional(),
+  shadow: shadow.optional(),
+};
 /** How a page's cards show its picture (documentation/content/media.md §9.1). */
 export const pictureStyle = z.strictObject({ display: display.optional(), background: background.optional(), rounded: rounded.optional(), shadow: shadow.optional() });
 /** A figure's frame: its own shape (left out), or one of these. */
@@ -495,7 +506,7 @@ export const block = z.discriminatedUnion('type', [
     shadow: shadow.optional(),
   }),
   z.strictObject({ type: z.literal('gallery'), key: blockKey, items: z.array(mediaUse).min(2), layout: z.enum(['grid', 'mosaic', 'row']).optional(), span: z.boolean().optional(), fit: z.enum(['cover', 'contain']).optional(), display: display.optional(), background: background.optional(), rounded: rounded.optional(), shadow: shadow.optional(), caption: z.string().optional(), showCaption: z.boolean().optional(), width: width.optional(), lightbox: z.boolean().optional() }),
-  z.strictObject({ type: z.literal('carousel'), key: blockKey, items: z.array(mediaUse).min(2), label: z.string().min(1), peek: z.boolean().optional(), pager: z.enum(['dots', 'filmstrip', 'filmstrip-wrap']).optional(), arrows: z.boolean().optional(), showCaption: z.boolean().optional(), lightbox: z.boolean().optional(), display: display.optional(), background: background.optional(), rounded: rounded.optional(), shadow: shadow.optional() }),
+  z.strictObject({ type: z.literal('carousel'), key: blockKey, items: z.array(mediaUse).min(2), label: z.string().min(1), ...carouselPresentation, showCaption: z.boolean().optional(), lightbox: z.boolean().optional() }),
   z.strictObject({
     type: z.literal('video'),
     key: blockKey,

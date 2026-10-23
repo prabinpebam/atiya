@@ -1,0 +1,49 @@
+---
+/**
+ * A home highlight backed by a page, album or library picture. The picture keeps its source's alt,
+ * dark version and focus. Page and album titles link to the source; a lone picture opens the lightbox.
+ * @tier compound
+ * @a11y A named article or figure; one descriptive source link, or a full-picture link with its image alt.
+ */
+import Heading from '../fundamentals/Heading.astro';
+import Text from '../fundamentals/Text.astro';
+import Image from '../fundamentals/Image.astro';
+import Caption from '../fundamentals/Caption.astro';
+import { PICTURE_SPECS, type PictureSource } from '../../design/pictures';
+import { sizes } from '../../design/responsive';
+
+interface Props {
+  /** Current source title, or the single picture's caption. */
+  title: string;
+  /** The source summary or a verbatim excerpt. */
+  text?: string;
+  /** The current canonical page/album address, with the base; absent opens the full picture. */
+  href?: string;
+  /** The library picture/poster, including its theme version. */
+  picture: PictureSource & { alt: string; full: string; thumb: string; caption?: string; focus?: string; drawing?: boolean; dark?: PictureSource & { full?: string; thumb?: string } };
+  /** Shared article carousel picture presentation. */
+  settings: { display?: 'fill' | 'fit' | 'actual' | 'tile'; background?: boolean; rounded?: boolean; shadow?: boolean };
+  /** Loads the first slide picture without waiting for lazy visibility. */
+  priority?: boolean;
+}
+const { title, text, href, picture: p, settings, priority = false } = Astro.props;
+const Frame = href ? 'div' : 'a';
+---
+<article class="highlight" data-highlight-card>
+  <figure class="picture">
+    <Frame href={href ? undefined : p.full} aria-label={!href && !p.alt ? p.caption || 'Open full picture' : undefined} data-lightbox={href ? undefined : 'home-highlights'} data-caption={p.caption} data-alt={p.alt} data-thumb={p.thumb} data-full-dark={p.dark?.full} data-thumb-dark={p.dark?.thumb}>
+      <Image src={p.src} srcset={p.srcset} sizes={sizes(['wide', '92vw'], 'wide')} alt={p.alt}
+        width={p.width} height={p.height} ratio={PICTURE_SPECS.lead.ratio} focus={p.focus} dark={p.dark}
+        display={settings.display ?? 'fill'} bg={settings.background && p.bg ? { light: p.bg, dark: p.dark?.bg } : undefined}
+        rounded={settings.rounded !== false} shadow={settings.shadow} priority={priority} drawing={p.drawing} />
+    </Frame>
+    {!href && p.caption && <Caption>{p.caption}</Caption>}
+  </figure>
+  {href && <div class="words"><Heading level={2} size="h3"><a href={href}>{title}</a></Heading>{text && <Text variant="lead" narrow>{text}</Text>}</div>}
+</article>
+<style>
+  .highlight { display: grid; gap: var(--space-6); align-content: start; min-inline-size: 0; }
+  .picture { display: grid; gap: var(--space-3); margin: 0; }
+  .picture a { display: block; color: var(--color-text); }
+  .words { display: grid; gap: var(--space-3); padding-block-end: var(--space-4); }
+</style>

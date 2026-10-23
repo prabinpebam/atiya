@@ -24,8 +24,10 @@ interface Props {
   data: ContributionData;
   /** The title's level in a design-library example. */
   level?: 1 | 2;
+  /** Only the chart and statistics, without the page introduction or outside spacing (a trusted highlight slide). */
+  embedded?: boolean;
 }
-const { title, standfirst, data, level = 1 } = Astro.props;
+const { title, standfirst, data, level = 1, embedded = false } = Astro.props;
 const uid = stableId(Astro, 'ContributionHero');
 const heading = `contribution-${uid}`;
 const hint = `contribution-hint-${uid}`;
@@ -35,15 +37,15 @@ const github = `https://github.com/${data.login}`;
 const stats = data.stats;
 ---
 
-<section class="contribution-hero" data-contributions data-mode="3d" data-orientation="isometric">
-  <div class="intro">
+<section class="contribution-hero" data-contributions data-mode="3d" data-orientation="isometric" data-embedded={embedded ? '' : undefined}>
+  {!embedded && <div class="intro">
     <Heading level={level} size="display">{title}</Heading>
     <div class="introduction">
       {standfirst && <Text variant="standfirst" narrow>{standfirst}</Text>}
       <div class="actions"><slot /></div>
       {Astro.slots.has('note') && <div class="note"><slot name="note" /></div>}
     </div>
-  </div>
+  </div>}
   <section class="activity" aria-labelledby={heading}>
     <div class="activity-head">
       <div class="activity-title">
@@ -145,6 +147,7 @@ const stats = data.stats;
     align-items: center;
     gap: var(--space-10);
   }
+  .contribution-hero[data-embedded] { max-inline-size: none; margin: 0; padding: 0; }
   .introduction { display: grid; gap: var(--space-4); }
   .actions, .view-controls { display: flex; align-items: center; flex-wrap: wrap; gap: var(--space-3); }
   .note, .instruction, .error, .stat-note, .tip span { font: var(--type-note); color: var(--color-text-muted); }

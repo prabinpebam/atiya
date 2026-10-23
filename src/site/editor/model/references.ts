@@ -5,6 +5,7 @@
  * unit tests, read the same graph.
  */
 import { mediaUsed, videosUsed, type ContentIndex } from '../../content/load';
+import { highlightMedia } from '../../content/highlights';
 
 export interface Reference {
   /** What refers to it, in words ("Article: …", "Person: …", "Site settings"). */
@@ -14,7 +15,7 @@ export interface Reference {
 }
 
 /** Every document that refers to each picture, keyed by media ID. */
-export function references(index: Pick<ContentIndex, 'articles' | 'people' | 'site'>): Map<string, Reference[]> {
+export function references(index: Pick<ContentIndex, 'articles' | 'people' | 'site'> & Partial<Pick<ContentIndex, 'highlights' | 'albums' | 'media' | 'videos' | 'embeds'>>): Map<string, Reference[]> {
   const refs = new Map<string, Reference[]>();
   const add = (mediaId: string, r: Reference) => {
     const list = refs.get(mediaId) ?? [];
@@ -27,6 +28,13 @@ export function references(index: Pick<ContentIndex, 'articles' | 'people' | 'si
   }
   for (const p of index.people.values()) if (p.avatar) add(p.avatar, { label: `Person: ${p.name}`, href: 'settings/' });
   if (index.site.socialImage) add(index.site.socialImage, { label: 'Site settings', href: 'settings/' });
+  // Usage is independent of eligibility: disabled and waiting picks still retain their sources.
+  for (const media of highlightMedia({
+    articles: index.articles, highlights: index.highlights,
+    albums: index.albums ?? new Map(), media: index.media ?? new Map(),
+    videos: index.videos ?? new Map(), embeds: index.embeds ?? new Map(),
+    origins: new Map(), routes: [],
+  })) add(media, { label: 'Home highlights', href: 'highlights/' });
   return refs;
 }
 

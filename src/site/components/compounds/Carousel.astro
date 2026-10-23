@@ -53,6 +53,8 @@ export interface CarouselItem {
    * own size, alt its title). Not opened in the lightbox.
    */
   video?: CarouselVideo;
+  /** A trusted custom slide's filmstrip tile, when it has no picture (for example "GitHub"). */
+  thumbnailLabel?: string;
 }
 
 /** A slide's video file. */
@@ -94,6 +96,8 @@ interface Props {
   rounded?: boolean;
   /** A drop shadow under each picture, following its shape. */
   shadow?: boolean;
+  /** Trusted content supplied by the default render-function slot, called with its slide index. Uses the same chrome and track, without a picture frame. */
+  content?: boolean;
 }
 
 const {
@@ -110,7 +114,9 @@ const {
   background = false,
   rounded = true,
   shadow = false,
+  content = false,
 } = Astro.props;
+const panels = content ? await Promise.all(items.map((_, index) => Astro.slots.render('default', [index]))) : [];
 const total = items.length;
 const status = total > 0 ? `1 of ${total}` : '0 of 0';
 // every slide's picture frame is the tallest picture's shape: data, set here and read by the stylesheet (which
@@ -119,14 +125,14 @@ const tallest = slideShape(items);
 const shape = `--slide-shape: ${tallest.width} / ${tallest.height}`;
 ---
 
-<section class="carousel" id={id} data-carousel data-breakout={width} data-peek={peek ? '' : undefined} data-shadow={shadow ? '' : undefined} aria-roledescription="carousel" aria-label={label} style={shape}>
+<section class="carousel" id={id} data-carousel data-breakout={width} data-peek={peek && total > 1 ? '' : undefined} data-shadow={shadow ? '' : undefined} aria-roledescription="carousel" aria-label={label} style={shape}>
   <div class="viewport">
     <div class="track" tabindex="0" role="group" aria-label="Slides" data-carousel-track>
       {
         items.map((item, index) => {
           const full = item.full ?? item.src;
           const thumb = item.thumb ?? item.src;
-          const picture = (
+          const picture = content ? null : (
             <Image
               src={item.src}
               srcset={item.srcset}
@@ -146,7 +152,7 @@ const shape = `--slide-shape: ${tallest.width} / ${tallest.height}`;
           );
           return (
             <div class="slide" role="group" aria-roledescription="slide" aria-label={`${index + 1} of ${total}`} data-carousel-slide>
-              <figure class="slide-body">
+              {content ? <div class="slide-body content"><Fragment set:html={panels[index]} /></div> : <figure class="slide-body">
                 <div class="slide-frame">
                   {item.video ? (
                     <Video
@@ -170,7 +176,7 @@ const shape = `--slide-shape: ${tallest.width} / ${tallest.height}`;
                   )}
                 </div>
                 {item.caption && <Caption>{item.caption}</Caption>}
-              </figure>
+              </figure>}
             </div>
           );
         })
@@ -178,7 +184,7 @@ const shape = `--slide-shape: ${tallest.width} / ${tallest.height}`;
     </div>
   </div>
   {
-    arrows ? (
+    arrows && total > 1 ? (
       <div class="controls">
         <IconButton label="Previous slide" icon="chevron-left" variant="secondary" disabled={total <= 1} data-carousel-prev="" />
         <p class="status" aria-live="polite" aria-atomic="true" data-carousel-counter>
@@ -193,7 +199,7 @@ const shape = `--slide-shape: ${tallest.width} / ${tallest.height}`;
     )
   }
   {
-    pager === 'dots' ? (
+    total > 1 && (pager === 'dots' ? (
       <div class="dots" role="group" aria-label="Choose slide">
         {items.map((_, index) => (
           <button class="dot" type="button" aria-label={`Show slide ${index + 1}`} aria-current={index === 0 ? 'true' : undefined} data-carousel-dot={String(index)}>
@@ -205,11 +211,11 @@ const shape = `--slide-shape: ${tallest.width} / ${tallest.height}`;
       <div class="strip" role="group" aria-label="Choose slide" data-wrap={pager === 'filmstrip-wrap' ? '' : undefined} data-carousel-strip data-scrollbar>
         {items.map((item, index) => (
           <button class="thumb" type="button" aria-label={`Show slide ${index + 1}: ${item.alt}`} aria-current={index === 0 ? 'true' : undefined} data-carousel-dot={String(index)}>
-            <Image src={item.thumb ?? item.src} alt="" width={item.width} height={item.height} ratio="3/2" focus={item.focus} radius="none" dark={item.dark && { src: item.dark.thumb ?? item.dark.src, width: item.dark.width, height: item.dark.height }} />
+            {item.thumbnailLabel ? <span class="thumbnail-label">{item.thumbnailLabel}</span> : <Image src={item.thumb ?? item.src} alt="" width={item.width} height={item.height} ratio="3/2" focus={item.focus} radius="none" dark={item.dark && { src: item.dark.thumb ?? item.dark.src, width: item.dark.width, height: item.dark.height }} />}
           </button>
         ))}
       </div>
-    )
+    ))
   }
 </section>
 
@@ -253,6 +259,9 @@ const shape = `--slide-shape: ${tallest.width} / ${tallest.height}`;
     display: grid;
     gap: var(--space-3);
   }
+
+  .content { min-block-size: 100%; align-content: start; }
+  .thumbnail-label { display: grid; place-items: center; min-block-size: var(--size-touch); padding: var(--space-2); font: var(--type-label); color: var(--color-text); }
 
   /* every slide's picture frame: the tallest picture's shape (--slide-shape), so the carousel is only as tall
      as that picture, but never shorter than slide-min or taller than slide-max of the screen */

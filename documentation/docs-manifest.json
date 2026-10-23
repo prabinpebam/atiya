@@ -648,6 +648,13 @@
       "group": "Ways to explore/Home page views/For site owners"
     },
     {
+      "path": "home-views/highlights.md",
+      "title": "The highlights carousel",
+      "order": 50.665,
+      "icon": "view_carousel",
+      "group": "Ways to explore/Home page views/For site owners"
+    },
+    {
       "path": "home-views/plan.md",
       "title": "Plan and Definitions of Done",
       "order": 50.67,

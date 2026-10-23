@@ -56,6 +56,10 @@ export function setupCarousel(root: HTMLElement, signal: AbortSignal, tokens: Ca
       if (n === current) dot.setAttribute('aria-current', 'true');
       else dot.removeAttribute('aria-current');
     });
+    slides.forEach((slide, n) => {
+      const body = slide.querySelector<HTMLElement>('.slide-body');
+      if (body) body.inert = n !== current;
+    });
     // a filmstrip that scrolls keeps the frame being shown in view (within itself, not the page)
     const on = dots[current];
     if (strip && on && current !== revealed && strip.scrollWidth > strip.clientWidth) {
@@ -77,23 +81,24 @@ export function setupCarousel(root: HTMLElement, signal: AbortSignal, tokens: Ca
     update(nextIndex);
   };
 
-  prev?.addEventListener('click', () => go(current - 1));
-  next?.addEventListener('click', () => go(current + 1));
-  dots.forEach((dot, i) => dot.addEventListener('click', () => go(i)));
+  prev?.addEventListener('click', () => go(current - 1), { signal });
+  next?.addEventListener('click', () => go(current + 1), { signal });
+  dots.forEach((dot, i) => dot.addEventListener('click', () => go(i), { signal }));
   track.addEventListener('keydown', (event) => {
+    if (event.target !== track) return;
     const step = arrowStep(event.key);
     if (!step) return;
     event.preventDefault();
     go(current + step);
-  });
-  track.addEventListener('scrollend', settle);
+  }, { signal });
+  track.addEventListener('scrollend', settle, { signal });
   track.addEventListener('scroll', () => {
     window.clearTimeout(idle);
     if (!hasEnd) idle = window.setTimeout(settle, 150);
     if (asked) return;
     cancelAnimationFrame(frame);
     frame = requestAnimationFrame(() => update(nearest(track.scrollLeft, offsets())));
-  });
+  }, { signal, passive: true });
   window.addEventListener('resize', () => update(nearest(track.scrollLeft, offsets())), { signal });
 
   if (peek) {
@@ -134,8 +139,10 @@ export function setupCarousel(root: HTMLElement, signal: AbortSignal, tokens: Ca
       room();
       shade();
     };
-    track.addEventListener('scroll', reshade, { passive: true });
-    new ResizeObserver(relayout).observe(root);
+    track.addEventListener('scroll', reshade, { passive: true, signal });
+    const observer = new ResizeObserver(relayout);
+    observer.observe(root);
+    signal.addEventListener('abort', () => { observer.disconnect(); cancelAnimationFrame(shading); }, { once: true });
     window.addEventListener('resize', relayout, { signal });
     relayout();
     // a peeking slide is a hint: choosing it brings it to the middle (not the lightbox)
@@ -145,8 +152,9 @@ export function setupCarousel(root: HTMLElement, signal: AbortSignal, tokens: Ca
         e.preventDefault();
         e.stopPropagation();
         go(i);
-      }),
+      }, { signal }),
     );
   }
   update(0);
+  signal.addEventListener('abort', () => { cancelAnimationFrame(frame); window.clearTimeout(idle); }, { once: true });
 }

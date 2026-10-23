@@ -323,6 +323,15 @@ const handle: APIRoute = async ({ request, params, url }) => {
       const b = await body<{ ways: Ways; ifMatch: Record<string, string | null> }>(request);
       return result(await saveWays(b.ways, b.ifMatch?.[WAYS_KEY] ?? null));
     }
+    if (path === 'highlights' && (method === 'GET' || method === 'PUT')) {
+      const { HIGHLIGHTS_KEY, saveHighlights } = await import('../server/highlights');
+      if (method === 'GET') {
+        const { highlightsView } = await import('../model/highlights');
+        return json({ ok: true, ...highlightsView(content()), version: readDoc(HIGHLIGHTS_KEY)?.version ?? null });
+      }
+      const b = await body<{ highlights: unknown; ifMatch?: Record<string, string | null> }>(request);
+      return result(await saveHighlights(b.highlights, b.ifMatch?.[HIGHLIGHTS_KEY] ?? null));
+    }
     // recommendations (documentation/sections/recommendations.md §4): the list, and a section's settings
     // a recommendation's photo: uploaded (multipart: id, file), or taken once from its LinkedIn profile (JSON: id)
     if (method === 'POST' && path === 'recommendations/photo') {

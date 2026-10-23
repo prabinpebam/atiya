@@ -21,6 +21,33 @@ import type { PhotoCell } from '../kit/PhotoGrid.astro';
 import type { ViewerItem } from '../model/albumViewer';
 import type { Picture } from '../../content/pictures';
 import { rowLine, type AlbumRow, type Gallery } from '../model/gallery';
+import type { Highlights, HighlightChoice, HighlightDetail } from '../model/highlights';
+
+/** The classic home's made-up curation, without reading any site's resources. */
+export const HIGHLIGHTS: Highlights = {
+  label: 'Highlights', enabled: true, peek: false, arrows: true, pager: 'dots',
+  display: 'fill', background: false, rounded: true, shadow: false,
+  items: [
+    { id: 'pond-page', type: 'article', article: 'a-walk-round-the-pond', text: 'A small pond taught a team about pace.' },
+    { id: 'pond-album', type: 'album', album: 'by-the-pond' },
+    { id: 'pond-picture', type: 'image', media: 'samples/pond' },
+  ],
+};
+
+/** Public text-only picker choices, including GitHub without a saved snapshot. */
+export const HIGHLIGHT_CHOICES: HighlightChoice[] = [
+  { key: 'custom:github', title: 'Custom: A year on GitHub', reason: 'Add a public GitHub snapshot first.', item: { id: 'choice-github', type: 'custom', custom: 'github' } },
+  { key: 'article:a-walk-round-the-pond', title: 'Page: A walk round the pond', item: HIGHLIGHTS.items[0] },
+  { key: 'album:by-the-pond', title: 'Album: By the pond', reason: 'Publish it to show it.', item: HIGHLIGHTS.items[1] },
+  { key: 'image:samples/pond', title: 'Image: The pond', item: HIGHLIGHTS.items[2] },
+];
+
+/** One waiting slide beside two ready sources. */
+export const HIGHLIGHT_DETAILS: Record<string, HighlightDetail> = {
+  'pond-page': { title: 'Page: A walk round the pond' },
+  'pond-album': { title: 'Album: By the pond', reason: 'Publish it to show it.' },
+  'pond-picture': { title: 'Image: The pond' },
+};
 
 const pond = sample('pond');
 const bridge = sample('bridge');

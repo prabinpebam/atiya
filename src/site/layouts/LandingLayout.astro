@@ -9,6 +9,9 @@ import PageShell from '../components/compounds/PageShell.astro';
 import SiteHeader from '../components/compounds/SiteHeader.astro';
 import Hero, { type HeroPicture } from '../components/compounds/Hero.astro';
 import SiteFooter from '../components/compounds/SiteFooter.astro';
+import Heading from '../components/fundamentals/Heading.astro';
+import Text from '../components/fundamentals/Text.astro';
+import Lightbox from '../components/compounds/Lightbox.astro';
 import type { NavItem } from '../components/compounds/SiteHeader.astro';
 import type { HomeRouting } from '../scripts/homeRoute';
 
@@ -29,20 +32,31 @@ interface Props {
   canonical?: string;
   /** A home page: the router PageShell runs in the head (documentation/home-views/switcher.md §3). */
   home?: HomeRouting;
+  /** The classic highlights opening: a split introduction and a shared-carousel area below it. */
+  highlights?: boolean;
+  /** Eligible slides exist; disabled/empty highlights leave no empty carousel spacing. */
+  showHighlights?: boolean;
 }
 
-const { title, description, hero, nav, footer, afterId, canonical, home } = Astro.props;
+const { title, description, hero, nav, footer, afterId, canonical, home, highlights = false, showHighlights = false } = Astro.props;
 ---
 
 <PageShell title={title} description={description} canonical={canonical} home={home} preload={hero.standfirst ? ['display', 'display-italic', 'ui'] : ['display', 'ui']}>
   <SiteHeader nav={nav} access />
   <main id="main" class="landing" tabindex="-1">
     <slot name="hero">
-      <Hero {...hero}>
+      {highlights ? <section class="highlight-opening">
+        <Heading level={1} size="display">{hero.title}</Heading>
+        <div class="introduction">
+          {hero.standfirst && <Text variant="standfirst" narrow>{hero.standfirst}</Text>}
+          <div class="actions"><slot /></div>
+        </div>
+      </section> : <Hero {...hero}>
         <slot />
         {Astro.slots.has('note') && <slot name="note" slot="note" />}
-      </Hero>
+      </Hero>}
     </slot>
+    {highlights && showHighlights && <div class="highlights"><slot name="highlights" /></div>}
     {
       Astro.slots.has('after') && (
         <div class="after" id={afterId}>
@@ -52,6 +66,7 @@ const { title, description, hero, nav, footer, afterId, canonical, home } = Astr
     }
   </main>
   <SiteFooter more={footer} />
+  {highlights && <Lightbox />}
 </PageShell>
 
 <style>
@@ -67,5 +82,17 @@ const { title, description, hero, nav, footer, afterId, canonical, home } = Astr
     margin: var(--space-section) auto 0;
     padding-inline: var(--space-gutter);
     scroll-margin-block-start: calc(var(--size-chrome-block) + var(--space-8));
+  }
+  .highlight-opening, .highlights { max-inline-size: var(--size-wide); margin-inline: auto; padding-inline: var(--space-gutter); }
+  .highlight-opening { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-items: center; gap: var(--space-10); padding-block-start: var(--space-12); }
+  .introduction { display: grid; gap: var(--space-4); }
+  .actions { display: flex; align-items: center; flex-wrap: wrap; gap: var(--space-3); }
+  .highlights { margin-block-start: var(--space-10); }
+  @media (max-width: 56rem) {
+    .highlight-opening { grid-template-columns: minmax(0, 1fr); gap: var(--space-6); align-items: start; }
+  }
+  @media (max-width: 40rem) {
+    .highlight-opening { padding-block-start: var(--space-8); }
+    .highlights { margin-block-start: var(--space-8); }
   }
 </style>

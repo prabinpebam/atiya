@@ -16,6 +16,7 @@ import { effectiveWays } from '../modes/ways';
 import { SHOWCASE_FILE, TOPICS_FILE, showcaseFile, topicsFile, type Showcase, type TopicsFile } from '../home/schema';
 import { GitHubDataError, validateGitHubSnapshot, type GitHubSnapshot } from './github';
 import { checkHome } from '../home/check';
+import { HIGHLIGHTS_FILE, checkHighlights, highlightsFile, type Highlights } from './highlights';
 import { albumProblems, albumWarnings, fingerprintClashes, isMediaItem, type MediaLookup } from './album';
 import { DRAWING_MAX_BYTES, PRIVATE_VIDEO_MAX_BYTES, isDrawingFile } from './schema';
 
@@ -118,6 +119,8 @@ export interface ContentIndex {
   showcase: Showcase | null;
   /** Optional activity visible on the person's public GitHub profile, refreshed outside the build. */
   github?: GitHubSnapshot;
+  /** The classic home's ordered highlights and carousel presentation; absent keeps the legacy opening. */
+  highlights?: Highlights;
   /** The topic vocabulary (content/topics.json: home-views/curation.md §4.1), null without it. */
   topics: TopicsFile | null;
   /** Reported, not failed: a published item the site doesn't place (it has no page). */
@@ -210,6 +213,7 @@ export function loadContent(docs: Record<string, unknown>, masters: Set<string>,
   let ways: Ways | null = null;
   let showcase: Showcase | null = null;
   let github: GitHubSnapshot | undefined;
+  let highlights: Highlights | undefined;
   let topics: TopicsFile | null = null;
   // Little planet's structure: where it was read from (the new place, or the old one during the move: M1.1)
   let planetFile = '';
@@ -261,6 +265,7 @@ export function loadContent(docs: Record<string, unknown>, masters: Set<string>,
     } else if (file === `/content/${WAYS_FILE}`) ways = parse(waysFile, file, data) ?? null;
     else if (file === `/content/${SHOWCASE_FILE}`) showcase = parse(showcaseFile, file, data) ?? null;
     else if (file === `/content/${TOPICS_FILE}`) topics = parse(topicsFile, file, data) ?? null;
+    else if (file === `/content/${HIGHLIGHTS_FILE}`) highlights = parse(highlightsFile, file, data);
     else if (file === '/content/github.json') {
       try {
         github = validateGitHubSnapshot(data);
@@ -696,7 +701,8 @@ export function loadContent(docs: Record<string, unknown>, masters: Set<string>,
     });
   }
 
-  const index: ContentIndex = { site: site!, structure: structure!, articles, albums, origins, access, people, media, documents, videos, embeds, routes, canonical: canonicalPaths(routes), redirects, planet, ways, overlay, grants, accessMessage: message, themes, fonts, recommendations, showcase, github, topics, warnings, problems: [] };
+  const index: ContentIndex = { site: site!, structure: structure!, articles, albums, origins, access, people, media, documents, videos, embeds, routes, canonical: canonicalPaths(routes), redirects, planet, ways, overlay, grants, accessMessage: message, themes, fonts, recommendations, showcase, github, highlights, topics, warnings, problems: [] };
+  for (const i of checkHighlights(index, new Set([...invalidArticles, ...invalidAlbums]))) add(i.file, i.message, i.path);
   // the home page (documentation/home-views/foundation.md §2): what the spine names is open and found word for word;
   // a page already failing its own check isn't reported again through it
   if (site && structure) for (const i of checkHome(index, ways, invalidArticles)) add(i.file, i.message, i.path);
@@ -719,7 +725,7 @@ const ARTICLE_FILE = /^\/(content|private)\/articles\/[^/]+\.json$/;
 /** An album's file, in either folder. */
 const ALBUM_FILE = /^\/(content|private)\/albums\/[^/]+\.json$/;
 /** What can be left out on its own: an article, an album, a piece of media (its sidecar or a file beside it), or the home page's spine or vocabulary (the home is then the Classic hub). */
-const LEAVABLE = /^\/(content|private)\/(articles|albums|media)\/|^\/content\/(showcase|topics)\.json$/;
+const LEAVABLE = /^\/(content|private)\/(articles|albums|media)\/|^\/content\/(showcase|topics|highlights)\.json$/;
 
 /**
  * The content as dev reads it (documentation/content/spec.md §5.4): a file that doesn't pass the check is left out

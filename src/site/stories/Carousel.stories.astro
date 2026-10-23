@@ -2,7 +2,10 @@
 import Example from '../library/Example.astro';
 import Carousel from '../components/compounds/Carousel.astro';
 import Lightbox from '../components/compounds/Lightbox.astro';
-import { PORTRAIT_SAMPLES, SAMPLE_VIDEO, SAMPLES } from '../design/samples';
+import ContributionHero from '../components/compounds/ContributionHero.astro';
+import HighlightCard from '../components/compounds/HighlightCard.astro';
+import { contributionStats } from '../content/github';
+import { CONTRIBUTION_SAMPLE, PORTRAIT_SAMPLES, SAMPLE_VIDEO, SAMPLES } from '../design/samples';
 
 // the samples twice: more frames than a filmstrip row holds
 const MANY = [...SAMPLES, ...SAMPLES];
@@ -11,6 +14,7 @@ const MIXED = [SAMPLES[0], PORTRAIT_SAMPLES[0], SAMPLES[3]];
 // a video file among the pictures: it plays in its slide (its poster stands in for the picture)
 const TOUR = { src: SAMPLE_VIDEO.poster, alt: 'A drift over the painted planet', caption: 'A ten-second tour, playing by itself while it is the slide in view.', width: SAMPLE_VIDEO.width, height: SAMPLE_VIDEO.height, thumb: SAMPLE_VIDEO.poster, video: { src: SAMPLE_VIDEO.src, type: 'video/mp4' as const, autoplay: true, loop: true } };
 const WITH_VIDEO = [SAMPLES[0], TOUR, SAMPLES[5]];
+const HIGHLIGHTS = [{ src: '', alt: 'A year on GitHub', caption: '', width: 21, height: 9, thumbnailLabel: 'GitHub' }, ...SAMPLES.slice(1, 4)];
 ---
 
 <Example title="A quiet carousel" layout="block" description="There is no rotation: the reader moves slide by slide.">
@@ -55,4 +59,12 @@ const WITH_VIDEO = [SAMPLES[0], TOUR, SAMPLES[5]];
 
 <Example title="With a video" layout="block" description="A video file can be a slide: it plays in its place (not in the lightbox), with its own controls. Set to autoplay, it plays muted while it is the slide in view, and pauses when another is shown.">
   <Carousel items={WITH_VIDEO} label="Scenes and a tour" display="fit" lightbox="carousel-video" />
+</Example>
+
+<Example title="Trusted mixed highlights" layout="block" description="The same track, peek and controls carry a custom interactive chart, a page excerpt, an album cover and a single picture. No automatic rotation.">
+  <Carousel items={HIGHLIGHTS} label="Mixed home highlights" content peek>
+    {(n: number) => n === 0
+      ? <ContributionHero title="" embedded data={{ ...CONTRIBUTION_SAMPLE, stats: contributionStats(CONTRIBUTION_SAMPLE) }} />
+      : <HighlightCard title={n === 1 ? 'Finding a shared direction' : n === 2 ? 'An afternoon outdoors' : 'A waterfall'} text={n === 1 ? 'A small team tried three approaches together.' : n === 2 ? 'A few scenes from the same walk.' : undefined} href={n < 3 ? `#example-${n === 1 ? 'page' : 'album'}` : undefined} picture={SAMPLES[n]} settings={{ display: 'fit' }} />}
+  </Carousel>
 </Example>

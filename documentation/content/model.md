@@ -23,6 +23,12 @@ The items encode the IA's [taxonomy and content model](../ia-navigation/03-taxon
 
 The repository exposes it through `getGitHub()`. Absence keeps the classic opening; malformed data is a normal content validation error, never silently treated as absence. The refresh tool reads only the anonymous public-profile calendar, outside the build. Publicly displayed anonymised private counts may be included, but no private repository data is stored.
 
+### Optional classic-home highlights
+
+`content/highlights.json` is the classic home's ordered, typed carousel configuration: a trusted custom GitHub chart, public page references with optional verbatim excerpts, public album references, and public image references. It shares the article carousel's presentation options. Sources stay linked by stable ID; drafts and missing lead pictures wait, while private/missing references and invented excerpts fail validation. Empty or disabled is deliberate. Without this file a site's existing opening stays unchanged. The full contract, editor flow and Definition of Done are in [The highlights carousel](../home-views/highlights.md).
+
+A build always checks the file strictly. In dev, a broken highlights file is left out and reported with the other content problems, so it cannot stop every page or hide the error.
+
 <figure class="slate-figure" data-diagram="model">
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 540" role="img" aria-labelledby="cp-model__title cp-model__desc" preserveAspectRatio="xMidYMid meet" data-slate-svg-motion="viewport" data-slate-safe-margin="24">
 <title id="cp-model__title">Content items and the structures that place them</title>

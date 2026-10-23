@@ -1,0 +1,14 @@
+{
+  "label": "Highlights",
+  "enabled": true,
+  "peek": false,
+  "arrows": true,
+  "pager": "dots",
+  "display": "fill",
+  "background": false,
+  "rounded": true,
+  "shadow": false,
+  "items": [
+    { "id": "github", "type": "custom", "custom": "github" }
+  ]
+}
