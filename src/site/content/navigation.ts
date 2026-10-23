@@ -11,6 +11,8 @@ export interface NavLink {
   label: string;
   href: string;
   current?: boolean;
+  /** An explicit new-tab choice for a custom link. */
+  newTab?: boolean;
 }
 
 /**
@@ -22,12 +24,29 @@ export interface NavLink {
  */
 export function siteNav(structure: SiteStructure, routes: Route[], current?: Route): NavLink[] {
   return (structure.menus?.primary ?? []).flatMap((e): NavLink[] => {
-    if (!('node' in e)) return [{ label: e.label, href: e.href.startsWith('/') ? withBase(e.href) : e.href }];
+    if (!('node' in e)) return [{ label: e.label, href: e.href.startsWith('/') ? withBase(e.href) : e.href, ...(e.newTab !== undefined ? { newTab: e.newTab } : {}) }];
     const r = routes.find((x) => x.node.id === e.node);
     if (!r) return [];
     const here = !!current && (current.path === r.path || (r.path !== '/' && current.path.startsWith(r.path)));
     return [{ label: e.label ?? r.label, href: withBase(r.path), ...(here ? { current: true } : {}) }];
   });
+}
+
+/** Every home view's index: featured custom links, then the site's sections in their existing order. */
+export function homeSections(structure: SiteStructure, routes: Route[]) {
+  const home = routes.find((r) => r.path === '/');
+  const featured = (structure.menus?.primary ?? []).flatMap((e) =>
+    'href' in e && e.summary
+      ? [{ href: e.href.startsWith('/') ? withBase(e.href) : e.href, title: e.label, summary: e.summary, newTab: e.newTab }]
+      : [],
+  );
+  const sections = routes.filter((r) => r.parent === home?.node).map((r) => ({
+    href: withBase(r.path),
+    title: r.title,
+    kicker: routes.some((p) => p.parent === r.node && p.access === 'open') ? undefined : 'Being written',
+    summary: r.node.kind === 'hub' ? r.node.summary : undefined,
+  }));
+  return [...featured, ...sections];
 }
 
 /** The footer's links from the content (documentation/access/spec.md §9.6): the Privacy page, under its own title. */

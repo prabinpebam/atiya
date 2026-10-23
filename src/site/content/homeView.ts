@@ -4,7 +4,7 @@
  * read the home model (they're tiers below it), and the model never reads the site's addresses.
  */
 import { canonicalPath, content, getAccess, getArticle, getHome, getHomeEvidence, getPerson, getPlanet, getRecommendations, getRoute, getRoutes, getSite, getStructure } from './repository';
-import { footerLinks, siteNav } from './navigation';
+import { footerLinks, homeSections, siteNav } from './navigation';
 import { picture } from './pictures';
 import type { CardPicture, ThumbnailShape } from '../design/pictures';
 import { withBase } from '../design/meta';
@@ -155,21 +155,13 @@ export function homeFrame() {
   const owner = getPerson(site.owner);
   const home = getRoute('/')!;
   const routes = getRoutes();
-  const pages = (r: (typeof routes)[number]) => routes.filter((p) => p.parent === r.node && p.access === 'open').length;
   return {
     title: owner?.role ? `${site.name} — ${owner.role}` : site.name,
     description: site.description,
     nav: siteNav(getStructure(), routes, home),
     footer: footerLinks(site, routes),
     planet: getPlanet() ? withBase('/play/') : undefined,
-    sections: routes
-      .filter((r) => r.parent === home.node)
-      .map((r) => ({
-        href: withBase(r.path),
-        title: r.title,
-        kicker: pages(r) === 0 ? 'Being written' : undefined,
-        summary: r.node.kind === 'hub' ? r.node.summary : undefined,
-      })),
+    sections: homeSections(getStructure(), routes),
   };
 }
 

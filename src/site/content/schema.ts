@@ -796,10 +796,22 @@ const hubNode: z.ZodType<HubNode> = z.lazy(() =>
  * An entry of the top navigation (spec §4.1): a node of the tree (a section or a page), with an
  * optional label of its own, or a custom link (an https, http or mailto address, or a path on the site).
  */
-export type MenuEntry = { node: string; label?: string } | { label: string; href: string };
+export type MenuEntry = { node: string; label?: string } | {
+  label: string;
+  href: string;
+  /** Open this link in a new tab even when it shares the site's parent domain. */
+  newTab?: boolean;
+  /** Feature this link before the sections on every home view, with this description. */
+  summary?: string;
+};
 const menuEntry = z.union([
   z.strictObject({ node: id, label: navLabel.optional() }),
-  z.strictObject({ label: navLabel, href: z.string().regex(/^(https?:\/\/\S+|mailto:\S+|\/[^\s]*)$/, 'an https, http or mailto address, or a path on this site (/…)') }),
+  z.strictObject({
+    label: navLabel,
+    href: z.string().regex(/^(https?:\/\/\S+|mailto:\S+|\/[^\s]*)$/, 'an https, http or mailto address, or a path on this site (/…)'),
+    newTab: z.boolean().optional(),
+    summary: z.string().trim().min(1).max(160).optional(),
+  }),
 ]);
 
 export const siteStructure = z.strictObject({

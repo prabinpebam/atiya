@@ -28,8 +28,9 @@ export interface NavItem {
   label: string;
   href: string;
   current?: boolean;
+  /** Open in a new tab even when the destination shares the site's parent domain. */
+  newTab?: boolean;
 }
-
 interface Props {
   /** The sections, in order. */
   nav?: NavItem[];
@@ -53,7 +54,7 @@ const navId = `site-nav-${uid}`;
 const moreId = `site-more-${uid}`;
 const open = svgOf('menu');
 const close = svgOf('close');
-const navPolicy = (href: string) => linkAttrs(href, Astro.url.hostname);
+const navPolicy = (item: NavItem) => linkAttrs(item.href, Astro.url.hostname, item.newTab);
 ---
 
 <header
@@ -81,7 +82,7 @@ const navPolicy = (href: string) => linkAttrs(href, Astro.url.hostname);
         <nav class="nav" id={navId} aria-label={navLabel} data-nav data-scrollbar>
           <ul>
             {nav.map((n) => {
-              const policy = navPolicy(n.href);
+              const policy = navPolicy(n);
               return (
                 <li data-nav-item>
                   <a href={n.href} target={policy.target} rel={policy.rel} aria-current={n.current ? 'page' : undefined} data-is-current={n.current ? '' : undefined}>
@@ -96,7 +97,7 @@ const navPolicy = (href: string) => linkAttrs(href, Astro.url.hostname);
               <div class="more-list" id={moreId} popover="manual" data-more-list>
                 <ul>
                   {nav.map((n) => {
-                    const policy = navPolicy(n.href);
+                    const policy = navPolicy(n);
                     return (
                       <li data-more-item hidden>
                         <a href={n.href} target={policy.target} rel={policy.rel} data-is-current={n.current ? '' : undefined}>

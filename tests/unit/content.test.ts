@@ -13,7 +13,8 @@ import { ContentError, headingId, headingIds, loadContent, mediaUsed } from '../
 import { content, placePages, placeSection } from '../../src/site/content/repository';
 import { pageMeasure, pictureCount, readingMinutes } from '../../src/site/content/reading';
 import { article, block, siteStructure, type Article, type SiteStructure } from '../../src/site/content/schema';
-import { exploreHref, siteNav } from '../../src/site/content/navigation';
+import { exploreHref, homeSections, siteNav } from '../../src/site/content/navigation';
+import { moveEntry, relabelEntry } from '../../src/site/editor/model/structure';
 import { renderInlineMarkdown } from '../../src/site/content/markdown';
 import { MAX_GIF_BYTES, MAX_VIDEO_BYTES } from '../../src/site/editor/model/upload';
 
@@ -845,6 +846,41 @@ describe('the navigation and the redirects', () => {
     expect(siteNav(none.structure, none.routes)).toEqual([]);
   });
 
+  it('features described custom links on every home index and preserves their explicit new-tab choice', () => {
+    const link = { label: 'Skills library', href: 'https://prabinpebam.github.io/resources/', summary: 'AI skills and kits for humans and agents.', newTab: true };
+    const c = loadContent(docs({ primary: [{ node: 'work' }, link, { label: 'GitHub', href: 'https://github.com/x' }] }), new Set());
+    const built = c.routes.filter((r) => r.published);
+    expect(siteNav(c.structure, built)[1]).toEqual({ label: link.label, href: link.href, newTab: true });
+    expect(homeSections(c.structure, built)).toEqual([
+      { href: link.href, title: link.label, summary: link.summary, newTab: true },
+      { href: '/work/', title: 'Work', kicker: undefined, summary: undefined },
+      { href: '/about/', title: 'About', kicker: undefined, summary: undefined },
+    ]);
+    const renamed = relabelEntry(moveEntry(c.structure, 1, -1), 0, 'My skills');
+    expect(renamed.menus?.primary[0]).toEqual({ ...link, label: 'My skills' });
+    expect(homeSections(renamed, built)[0]).toEqual({ href: link.href, title: 'My skills', summary: link.summary, newTab: true });
+  });
+
+  it('keeps unfeatured links out of the home index and existing sections and empty-state labels unchanged', () => {
+    const c = loadContent(docs({ primary: [{ label: 'Docs', href: '/docs/' }] }, undefined, ['b']), new Set());
+    const built = c.routes.filter((r) => r.published);
+    expect(homeSections(c.structure, built)).toEqual([
+      { href: '/work/', title: 'Work', kicker: undefined, summary: undefined },
+      { href: '/about/', title: 'About', kicker: 'Being written', summary: undefined },
+    ]);
+    const local = loadContent(docs({ primary: [{ label: 'Docs', href: '/docs/', summary: 'How it works.', newTab: false }] }), new Set());
+    expect(homeSections(local.structure, local.routes)[0]).toEqual({ href: '/docs/', title: 'Docs', summary: 'How it works.', newTab: false });
+    expect(homeSections(c.structure, [])).toEqual([]);
+  });
+
+  it('validates featured-link descriptions and new-tab choices', () => {
+    const link = { label: 'Skills', href: 'https://example.com/' };
+    for (const summary of ['', ' ', 'x'.repeat(161)]) {
+      expect(problems(docs({ primary: [{ ...link, summary }] }))).toMatch(/summary/);
+    }
+    expect(siteStructure.safeParse({ home: { id: 'home', kind: 'hub', slug: '', title: 'Home' }, menus: { primary: [{ ...link, newTab: 'yes' }] } }).success).toBe(false);
+  });
+
   it('refuses an entry that points nowhere, a bad address, more than eight entries or a long label (V17)', () => {
     expect(problems(docs({ primary: [{ node: 'nowhere' }] }))).toMatch(/menus\.primary\.0: node "nowhere" isn't in the site's tree/);
     expect(problems(docs({ primary: [{ label: 'Gone', href: '/gone/' }] }))).toMatch(/\/gone\/ isn't a page of this site/);
@@ -986,12 +1022,14 @@ describe('the real content is three levels, with its navigation and redirects', 
     expect(c.redirects).toContainEqual({ from: '/classic/amphitheater/', to: '/gallery/' });
   });
 
-  it('seven sections in the navigation, the first story in Leadership, and every classic address redirected', () => {
+  it('seven sections and Loushing in the navigation, the first story in Leadership, and every classic address redirected', () => {
     const c = content();
     const sections = c.structure.home.children ?? [];
     expect(sections.map((n) => n.id)).toEqual(['work', 'about', 'leadership', 'writing', 'talks', 'side-projects', 'contact']);
     expect(sections.every((n) => n.kind === 'hub' && n.summary && n.view)).toBe(true);
-    expect((c.structure.menus?.primary ?? []).map((e) => ('node' in e ? e.node : e.label))).toEqual(sections.map((n) => n.id));
+    expect((c.structure.menus?.primary ?? []).map((e) => ('node' in e ? e.node : e.label))).toEqual(['work', 'about', 'leadership', 'writing', 'talks', 'side-projects', 'Loushing', 'contact']);
+    const loushing = c.structure.menus?.primary.find((e) => 'href' in e && e.label === 'Loushing');
+    expect(loushing).toMatchObject({ href: 'https://prabinpebam.github.io/loushing/', newTab: true, summary: 'AI skills and kits I create and curate for humans and AI agents.' });
     expect(c.canonical.get('article/do-what-makes-you-proud')).toBe('/leadership/do-what-makes-you-proud/');
     const froms = c.redirects.map((r) => r.from);
     for (const id of ['workshop', 'town-hall', 'lighthouse', 'library', 'amphitheater', 'greenhouse', 'post-office']) expect(froms).toContain(`/classic/${id}/`);

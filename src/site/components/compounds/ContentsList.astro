@@ -8,6 +8,7 @@
  */
 import Heading from '../fundamentals/Heading.astro';
 import Text from '../fundamentals/Text.astro';
+import { linkAttrs, NEW_TAB_NOTE } from '../../design/links';
 
 export interface ContentsEntry {
   href: string;
@@ -15,6 +16,8 @@ export interface ContentsEntry {
   /** A short label for the kind of thing it is. */
   kicker?: string;
   summary?: string;
+  /** Open in a new tab even when the destination shares the site's parent domain. */
+  newTab?: boolean;
 }
 
 interface Props {
@@ -32,22 +35,25 @@ const pad = (n: number) => String(n).padStart(2, '0');
 
 <ol class="contents" aria-label={label}>
   {
-    entries.map((e, i) => (
+    entries.map((e, i) => {
+      const policy = linkAttrs(e.href, Astro.url.hostname, e.newTab);
+      return (
       <li class="entry" data-card>
         <span class="numeral" aria-hidden="true">
           {pad(i + 1)}
         </span>
         <div class="words">
           <Heading level={headingLevel} size="h2">
-            <a class="title" href={e.href} data-card-link>
-              {e.title}
+            <a class="title" href={e.href} target={policy.target} rel={policy.rel} data-card-link>
+              {e.title}{policy.newTab && <span class="sr-only">{NEW_TAB_NOTE}</span>}
             </a>
           </Heading>
           {e.kicker && <Text variant="label" tone="muted">{e.kicker}</Text>}
           {e.summary && <Text tone="muted">{e.summary}</Text>}
         </div>
       </li>
-    ))
+      );
+    })
   }
 </ol>
 

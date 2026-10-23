@@ -266,6 +266,12 @@
         "node": "side-projects"
       },
       {
+        "label": "Loushing",
+        "href": "https://prabinpebam.github.io/loushing/",
+        "newTab": true,
+        "summary": "AI skills and kits I create and curate for humans and AI agents."
+      },
+      {
         "node": "contact"
       }
     ]

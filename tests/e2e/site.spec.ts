@@ -174,6 +174,48 @@ test.describe('site design system', () => {
     await expect(docsOffParent).toHaveAccessibleName(/opens in a new tab/);
   });
 
+  test('Loushing is featured on home views and opens a new tab from the home index and navigation', async ({ page, context }) => {
+    const href = 'https://prabinpebam.github.io/loushing/';
+    for (const path of ['/', '/views/bento/']) {
+      await page.goto(path);
+      const entry = page.locator('main ol[aria-label="Sections"] > li').first();
+      const link = entry.getByRole('link', { name: 'Loushing (opens in a new tab)', exact: true });
+      await expect(link).toHaveAttribute('href', href);
+      await expect(link).toHaveAttribute('target', '_blank');
+      await expect(link).toHaveAttribute('rel', 'noopener noreferrer');
+      await expect(entry).toContainText('AI skills and kits I create and curate for humans and AI agents.');
+      await expect(entry).not.toContainText('Being written');
+      expect(await page.locator('main ol[aria-label="Sections"] > li').count()).toBe(8);
+    }
+
+    await context.route(href, (route) => route.fulfill({ contentType: 'text/html', body: '<title>Skills library</title>' }));
+    const popupReady = page.waitForEvent('popup');
+    await page.locator('main ol[aria-label="Sections"]').getByRole('link', { name: /^Loushing/ }).click();
+    const popup = await popupReady;
+    await popup.waitForLoadState();
+    expect(popup.url()).toBe(href);
+    await expect(page).toHaveURL(/\/views\/bento\/$/);
+    await popup.close();
+
+    await page.setViewportSize({ width: 960, height: 800 });
+    await page.goto('/work/');
+    const more = page.getByRole('button', { name: /^More sections/ });
+    await more.click();
+    const overflow = page.locator('[data-more-list]').getByRole('link', { name: /^Loushing/ });
+    await expect(overflow).toBeVisible();
+    await expect(overflow).toHaveAttribute('target', '_blank');
+    await expect(overflow).toHaveAttribute('rel', 'noopener noreferrer');
+    await page.keyboard.press('Escape');
+
+    await page.setViewportSize({ width: 360, height: 740 });
+    await page.getByRole('button', { name: 'Open menu', exact: true }).click();
+    const mobile = page.locator('[data-nav-item]').getByRole('link', { name: /^Loushing/ });
+    await expect(mobile).toBeVisible();
+    await expect(mobile).toHaveAttribute('href', href);
+    await expect(mobile).toHaveAttribute('target', '_blank');
+    expect(await page.locator('html').evaluate((el) => el.scrollWidth <= el.clientWidth)).toBe(true);
+  });
+
   test('the theme: follows the system, a choice is kept and applied before the first paint', async ({ page }) => {
     await page.emulateMedia({ colorScheme: 'dark' });
     await page.goto('/');

@@ -13,3 +13,7 @@ const entries = [
 <Example title="A contents page" layout="block" description="For a few entries in an order that means something: the numbers are the list’s own.">
   <ContentsList entries={entries} label="Sections (example)" headingLevel={3} />
 </Example>
+
+<Example title="A featured external destination" layout="block" description="A curated resource can open in a new tab, with an accessible note, even on the same parent domain.">
+  <ContentsList entries={[{ href: 'https://example.com/resources/', title: 'Skills library', summary: 'Skills and kits for people and their AI agents.', newTab: true }]} label="Featured destination (example)" headingLevel={3} />
+</Example>

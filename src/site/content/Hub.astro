@@ -13,7 +13,7 @@ import Dialog from '../components/compounds/Dialog.astro';
 import ViewChoices from '../components/compounds/ViewChoices.astro';
 import { SITE_FEATURES, withBase } from '../design/meta';
 import { getPerson, getPlanet, getRoute, getRoutes, getSite, getStructure, getWays } from './repository';
-import { footerLinks, siteNav } from './navigation';
+import { footerLinks, homeSections, siteNav } from './navigation';
 import { homeRouting, viewSwitch } from './homeView';
 import { HUB_WAYS } from '../scripts/hub';
 
@@ -27,8 +27,6 @@ const site = getSite();
 const owner = getPerson(site.owner);
 const home = getRoute('/')!;
 const routes = getRoutes();
-const sections = routes.filter((r) => r.parent === home.node);
-const pages = (r: (typeof routes)[number]) => routes.filter((p) => p.parent === r.node && p.access === 'open').length;
 // just the site (no planet, or turned off): no way into the planet, and the opening has no painting of it
 const planet = !!getPlanet();
 // the way in offered first (the ways file's primary, plan stage 8A): the planet, or the site itself
@@ -74,12 +72,7 @@ const choices = at === 'view' ? viewSwitch('classic') : null;
     <script is:inline set:html={HUB_WAYS} />
     <ContentsList
       label="Sections"
-      entries={sections.map((r) => ({
-        href: withBase(r.path),
-        title: r.title,
-        kicker: pages(r) === 0 ? 'Being written' : undefined,
-        summary: r.node.kind === 'hub' ? r.node.summary : undefined,
-      }))}
+      entries={homeSections(getStructure(), routes)}
     />
     {
       choices && (
