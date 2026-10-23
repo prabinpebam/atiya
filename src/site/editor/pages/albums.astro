@@ -1,31 +1,76 @@
 ---
-/** Edit mode's Albums screen (documentation/gallery/spec.md §9.1). Dev only: injected by integrations/editor.mjs. */
+/**
+ * Edit mode's Albums screen (documentation/gallery/spec.md §9.1): every album as tiles, or the albums list beside
+ * the gallery's setup (?view=list); the last view chosen is remembered. Dev only: injected by integrations/editor.mjs.
+ */
 import EditorLayout from '../EditorLayout.astro';
 import AlbumCards from '../components/AlbumCards.astro';
+import AlbumList from '../components/AlbumList.astro';
+import GallerySetup from '../components/GallerySetup.astro';
 import ContentIssues from '../components/ContentIssues.astro';
 import Button from '../../components/fundamentals/Button.astro';
 import Dialog from '../../components/compounds/Dialog.astro';
+import SplitView from '../../components/compounds/SplitView.astro';
 import { load } from '../server/screens';
 import { albumCards } from '../server/albumScreens';
 import { albumSections } from '../server/albums';
+import { galleryList } from '../server/gallery';
+import { REGIONS_HEADER, regionsAsked, wants } from '../model/regions';
+import { withBase } from '../../design/meta';
 
 export const prerender = false;
 
+const VIEW_COOKIE = 'editor.albums.view';
+const askedView = Astro.url.searchParams.get('view');
+// the action center's New album (?new=1) is made by the tiles view's script
+const view = Astro.url.searchParams.get('new') === '1' ? 'tiles' : askedView === 'list' || askedView === 'tiles' ? askedView : Astro.cookies.get(VIEW_COOKIE)?.value === 'list' ? 'list' : 'tiles';
+if (askedView === view) Astro.cookies.set(VIEW_COOKIE, view, { path: '/', sameSite: 'strict', httpOnly: true, maxAge: 60 * 60 * 24 * 365 });
+
+const asked = regionsAsked(Astro.request.headers.get(REGIONS_HEADER));
 const loaded = load();
-const cards = loaded.ok ? await albumCards(loaded.index) : [];
+const cards = loaded.ok && view === 'tiles' ? await albumCards(loaded.index) : [];
 const sections = loaded.ok ? albumSections(loaded.index.structure).map((s) => ({ value: s.value, label: s.label })) : [];
+const list = loaded.ok && view === 'list' && wants(asked, 'album-list', 'gallery-setup') ? await galleryList(loaded.index, Astro.url.searchParams.get('gallery')) : null;
+const listHref = withBase('/_edit/albums/?view=list');
+const tilesHref = withBase('/_edit/albums/?view=tiles');
 ---
 
 <EditorLayout
   title="Albums"
   screen="albums"
   heading="Albums"
-  intro="Your photo albums: drafts first, then in the gallery's order. New album makes an untitled one at once, ready to fill; its pictures stay in your library whatever happens to the album."
+  intro={view === 'list'
+    ? 'Your albums in the gallery’s order, beside the gallery’s own setup. Drag an album by its handle to put them in your own order.'
+    : 'Your photo albums: drafts first, then in the gallery’s order. New album makes an untitled one at once, ready to fill; its pictures stay in your library whatever happens to the album.'}
 >
   <Fragment slot="tools">
-    <Button variant="primary" size="sm" icon="plus" data-albums-new="">New album</Button>
+    {
+      view === 'tiles' ? (
+        <>
+          <Button variant="secondary" size="sm" icon="bulleted" href={listHref}>Show as list</Button>
+          <Button variant="primary" size="sm" icon="plus" data-albums-new="">New album</Button>
+        </>
+      ) : (
+        <Button variant="secondary" size="sm" icon="views" href={tilesHref}>Show as tiles</Button>
+      )
+    }
   </Fragment>
-  {loaded.ok ? <AlbumCards cards={cards} sections={sections} /> : <ContentIssues issues={loaded.issues} />}
+  {
+    !loaded.ok ? (
+      <ContentIssues issues={loaded.issues} />
+    ) : view === 'list' ? (
+      list && (
+        <SplitView>
+          <Fragment slot="list">
+            <AlbumList gallery={list.gallery && { id: list.gallery.id, title: list.gallery.title, line: list.line ?? '' }} albums={list.albums} elsewhere={list.elsewhere} current="gallery" setupHref={listHref} tilesHref={tilesHref} />
+          </Fragment>
+          <GallerySetup galleries={list.galleries} gallery={list.gallery} version={list.version} siteHref={list.gallery ? withBase(list.gallery.path) : undefined} />
+        </SplitView>
+      )
+    ) : (
+      <AlbumCards cards={cards} sections={sections} />
+    )
+  }
   <Dialog id="album-delete" title="Delete the album" size="sm">
     <p data-album-delete-words>Delete the album? Its pictures stay in your library.</p>
     <Fragment slot="actions">

@@ -1,0 +1,15 @@
+---
+import Example from '../../library/Example.astro';
+import AlbumList from '../components/AlbumList.astro';
+import { ALBUM_ROWS } from './samples';
+
+const gallery = { id: 'gallery', title: 'Gallery', line: 'Your own order · 3 albums' };
+---
+
+<Example title="Beside an album" description="The gallery's setup first, New album and the switch to tiles, then the gallery's albums in its order, each with a handle that moves it, and the albums elsewhere after them. The album being edited is current." layout="block">
+  <AlbumList gallery={gallery} albums={ALBUM_ROWS.slice(0, 2).concat(ALBUM_ROWS.slice(3))} elsewhere={ALBUM_ROWS.slice(2, 3)} current="harbour-walks" setupHref="#setup" tilesHref="#tiles" />
+</Example>
+
+<Example title="No gallery yet" description="No section shows albums: every album is listed without handles." layout="block">
+  <AlbumList albums={[]} elsewhere={ALBUM_ROWS} current="gallery" setupHref="#setup" tilesHref="#tiles" />
+</Example>

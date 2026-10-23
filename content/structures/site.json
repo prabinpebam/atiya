@@ -124,7 +124,16 @@
         "title": "Gallery",
         "summary": "A visual way to explore my work.",
         "view": "albums",
-        "children": []
+        "children": [
+          {
+            "id": "untitled-album",
+            "kind": "item",
+            "item": {
+              "type": "album",
+              "id": "untitled-album"
+            }
+          }
+        ]
       },
       {
         "id": "side-projects",

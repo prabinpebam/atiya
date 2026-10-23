@@ -12,7 +12,10 @@ import MediaInfo from '../components/MediaInfo.astro';
 import AlbumBulk from '../components/AlbumBulk.astro';
 import MediaGrid from '../components/MediaGrid.astro';
 import ContentIssues from '../components/ContentIssues.astro';
+import AlbumList from '../components/AlbumList.astro';
 import Dialog from '../../components/compounds/Dialog.astro';
+import SplitView from '../../components/compounds/SplitView.astro';
+import AlbumBand from '../../components/compounds/AlbumBand.astro';
 import IconButton from '../../components/fundamentals/IconButton.astro';
 import Button from '../../components/fundamentals/Button.astro';
 import Link from '../../components/fundamentals/Link.astro';
@@ -26,6 +29,8 @@ import { OVERLAY, STRUCTURE } from '../server/articles';
 import { albumKey, albumSection, albumSections, lookupOf } from '../server/albums';
 import { albumCells, coverBand } from '../server/albumScreens';
 import { viewerItem } from '../server/albumViewer';
+import { galleryList } from '../server/gallery';
+import { bandOf } from '../../content/bands';
 import { albumCounts, albumDates, countWords, dateSpan } from '../../content/album';
 import { settingsOf } from '../model/album';
 import { albumPath } from '../../content/repository';
@@ -67,6 +72,9 @@ const itemAsked = Astro.url.searchParams.get('item');
 const reviewing = Astro.url.searchParams.get('review') === '1';
 const viewer = loaded.ok && !fragment && draw('album-viewer') && (itemAsked || reviewing) ? await viewerItem(loaded.index, album, itemAsked ?? '', reviewing) : null;
 const others = loaded.ok ? [...loaded.index.albums.values()].filter((a) => a.id !== id).map((a) => ({ id: a.id, title: a.title })) : [];
+// the albums list beside it (§9.2), and its band as the gallery shows it, drawn only when Preview asks
+const list = loaded.ok && !fragment && draw('album-list') ? await galleryList(loaded.index, section) : null;
+const preview = loaded.ok && asked?.has('album-preview') ? await bandOf(id, path ?? '#') : undefined;
 
 // the picker, a page at a time, when it asks (performance-report.md R5)
 const PICKER_PAGE = 40;
@@ -91,7 +99,7 @@ const ORDERS = [
 ];
 ---
 
-<EditorLayout title={album.title} screen="album" nav={false} column>
+<EditorLayout title={album.title} screen="album" column>
   <Fragment slot="title">
     <Link href={withBase('/_edit/albums/')} variant="quiet">Albums</Link>
     <span data-album-heading data-title-line title={album.title}><Text as="span" variant="ui"><strong>{album.title}</strong></Text></span>
@@ -103,6 +111,7 @@ const ORDERS = [
     <Button variant="primary" size="sm" icon="plus" data-dialog-open="album-add">Add</Button>
     <Select label="Order" hideLabel size="sm" options={ORDERS} value={album.order ?? 'oldest'} data-album-sort="" />
     <Button variant="secondary" size="sm" icon="crop" data-album-cover-edit="">Edit cover</Button>
+    <IconButton label="Preview in the gallery" icon="preview" size="sm" data-album-preview-open="" />
     <IconButton label="Settings" icon="settings" size="sm" data-dialog-open="album-settings" />
     {path && <IconButton label="View on the site" icon="external" size="sm" href={path} />}
     <Button variant="secondary" size="sm" icon="publish" data-album-publish="">{published ? 'Unpublish' : 'Publish'}</Button>
@@ -111,6 +120,10 @@ const ORDERS = [
     loaded.ok && fragment ? (
       picker && <MediaGrid mode="pick" media={picker} owner={owner} paging={pickerPaging} />
     ) : loaded.ok ? (
+      <SplitView>
+      <Fragment slot="list">
+        {list && <AlbumList gallery={list.gallery && { id: list.gallery.id, title: list.gallery.title, line: list.line ?? '' }} albums={list.albums} elsewhere={list.elsewhere} current={id} setupHref={withBase('/_edit/albums/?view=list')} tilesHref={withBase('/_edit/albums/?view=tiles')} />}
+      </Fragment>
       <div data-album-editor data-editor-stack>
         <script is:inline type="application/json" data-region="album-state" data-album-state set:html={json} />
         <AlbumWords title={album.title} summary={album.summary} description={album.description} count={count} dates={dates} needAlt={needAlt} status={published ? 'published' : 'draft'} />
@@ -173,7 +186,19 @@ const ORDERS = [
         <Dialog id="album-downloads" title="Downloads" size="sm">
           <AlbumBulk kind="download" albumDownload={settings.download} />
         </Dialog>
+        <Dialog id="album-preview" title="In the gallery" size="lg" closeLabel="Back to the album">
+          <div data-region="album-preview" data-album-preview>
+            {preview ? (
+              <AlbumBand {...preview} headingLevel={2} />
+            ) : asked?.has('album-preview') ? (
+              <Text variant="ui" tone="muted">Nothing to show yet: the gallery shows an album once it holds a picture or a video.</Text>
+            ) : (
+              <Text variant="ui" tone="muted">Drawing the album as the gallery shows it…</Text>
+            )}
+          </div>
+        </Dialog>
       </div>
+      </SplitView>
     ) : (
       <ContentIssues issues={loaded.issues} />
     )

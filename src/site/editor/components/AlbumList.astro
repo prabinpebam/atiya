@@ -1,0 +1,186 @@
+---
+/**
+ * The albums list of edit mode's two columns (documentation/gallery/spec.md §9.1, §9.2): the gallery first (its
+ * setup: title, description, the order of its albums), New album and the switch to tiles, then the gallery's
+ * albums in its order, each with its cover, its title and what it holds, and a handle that moves it (the owner's
+ * own order from then on); the albums in another section, or in none, after them. Shown beside an album being
+ * edited and beside the gallery's setup.
+ * @tier editor
+ * @a11y A navigation landmark; the entry whose details show is aria-current. Each handle is a button named for its
+ * album: drag it, or press Alt with Up or Down on it or on its album, to move the album. The move is announced,
+ * saved at once and reported in the status line.
+ */
+import Button from '../../components/fundamentals/Button.astro';
+import Icon from '../../components/fundamentals/Icon.astro';
+import IconButton from '../../components/fundamentals/IconButton.astro';
+import Image from '../../components/fundamentals/Image.astro';
+import Text from '../../components/fundamentals/Text.astro';
+import ListPane from '../kit/ListPane.astro';
+import ListLink from '../kit/ListLink.astro';
+import PlainList from '../kit/PlainList.astro';
+import type { AlbumRow } from '../model/gallery';
+
+interface Props {
+  /** The gallery whose albums come first and whose setup is the first entry (its line: its order and count); none when no section shows albums. */
+  gallery?: { id: string; title: string; line: string };
+  /** The gallery's albums, in its order. */
+  albums: AlbumRow[];
+  /** Every other album (in another section, or in none). */
+  elsewhere: AlbumRow[];
+  /** What the details beside it show: an album's ID, or `gallery` (its setup). */
+  current?: string;
+  /** The gallery setup's address. */
+  setupHref: string;
+  /** The Tiles view's address. */
+  tilesHref: string;
+}
+
+const { gallery, albums, elsewhere, current, setupHref, tilesHref } = Astro.props;
+---
+
+<div class="album-list" data-region="album-list" data-album-list data-gallery={gallery?.id}>
+  <ListPane label="Albums" scroll="last">
+    <div class="gallery-entry">
+      <ListLink href={setupHref} current={current === 'gallery'} name={gallery?.title ?? 'Gallery'} meta={[gallery?.line ?? 'No section shows albums yet']} data-album-list-setup="">
+        <span slot="mark" class="thumb" data-blank>
+          <Icon name="settings" />
+        </span>
+      </ListLink>
+    </div>
+    <div class="tools">
+      <span class="new">
+        <Button variant="primary" icon="plus" block data-album-list-new="">New album</Button>
+      </span>
+      <IconButton label="Show as tiles" icon="views" variant="secondary" href={tilesHref} />
+    </div>
+    <div class="albums" data-scrollbar>
+      {
+        albums.length ? (
+          <PlainList as="ol" gap="xs" label={`In ${gallery?.title ?? 'the gallery'}`} data-album-list-rows="">
+            {albums.map((a) => (
+              <li class="album-row" data-album-row={a.id}>
+                <span class="link">
+                  <ListLink href={a.href} current={current === a.id} name={a.title} meta={[a.line]} data-album-list-link={a.id}>
+                    <span slot="mark" class="thumb" data-blank={a.cover ? undefined : ''}>
+                      {a.cover ? <Image src={a.cover.thumb} alt="" width={a.cover.width} height={a.cover.height} ratio="1/1" display="fill" radius="none" bg={a.cover.bg ? { light: a.cover.bg } : undefined} /> : <Icon name="gallery" />}
+                    </span>
+                  </ListLink>
+                </span>
+                {gallery && <IconButton label={`Move ${a.title}`} icon="drag" size="sm" variant="quiet" data-album-list-move={a.id} />}
+              </li>
+            ))}
+          </PlainList>
+        ) : (
+          <p class="no-albums">
+            <Text as="span" variant="small" tone="muted">
+              No albums in the gallery yet. New album makes one, ready to fill.
+            </Text>
+          </p>
+        )
+      }
+      {
+        elsewhere.length > 0 && (
+          <div class="elsewhere">
+            <Text as="p" variant="label" tone="muted">
+              Not in the gallery
+            </Text>
+            <PlainList as="ul" gap="xs" label="Not in the gallery">
+              {elsewhere.map((a) => (
+                <li>
+                  <ListLink href={a.href} current={current === a.id} name={a.title} meta={[a.line]}>
+                    <span slot="mark" class="thumb" data-blank={a.cover ? undefined : ''}>
+                      {a.cover ? <Image src={a.cover.thumb} alt="" width={a.cover.width} height={a.cover.height} ratio="1/1" display="fill" radius="none" bg={a.cover.bg ? { light: a.cover.bg } : undefined} /> : <Icon name="gallery" />}
+                    </span>
+                  </ListLink>
+                </li>
+              ))}
+            </PlainList>
+          </div>
+        )
+      }
+    </div>
+  </ListPane>
+</div>
+
+<script>
+  import { each } from '../../scripts/page';
+  import { initAlbumList } from '../scripts/albumList';
+
+  each<HTMLElement>('[data-album-list]', (root, signal) => initAlbumList(root, signal));
+</script>
+
+<style>
+  .album-list {
+    min-inline-size: 0;
+  }
+
+  /* the gallery above the rule, then New album staying in view and the albums scrolling under it */
+  .gallery-entry {
+    display: grid;
+    padding: var(--space-3) var(--space-3) var(--space-2);
+    border-block-end: var(--border-hairline) solid var(--color-rule);
+  }
+
+  .tools {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    padding: var(--space-3) var(--space-3) 0;
+  }
+
+  .new {
+    display: grid;
+    flex: 1;
+  }
+
+  .albums {
+    min-block-size: 0;
+    overflow: auto;
+    padding: var(--space-3);
+  }
+
+  .album-row {
+    display: flex;
+    align-items: center;
+    gap: var(--space-0-5);
+  }
+
+  .link {
+    flex: 1;
+    min-inline-size: 0;
+  }
+
+  /* the album being moved, where it would land */
+  .album-row[data-moving] {
+    border-radius: var(--radius-md);
+    outline: var(--border-strong) dashed var(--color-accent);
+    outline-offset: calc(var(--border-strong) * -1);
+  }
+
+  .thumb {
+    display: grid;
+    overflow: hidden;
+    inline-size: var(--c-editor-album-list-thumb);
+    border-radius: var(--radius-sm);
+    background: var(--color-bg-sunk);
+    color: var(--color-text-muted);
+  }
+
+  .thumb[data-blank] {
+    place-items: center;
+    aspect-ratio: 1;
+  }
+
+  .no-albums {
+    margin: 0;
+    padding: var(--space-2);
+  }
+
+  .elsewhere {
+    display: grid;
+    gap: var(--space-2);
+    margin-block-start: var(--space-4);
+    padding-block-start: var(--space-3);
+    border-block-start: var(--border-hairline) solid var(--color-rule);
+  }
+</style>

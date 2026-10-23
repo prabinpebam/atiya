@@ -1,0 +1,98 @@
+---
+/**
+ * The gallery's setup, beside the albums list (documentation/gallery/spec.md §9.1): the gallery section's title,
+ * its short description under the title, and the order of its albums (newest first, oldest first, or your own
+ * order, which a drag in the list makes), saved together; and a link to the gallery on the site. With more than
+ * one section showing albums, a Section choice says which one.
+ * @tier editor
+ * @a11y A form named by its heading; Save reports in the status line, a missing title is said beside the field.
+ */
+import Button from '../../components/fundamentals/Button.astro';
+import Heading from '../../components/fundamentals/Heading.astro';
+import HiddenField from '../../components/fundamentals/HiddenField.astro';
+import Select from '../../components/fundamentals/Select.astro';
+import Text from '../../components/fundamentals/Text.astro';
+import TextField from '../../components/fundamentals/TextField.astro';
+import ActionBar from '../../components/compounds/ActionBar.astro';
+import ChoiceGroup from '../../components/compounds/ChoiceGroup.astro';
+import Form from '../kit/Form.astro';
+import { ORDER_WORDS, type Gallery } from '../model/gallery';
+import { SECTION_ALBUM_ORDERS } from '../../content/schema';
+
+interface Props {
+  /** Every section whose view is Albums, in the site's order. */
+  galleries: Gallery[];
+  /** The one being set up; none when no section shows albums. */
+  gallery?: Gallery;
+  /** The site structure's version, for the save. */
+  version: string | null;
+  /** The gallery's address on the site (with the base). */
+  siteHref?: string;
+}
+
+const { galleries, gallery, version, siteHref } = Astro.props;
+const ORDER_HINTS: Record<string, string> = {
+  newest: 'The album with the latest pictures first.',
+  oldest: 'The album with the earliest pictures first.',
+  custom: 'As you drag them in the list.',
+};
+---
+
+<section class="gallery-setup" data-region="gallery-setup" data-gallery-setup={gallery?.id} data-version={version ?? ''} aria-labelledby="gallery-setup-title">
+  <header class="head">
+    <Heading level={2} size="h3" id="gallery-setup-title">
+      {gallery ? 'The gallery' : 'No gallery yet'}
+    </Heading>
+    <Text variant="ui" tone="muted">
+      {
+        gallery
+          ? 'What the gallery section is called, the line under its title, and the order of its albums. Drag an album in the list to put them in your own order.'
+          : 'A section whose view is Albums shows your albums. Make one on the Sections screen; your albums wait here till then.'
+      }
+    </Text>
+  </header>
+  {
+    gallery && (
+      <Form gap="xl" width="measure" labelledby="gallery-setup-title" data-gallery-form="">
+        {galleries.length > 1 ? (
+          <Select label="Section" name="section" value={gallery.id} options={galleries.map((g) => ({ value: g.id, label: g.title }))} data-gallery-section="" />
+        ) : (
+          <HiddenField name="section" value={gallery.id} />
+        )}
+        <TextField label="Title" name="title" value={gallery.title} required data-gallery-title="" />
+        <TextField label="Description" name="summary" value={gallery.summary ?? ''} optional multiline rows={2} maxlength={160} hint="A line under the title, on the gallery's page." />
+        <ChoiceGroup legend="Order of albums" name="order" value={gallery.order} options={SECTION_ALBUM_ORDERS.map((o) => ({ value: o, label: ORDER_WORDS[o], hint: ORDER_HINTS[o] }))} />
+        <ActionBar align="between">
+          <Button variant="primary" type="submit" icon="check" data-gallery-save="">Save</Button>
+          {siteHref && (
+            <Button variant="quiet" href={siteHref} external>
+              View the gallery
+            </Button>
+          )}
+        </ActionBar>
+      </Form>
+    )
+  }
+</section>
+
+<script>
+  import { each } from '../../scripts/page';
+  import { initGallerySetup } from '../scripts/gallerySetup';
+
+  each<HTMLElement>('[data-gallery-setup]', (root, signal) => initGallerySetup(root, signal));
+</script>
+
+<style>
+  .gallery-setup {
+    display: grid;
+    align-content: start;
+    gap: var(--space-8);
+    min-inline-size: 0;
+  }
+
+  .head {
+    display: grid;
+    gap: var(--space-2);
+    max-inline-size: var(--size-measure);
+  }
+</style>

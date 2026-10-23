@@ -264,6 +264,20 @@ const handle: APIRoute = async ({ request, params, url }) => {
       }
     }
 
+    // ---------- the gallery: its albums' order (a drag in the albums list) and its setup (gallery spec §9.1, §9.2) ----------
+    if (parts[0] === 'gallery' && method === 'PUT' && parts[1] && ID.test(parts[1])) {
+      const { saveGallery, setGalleryOrder } = await import('../server/gallery');
+      if (parts[2] === 'order') {
+        const albums = (await body<{ albums?: unknown }>(request)).albums;
+        if (!Array.isArray(albums) || !albums.every((a) => typeof a === 'string')) return json({ ok: false, issues: [{ file: 'content/structures/site.json', message: 'name the albums in their new order' }] }, 422);
+        return result(await setGalleryOrder(parts[1], albums as string[]));
+      }
+      if (parts.length === 2) {
+        const b = await body<{ settings?: Record<string, unknown>; version?: string | null }>(request);
+        return result(await saveGallery(parts[1], (b.settings ?? {}) as never, b.version ?? null));
+      }
+    }
+
     // ---------- access: grants, and a section's open and private pages moved and ordered (documentation/access/spec.md §8) ----------
     if (parts[0] === 'access') {
       if (method === 'POST' && parts[1] === 'grants' && !parts[2]) return result(await createGrant(await body<NewGrant>(request)));

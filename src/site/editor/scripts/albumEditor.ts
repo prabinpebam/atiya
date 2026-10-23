@@ -27,7 +27,7 @@ interface AlbumState {
   owner: string;
 }
 type Job = { what: string };
-const REGIONS = ['album-grid', 'album-cover', 'album-facts', 'album-state'];
+const REGIONS = ['album-grid', 'album-cover', 'album-facts', 'album-state', 'album-list'];
 const WORDS = ['title', 'summary', 'description'] as const;
 type Word = (typeof WORDS)[number];
 const UPLOADS_AT_ONCE = 2;
@@ -704,12 +704,26 @@ export function initAlbumEditor(root: HTMLElement, signal: AbortSignal) {
     }
     change(r.album, value === 'custom' ? 'In your own order' : value === 'newest' ? 'Newest first' : 'Oldest first');
   };
+  /** Preview in the gallery (§9.2): the album's band as the gallery draws it, from what's saved (waiting for a save on its way). */
+  const openPreview = async (button: HTMLElement) => {
+    dialog('album-preview')?.showModal();
+    const task = startTask('Drawing the preview…', { el: button });
+    while (queue.pending) await new Promise((r) => setTimeout(r, 100));
+    try {
+      await swapRegions(['album-preview'], location.href, undefined, { quiet: true });
+      void task.done();
+    } catch {
+      task.failed();
+      announce('Couldn’t draw the preview: is the dev server running?', 'negative');
+    }
+  };
   document.addEventListener(
     'click',
     (e) => {
-      const b = (e.target as Element).closest<HTMLElement>('[data-album-undo], [data-album-redo], [data-album-library], [data-album-text], [data-album-link], [data-album-publish]');
+      const b = (e.target as Element).closest<HTMLElement>('[data-album-undo], [data-album-redo], [data-album-library], [data-album-text], [data-album-link], [data-album-publish], [data-album-preview-open]');
       if (!b) return;
       const d = b.dataset;
+      if (d.albumPreviewOpen !== undefined) return void openPreview(b);
       // the Add dialog's other ways open their own dialog in its place
       if (d.albumLibrary !== undefined || d.albumText !== undefined || d.albumLink !== undefined) dialog('album-add')?.close();
       if (d.albumUndo !== undefined || d.albumRedo !== undefined) {

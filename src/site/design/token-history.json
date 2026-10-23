@@ -101,6 +101,7 @@
     "c.editor-ai-prompt.width": {"v":"34rem"},
     "c.editor-album-cards.min": {"v":"15rem"},
     "c.editor-album-cover.preview": {"v":"26rem"},
+    "c.editor-album-list.thumb": {"v":"2.5rem"},
     "c.editor-context.menu": {"v":"14rem"},
     "c.editor-crop.handle": {"v":"0.875rem"},
     "c.editor-crop.stage": {"v":"32rem"},
@@ -460,6 +461,17 @@
     "weight.semibold": {"v":"600"}
   },
   "entries": [
+    {
+      "date": "2026-10-23",
+      "changes": {
+        "c.editor-album-list.thumb": [
+          null,
+          {
+            "v": "2.5rem"
+          }
+        ]
+      }
+    },
     {
       "date": "2026-10-22",
       "changes": {

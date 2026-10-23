@@ -1,0 +1,79 @@
+{
+  "id": "untitled-album",
+  "type": "album",
+  "slug": "untitled-album",
+  "title": "DesignUp",
+  "status": "draft",
+  "createdAt": "2026-10-23",
+  "updatedAt": "2026-10-23",
+  "items": [
+    {
+      "id": "colorful-geometric-arrow-cluster",
+      "media": "articles/my-journey-with-designup/colorful-geometric-arrow-cluster"
+    },
+    {
+      "id": "media10",
+      "media": "articles/my-journey-with-designup/media10"
+    },
+    {
+      "id": "media8-mp4-snapshot-00-00-643-2",
+      "media": "articles/my-journey-with-designup/media8-mp4-snapshot-00-00-643-2"
+    },
+    {
+      "id": "media9",
+      "media": "articles/my-journey-with-designup/media9"
+    },
+    {
+      "id": "pasted-picture-2026-10-09",
+      "media": "articles/my-journey-with-designup/pasted-picture-2026-10-09"
+    },
+    {
+      "id": "pasted-picture-2026-10-09-2",
+      "media": "articles/my-journey-with-designup/pasted-picture-2026-10-09-2"
+    }
+  ],
+  "summary": "Collection of the creative I created for DesignUp along with photos and videos from the even I took.",
+  "description": "DesignUp is a community and conference for product creators, designers, makers and technology leaders across India and Southeast Asia. It began in Bengaluru and grew through large conferences and smaller events across Indian cities and Singapore, bringing practitioners together to share their work, ideas and experience.\nI was responsible for the creatives, photos and videos that you see here.",
+  "cover": {
+    "tiles": [
+      {
+        "item": "colorful-geometric-arrow-cluster",
+        "x": 0,
+        "y": 0,
+        "w": 6,
+        "h": 4,
+        "display": "fit"
+      },
+      {
+        "item": "media10",
+        "x": 6,
+        "y": 0,
+        "w": 3,
+        "h": 2,
+        "display": "fit"
+      },
+      {
+        "item": "media8-mp4-snapshot-00-00-643-2",
+        "x": 9,
+        "y": 0,
+        "w": 3,
+        "h": 2
+      },
+      {
+        "item": "media9",
+        "x": 6,
+        "y": 2,
+        "w": 3,
+        "h": 2,
+        "display": "fit"
+      },
+      {
+        "item": "pasted-picture-2026-10-09",
+        "x": 9,
+        "y": 2,
+        "w": 3,
+        "h": 2
+      }
+    ]
+  }
+}

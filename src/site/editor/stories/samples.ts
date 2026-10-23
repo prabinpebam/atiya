@@ -20,6 +20,7 @@ import type { CoverItem } from '../model/cover';
 import type { PhotoCell } from '../kit/PhotoGrid.astro';
 import type { ViewerItem } from '../model/albumViewer';
 import type { Picture } from '../../content/pictures';
+import { rowLine, type AlbumRow, type Gallery } from '../model/gallery';
 
 const pond = sample('pond');
 const bridge = sample('bridge');
@@ -309,6 +310,12 @@ export const ALBUM_SECTIONS = [
   { value: 'gallery', label: 'Gallery', description: 'Shows albums' },
   { value: 'work', label: 'Work', description: 'A section of pages' },
 ];
+
+/** The albums list's rows: the gallery's albums in its order, then one elsewhere. */
+export const ALBUM_ROWS: AlbumRow[] = ALBUM_CARDS.map((c) => ({ id: c.id, title: c.title, href: c.href, cover: c.cover && { thumb: c.cover.thumb, width: c.cover.width, height: c.cover.height }, line: rowLine(c) }));
+
+/** A gallery, as its setup and the albums list's first entry show it. */
+export const GALLERY: Gallery = { id: 'gallery', title: 'Gallery', summary: 'Places, people and the odd project, a year at a time.', path: '/gallery/', order: 'custom' };
 
 const cell = (id: string, s: ReturnType<typeof sample>, more: Partial<PhotoCell> = {}): PhotoCell => ({ id, kind: 'picture', media: `samples/${s.slug}`, thumb: s.thumb, alt: s.alt, width: s.width, height: s.height, ...more });
 
