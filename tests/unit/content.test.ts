@@ -848,17 +848,19 @@ describe('the navigation and the redirects', () => {
 
   it('features described custom links on every home index and preserves their explicit new-tab choice', () => {
     const link = { label: 'Skills library', href: 'https://prabinpebam.github.io/resources/', summary: 'AI skills and kits for humans and agents.', newTab: true };
-    const c = loadContent(docs({ primary: [{ node: 'work' }, link, { label: 'GitHub', href: 'https://github.com/x' }] }), new Set());
+    const c = loadContent(docs({ primary: [{ node: 'work' }, link, { node: 'about' }, { label: 'GitHub', href: 'https://github.com/x' }] }), new Set());
     const built = c.routes.filter((r) => r.published);
     expect(siteNav(c.structure, built)[1]).toEqual({ label: link.label, href: link.href, newTab: true });
     expect(homeSections(c.structure, built)).toEqual([
-      { href: link.href, title: link.label, summary: link.summary, newTab: true },
       { href: '/work/', title: 'Work', kicker: undefined, summary: undefined },
+      { href: link.href, title: link.label, summary: link.summary, newTab: true },
       { href: '/about/', title: 'About', kicker: undefined, summary: undefined },
     ]);
     const renamed = relabelEntry(moveEntry(c.structure, 1, -1), 0, 'My skills');
     expect(renamed.menus?.primary[0]).toEqual({ ...link, label: 'My skills' });
     expect(homeSections(renamed, built)[0]).toEqual({ href: link.href, title: 'My skills', summary: link.summary, newTab: true });
+    const last = moveEntry(c.structure, 1, 1);
+    expect(homeSections(last, built).map((e) => e.title)).toEqual(['Work', 'About', 'Skills library']);
   });
 
   it('keeps unfeatured links out of the home index and existing sections and empty-state labels unchanged', () => {
@@ -869,7 +871,7 @@ describe('the navigation and the redirects', () => {
       { href: '/about/', title: 'About', kicker: 'Being written', summary: undefined },
     ]);
     const local = loadContent(docs({ primary: [{ label: 'Docs', href: '/docs/', summary: 'How it works.', newTab: false }] }), new Set());
-    expect(homeSections(local.structure, local.routes)[0]).toEqual({ href: '/docs/', title: 'Docs', summary: 'How it works.', newTab: false });
+    expect(homeSections(local.structure, local.routes).at(-1)).toEqual({ href: '/docs/', title: 'Docs', summary: 'How it works.', newTab: false });
     expect(homeSections(c.structure, [])).toEqual([]);
   });
 
@@ -1030,6 +1032,7 @@ describe('the real content is three levels, with its navigation and redirects', 
     expect((c.structure.menus?.primary ?? []).map((e) => ('node' in e ? e.node : e.label))).toEqual(['work', 'about', 'leadership', 'writing', 'talks', 'side-projects', 'Loushing', 'contact']);
     const loushing = c.structure.menus?.primary.find((e) => 'href' in e && e.label === 'Loushing');
     expect(loushing).toMatchObject({ href: 'https://prabinpebam.github.io/loushing/', newTab: true, summary: 'AI skills and kits I create and curate for humans and AI agents.' });
+    expect(homeSections(c.structure, c.routes).map((e) => e.title)).toEqual(['Work', 'About', 'Leadership', 'Writing', 'Gallery', 'Side projects', 'Loushing', 'Contact']);
     expect(c.canonical.get('article/do-what-makes-you-proud')).toBe('/leadership/do-what-makes-you-proud/');
     const froms = c.redirects.map((r) => r.from);
     for (const id of ['workshop', 'town-hall', 'lighthouse', 'library', 'amphitheater', 'greenhouse', 'post-office']) expect(froms).toContain(`/classic/${id}/`);

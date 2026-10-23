@@ -32,21 +32,31 @@ export function siteNav(structure: SiteStructure, routes: Route[], current?: Rou
   });
 }
 
-/** Every home view's index: featured custom links, then the site's sections in their existing order. */
+/** Every home view's index: sections keep their order; featured links precede their next navigation section, or follow all sections. */
 export function homeSections(structure: SiteStructure, routes: Route[]) {
   const home = routes.find((r) => r.path === '/');
-  const featured = (structure.menus?.primary ?? []).flatMap((e) =>
-    'href' in e && e.summary
-      ? [{ href: e.href.startsWith('/') ? withBase(e.href) : e.href, title: e.label, summary: e.summary, newTab: e.newTab }]
-      : [],
-  );
-  const sections = routes.filter((r) => r.parent === home?.node).map((r) => ({
-    href: withBase(r.path),
-    title: r.title,
-    kicker: routes.some((p) => p.parent === r.node && p.access === 'open') ? undefined : 'Being written',
-    summary: r.node.kind === 'hub' ? r.node.summary : undefined,
-  }));
-  return [...featured, ...sections];
+  const sections = routes.filter((r) => r.parent === home?.node);
+  const menu = structure.menus?.primary ?? [];
+  const featured = menu.flatMap((e, index) => {
+    if (!('href' in e) || !e.summary) return [];
+    const next = menu.slice(index + 1).find((n) => 'node' in n && sections.some((r) => r.node.id === n.node));
+    return [{
+      before: next && 'node' in next ? next.node : undefined,
+      entry: { href: e.href.startsWith('/') ? withBase(e.href) : e.href, title: e.label, summary: e.summary, newTab: e.newTab },
+    }];
+  });
+  return [
+    ...sections.flatMap((r) => [
+      ...featured.filter((f) => f.before === r.node.id).map((f) => f.entry),
+      {
+        href: withBase(r.path),
+        title: r.title,
+        kicker: routes.some((p) => p.parent === r.node && p.access === 'open') ? undefined : 'Being written',
+        summary: r.node.kind === 'hub' ? r.node.summary : undefined,
+      },
+    ]),
+    ...featured.filter((f) => !f.before).map((f) => f.entry),
+  ];
 }
 
 /** The footer's links from the content (documentation/access/spec.md §9.6): the Privacy page, under its own title. */

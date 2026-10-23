@@ -235,7 +235,7 @@ The navigation is the site structure's `menus.primary`, a list of entries in the
 - **A custom link's `href`** is one of two things:
   - an `https`, `http` or `mailto` address;
   - a path on this site (`/play/`, `/docs/` or a built page), which gets the base path when it's rendered.
-- **A featured custom link** adds a `summary` (1–160 characters). As built, every home view lists these links before its sections, in navigation order, using the same numbered contents style. The link is not a section and creates no local page.
+- **A featured custom link** adds a `summary` (1–160 characters). As built, every home view inserts each link before its next section in the navigation, or after all sections when no section follows it, using the same numbered contents style. The sections keep their existing order. The link is not a section and creates no local page.
 - **An explicit new tab** is `newTab: true` on a custom link. The header, its More popover, its phone menu and the home entry all honour it, even on the site's parent domain, with `noopener noreferrer` and an accessible new-tab note. Without it, the normal tab policy applies. These optional fields are preserved when edit mode renames or reorders the entry.
 - **Limits (V17).** At most eight entries, each label at most 24 characters, and every entry pointing at something that exists. Under 56 rem the header folds into its menu anyway; above it, the worst case the limits allow is tested to stay on one row.
 

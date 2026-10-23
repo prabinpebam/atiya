@@ -178,7 +178,9 @@ test.describe('site design system', () => {
     const href = 'https://prabinpebam.github.io/loushing/';
     for (const path of ['/', '/views/bento/']) {
       await page.goto(path);
-      const entry = page.locator('main ol[aria-label="Sections"] > li').first();
+      const entries = page.locator('main ol[aria-label="Sections"] > li');
+      await expect(entries.locator('h2')).toHaveText(['Work', 'About', 'Leadership', 'Writing', 'Gallery', 'Side projects', 'Loushing (opens in a new tab)', 'Contact']);
+      const entry = entries.nth(6);
       const link = entry.getByRole('link', { name: 'Loushing (opens in a new tab)', exact: true });
       await expect(link).toHaveAttribute('href', href);
       await expect(link).toHaveAttribute('target', '_blank');

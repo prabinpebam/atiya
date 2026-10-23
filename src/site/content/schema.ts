@@ -801,7 +801,7 @@ export type MenuEntry = { node: string; label?: string } | {
   href: string;
   /** Open this link in a new tab even when it shares the site's parent domain. */
   newTab?: boolean;
-  /** Feature this link before the sections on every home view, with this description. */
+  /** Feature this link in navigation order among the sections on every home view, with this description. */
   summary?: string;
 };
 const menuEntry = z.union([
