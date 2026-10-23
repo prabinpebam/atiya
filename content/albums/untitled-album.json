@@ -42,7 +42,8 @@
         "y": 0,
         "w": 6,
         "h": 4,
-        "display": "fit"
+        "display": "fit",
+        "bg": "#97c9d0"
       },
       {
         "item": "media10",
@@ -50,7 +51,8 @@
         "y": 0,
         "w": 3,
         "h": 2,
-        "display": "fit"
+        "display": "fit",
+        "bg": "#000000"
       },
       {
         "item": "media8-mp4-snapshot-00-00-643-2",
@@ -65,7 +67,8 @@
         "y": 2,
         "w": 3,
         "h": 2,
-        "display": "fit"
+        "display": "fit",
+        "bg": "#000000"
       },
       {
         "item": "pasted-picture-2026-10-09",
