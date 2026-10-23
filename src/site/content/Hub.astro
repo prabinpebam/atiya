@@ -11,8 +11,10 @@ import Link from '../components/fundamentals/Link.astro';
 import ContentsList from '../components/compounds/ContentsList.astro';
 import Dialog from '../components/compounds/Dialog.astro';
 import ViewChoices from '../components/compounds/ViewChoices.astro';
+import ContributionHero from '../components/compounds/ContributionHero.astro';
 import { SITE_FEATURES, withBase } from '../design/meta';
-import { getPerson, getPlanet, getRoute, getRoutes, getSite, getStructure, getWays } from './repository';
+import { getGitHub, getPerson, getPlanet, getRoute, getRoutes, getSite, getStructure, getWays } from './repository';
+import { contributionStats } from './github';
 import { footerLinks, homeSections, siteNav } from './navigation';
 import { homeRouting, viewSwitch } from './homeView';
 import { HUB_WAYS } from '../scripts/hub';
@@ -24,6 +26,7 @@ interface Props {
 
 const { at } = Astro.props;
 const site = getSite();
+const github = getGitHub();
 const owner = getPerson(site.owner);
 const home = getRoute('/')!;
 const routes = getRoutes();
@@ -46,7 +49,7 @@ const choices = at === 'view' ? viewSwitch('classic') : null;
   hero={{
     title: home.title,
     standfirst: home.node.kind === 'hub' ? home.node.summary : undefined,
-    picture: planet
+    picture: planet && !github
       ? {
           src: withBase('/poster/landing-1200.webp'),
           srcset: `${withBase('/poster/landing-800.webp')} 800w, ${withBase('/poster/landing-1200.webp')} 1200w`,
@@ -57,6 +60,15 @@ const choices = at === 'view' ? viewSwitch('classic') : null;
       : undefined,
   }}
 >
+  {
+    github && (
+      <ContributionHero slot="hero" title={home.title} standfirst={home.node.kind === 'hub' ? home.node.summary : undefined} data={{ ...github, stats: contributionStats(github) }}>
+        <Button variant="primary" size="lg" href="#sections" data-mode="classic">Read the site</Button>
+        {planet && <Button variant="secondary" size="lg" href={withBase('/play/')} icon="planet" data-mode="play">Explore the planet</Button>}
+        {choices && <Button variant="quiet" size="lg" icon="views" data-dialog-open="change-view" aria-haspopup="dialog">Change view</Button>}
+      </ContributionHero>
+    )
+  }
   {planetFirst && <Button variant="primary" size="lg" href={withBase('/play/')} icon="planet" data-mode="play">Explore the planet</Button>}
   <Button variant={planetFirst ? 'secondary' : 'primary'} size="lg" href="#sections" data-mode="classic">Read the site</Button>
   {planet && !planetFirst && <Button variant="secondary" size="lg" href={withBase('/play/')} icon="planet" data-mode="play">Explore the planet</Button>}

@@ -200,6 +200,18 @@ describe('the loader checks what it is given', () => {
     expect(c.media.get('articles/a/pic')?.master).toBe('/content/media/articles/a/pic.webp');
   });
 
+  it('loads the optional public GitHub snapshot and rejects malformed data rather than hiding it', () => {
+    expect(loadContent(base, masters).github).toBeUndefined();
+    const snapshot = {
+      login: 'octocat', fetchedAt: '2026-10-23T12:00:00.000Z', through: '2026-10-23',
+      days: Array.from({ length: 365 }, (_, i) => ({
+        date: new Date(Date.UTC(2025, 9, 24 + i)).toISOString().slice(0, 10), count: 0, level: 0,
+      })),
+    };
+    expect(loadContent({ ...base, '/content/github.json': snapshot }, masters).github).toEqual(snapshot);
+    expect(problems({ ...base, '/content/github.json': { ...snapshot, days: snapshot.days.slice(1) } }).join('\n')).toMatch(/content\/github\.json.*365 days/);
+  });
+
   it('names the file and field of each problem', () => {
     const article = base['/content/articles/a.json'];
     expect(problems({ ...base, '/content/articles/a.json': { ...article, colour: 'red' } }).join('\n')).toMatch(/content\/articles\/a\.json: .*colour/);

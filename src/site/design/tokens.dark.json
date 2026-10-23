@@ -3,6 +3,12 @@
   "color": {
     "$type": "color",
     "$description": "The dark context: the same roles on the charcoal page.",
+    "contribution-0": { "$value": "{p.color.github.dark-0}" },
+    "contribution-1": { "$value": "{p.color.github.dark-1}" },
+    "contribution-2": { "$value": "{p.color.github.dark-2}" },
+    "contribution-3": { "$value": "{p.color.github.dark-3}" },
+    "contribution-4": { "$value": "{p.color.github.dark-4}" },
+    "contribution-shade": { "$value": "{p.color.stock.950}" },
     "bg": {
       "$value": "{p.color.stock.900}"
     },

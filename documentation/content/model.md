@@ -17,6 +17,12 @@ The items encode the IA's [taxonomy and content model](../ia-navigation/03-taxon
 > - **Blocks** map one to one onto the design system's components. Text is a small Markdown subset with no raw HTML.
 > - **The build refuses bad content:** a missing field, a dangling reference, a missing alt text, an unpublishable visibility, an item placed twice on the site, a planet entry without a page on the site, or a published URL that disappears without a redirect.
 
+### Optional public GitHub snapshot
+
+`content/github.json` is an optional, validated resource for the [classic home's contribution hero](../home-views/foundation.md#the-classic-opening-public-github-activity). It contains a GitHub `login`, an ISO UTC `fetchedAt`, a final UTC `through` date and exactly 365 ascending contiguous `days`, each with a `date`, non-negative integer `count` and GitHub intensity `level` from 0 to 4. Zero counts must have level 0 and only zero counts may have level 0. Statistics are derived, never separately authored.
+
+The repository exposes it through `getGitHub()`. Absence keeps the classic opening; malformed data is a normal content validation error, never silently treated as absence. The refresh tool reads only the anonymous public-profile calendar, outside the build. Publicly displayed anonymised private counts may be included, but no private repository data is stored.
+
 <figure class="slate-figure" data-diagram="model">
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 540" role="img" aria-labelledby="cp-model__title cp-model__desc" preserveAspectRatio="xMidYMid meet" data-slate-svg-motion="viewport" data-slate-safe-margin="24">
 <title id="cp-model__title">Content items and the structures that place them</title>

@@ -79,6 +79,11 @@
     "c.contents.cap": {"v":"0.7"},
     "c.contents.number-max": {"v":"8rem"},
     "c.contents.number-min": {"v":"4rem"},
+    "c.contribution.chart-height": {"v":"26rem"},
+    "c.contribution.chart-height-small": {"v":"15rem"},
+    "c.contribution.glow": {"v":"14px"},
+    "c.contribution.stats-width": {"v":"14rem"},
+    "c.contribution.tip-width": {"v":"17rem"},
     "c.control.border": {"v":"var(--color-border)"},
     "c.control.border-hover": {"v":"var(--color-border-strong)"},
     "c.control.fill": {"v":"var(--color-bg-raised)"},
@@ -261,6 +266,12 @@
     "color.bg-sunk": {"v":"light-dark(var(--p-color-stock-100), var(--p-color-stock-950))"},
     "color.border": {"v":"var(--p-color-stock-500); more contrast: var(--color-border-strong)"},
     "color.border-strong": {"v":"light-dark(var(--p-color-stock-700), var(--p-color-stock-300))"},
+    "color.contribution-0": {"v":"light-dark(var(--p-color-github-light-0), var(--p-color-github-dark-0))"},
+    "color.contribution-1": {"v":"light-dark(var(--p-color-github-light-1), var(--p-color-github-dark-1))"},
+    "color.contribution-2": {"v":"light-dark(var(--p-color-github-light-2), var(--p-color-github-dark-2))"},
+    "color.contribution-3": {"v":"light-dark(var(--p-color-github-light-3), var(--p-color-github-dark-3))"},
+    "color.contribution-4": {"v":"light-dark(var(--p-color-github-light-4), var(--p-color-github-dark-4))"},
+    "color.contribution-shade": {"v":"var(--p-color-stock-950)"},
     "color.focus": {"v":"light-dark(var(--p-color-indigo-600), var(--p-color-marigold-300))"},
     "color.frost": {"v":"light-dark(var(--p-color-frost-indigo-light), var(--p-color-frost-indigo-dark))"},
     "color.frost-rim": {"v":"light-dark(var(--p-color-frost-rim-light), var(--p-color-frost-rim-dark))"},
@@ -325,6 +336,16 @@
     "p.color.frost.indigo-light-strong": {"v":"rgb(58 60 158 / 0.44)"},
     "p.color.frost.rim-dark": {"v":"rgb(255 255 255 / 0.16)"},
     "p.color.frost.rim-light": {"v":"rgb(255 255 255 / 0.6)"},
+    "p.color.github.dark-0": {"v":"#161B22"},
+    "p.color.github.dark-1": {"v":"#0E4429"},
+    "p.color.github.dark-2": {"v":"#006D32"},
+    "p.color.github.dark-3": {"v":"#26A641"},
+    "p.color.github.dark-4": {"v":"#39D353"},
+    "p.color.github.light-0": {"v":"#EBEDF0"},
+    "p.color.github.light-1": {"v":"#9BE9A8"},
+    "p.color.github.light-2": {"v":"#40C463"},
+    "p.color.github.light-3": {"v":"#30A14E"},
+    "p.color.github.light-4": {"v":"#216E39"},
     "p.color.indigo.100": {"v":"#E9EAF8"},
     "p.color.indigo.200": {"v":"#C7CAF7"},
     "p.color.indigo.300": {"v":"#A9AEF2"},
@@ -464,10 +485,136 @@
     {
       "date": "2026-10-23",
       "changes": {
+        "c.contribution.chart-height": [
+          null,
+          {
+            "v": "26rem"
+          }
+        ],
+        "c.contribution.chart-height-small": [
+          null,
+          {
+            "v": "15rem"
+          }
+        ],
+        "c.contribution.glow": [
+          null,
+          {
+            "v": "14px"
+          }
+        ],
+        "c.contribution.stats-width": [
+          null,
+          {
+            "v": "14rem"
+          }
+        ],
+        "c.contribution.tip-width": [
+          null,
+          {
+            "v": "17rem"
+          }
+        ],
         "c.editor-album-list.thumb": [
           null,
           {
             "v": "2.5rem"
+          }
+        ],
+        "color.contribution-0": [
+          null,
+          {
+            "v": "light-dark(var(--p-color-github-light-0), var(--p-color-github-dark-0))"
+          }
+        ],
+        "color.contribution-1": [
+          null,
+          {
+            "v": "light-dark(var(--p-color-github-light-1), var(--p-color-github-dark-1))"
+          }
+        ],
+        "color.contribution-2": [
+          null,
+          {
+            "v": "light-dark(var(--p-color-github-light-2), var(--p-color-github-dark-2))"
+          }
+        ],
+        "color.contribution-3": [
+          null,
+          {
+            "v": "light-dark(var(--p-color-github-light-3), var(--p-color-github-dark-3))"
+          }
+        ],
+        "color.contribution-4": [
+          null,
+          {
+            "v": "light-dark(var(--p-color-github-light-4), var(--p-color-github-dark-4))"
+          }
+        ],
+        "color.contribution-shade": [
+          null,
+          {
+            "v": "var(--p-color-stock-950)"
+          }
+        ],
+        "p.color.github.dark-0": [
+          null,
+          {
+            "v": "#161B22"
+          }
+        ],
+        "p.color.github.dark-1": [
+          null,
+          {
+            "v": "#0E4429"
+          }
+        ],
+        "p.color.github.dark-2": [
+          null,
+          {
+            "v": "#006D32"
+          }
+        ],
+        "p.color.github.dark-3": [
+          null,
+          {
+            "v": "#26A641"
+          }
+        ],
+        "p.color.github.dark-4": [
+          null,
+          {
+            "v": "#39D353"
+          }
+        ],
+        "p.color.github.light-0": [
+          null,
+          {
+            "v": "#EBEDF0"
+          }
+        ],
+        "p.color.github.light-1": [
+          null,
+          {
+            "v": "#9BE9A8"
+          }
+        ],
+        "p.color.github.light-2": [
+          null,
+          {
+            "v": "#40C463"
+          }
+        ],
+        "p.color.github.light-3": [
+          null,
+          {
+            "v": "#30A14E"
+          }
+        ],
+        "p.color.github.light-4": [
+          null,
+          {
+            "v": "#216E39"
           }
         ]
       }

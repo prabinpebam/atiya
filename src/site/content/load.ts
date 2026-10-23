@@ -14,6 +14,7 @@ import { checkModes } from '../modes/rules';
 import { BUILTIN_MODES } from '../modes/builtin';
 import { effectiveWays } from '../modes/ways';
 import { SHOWCASE_FILE, TOPICS_FILE, showcaseFile, topicsFile, type Showcase, type TopicsFile } from '../home/schema';
+import { GitHubDataError, validateGitHubSnapshot, type GitHubSnapshot } from './github';
 import { checkHome } from '../home/check';
 import { albumProblems, albumWarnings, fingerprintClashes, isMediaItem, type MediaLookup } from './album';
 import { DRAWING_MAX_BYTES, PRIVATE_VIDEO_MAX_BYTES, isDrawingFile } from './schema';
@@ -115,6 +116,8 @@ export interface ContentIndex {
   fonts: Map<string, FontFileDoc>;
   /** The home page's spine (content/showcase.json: documentation/home-views/foundation.md §2), null without it. */
   showcase: Showcase | null;
+  /** Optional activity visible on the person's public GitHub profile, refreshed outside the build. */
+  github?: GitHubSnapshot;
   /** The topic vocabulary (content/topics.json: home-views/curation.md §4.1), null without it. */
   topics: TopicsFile | null;
   /** Reported, not failed: a published item the site doesn't place (it has no page). */
@@ -206,6 +209,7 @@ export function loadContent(docs: Record<string, unknown>, masters: Set<string>,
   let message: AccessMessage | null = null;
   let ways: Ways | null = null;
   let showcase: Showcase | null = null;
+  let github: GitHubSnapshot | undefined;
   let topics: TopicsFile | null = null;
   // Little planet's structure: where it was read from (the new place, or the old one during the move: M1.1)
   let planetFile = '';
@@ -257,6 +261,14 @@ export function loadContent(docs: Record<string, unknown>, masters: Set<string>,
     } else if (file === `/content/${WAYS_FILE}`) ways = parse(waysFile, file, data) ?? null;
     else if (file === `/content/${SHOWCASE_FILE}`) showcase = parse(showcaseFile, file, data) ?? null;
     else if (file === `/content/${TOPICS_FILE}`) topics = parse(topicsFile, file, data) ?? null;
+    else if (file === '/content/github.json') {
+      try {
+        github = validateGitHubSnapshot(data);
+      } catch (error) {
+        if (!(error instanceof GitHubDataError)) throw error;
+        add(file, error.message);
+      }
+    }
     else if (file === '/content/recommendations.json') {
       recommendations = parse(recommendationsFile, file, data)?.items ?? [];
       const seen = new Set<string>();
@@ -684,7 +696,7 @@ export function loadContent(docs: Record<string, unknown>, masters: Set<string>,
     });
   }
 
-  const index: ContentIndex = { site: site!, structure: structure!, articles, albums, origins, access, people, media, documents, videos, embeds, routes, canonical: canonicalPaths(routes), redirects, planet, ways, overlay, grants, accessMessage: message, themes, fonts, recommendations, showcase, topics, warnings, problems: [] };
+  const index: ContentIndex = { site: site!, structure: structure!, articles, albums, origins, access, people, media, documents, videos, embeds, routes, canonical: canonicalPaths(routes), redirects, planet, ways, overlay, grants, accessMessage: message, themes, fonts, recommendations, showcase, github, topics, warnings, problems: [] };
   // the home page (documentation/home-views/foundation.md §2): what the spine names is open and found word for word;
   // a page already failing its own check isn't reported again through it
   if (site && structure) for (const i of checkHome(index, ways, invalidArticles)) add(i.file, i.message, i.path);

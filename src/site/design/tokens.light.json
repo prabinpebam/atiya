@@ -3,6 +3,12 @@
   "color": {
     "$type": "color",
     "$description": "Semantic colour roles. Each is a light value with its dark twin in $extensions (emitted as light-dark()), so a subtree can switch mode with color-scheme alone.",
+    "contribution-0": { "$value": "{p.color.github.light-0}", "$description": "No GitHub contributions" },
+    "contribution-1": { "$value": "{p.color.github.light-1}", "$description": "GitHub contribution intensity, first quartile" },
+    "contribution-2": { "$value": "{p.color.github.light-2}", "$description": "GitHub contribution intensity, second quartile" },
+    "contribution-3": { "$value": "{p.color.github.light-3}", "$description": "GitHub contribution intensity, third quartile" },
+    "contribution-4": { "$value": "{p.color.github.light-4}", "$description": "GitHub contribution intensity, fourth quartile" },
+    "contribution-shade": { "$value": "{p.color.stock.950}", "$description": "Shade on the sides of the contribution calendar's cuboids" },
     "bg": {
       "$value": "{p.color.stock.50}",
       "$description": "The page"

@@ -1,0 +1,227 @@
+---
+/**
+ * A person's opening, led by a year of activity visible on their public GitHub profile. A projected
+ * calendar defaults to isometric columns, with a flat view and the same readable daily data.
+ * @tier compound
+ * @a11y All counts and dates are HTML. The canvas has keyboard day navigation, live details and a screen-reader table.
+ * @a11y Touch keeps vertical page scrolling; reduced motion returns to the resting view immediately.
+ * @key Arrows: explore days (left/right a week, up/down a day); Home/End: first/last day
+ */
+import Heading from '../fundamentals/Heading.astro';
+import Text from '../fundamentals/Text.astro';
+import Button from '../fundamentals/Button.astro';
+import ButtonGroup from '../fundamentals/ButtonGroup.astro';
+import IconButton from '../fundamentals/IconButton.astro';
+import { stableId } from '../../design/stableId';
+import type { ContributionData } from '../../scripts/contributionRules';
+
+interface Props {
+  /** The person's name: this page's one h1. */
+  title: string;
+  /** The introduction, from the home page's content. */
+  standfirst?: string;
+  /** A validated public-profile snapshot and its derived statistics. */
+  data: ContributionData;
+  /** The title's level in a design-library example. */
+  level?: 1 | 2;
+}
+const { title, standfirst, data, level = 1 } = Astro.props;
+const uid = stableId(Astro, 'ContributionHero');
+const heading = `contribution-${uid}`;
+const hint = `contribution-hint-${uid}`;
+const n = (value: number) => value.toLocaleString('en');
+const date = (value: string) => new Intl.DateTimeFormat('en', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' }).format(new Date(`${value}T00:00:00Z`));
+const github = `https://github.com/${data.login}`;
+const stats = data.stats;
+---
+
+<section class="contribution-hero" data-contributions data-mode="3d" data-orientation="isometric">
+  <div class="intro">
+    <Heading level={level} size="display">{title}</Heading>
+    <div class="introduction">
+      {standfirst && <Text variant="standfirst" narrow>{standfirst}</Text>}
+      <div class="actions"><slot /></div>
+      {Astro.slots.has('note') && <div class="note"><slot name="note" /></div>}
+    </div>
+  </div>
+  <section class="activity" aria-labelledby={heading}>
+    <div class="activity-head">
+      <div class="activity-title">
+        <div class="chart-title">
+          <IconButton href={github} label="View GitHub profile" icon="github" size="sm" />
+          <Heading level={2} size="h3" id={heading}>A year on GitHub</Heading>
+        </div>
+        <Text variant="label" tone="muted">{date(data.days[0].date)} – {date(data.through)}</Text>
+      </div>
+      <div class="view-controls">
+        <Button variant="quiet" size="sm" data-contribution-reset="">Reset view</Button>
+        <ButtonGroup label="Contribution view" options={[
+          { label: '2D', pressed: false, attrs: { 'data-contribution-mode': '2d' } },
+          { label: '3D', pressed: true, attrs: { 'data-contribution-mode': '3d' } },
+        ]} />
+      </div>
+    </div>
+    <div class="dashboard">
+      <div class="visual">
+        <div class="stage">
+          <canvas data-contribution-canvas tabindex="0" role="img" aria-label="GitHub contribution calendar. Use arrow keys to explore each day." aria-describedby={hint}>
+            Every date and count is also available in the screen-reader table.
+          </canvas>
+          <div class="tip" role="tooltip" data-contribution-tip hidden>
+            <strong></strong>
+            <time></time>
+            <span>Visible on the public profile</span>
+          </div>
+          <div class="palette" aria-hidden="true">
+            {[0, 1, 2, 3, 4].map((i) => <span data-contribution-colour={i}></span>)}
+            <span data-contribution-shade></span>
+            <span data-contribution-label-style></span>
+          </div>
+        </div>
+        <div class="chart-foot">
+          <p class="instruction" id={hint}>Drag to look around; release to return. Use arrow keys to explore days.</p>
+          <div class="legend" aria-label="GitHub contribution intensity, from less to more">
+            <span>Less</span>
+            {[0, 1, 2, 3, 4].map((i) => <span class="key" data-level={i} aria-hidden="true"></span>)}
+            <span>More</span>
+          </div>
+        </div>
+        <p class="sr-only" data-contribution-selection aria-live="polite" aria-atomic="true"></p>
+      </div>
+      <aside class="stats" aria-label="GitHub contribution statistics">
+        <div class="stat-card">
+          <Text variant="label" tone="muted">Contributions</Text>
+          <p class="total">{n(stats.total)}</p>
+          <p class="stat-note">Visible in the last year</p>
+          <dl>
+            <div><dt>Last 7 days</dt><dd>{n(stats.thisWeek)}</dd></div>
+            <div><dt>Active days</dt><dd>{n(stats.activeDays)}</dd></div>
+            <div><dt>Daily average</dt><dd>{stats.average.toFixed(1)}</dd></div>
+          </dl>
+        </div>
+        <div class="stat-card">
+          <Text variant="label" tone="muted">Streaks</Text>
+          <dl>
+            <div><dt>Longest</dt><dd>{n(stats.longestStreak)} days</dd></div>
+            <div><dt>Current</dt><dd>{n(stats.currentStreak)} days</dd></div>
+          </dl>
+        </div>
+        <div class="stat-card">
+          <Text variant="label" tone="muted">Best day</Text>
+          <p class="best">{n(stats.bestDay.count)} contributions</p>
+          <p class="stat-note">{date(stats.bestDay.date)}</p>
+        </div>
+      </aside>
+    </div>
+    <p class="error" data-contribution-status role="status" hidden></p>
+    <div class="sr-only">
+      <table>
+        <caption>Contributions visible on the public GitHub profile, by date</caption>
+        <thead><tr><th scope="col">Date</th><th scope="col">Contributions</th></tr></thead>
+        <tbody>{data.days.map((d) => <tr><th scope="row"><time datetime={d.date}>{date(d.date)}</time></th><td>{n(d.count)}</td></tr>)}</tbody>
+      </table>
+    </div>
+  </section>
+  <script type="application/json" data-contribution-data set:html={JSON.stringify(data).replace(/</g, '\\u003c')} />
+</section>
+
+<script>
+  import { each } from '../../scripts/page';
+  import { setupContributions } from '../../scripts/contributions';
+  each<HTMLElement>('[data-contributions]', setupContributions);
+</script>
+
+<style>
+  .contribution-hero {
+    max-width: var(--size-wide);
+    margin-inline: auto;
+    padding: var(--space-12) var(--space-gutter) 0;
+    display: grid;
+    gap: var(--space-10);
+  }
+  .intro {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    align-items: center;
+    gap: var(--space-10);
+  }
+  .introduction { display: grid; gap: var(--space-4); }
+  .actions, .view-controls { display: flex; align-items: center; flex-wrap: wrap; gap: var(--space-3); }
+  .note, .instruction, .error, .stat-note, .tip span { font: var(--type-note); color: var(--color-text-muted); }
+  .activity { display: grid; gap: var(--space-5); }
+  .activity-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--space-4); }
+  .activity-title { display: grid; gap: var(--space-1); }
+  .chart-title { display: flex; align-items: center; gap: var(--space-3); }
+  .dashboard { display: grid; grid-template-columns: minmax(0, 1fr) var(--c-contribution-stats-width); gap: var(--space-6); align-items: start; }
+  .visual { min-inline-size: 0; }
+  .stage { position: relative; }
+  canvas {
+    display: block;
+    inline-size: 100%;
+    block-size: var(--c-contribution-chart-height);
+    color: var(--color-accent);
+    touch-action: pan-y;
+    cursor: grab;
+    border-radius: var(--radius-lg);
+    --plot-glow: var(--c-contribution-glow);
+    --plot-return: var(--duration-slower);
+  }
+  canvas:active { cursor: grabbing; }
+  .tip {
+    position: absolute;
+    inset-inline-start: var(--tip-x, 0);
+    inset-block-start: var(--tip-y, 0);
+    display: grid;
+    gap: var(--space-1);
+    max-inline-size: var(--c-contribution-tip-width);
+    padding: var(--space-3) var(--space-4);
+    border: var(--border-hairline) solid var(--color-rule);
+    border-radius: var(--radius-md);
+    background: var(--color-bg-raised);
+    box-shadow: var(--shadow-md);
+    color: var(--color-text);
+    font: var(--type-label);
+    pointer-events: none;
+  }
+  .tip[hidden] { display: none; }
+  .tip time { font: var(--type-note); }
+  .palette { position: absolute; visibility: hidden; pointer-events: none; }
+  [data-contribution-colour='0'] { color: var(--color-contribution-0); }
+  [data-contribution-colour='1'] { color: var(--color-contribution-1); }
+  [data-contribution-colour='2'] { color: var(--color-contribution-2); }
+  [data-contribution-colour='3'] { color: var(--color-contribution-3); }
+  [data-contribution-colour='4'] { color: var(--color-contribution-4); }
+  [data-contribution-shade] { color: var(--color-contribution-shade); }
+  [data-contribution-label-style] { font: var(--type-note); color: var(--color-text-muted); padding-inline: var(--space-1); }
+  .chart-foot { display: flex; justify-content: space-between; flex-wrap: wrap; align-items: center; gap: var(--space-3); }
+  .legend { display: flex; gap: var(--space-1); align-items: center; font: var(--type-note); color: var(--color-text-muted); }
+  .key { inline-size: var(--space-3); block-size: var(--space-3); border-radius: var(--radius-xs); }
+  .key[data-level='0'] { background: var(--color-contribution-0); }
+  .key[data-level='1'] { background: var(--color-contribution-1); }
+  .key[data-level='2'] { background: var(--color-contribution-2); }
+  .key[data-level='3'] { background: var(--color-contribution-3); }
+  .key[data-level='4'] { background: var(--color-contribution-4); }
+  .stats { display: grid; gap: var(--space-3); }
+  .stat-card { display: grid; gap: var(--space-2); padding: var(--space-4); border: var(--border-hairline) solid var(--color-rule); border-radius: var(--radius-lg); background: var(--color-bg-raised); }
+  .total { font-family: var(--font-display); font-variation-settings: var(--axes-display); font-size: var(--text-h2); line-height: var(--leading-tight); color: var(--color-text); font-variant-numeric: lining-nums tabular-nums; }
+  .best { font: var(--type-label); color: var(--color-text); }
+  dl { display: grid; gap: var(--space-2); margin: 0; font: var(--type-note); }
+  dl div { display: flex; justify-content: space-between; gap: var(--space-3); }
+  dt { color: var(--color-text-muted); }
+  dd { margin: 0; font-weight: var(--weight-semibold); font-variant-numeric: tabular-nums; color: var(--color-text); }
+  @media (max-width: 56rem) {
+    .intro { grid-template-columns: minmax(0, 1fr); gap: var(--space-6); align-items: start; }
+    .dashboard { grid-template-columns: minmax(0, 1fr); }
+    .stats { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  }
+  @media (max-width: 40rem) {
+    .contribution-hero { padding-block-start: var(--space-8); gap: var(--space-8); }
+    canvas { block-size: var(--c-contribution-chart-height-small); }
+    .stats { grid-template-columns: minmax(0, 1fr); }
+    .view-controls { justify-content: space-between; inline-size: 100%; }
+  }
+  @media (forced-colors: active) {
+    canvas { outline: var(--border-control) solid CanvasText; }
+    .stat-card, .tip { border-color: CanvasText; }
+  }
+</style>

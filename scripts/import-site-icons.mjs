@@ -26,7 +26,7 @@ import { fileURLToPath } from 'node:url';
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const SET = join(ROOT, 'src/site/design/icon-set.json');
 const OUT = join(ROOT, 'src/site/design/iconData.ts');
-const STYLES = { duotone: 'fad', 'classic-solid': 'fas' };
+const STYLES = { duotone: 'fad', 'classic-solid': 'fas', brands: 'fab' };
 const BASELINE = 448;
 
 const args = process.argv.slice(2);

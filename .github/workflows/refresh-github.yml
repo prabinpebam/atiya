@@ -1,0 +1,33 @@
+name: Refresh public GitHub activity
+
+on:
+  workflow_dispatch:
+  # Refresh before the nightly Pages build; that build publishes the new snapshot.
+  schedule:
+    - cron: '25 18 * * *'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: github-activity
+  cancel-in-progress: false
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+      - name: Read the anonymous public contribution calendar
+        run: node scripts/refresh-github.mjs
+      - name: Save the public snapshot
+        run: |
+          git add content/github.json
+          if git diff --cached --quiet; then exit 0; fi
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git commit -m "Refresh public GitHub activity"
+          git push

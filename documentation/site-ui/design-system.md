@@ -53,7 +53,7 @@ The rules for the website's pages: the landing, the classic site and the design 
 ### Icons, behaviour and base (also tier 0)
 
 - **Icons** are Font Awesome Pro *Duotone* (licensed to the site's owner), imported one by one as data:
-  - `src/site/design/icon-set.json` lists them: the name components use, then the Font Awesome name (`classic-solid/` in front for one Duotone lacks, like `plus`).
+  - `src/site/design/icon-set.json` lists them: the name components use, then the Font Awesome name (`classic-solid/` in front for one Duotone lacks, like `plus`). Brand marks use the library's `brands/` style, never a redrawn duotone interpretation: `github=brands/github` identifies the public contribution chart's profile link.
   - An icon of the site's own (the little planet) is an SVG in the same two-layer format in `assets-src/site-icons/`, listed as `file:<path>`.
   - `node scripts/import-site-icons.mjs <name>=<font-awesome-name>` adds one from the owner's local copy of the library and writes the generated `iconData.ts`, with the font coordinates flipped to SVG ones. Never hand-edit that file. Import only what the site uses, and look at a new icon before using it: some of the library's names draw something else (its `volume-high` is a speaker cabinet, its `clock` a watch).
   - `svgOf(name)` gives the inline SVG's box and its two layers. The primary layer (`.icon-primary`) takes the text colour; the secondary (`.icon-secondary`) is printed under it in the spot indigo (`--c-icon-secondary`: indigo-400 on light, 3.2:1 on paper; indigo-300 on dark), like a two-ink print. An icon with one layer (a check, a chevron) is all primary.

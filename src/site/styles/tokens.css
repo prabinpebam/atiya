@@ -6,6 +6,16 @@
 
 :root {
   color-scheme: light dark;
+  --p-color-github-light-0: #EBEDF0;
+  --p-color-github-light-1: #9BE9A8;
+  --p-color-github-light-2: #40C463;
+  --p-color-github-light-3: #30A14E;
+  --p-color-github-light-4: #216E39;
+  --p-color-github-dark-0: #161B22;
+  --p-color-github-dark-1: #0E4429;
+  --p-color-github-dark-2: #006D32;
+  --p-color-github-dark-3: #26A641;
+  --p-color-github-dark-4: #39D353;
   --p-color-stock-0: #FFFFFF;
   --p-color-stock-50: #FBFAF7;
   --p-color-stock-100: #F4F1EB;
@@ -69,6 +79,12 @@
   --p-font-figtree: 'Figtree', system-ui, -apple-system, 'Segoe UI', sans-serif;
   --p-font-mono: ui-monospace, 'Cascadia Code', 'SF Mono', Menlo, Consolas, monospace;
   --p-font-fraunces-full: 'Fraunces Variable', 'Iowan Old Style', Georgia, serif;
+  --color-contribution-0: light-dark(var(--p-color-github-light-0), var(--p-color-github-dark-0));
+  --color-contribution-1: light-dark(var(--p-color-github-light-1), var(--p-color-github-dark-1));
+  --color-contribution-2: light-dark(var(--p-color-github-light-2), var(--p-color-github-dark-2));
+  --color-contribution-3: light-dark(var(--p-color-github-light-3), var(--p-color-github-dark-3));
+  --color-contribution-4: light-dark(var(--p-color-github-light-4), var(--p-color-github-dark-4));
+  --color-contribution-shade: var(--p-color-stock-950);
   --color-bg: light-dark(var(--p-color-stock-50), var(--p-color-stock-900));
   --color-bg-raised: light-dark(var(--p-color-stock-0), var(--p-color-stock-850));
   --color-bg-sunk: light-dark(var(--p-color-stock-100), var(--p-color-stock-950));
@@ -225,6 +241,11 @@
   --scale-lift: 1.08;
   --scale-zoom: 1.02;
   --shift-press: 1px;
+  --c-contribution-stats-width: 14rem;
+  --c-contribution-chart-height: 26rem;
+  --c-contribution-chart-height-small: 15rem;
+  --c-contribution-tip-width: 17rem;
+  --c-contribution-glow: 14px;
   --c-control-height-sm: 2.5rem;
   --c-control-height-md: 3rem;
   --c-control-height-lg: 3.5rem;

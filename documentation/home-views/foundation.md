@@ -10,6 +10,24 @@ Every home view reads one curated piece of content, the **capability spine**: th
 > - **The coverage rule:** every capability is on the first screen of every view, at 1280 and 360 px, before any action, and a test holds it (§5).
 > - **The role lens** (`?for=leader`, `ai`, `strategy`, `maker`) reorders the capabilities for a role and never hides one (§6).
 
+## The classic opening: public GitHub activity
+
+**As built, 23 October 2026.** When the optional `content/github.json` snapshot is present, the classic home opens with `ContributionHero`, in place of the Little planet painting. The introduction, section list and ways into the site and planet remain. Other home views still read the capability spine below. A site without the snapshot keeps the existing opening; no account is inferred from its owner's name.
+
+- **One day per column.** The default 3D view is an orthographic isometric projection. Height increases with the square root of the count so unusually busy days do not obscure the calendar. Colour uses GitHub's own five intensity levels and its light/dark palettes, resolved through the site's theme tokens. The 2D control shows the same date grid without height. Month names follow their calendar positions on both views; narrow canvases omit overlapping names rather than shrink the text. The GitHub mark beside the chart title links to the profile.
+- **Direct, bounded interaction.** Dragging turns the view within 20 degrees of yaw and 15 degrees of pitch around its resting orientation. Releasing returns exactly to isometric; reduced motion returns immediately. Hovering or tapping a column highlights it and shows its date and count. Arrow keys explore days (left/right a week, up/down a day), Home/End reach the first/last day. Vertical touch scrolling is preserved.
+- **Readable without a canvas.** The total, trailing seven days, active days, daily average, longest/current streak and best day are semantic HTML cards. A screen-reader table contains every date and count, including with JavaScript disabled. The selected-day live announcement is also screen-reader-only; visible details appear only in the hover/tap card. Current streak includes a run ending yesterday when today's count is zero; streaks are limited to the displayed window. Dates are UTC.
+- **Publicly visible, not necessarily public repositories only.** The source is GitHub's anonymous public contribution calendar, not the owner's authenticated GraphQL view. It may contain anonymised private activity the owner has chosen to display. No repository names, private contribution details or credentials are collected. The date range stays beside the title; at the owner's request there is no source-disclosure paragraph below the chart.
+- **A snapshot, never a live dependency.** The [refresh script](https://github.com/prabinpebam/atiya/blob/main/scripts/refresh-github.mjs) writes exactly 365 sorted, contiguous days to [the snapshot](https://github.com/prabinpebam/atiya/blob/main/content/github.json). Regular builds and visitors make no data requests to GitHub. A failed fetch or changed markup fails explicitly and leaves the previous snapshot untouched; the displayed date remains honest.
+
+### Refreshing the snapshot
+
+Run `node scripts/refresh-github.mjs` to refresh the account already named by a validated snapshot. For first creation, pass `--login <username>`; `--out <path>` selects another snapshot and `--date YYYY-MM-DD` sets its final date. Commit the snapshot to publish it normally.
+
+The repository's **Refresh public GitHub activity** workflow runs daily at 18:25 UTC, before the nightly 18:45 UTC Pages build, and can also be run manually. It fetches anonymously and commits only the snapshot. Its bot push does not start another workflow: the nightly build publishes it, or the owner can explicitly run Deploy. Other sites need their own refresh automation if they choose this opening.
+
+**Definition of Done evidence:** `github.test.ts` covers public-calendar parsing, validation, statistics and refresh failure preservation; `contributionRules.test.ts` covers bounds, projection, month labels, painter order, hit testing and keyboard movement; the E2E group **GitHub contribution hero** covers both views, exact day details, tumble return, reduced motion, themes, phone reflow, accessibility and the no-JavaScript screen-reader table. Home and `ContributionHero` visual baselines cover both themes at 360, 768 and 1280 px.
+
 <figure class="slate-figure" data-diagram="home-levels">
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 510" role="img" aria-labelledby="hv-levels__title hv-levels__desc" preserveAspectRatio="xMidYMid meet" data-slate-svg-motion="viewport" data-slate-safe-margin="24">
 <title id="hv-levels__title">Three levels of information, the same in every view</title>

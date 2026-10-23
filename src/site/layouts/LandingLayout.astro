@@ -37,10 +37,12 @@ const { title, description, hero, nav, footer, afterId, canonical, home } = Astr
 <PageShell title={title} description={description} canonical={canonical} home={home} preload={hero.standfirst ? ['display', 'display-italic', 'ui'] : ['display', 'ui']}>
   <SiteHeader nav={nav} access />
   <main id="main" class="landing" tabindex="-1">
-    <Hero {...hero}>
-      <slot />
-      {Astro.slots.has('note') && <slot name="note" slot="note" />}
-    </Hero>
+    <slot name="hero">
+      <Hero {...hero}>
+        <slot />
+        {Astro.slots.has('note') && <slot name="note" slot="note" />}
+      </Hero>
+    </slot>
     {
       Astro.slots.has('after') && (
         <div class="after" id={afterId}>
