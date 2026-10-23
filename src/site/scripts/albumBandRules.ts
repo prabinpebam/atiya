@@ -32,6 +32,8 @@ export interface BandTile {
   display?: 'fill' | 'fit' | 'actual' | 'tile';
   /** The part a fill keeps ("50% 30%"): the tile's own, else the picture's. */
   focus?: string;
+  /** The owner's colour behind the picture (gallery spec §6.5), in both themes; left out, the picture's own edge colour. */
+  bg?: string;
   /** The still it shows: the picture, an animated picture's still, a video's or an embed's poster. Left out, a quiet tile with its badge. */
   still?: PictureSource & { dark?: PictureSource };
   /** What plays in the band, only on a tile that plays (playing()): a video file, or an animated picture and its dark version. */

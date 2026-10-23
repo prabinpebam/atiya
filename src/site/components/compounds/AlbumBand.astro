@@ -46,15 +46,18 @@ interface Props {
   rule?: boolean;
   /** The title's heading level: 2 on a section's view; in a page's body (the album block), one below the heading it follows. */
   headingLevel?: 2 | 3 | 4 | 5;
+  /** Its gallery's pictures have square corners (the gallery's setting); left out, softly rounded. */
+  square?: boolean;
 }
 
-const { id, title, href, site, counts, dates, summary, tiles, total, priority = false, rule = false, headingLevel = 2 } = Astro.props;
+const { id, title, href, site, counts, dates, summary, tiles, total, priority = false, rule = false, headingLevel = 2, square = false } = Astro.props;
 const headId = `album-band-${stableId(Astro, 'AlbumBand')}`;
 const plays = tiles.some((t) => t.motion);
 const more = seeAll(total, tiles.length, title);
 const largest = priority ? tiles.reduce((best, t, i) => (t.place.w * t.place.h > tiles[best]!.place.w * tiles[best]!.place.h ? i : best), 0) : -1;
 // a drawing without a dark version sits on paper in the dark, so its ink still reads
 const bgOf = (t: BandTile) => {
+  if (t.bg) return { light: t.bg, dark: t.bg };
   const light = t.still?.bg;
   const dark = t.still?.dark?.bg ?? (t.kind === 'drawing' ? 'var(--c-album-drawing-paper)' : light);
   return light && dark ? { light, dark } : undefined;
@@ -68,7 +71,7 @@ const bgOf = (t: BandTile) => {
     </div>
   )
 }
-<article class="album-band" aria-labelledby={headId} data-album-band data-album-id={id} data-album-site={site ?? href} data-plays={plays ? '' : undefined}>
+<article class="album-band" aria-labelledby={headId} data-album-band data-album-id={id} data-album-site={site ?? href} data-plays={plays ? '' : undefined} data-square={square ? '' : undefined}>
   <header class="head">
     <Heading level={headingLevel} size="h2" id={headId}><a class="title" href={href}>{title}</a></Heading>
     <div class="facts" data-band-counts>
@@ -105,7 +108,7 @@ const bgOf = (t: BandTile) => {
             data-count={total}
           >
             {t.still ? (
-              <Image src={t.still.src} srcset={t.still.srcset} alt="" width={t.still.width} height={t.still.height} sizes={tileSizes(t.place.w, t.phone?.w)} fill display={t.display ?? (t.kind === 'drawing' ? 'fit' : 'fill')} focus={t.focus} dark={t.still.dark} bg={bgOf(t)} drawing={t.kind === 'drawing'} priority={i === largest} />
+              <Image src={t.still.src} srcset={t.still.srcset} alt="" width={t.still.width} height={t.still.height} sizes={tileSizes(t.place.w, t.phone?.w)} fill display={t.display ?? (t.kind === 'drawing' ? 'fit' : 'fill')} focus={t.focus} dark={t.still.dark} bg={bgOf(t)} drawing={t.kind === 'drawing'} rounded={!square} priority={i === largest} />
             ) : (
               <span class="blank" />
             )}
@@ -226,6 +229,10 @@ const bgOf = (t: BandTile) => {
     background: var(--c-image-placeholder);
     color: var(--color-on-image);
     text-decoration: none;
+  }
+
+  .album-band[data-square] .tile-link {
+    border-radius: var(--radius-none);
   }
 
   .blank {

@@ -16,6 +16,8 @@ export interface Gallery {
   path: string;
   /** Its order of albums (left out in the file: newest first). */
   order: GalleryOrder;
+  /** Its covers' pictures with rounded corners (left out in the file: rounded). */
+  rounded: boolean;
 }
 
 /** What the gallery setup changes. */
@@ -23,6 +25,8 @@ export interface GallerySettings {
   title: string;
   summary?: string;
   order: GalleryOrder;
+  /** Rounded corners on every picture in its albums' covers; false squares them. Left out, kept as it is. */
+  rounded?: boolean;
 }
 
 export const ORDER_WORDS: Record<GalleryOrder, string> = { newest: 'Newest first', oldest: 'Oldest first', custom: 'Your own order' };
@@ -57,7 +61,7 @@ const topHubs = (structure: SiteStructure): HubNode[] => (structure.home.childre
 export function galleries(structure: SiteStructure): Gallery[] {
   return topHubs(structure)
     .filter((h) => h.view === 'albums')
-    .map((h) => ({ id: h.id, title: h.title, ...(h.summary ? { summary: h.summary } : {}), path: `/${h.slug}/`, order: h.albumOrder ?? 'newest' }));
+    .map((h) => ({ id: h.id, title: h.title, ...(h.summary ? { summary: h.summary } : {}), path: `/${h.slug}/`, order: h.albumOrder ?? 'newest', rounded: h.albumCorners !== 'square' }));
 }
 
 /** The gallery asked for, else the first; undefined when no section shows albums. */
@@ -95,12 +99,13 @@ const changeHub = (structure: SiteStructure, id: string, fn: (h: HubNode) => Hub
   return found ? { ...structure, home: { ...structure.home, children } } : undefined;
 };
 
-/** The gallery `id` with its settings (newest first is left out of the file: the default); every other field kept. */
+/** The gallery `id` with its settings (newest first and rounded corners are left out of the file: the defaults); every other field kept. */
 export function withGallerySettings(structure: SiteStructure, id: string, s: GallerySettings): SiteStructure | undefined {
   return changeHub(structure, id, (h) => {
-    const { summary: _s, albumOrder: _o, ...rest } = h;
+    const { summary: _s, albumOrder: _o, albumCorners: _c, ...rest } = h;
     const summary = s.summary?.trim();
-    return { ...rest, title: s.title.trim() || h.title, ...(summary ? { summary } : {}), ...(s.order !== 'newest' ? { albumOrder: s.order } : {}) };
+    const square = s.rounded === undefined ? h.albumCorners === 'square' : !s.rounded;
+    return { ...rest, title: s.title.trim() || h.title, ...(summary ? { summary } : {}), ...(s.order !== 'newest' ? { albumOrder: s.order } : {}), ...(square ? { albumCorners: 'square' as const } : {}) };
   });
 }
 

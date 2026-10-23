@@ -5,7 +5,7 @@
  * to show has no band (§5: it's never shown).
  */
 import { albumCounts, albumDates, countWords, coverOf, dateSpan, displayFor, phoneOf, readingOrder } from './album';
-import { albumLookup, getAlbum } from './repository';
+import { albumLookup, albumSquare, getAlbum } from './repository';
 import { embedPoster, picture, video, type Picture } from './pictures';
 import { lengthOf, playing, tileName, type BandTile } from '../scripts/albumBandRules';
 import type { PictureSource } from '../design/pictures';
@@ -22,6 +22,8 @@ export interface Band {
   summary?: string;
   tiles: BandTile[];
   total: number;
+  /** Its gallery draws the pictures with square corners (gallery spec §2.2); left out, rounded. */
+  square?: boolean;
 }
 
 const source = (p: { src: string; srcset?: string; width: number; height: number; bg?: string }, still?: string): PictureSource => ({
@@ -73,6 +75,7 @@ export async function bandOf(albumId: string, href: string, site = href): Promis
         place: { x: t.x, y: t.y, w: t.w, h: t.h },
         phone: p && t.onPhones !== false ? { x: p.x, y: p.y, w: p.w, h: p.h } : undefined,
         display: displayFor(t, kind),
+        bg: t.bg,
       };
       if (kind === 'video') {
         const v = await video(media, 'gallery');
@@ -118,6 +121,7 @@ export async function bandOf(albumId: string, href: string, site = href): Promis
     summary: album.summary,
     tiles,
     total: shown.length,
+    square: albumSquare(album.id) || undefined,
   };
 }
 

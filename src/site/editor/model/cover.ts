@@ -325,6 +325,14 @@ export function setDisplay(album: Album, item: string, choice: 'kind' | TileDisp
 /** Use the picture's focus: the tile's own focus removed. */
 export const usePictureFocus = (album: Album, item: string, lookup: MediaLookup): Outcome => onTile(album, item, lookup, (t) => without(t, 'focus'));
 
+/** The colour behind a tile's picture: a `#rrggbb` colour (kept lowercase), or null for Auto, the picture's own edge colour (removes `bg`). */
+export function setBackground(album: Album, item: string, colour: string | null, lookup: MediaLookup): Outcome {
+  if (colour === null) return onTile(album, item, lookup, (t) => without(t, 'bg'));
+  const hex = colour.trim().toLowerCase();
+  if (!/^#[0-9a-f]{6}$/.test(hex)) return refused('A background is a colour like #1f2a44.');
+  return onTile(album, item, lookup, (t) => (t.bg === hex ? t : { ...t, bg: hex }));
+}
+
 const mb = (bytes: number) => `${(bytes / (1024 * 1024)).toFixed(1).replace(/\.0$/, '')} MB`;
 
 /** What the arranger knows of an item: its kind and its file's size. */

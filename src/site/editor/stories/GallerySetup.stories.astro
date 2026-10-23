@@ -4,12 +4,12 @@ import GallerySetup from '../components/GallerySetup.astro';
 import { GALLERY } from './samples';
 ---
 
-<Example title="The gallery" description="Its title, the line under it and the order of its albums, saved together." layout="block">
+<Example title="The gallery" description="Its title, the line under it, the order of its albums and the covers' corners, saved together." layout="block">
   <GallerySetup galleries={[GALLERY]} gallery={GALLERY} version="v1" siteHref="#gallery" />
 </Example>
 
-<Example title="Two galleries" description="With more than one section showing albums, Section says which one is set up." layout="block">
-  <GallerySetup galleries={[GALLERY, { id: 'travel', title: 'Travel', path: '/travel/', order: 'newest' }]} gallery={GALLERY} version="v1" />
+<Example title="Two galleries" description="With more than one section showing albums, Section says which one is set up. Here the second squares its covers' corners." layout="block">
+  <GallerySetup galleries={[GALLERY, { id: 'travel', title: 'Travel', path: '/travel/', order: 'newest', rounded: false }]} gallery={{ id: 'travel', title: 'Travel', path: '/travel/', order: 'newest', rounded: false }} version="v1" />
 </Example>
 
 <Example title="No gallery yet" description="No section shows albums: it says where to make one." layout="block">

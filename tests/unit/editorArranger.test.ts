@@ -30,6 +30,7 @@ import {
   putInCover,
   resizeTo,
   setDisplay,
+  setBackground,
   setLead,
   setOnPhones,
   setPlay,
@@ -262,6 +263,15 @@ describe("a tile's options", () => {
     const focused: Album = { ...a, cover: { tiles: tiles(['a', 0, 0, 6, 4], ['v', 6, 0, 6, 4]).map((t) => (t.item === 'a' ? { ...t, focus: '20% 30%' } : t)) } };
     expect(why(setDisplay(focused, 'a', 'fit', 'picture', lookup))).toContain('own focus');
     expect(at(ok(usePictureFocus(focused, 'a', lookup)), 'a')).not.toHaveProperty('focus');
+  });
+
+  it('sets a colour behind a tile’s picture, lowercase, and Auto removes it', () => {
+    const own = ok(setBackground(a, 'a', '#1F2A44', lookup));
+    expect(at(own, 'a')).toMatchObject({ bg: '#1f2a44' });
+    expect(albumSchema.safeParse(own).success).toBe(true);
+    expect(at(ok(setBackground(own, 'a', null, lookup)), 'a')).not.toHaveProperty('bg');
+    expect(why(setBackground(a, 'a', 'red', lookup))).toContain('#1f2a44');
+    expect(why(setBackground(a, 'x', '#ffffff', lookup))).toContain("isn't in the cover");
   });
 
   it('plays a video file within the limits', () => {

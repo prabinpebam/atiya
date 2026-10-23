@@ -7,7 +7,8 @@
  * pictures and videos below, those in the cover marked. A tile is dragged to a cell or by its handles to a size, both
  * snapping to whole cells; an item dragged up joins the cover, a tile dragged down leaves it. Every change is saved
  * at once through the album's own queue and undone with Undo. Hidden at rest; scripts/albumCover.ts draws it from the
- * album being edited (its rules the pure model/cover.ts).
+ * album being edited (its rules the pure model/cover.ts). A tile's Background (Auto, the picture's own colours, a
+ * picker, the eyedropper) is scripts/coverBackground.ts.
  * @tier editor
  * @a11y Every drag has a button or a key (WCAG 2.5.7): a tile is a button named by its item and its place, chosen
  * with Enter or Space; the arrow keys move it a cell, Shift with an arrow resizes it, Delete takes it out; the tile
@@ -19,6 +20,7 @@
  * @key Escape: Done
  */
 import Button from '../../components/fundamentals/Button.astro';
+import ColorField from '../../components/fundamentals/ColorField.astro';
 import IconButton from '../../components/fundamentals/IconButton.astro';
 import Image from '../../components/fundamentals/Image.astro';
 import Select from '../../components/fundamentals/Select.astro';
@@ -42,9 +44,9 @@ const { open = false } = Astro.props;
     <Text as="span" variant="label">Edit cover</Text>
     <Tag size="sm"><span data-cover-state="">Automatic</span></Tag>
   </div>
-  <ActionBar gap="sm">
-    <Button variant="secondary" size="sm" icon="desktop" aria-pressed="true" data-cover-show="wide">Wide</Button>
-    <Button variant="secondary" size="sm" icon="phone" aria-pressed="false" data-cover-show="phone">Phone</Button>
+  <div class="ce-toolbar" data-cover-toolbar="">
+    <IconButton label="Wide" icon="desktop" size="sm" shape="square" variant="secondary" pressed={true} data-cover-show="wide" />
+    <IconButton label="Phone" icon="phone" size="sm" shape="square" variant="secondary" pressed={false} data-cover-show="phone" />
     <span data-cover-when="wide">
       <Select label="Use a preset" hideLabel size="sm" placeholder="Use a preset…" options={PRESETS.map((p) => ({ value: p.id, label: p.name }))} data-cover-preset="" />
     </span>
@@ -58,11 +60,13 @@ const { open = false } = Astro.props;
       <Button variant="quiet" size="sm" icon="restore" data-cover-phone-back="">Back to automatic</Button>
     </span>
     <span data-cover-when="wide">
-      <Button variant="quiet" size="sm" icon="restore" data-cover-automatic="">Use automatic cover</Button>
+      <Button variant="quiet" size="sm" icon="restore" data-cover-automatic="">Auto</Button>
     </span>
-    <Button variant="secondary" size="sm" icon="close" data-cover-cancel="">Cancel</Button>
-    <Button variant="primary" size="sm" icon="check" data-cover-done="">Done</Button>
-  </ActionBar>
+    <span class="ce-end">
+      <IconButton label="Cancel" icon="close" size="sm" shape="square" variant="quiet" data-cover-cancel="" />
+      <Button variant="primary" size="sm" icon="check" data-cover-done="">Done</Button>
+    </span>
+  </div>
   <Text variant="small" tone="muted"><span data-cover-hint="">Drag a tile to a cell, or by its edges to a size; or choose it and use the arrow keys (Shift to resize).</span></Text>
   <div class="ce-frame" data-cover-frame="">
     <div class="ce-canvas" role="group" aria-label="The cover's tiles, in reading order" data-cover-canvas="">
@@ -95,6 +99,17 @@ const { open = false } = Astro.props;
           <Button variant="secondary" size="sm" aria-pressed="false" data-cover-display="fit">Fit</Button>
           <Button variant="quiet" size="sm" icon="focus" data-cover-focus-reset="">Use the picture’s focus</Button>
         </ActionBar>
+      </span>
+      <span data-cover-when="wide">
+        <div class="ce-bg" role="group" aria-label="Background" data-cover-bg="">
+          <Text as="span" variant="label">Background</Text>
+          <Button variant="secondary" size="sm" aria-pressed="true" data-cover-bg-auto="">Auto</Button>
+          <span class="ce-swatches" data-cover-bg-swatches=""></span>
+          <ColorField label="Choose a colour" hideLabel value="#ffffff" data-cover-bg-pick="" />
+          <span data-cover-bg-dropper-slot="" hidden>
+            <IconButton label="Pick a colour from the screen" icon="eyedropper" size="sm" shape="square" variant="secondary" data-cover-bg-dropper="" />
+          </span>
+        </div>
       </span>
       <span data-cover-when="wide">
         <ActionBar gap="sm">
@@ -135,9 +150,51 @@ const { open = false } = Astro.props;
       </TileButton>
     </div>
   </template>
+  <template data-cover-swatch-template>
+    <TileButton variant="chip" pressed={false} data-cover-bg-swatch="" aria-label=""><span class="ce-swatch" aria-hidden="true"></span></TileButton>
+  </template>
 </section>
 
 <style>
+  .ce-toolbar {
+    display: flex;
+    flex-wrap: nowrap;
+    align-items: center;
+    gap: var(--space-2);
+    min-inline-size: 0;
+  }
+
+  .ce-end {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    margin-inline-start: auto;
+  }
+
+  .ce-bg {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-2);
+  }
+
+  .ce-swatches {
+    display: flex;
+    gap: var(--space-1);
+  }
+
+  .ce-swatches:empty {
+    display: none;
+  }
+
+  .ce-swatch {
+    display: block;
+    inline-size: var(--space-6);
+    block-size: var(--space-6);
+    border-radius: var(--radius-xs);
+    background: var(--swatch);
+  }
+
   .ce {
     display: grid;
     gap: var(--space-3);

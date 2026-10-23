@@ -91,14 +91,15 @@ export async function setGalleryOrder(section: string, albums: string[]): Promis
   return commit({ changes, ifMatch });
 }
 
-/** The gallery `section`'s title, description and order (§9.1). */
+/** The gallery `section`'s title, description, order and corners (§9.1). */
 export async function saveGallery(section: string, settings: Partial<GallerySettings>, version: string | null): Promise<Result> {
   const s = readDoc<SiteStructure>(STRUCTURE);
   if (!s) return refuse('missing');
   const order = SECTION_ALBUM_ORDERS.find((x) => x === settings.order) ?? 'newest';
   const title = String(settings.title ?? '').trim();
   if (!title) return refuse('The gallery needs a title.', 'title');
-  const next = withGallerySettings(s.value, section, { title, summary: typeof settings.summary === 'string' ? settings.summary : undefined, order });
+  const rounded = typeof settings.rounded === 'boolean' ? settings.rounded : undefined;
+  const next = withGallerySettings(s.value, section, { title, summary: typeof settings.summary === 'string' ? settings.summary : undefined, order, rounded });
   if (!next) return refuse('That gallery is no longer on the site.');
   return commit({ changes: [{ key: STRUCTURE, bytes: jsonBytes(next) }], ifMatch: { [STRUCTURE]: version ?? s.version } });
 }

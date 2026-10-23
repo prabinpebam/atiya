@@ -242,6 +242,10 @@ export function getAlbum(id: string): { album: Album; items: ResolvedItem<MediaR
 /** An album's page (without the base): its canonical path once it's published and placed. */
 export const albumPath = (id: string): string | undefined => canonicalPath('album', id);
 
+/** Whether the gallery an album is placed in (published or not) draws its covers' pictures with square corners (gallery spec §2.2). */
+export const albumSquare = (id: string): boolean =>
+  content().routes.some((r) => r.node.kind === 'item' && r.node.item.type === 'album' && r.node.item.id === id && r.parent?.albumCorners === 'square');
+
 /**
  * A section's published albums with their routes, in the section's `albumOrder` (gallery spec §5, `albumsOrder`):
  * newest first by default; `custom`, the structure's order. Private ones included (their access is the route's).

@@ -315,7 +315,7 @@ export const ALBUM_SECTIONS = [
 export const ALBUM_ROWS: AlbumRow[] = ALBUM_CARDS.map((c) => ({ id: c.id, title: c.title, href: c.href, cover: c.cover && { thumb: c.cover.thumb, width: c.cover.width, height: c.cover.height }, line: rowLine(c) }));
 
 /** A gallery, as its setup and the albums list's first entry show it. */
-export const GALLERY: Gallery = { id: 'gallery', title: 'Gallery', summary: 'Places, people and the odd project, a year at a time.', path: '/gallery/', order: 'custom' };
+export const GALLERY: Gallery = { id: 'gallery', title: 'Gallery', summary: 'Places, people and the odd project, a year at a time.', path: '/gallery/', order: 'custom', rounded: true };
 
 const cell = (id: string, s: ReturnType<typeof sample>, more: Partial<PhotoCell> = {}): PhotoCell => ({ id, kind: 'picture', media: `samples/${s.slug}`, thumb: s.thumb, alt: s.alt, width: s.width, height: s.height, ...more });
 

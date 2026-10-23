@@ -25,7 +25,7 @@ export function initGallerySetup(root: HTMLElement, signal: AbortSignal) {
     async (e) => {
       e.preventDefault();
       const data = new FormData(form);
-      const settings = { title: String(data.get('title') ?? ''), summary: String(data.get('summary') ?? ''), order: String(data.get('order') ?? 'newest') };
+      const settings = { title: String(data.get('title') ?? ''), summary: String(data.get('summary') ?? ''), order: String(data.get('order') ?? 'newest'), rounded: data.get('rounded') === 'on' };
       saveStatus.saving();
       const task = startTask('Saving the gallery…', { el: root.querySelector('[data-gallery-save]') });
       const r = await api('PUT', `gallery/${id}`, { settings, version: root.dataset.version || null });

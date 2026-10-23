@@ -310,6 +310,8 @@ export const albumTile = z
     focus: z.string().regex(/^\d{1,3}% \d{1,3}%$/, 'two percentages, like "30% 60%" (V48)').optional(),
     /** Plays in the band, muted (a video file or an animated picture). */
     play: z.literal(true).optional(),
+    /** The owner's colour behind the picture, in both themes; left out, the picture's own edge colour (Auto). */
+    bg: z.string().regex(/^#[0-9a-f]{6}$/, 'a colour like "#1f2a44" (lowercase)').optional(),
     /** Not shown on phones. */
     onPhones: z.literal(false).optional(),
   })
@@ -764,6 +766,8 @@ export interface HubNode {
   recommendations?: RecommendationSettings;
   /** A gallery's order of its albums (view `albums` only; left out, newest first: gallery spec §2.2, V53). */
   albumOrder?: (typeof SECTION_ALBUM_ORDERS)[number];
+  /** A gallery's pictures in its covers with square corners (view `albums` only; left out, rounded: gallery spec §2.2). */
+  albumCorners?: 'square';
   children?: SiteNode[];
 }
 export type SiteNode = HubNode | ItemNode;
@@ -781,8 +785,11 @@ const hubNode: z.ZodType<HubNode> = z.lazy(() =>
     sequence: z.boolean().optional(),
     recommendations: recommendationSettings.optional(),
     albumOrder: z.enum(SECTION_ALBUM_ORDERS).optional(),
+    albumCorners: z.literal('square').optional(),
     children: z.array(z.union([hubNode, itemNode])).optional(),
-  }).refine((h) => !h.albumOrder || h.view === 'albums', { message: "an order of albums is for a section whose view is Albums (V53)", path: ['albumOrder'] }),
+  })
+    .refine((h) => !h.albumOrder || h.view === 'albums', { message: "an order of albums is for a section whose view is Albums (V53)", path: ['albumOrder'] })
+    .refine((h) => !h.albumCorners || h.view === 'albums', { message: "square corners are for a section whose view is Albums (V53)", path: ['albumCorners'] }),
 );
 
 /**

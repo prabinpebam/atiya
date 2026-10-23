@@ -1,8 +1,9 @@
 ---
 /**
  * The gallery's setup, beside the albums list (documentation/gallery/spec.md §9.1): the gallery section's title,
- * its short description under the title, and the order of its albums (newest first, oldest first, or your own
- * order, which a drag in the list makes), saved together; and a link to the gallery on the site. With more than
+ * its short description under the title, the order of its albums (newest first, oldest first, or your own
+ * order, which a drag in the list makes) and whether its covers' pictures have rounded or square corners, saved
+ * together; and a link to the gallery on the site. With more than
  * one section showing albums, a Section choice says which one.
  * @tier editor
  * @a11y A form named by its heading; Save reports in the status line, a missing title is said beside the field.
@@ -11,6 +12,7 @@ import Button from '../../components/fundamentals/Button.astro';
 import Heading from '../../components/fundamentals/Heading.astro';
 import HiddenField from '../../components/fundamentals/HiddenField.astro';
 import Select from '../../components/fundamentals/Select.astro';
+import Switch from '../../components/fundamentals/Switch.astro';
 import Text from '../../components/fundamentals/Text.astro';
 import TextField from '../../components/fundamentals/TextField.astro';
 import ActionBar from '../../components/compounds/ActionBar.astro';
@@ -62,6 +64,7 @@ const ORDER_HINTS: Record<string, string> = {
         <TextField label="Title" name="title" value={gallery.title} required data-gallery-title="" />
         <TextField label="Description" name="summary" value={gallery.summary ?? ''} optional multiline rows={2} maxlength={160} hint="A line under the title, on the gallery's page." />
         <ChoiceGroup legend="Order of albums" name="order" value={gallery.order} options={SECTION_ALBUM_ORDERS.map((o) => ({ value: o, label: ORDER_WORDS[o], hint: ORDER_HINTS[o] }))} />
+        <Switch label="Rounded corners on the covers’ pictures" name="rounded" checked={gallery.rounded} data-gallery-rounded="" />
         <ActionBar align="between">
           <Button variant="primary" type="submit" icon="check" data-gallery-save="">Save</Button>
           {siteHref && (

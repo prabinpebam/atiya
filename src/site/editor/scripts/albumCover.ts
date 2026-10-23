@@ -25,6 +25,7 @@ import {
   playRefusal,
   putInCover,
   resizeTo,
+  setBackground,
   setDisplay,
   setOnPhones,
   setPlay,
@@ -39,6 +40,7 @@ import {
   type Rect,
   type Show,
 } from '../model/cover';
+import { initCoverBackground } from './coverBackground';
 
 /** What the album editor lends Edit cover: the album as it stands, its way to keep a change, and its media. */
 export interface CoverHost {
@@ -100,6 +102,13 @@ export function initAlbumCover(root: HTMLElement, signal: AbortSignal, host: Cov
     paint();
     return true;
   };
+  const paintBackground = initCoverBackground(root, panel, signal, {
+    chosen: () => chosen,
+    thumb: (id) => factsOf(id)?.thumb || undefined,
+    auto: (id) => factsOf(id)?.bg,
+    colour: (id) => wideOf(host.album(), id)?.bg,
+    set: (id, hex) => void apply(setBackground(host.album(), id, hex, host.lookup), () => (hex ? `Its background is ${hex}.` : "Its background is the picture's own edge colour.")),
+  });
 
   // ---------- drawing ----------
   const setRect = (el: HTMLElement, r: Rect) => {
@@ -108,17 +117,18 @@ export function initAlbumCover(root: HTMLElement, signal: AbortSignal, host: Cov
     el.style.setProperty('--w', String(r.w));
     el.style.setProperty('--h', String(r.h));
   };
-  const picture = (img: HTMLImageElement | null, it: CoverItem | undefined, mode: 'fill' | 'fit', focus?: string) => {
+  const picture = (img: HTMLImageElement | null, it: CoverItem | undefined, mode: 'fill' | 'fit', focus?: string, own?: string) => {
     if (!img) return;
     if (it?.thumb) img.src = it.thumb;
     else img.removeAttribute('src');
     img.loading = 'eager';
     img.dataset.fit = mode === 'fit' ? 'contain' : 'cover';
     img.style.setProperty('--focus', focus ?? '50% 50%');
-    if (it?.bg) {
+    const bg = own ?? it?.bg;
+    if (bg) {
       img.dataset.bg = '';
-      img.style.setProperty('--picture-bg', it.bg);
-      img.style.setProperty('--picture-bg-dark', it.bg);
+      img.style.setProperty('--picture-bg', bg);
+      img.style.setProperty('--picture-bg-dark', bg);
     }
   };
   const when = (p: HTMLElement, name: string, on: boolean) => p.querySelectorAll<HTMLElement>(`[data-cover-when="${name}"]`).forEach((el) => (el.hidden = !on));
@@ -177,7 +187,7 @@ export function initAlbumCover(root: HTMLElement, signal: AbortSignal, host: Cov
       const plays = !!wide?.play;
       const hidden = wide?.onPhones === false;
       b.setAttribute('aria-label', [labelOf(t.item), placeWords(t), plays ? 'plays in the cover' : '', hidden ? 'not on phones' : ''].filter(Boolean).join(', '));
-      picture(el.querySelector('img'), it, displayFor(wide ?? {}, it?.kind), wide?.focus ?? it?.focus);
+      picture(el.querySelector('img'), it, displayFor(wide ?? {}, it?.kind), wide?.focus ?? it?.focus, wide?.bg);
       (el.querySelector('[data-cover-mark="play"]') as HTMLElement).hidden = !plays;
       (el.querySelector('[data-cover-mark="phones"]') as HTMLElement).hidden = !hidden;
       canvas.append(el);
@@ -214,6 +224,7 @@ export function initAlbumCover(root: HTMLElement, signal: AbortSignal, host: Cov
     play.disabled = !wide?.play && !!why;
     $('[data-cover-play-why]')!.textContent = !wide?.play && why ? why : '';
     $<HTMLInputElement>('[data-cover-phones] input')!.checked = wide?.onPhones === false;
+    paintBackground();
   };
 
   const paintStrip = (album: Album) => {

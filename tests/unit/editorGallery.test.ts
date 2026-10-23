@@ -57,6 +57,15 @@ describe('the gallery in edit mode (gallery spec §9.1, §9.2)', () => {
     expect(withGallerySettings(structure(), 'nope', { title: 'x', order: 'newest' })).toBeUndefined();
   });
 
+  it('squares the covers’ corners, leaving rounded out of the file, and keeps them when not asked', () => {
+    const sq = withGallerySettings(structure(), 'gallery', { title: 'Gallery', order: 'newest', rounded: false });
+    expect(hub(sq, 'gallery').albumCorners).toBe('square');
+    expect(galleries(sq!)[0]!.rounded).toBe(false);
+    expect('albumCorners' in hub(withGallerySettings(sq!, 'gallery', { title: 'Gallery', order: 'newest' }), 'gallery')).toBe(true);
+    expect('albumCorners' in hub(withGallerySettings(sq!, 'gallery', { title: 'Gallery', order: 'newest', rounded: true }), 'gallery')).toBe(false);
+    expect(galleries(structure())[0]!.rounded).toBe(true);
+  });
+
   it('a drag makes the order your own', () => {
     expect(hub(withOwnOrder(structure(), 'gallery'), 'gallery').albumOrder).toBe('custom');
     expect(withOwnOrder(structure(), 'nope')).toBeUndefined();
