@@ -62,6 +62,7 @@ export function initAlbumCover(root: HTMLElement, signal: AbortSignal, host: Cov
   let open = false;
   let show: Show = 'wide';
   let chosen = '';
+  let preview = false;
   let dragging = false;
   let justDragged = false;
   let before: Album | null = null;
@@ -146,14 +147,17 @@ export function initAlbumCover(root: HTMLElement, signal: AbortSignal, host: Cov
     const refocus = focused ? (focused.dataset.coverTile ? `[data-cover-tile="${CSS.escape(focused.dataset.coverTile)}"]` : `[data-cover-strip-item="${CSS.escape(focused.dataset.coverStripItem ?? '')}"]`) : '';
 
     p.dataset.show = show;
+    p.toggleAttribute('data-preview', preview);
+    $('[data-cover-preview]')?.setAttribute('aria-pressed', String(preview));
     $('[data-cover-state]')!.textContent = show === 'wide' ? (st.arranged ? 'Arranged' : 'Automatic') : st.phoneArranged ? 'Arranged for phones' : 'Worked out for phones';
     p.querySelectorAll<HTMLElement>('[data-cover-show]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.coverShow === show)));
     when(p, 'wide', show === 'wide');
     when(p, 'editable', editable);
     when(p, 'phone-auto', show === 'phone' && !st.phoneArranged);
     when(p, 'phone-own', show === 'phone' && st.phoneArranged);
-    $('[data-cover-hint]')!.textContent =
-      show === 'wide'
+    $('[data-cover-hint]')!.textContent = preview
+      ? `As the gallery will show it${show === 'phone' ? ' on a phone' : ''}. Preview again to go back to arranging.`
+      : show === 'wide'
         ? st.arranged
           ? 'Your own arrangement. Drag a tile to a cell or by its edges to a size; or choose it and use the arrow keys (Shift to resize).'
           : 'Worked out from the album: change anything and it becomes your own arrangement.'
@@ -164,8 +168,9 @@ export function initAlbumCover(root: HTMLElement, signal: AbortSignal, host: Cov
     // the canvas: its cells, its holes hatched, its tiles in reading order
     const canvas = $('[data-cover-canvas]')!;
     canvas.style.setProperty('--columns', String(grid.columns));
-    canvas.style.setProperty('--rows', String(canvasRows(tiles, show, editable)));
-    canvas.toggleAttribute('data-editable', editable);
+    canvas.style.setProperty('--rows', String(canvasRows(tiles, show, editable && !preview)));
+    canvas.toggleAttribute('data-editable', editable && !preview);
+    canvas.inert = preview;
     canvas.querySelectorAll(':scope > :not([data-cover-outline])').forEach((el) => el.remove());
     const holeT = $<HTMLTemplateElement>('[data-cover-hole-template]')!;
     for (const h of holes(tiles, grid.columns)) {
@@ -183,7 +188,7 @@ export function initAlbumCover(root: HTMLElement, signal: AbortSignal, host: Cov
       setRect(el, t);
       const b = el.querySelector<HTMLElement>('[data-cover-tile]')!;
       b.dataset.coverTile = t.item;
-      b.setAttribute('aria-pressed', String(t.item === chosen));
+      b.setAttribute('aria-pressed', String(!preview && t.item === chosen));
       const plays = !!wide?.play;
       const hidden = wide?.onPhones === false;
       b.setAttribute('aria-label', [labelOf(t.item), placeWords(t), plays ? 'plays in the cover' : '', hidden ? 'not on phones' : ''].filter(Boolean).join(', '));
@@ -256,6 +261,7 @@ export function initAlbumCover(root: HTMLElement, signal: AbortSignal, host: Cov
     open = true;
     show = 'wide';
     chosen = '';
+    preview = false;
     p.hidden = false;
     region()!.hidden = true;
     say('');
@@ -315,7 +321,7 @@ export function initAlbumCover(root: HTMLElement, signal: AbortSignal, host: Cov
     (e) => {
       if (justDragged) return void (justDragged = false);
       const el = (e.target as Element).closest<HTMLElement>(
-        '[data-cover-show], [data-cover-close-gaps], [data-cover-phone-arrange], [data-cover-phone-back], [data-cover-automatic], [data-cover-cancel], [data-cover-done], [data-cover-tile], [data-cover-strip-item], [data-cover-move], [data-cover-size], [data-cover-display], [data-cover-focus-reset], [data-cover-remove]',
+        '[data-cover-show], [data-cover-preview], [data-cover-close-gaps], [data-cover-phone-arrange], [data-cover-phone-back], [data-cover-automatic], [data-cover-cancel], [data-cover-done], [data-cover-tile], [data-cover-strip-item], [data-cover-move], [data-cover-size], [data-cover-display], [data-cover-focus-reset], [data-cover-remove]',
       );
       if (!el || (el as HTMLButtonElement).disabled) return;
       const d = el.dataset;
@@ -323,6 +329,11 @@ export function initAlbumCover(root: HTMLElement, signal: AbortSignal, host: Cov
       if (!open) return;
       if (d.coverShow) {
         show = d.coverShow === 'phone' ? 'phone' : 'wide';
+        return paint();
+      }
+      if (d.coverPreview !== undefined) {
+        preview = !preview;
+        say(preview ? 'Previewing the cover as the gallery shows it.' : 'Arranging the cover.');
         return paint();
       }
       if (d.coverDone !== undefined) return close();

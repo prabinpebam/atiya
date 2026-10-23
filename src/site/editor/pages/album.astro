@@ -33,6 +33,7 @@ import { galleryList } from '../server/gallery';
 import { bandOf } from '../../content/bands';
 import { albumCounts, albumDates, countWords, dateSpan } from '../../content/album';
 import { settingsOf } from '../model/album';
+import { galleries } from '../model/gallery';
 import { albumPath } from '../../content/repository';
 import { withBase } from '../../design/meta';
 import { hasPrivate, privateRoot } from '../../content/source';
@@ -56,6 +57,8 @@ const published = album.status === 'published';
 const route = loaded.ok && published && !priv ? albumPath(id) : undefined;
 const path = route ? withBase(route) : null;
 const settings = settingsOf(album);
+// its gallery's corners, so Edit cover draws the tiles as the gallery will
+const square = !!structure && !!section && galleries(structure).find((g) => g.id === section)?.rounded === false;
 
 // a swap names its regions, and only they are drawn; the picker's next page is drawn alone
 const asked = regionsAsked(Astro.request.headers.get(REGIONS_HEADER));
@@ -128,7 +131,7 @@ const ORDERS = [
         <script is:inline type="application/json" data-region="album-state" data-album-state set:html={json} />
         <AlbumWords title={album.title} summary={album.summary} description={album.description} count={count} dates={dates} needAlt={needAlt} status={published ? 'published' : 'draft'} />
         <AlbumCover tiles={band.tiles} arranged={band.arranged} items={band.items} />
-        <AlbumCoverEditor />
+        <AlbumCoverEditor square={square} />
         <AlbumItems title={album.title} cells={grid.cells} days={(album.order ?? 'oldest') !== 'custom'} />
         <Dialog id="album-add" title="Add to the album">
           <AlbumAdd kind="files" />

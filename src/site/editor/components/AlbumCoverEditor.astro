@@ -7,7 +7,10 @@
  * pictures and videos below, those in the cover marked. A tile is dragged to a cell or by its handles to a size, both
  * snapping to whole cells; an item dragged up joins the cover, a tile dragged down leaves it. Every change is saved
  * at once through the album's own queue and undone with Undo. Hidden at rest; scripts/albumCover.ts draws it from the
- * album being edited (its rules the pure model/cover.ts). A tile's Background (Auto, the picture's own colours, a
+ * album being edited (its rules the pure model/cover.ts). A tile is only its picture, cornered as its gallery draws it
+ * (square when the gallery says so); the chosen one has a ring inside its edge, and its right and bottom edges resize
+ * it under the pointer with nothing drawn but the cursor. Preview hides everything of the arranger's, leaving the band
+ * as the gallery shows it, wide or on a phone. A tile's Background (Auto, the picture's own colours, a
  * picker, the eyedropper) is scripts/coverBackground.ts.
  * @tier editor
  * @a11y Every drag has a button or a key (WCAG 2.5.7): a tile is a button named by its item and its place, chosen
@@ -34,12 +37,14 @@ import { PRESETS } from '../model/cover';
 interface Props {
   /** Open from the start (the parts library shows it open; the album editor opens it from the cover's Edit cover). */
   open?: boolean;
+  /** The album's gallery squares its covers' corners (its setting), so the tiles are drawn square too. */
+  square?: boolean;
 }
 
-const { open = false } = Astro.props;
+const { open = false, square = false } = Astro.props;
 ---
 
-<section class="ce" aria-label="Edit cover" data-album-cover-editor="" data-show="wide" hidden={!open}>
+<section class="ce" aria-label="Edit cover" data-album-cover-editor="" data-show="wide" data-square={square ? '' : undefined} hidden={!open}>
   <div class="ce-head">
     <Text as="span" variant="label">Edit cover</Text>
     <Tag size="sm"><span data-cover-state="">Automatic</span></Tag>
@@ -47,6 +52,7 @@ const { open = false } = Astro.props;
   <div class="ce-toolbar" data-cover-toolbar="">
     <IconButton label="Wide" icon="desktop" size="sm" shape="square" variant="secondary" pressed={true} data-cover-show="wide" />
     <IconButton label="Phone" icon="phone" size="sm" shape="square" variant="secondary" pressed={false} data-cover-show="phone" />
+    <IconButton label="Preview" icon="preview" size="sm" shape="square" variant="secondary" pressed={false} data-cover-preview="" />
     <span data-cover-when="wide">
       <Select label="Use a preset" hideLabel size="sm" placeholder="Use a preset…" options={PRESETS.map((p) => ({ value: p.id, label: p.name }))} data-cover-preset="" />
     </span>
@@ -129,7 +135,7 @@ const { open = false } = Astro.props;
 
   <template data-cover-tile-template>
     <div class="ce-tile" data-cover-place="">
-      <TileButton variant="framed" pressed={false} data-cover-tile="" aria-label="">
+      <TileButton variant="bare" pressed={false} data-cover-tile="" aria-label="">
         <span class="ce-pic"><Image src="data:," alt="" width={4} height={3} display="fill" fill rounded={false} /></span>
         <span class="ce-marks">
           <span data-cover-mark="play" hidden><Tag size="sm" tone="accent" icon="play">Plays</Tag></span>
@@ -224,17 +230,17 @@ const { open = false } = Astro.props;
   }
 
   .ce-canvas {
-    --ce-cell: calc((100cqi - (var(--columns, 12) - 1) * var(--space-1)) / var(--columns, 12));
+    --ce-cell: calc((100cqi - (var(--columns, 12) - 1) * var(--space-2)) / var(--columns, 12));
     position: relative;
     display: grid;
     grid-template-columns: repeat(var(--columns, 12), minmax(0, 1fr));
     grid-template-rows: repeat(var(--rows, 1), var(--ce-cell));
     grid-auto-rows: var(--ce-cell);
-    gap: var(--space-1);
+    gap: var(--space-2);
     border-radius: var(--radius-sm);
     background:
-      linear-gradient(90deg, var(--color-rule) var(--border-hairline), transparent var(--border-hairline)) 0 0 / calc(var(--ce-cell) + var(--space-1)) calc(var(--ce-cell) + var(--space-1)),
-      linear-gradient(var(--color-rule) var(--border-hairline), transparent var(--border-hairline)) 0 0 / calc(var(--ce-cell) + var(--space-1)) calc(var(--ce-cell) + var(--space-1)),
+      linear-gradient(90deg, var(--color-rule) var(--border-hairline), transparent var(--border-hairline)) 0 0 / calc(var(--ce-cell) + var(--space-2)) calc(var(--ce-cell) + var(--space-2)),
+      linear-gradient(var(--color-rule) var(--border-hairline), transparent var(--border-hairline)) 0 0 / calc(var(--ce-cell) + var(--space-2)) calc(var(--ce-cell) + var(--space-2)),
       var(--color-bg-sunk);
     user-select: none;
   }
@@ -253,10 +259,16 @@ const { open = false } = Astro.props;
     background: repeating-linear-gradient(45deg, var(--color-rule) 0 var(--border-strong), transparent var(--border-strong) var(--space-2));
   }
 
+  /* a tile is its picture, cornered as the gallery draws it; picked, the button's own ring sits inside its edge */
   .ce-tile {
     position: relative;
     display: grid;
+    border-radius: var(--c-image-radius);
     touch-action: none;
+  }
+
+  .ce[data-square] .ce-tile {
+    border-radius: var(--radius-none);
   }
 
   .ce-tile[data-dragging] {
@@ -265,9 +277,9 @@ const { open = false } = Astro.props;
 
   .ce-pic {
     position: absolute;
-    inset: var(--space-1);
+    inset: 0;
     overflow: hidden;
-    border-radius: var(--radius-xs);
+    border-radius: inherit;
     background: var(--color-bg-sunk);
     pointer-events: none;
   }
@@ -286,34 +298,31 @@ const { open = false } = Astro.props;
     display: none;
   }
 
+  /* the edges the pointer resizes by: nothing to see, only the cursor says so */
   .ce-handle {
     position: absolute;
     z-index: var(--layer-raised);
-    background: var(--color-accent);
-    opacity: 0;
-    transition: opacity var(--duration-fast) var(--ease-standard);
   }
 
   .ce-handle[data-cover-handle='right'] {
-    inset-block: var(--space-4);
+    inset-block: 0;
     inset-inline-end: 0;
-    inline-size: var(--space-1);
+    inline-size: var(--space-3);
     cursor: ew-resize;
   }
 
   .ce-handle[data-cover-handle='bottom'] {
-    inset-inline: var(--space-4);
+    inset-inline: 0;
     inset-block-end: 0;
-    block-size: var(--space-1);
+    block-size: var(--space-3);
     cursor: ns-resize;
   }
 
   .ce-handle[data-cover-handle='corner'] {
     inset-block-end: 0;
     inset-inline-end: 0;
-    inline-size: var(--space-3);
-    block-size: var(--space-3);
-    border-radius: var(--radius-xs);
+    inline-size: var(--space-5);
+    block-size: var(--space-5);
     cursor: nwse-resize;
   }
 
@@ -321,25 +330,25 @@ const { open = false } = Astro.props;
     display: none;
   }
 
-  @media (hover: hover) {
-    .ce-tile:hover .ce-handle {
-      opacity: 1;
-    }
+  /* Preview: the band as the gallery draws it, with nothing of the arranger's */
+  .ce[data-preview] .ce-canvas {
+    background: none;
   }
 
-  .ce-tile:active .ce-handle,
-  .ce-tile:focus-within .ce-handle,
-  .ce-tile[data-chosen] .ce-handle,
-  .ce-tile[data-resizing] .ce-handle {
-    opacity: 1;
+  .ce[data-preview] :is(.ce-hole, .ce-marks, .ce-live, .ce-warnings, .ce-bar, .ce-strip, .ce-toolbar [data-cover-when]) {
+    display: none;
   }
 
   .ce-outline {
     z-index: var(--layer-raised);
-    border: var(--border-strong) dashed var(--color-accent);
-    border-radius: var(--radius-xs);
+    border: var(--border-strong) solid var(--color-accent);
+    border-radius: var(--c-image-radius);
     background: var(--color-accent-soft);
     pointer-events: none;
+  }
+
+  .ce[data-square] .ce-outline {
+    border-radius: var(--radius-none);
   }
 
   .ce-outline[data-refused] {

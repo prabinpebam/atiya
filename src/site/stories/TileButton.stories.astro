@@ -43,6 +43,21 @@ const p = sample('waterfall');
   </div>
 </Example>
 
+<Example title="Bare: a tile in an arranger" description="Only the picture, filling its place and taking its corners; picked, a ring sits just inside its edge.">
+  <div class="demo-grid">
+    <span class="demo-bare">
+      <TileButton variant="bare" pressed={false} aria-label={p.alt}>
+        <Image src={p.src} alt="" width={p.width} height={p.height} ratio="4/3" display="fill" rounded={false} />
+      </TileButton>
+    </span>
+    <span class="demo-bare">
+      <TileButton variant="bare" pressed={true} aria-label={p.alt}>
+        <Image src={p.src} alt="" width={p.width} height={p.height} ratio="4/3" display="fill" rounded={false} />
+      </TileButton>
+    </span>
+  </div>
+</Example>
+
 <Example title="Chip and thumbnail" description="Small and inline: a colour with its words, and a picture to take colours from.">
   <TileButton variant="chip">
     <span class="demo-chip" aria-hidden="true"></span>
@@ -82,5 +97,11 @@ const p = sample('waterfall');
   .demo-thumb {
     display: block;
     inline-size: var(--size-avatar-md);
+  }
+
+  .demo-bare {
+    display: block;
+    overflow: hidden;
+    border-radius: var(--c-image-radius);
   }
 </style>
