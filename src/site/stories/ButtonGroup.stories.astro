@@ -1,0 +1,37 @@
+---
+import Example from '../library/Example.astro';
+import ButtonGroup from '../components/fundamentals/ButtonGroup.astro';
+---
+
+<Example title="Choices: one is on" description="Toggles joined into one control; the one on is filled and pressed.">
+  <ButtonGroup
+    label="Show it"
+    options={[
+      { label: 'By kind', pressed: false },
+      { label: 'Fill', pressed: true },
+      { label: 'Fit', pressed: false },
+    ]}
+  />
+</Example>
+
+<Example title="Actions: icons alone" description="A set of moves that belong together; each icon's label is its name and its tooltip. One that can't be used is disabled.">
+  <ButtonGroup
+    label="Move"
+    options={[
+      { label: 'Move left', icon: 'arrow-left', iconOnly: true },
+      { label: 'Move right', icon: 'arrow-right', iconOnly: true },
+      { label: 'Move up', icon: 'arrow-up', iconOnly: true, disabled: true },
+      { label: 'Move down', icon: 'arrow-down', iconOnly: true },
+    ]}
+  />
+</Example>
+
+<Example title="Actions: words with icons" description="Two opposite actions side by side.">
+  <ButtonGroup
+    label="Width"
+    options={[
+      { label: 'Narrower', icon: 'minus' },
+      { label: 'Wider', icon: 'plus' },
+    ]}
+  />
+</Example>

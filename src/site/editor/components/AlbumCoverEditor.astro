@@ -31,7 +31,7 @@ import Switch from '../../components/fundamentals/Switch.astro';
 import Tag from '../../components/fundamentals/Tag.astro';
 import Text from '../../components/fundamentals/Text.astro';
 import TileButton from '../../components/fundamentals/TileButton.astro';
-import ActionBar from '../../components/compounds/ActionBar.astro';
+import ButtonGroup, { type ButtonGroupOption } from '../../components/fundamentals/ButtonGroup.astro';
 import { PRESETS } from '../model/cover';
 
 interface Props {
@@ -42,6 +42,24 @@ interface Props {
 }
 
 const { open = false, square = false } = Astro.props;
+const VIEWS: ButtonGroupOption[] = [
+  { label: 'Wide', icon: 'desktop', iconOnly: true, pressed: true, attrs: { 'data-cover-show': 'wide' } },
+  { label: 'Phone', icon: 'phone', iconOnly: true, pressed: false, attrs: { 'data-cover-show': 'phone' } },
+];
+const MOVES: ButtonGroupOption[] = (['left', 'right', 'up', 'down'] as const).map((d) => ({ label: `Move ${d}`, icon: `arrow-${d}`, iconOnly: true, attrs: { 'data-cover-move': d } }));
+const WIDTH: ButtonGroupOption[] = [
+  { label: 'Narrower', icon: 'minus', attrs: { 'data-cover-size': 'left' } },
+  { label: 'Wider', icon: 'plus', attrs: { 'data-cover-size': 'right' } },
+];
+const HEIGHT: ButtonGroupOption[] = [
+  { label: 'Shorter', icon: 'minus', attrs: { 'data-cover-size': 'up' } },
+  { label: 'Taller', icon: 'plus', attrs: { 'data-cover-size': 'down' } },
+];
+const SHOW: ButtonGroupOption[] = [
+  { label: 'By kind', pressed: true, attrs: { 'data-cover-display': 'kind' } },
+  { label: 'Fill', pressed: false, attrs: { 'data-cover-display': 'fill' } },
+  { label: 'Fit', pressed: false, attrs: { 'data-cover-display': 'fit' } },
+];
 ---
 
 <section class="ce" aria-label="Edit cover" data-album-cover-editor="" data-show="wide" data-square={square ? '' : undefined} hidden={!open}>
@@ -50,8 +68,7 @@ const { open = false, square = false } = Astro.props;
     <Tag size="sm"><span data-cover-state="">Automatic</span></Tag>
   </div>
   <div class="ce-toolbar" data-cover-toolbar="">
-    <IconButton label="Wide" icon="desktop" size="sm" shape="square" variant="secondary" pressed={true} data-cover-show="wide" />
-    <IconButton label="Phone" icon="phone" size="sm" shape="square" variant="secondary" pressed={false} data-cover-show="phone" />
+    <ButtonGroup label="Show the band" options={VIEWS} />
     <IconButton label="Preview" icon="preview" size="sm" shape="square" variant="secondary" pressed={false} data-cover-preview="" />
     <span data-cover-when="wide">
       <Select label="Use a preset" hideLabel size="sm" placeholder="Use a preset…" options={PRESETS.map((p) => ({ value: p.id, label: p.name }))} data-cover-preset="" />
@@ -84,46 +101,47 @@ const { open = false, square = false } = Astro.props;
   <section class="ce-bar" aria-label="The chosen tile" data-cover-bar="">
     <Text variant="small" tone="muted"><span data-cover-none="">Choose a tile to move or resize it with buttons, change how it shows its item, or take it out.</span></Text>
     <div class="ce-chosen" data-cover-chosen="" hidden>
-      <Text variant="ui"><strong data-cover-chosen-label=""></strong> <span data-cover-chosen-place=""></span></Text>
-      <span data-cover-when="editable">
-        <ActionBar gap="sm">
-          <IconButton label="Move left" icon="arrow-left" size="sm" variant="secondary" data-cover-move="left" />
-          <IconButton label="Move right" icon="arrow-right" size="sm" variant="secondary" data-cover-move="right" />
-          <IconButton label="Move up" icon="arrow-up" size="sm" variant="secondary" data-cover-move="up" />
-          <IconButton label="Move down" icon="arrow-down" size="sm" variant="secondary" data-cover-move="down" />
-          <Button variant="quiet" size="sm" icon="minus" data-cover-size="left">Narrower</Button>
-          <Button variant="quiet" size="sm" icon="plus" data-cover-size="right">Wider</Button>
-          <Button variant="quiet" size="sm" icon="minus" data-cover-size="up">Shorter</Button>
-          <Button variant="quiet" size="sm" icon="plus" data-cover-size="down">Taller</Button>
-        </ActionBar>
-      </span>
-      <span data-cover-when="wide">
-        <ActionBar gap="sm">
-          <Text as="span" variant="label">Show it</Text>
-          <Button variant="secondary" size="sm" aria-pressed="true" data-cover-display="kind">By kind</Button>
-          <Button variant="secondary" size="sm" aria-pressed="false" data-cover-display="fill">Fill</Button>
-          <Button variant="secondary" size="sm" aria-pressed="false" data-cover-display="fit">Fit</Button>
-          <Button variant="quiet" size="sm" icon="focus" data-cover-focus-reset="">Use the picture’s focus</Button>
-        </ActionBar>
-      </span>
-      <span data-cover-when="wide">
-        <div class="ce-bg" role="group" aria-label="Background" data-cover-bg="">
-          <Text as="span" variant="label">Background</Text>
-          <Button variant="secondary" size="sm" aria-pressed="true" data-cover-bg-auto="">Auto</Button>
-          <span class="ce-swatches" data-cover-bg-swatches=""></span>
-          <ColorField label="Choose a colour" hideLabel value="#ffffff" data-cover-bg-pick="" />
-          <span data-cover-bg-dropper-slot="" hidden>
-            <IconButton label="Pick a colour from the screen" icon="eyedropper" size="sm" shape="square" variant="secondary" data-cover-bg-dropper="" />
-          </span>
+      <div class="ce-chosen-head">
+        <Text variant="ui"><strong data-cover-chosen-label=""></strong> <span class="ce-place" data-cover-chosen-place=""></span></Text>
+        <span data-cover-when="wide"><Button variant="quiet" size="sm" icon="delete" data-cover-remove="">Remove from cover</Button></span>
+      </div>
+      <div class="ce-rows">
+        <div class="ce-row" data-cover-when="editable">
+          <Text as="span" variant="label">Place</Text>
+          <div class="ce-controls">
+            <ButtonGroup label="Move" options={MOVES} />
+            <ButtonGroup label="Width" options={WIDTH} />
+            <ButtonGroup label="Height" options={HEIGHT} />
+          </div>
         </div>
-      </span>
-      <span data-cover-when="wide">
-        <ActionBar gap="sm">
-          <Switch label="Play in the band" data-cover-play="" />
-          <Switch label="Hide on phones" data-cover-phones="" />
-          <Button variant="secondary" size="sm" icon="delete" data-cover-remove="">Remove from cover</Button>
-        </ActionBar>
-      </span>
+        <div class="ce-row" data-cover-when="wide">
+          <Text as="span" variant="label">Show it</Text>
+          <div class="ce-controls">
+            <ButtonGroup label="Show it" options={SHOW} />
+            <Button variant="quiet" size="sm" icon="focus" data-cover-focus-reset="">Use the picture’s focus</Button>
+          </div>
+        </div>
+        <div class="ce-row" data-cover-when="wide">
+          <Text as="span" variant="label">Background</Text>
+          <div class="ce-controls" role="group" aria-label="Background" data-cover-bg="">
+            <ButtonGroup label="The picture's own edge colour" options={[{ label: 'Auto', pressed: true, attrs: { 'data-cover-bg-auto': '' } }]} />
+            <span class="ce-swatches" data-cover-bg-swatches=""></span>
+            <span class="ce-custom">
+              <ColorField label="Choose a colour" hideLabel value="#ffffff" data-cover-bg-pick="" />
+              <span data-cover-bg-dropper-slot="" hidden>
+                <IconButton label="Pick a colour from the screen" icon="eyedropper" size="sm" shape="square" variant="secondary" data-cover-bg-dropper="" />
+              </span>
+            </span>
+          </div>
+        </div>
+        <div class="ce-row" data-cover-when="wide">
+          <Text as="span" variant="label">Options</Text>
+          <div class="ce-controls">
+            <Switch label="Play in the band" data-cover-play="" />
+            <Switch label="Hide on phones" data-cover-phones="" />
+          </div>
+        </div>
+      </div>
       <Text variant="small" tone="muted"><span data-cover-play-why=""></span></Text>
     </div>
   </section>
@@ -157,7 +175,7 @@ const { open = false, square = false } = Astro.props;
     </div>
   </template>
   <template data-cover-swatch-template>
-    <TileButton variant="chip" pressed={false} data-cover-bg-swatch="" aria-label=""><span class="ce-swatch" aria-hidden="true"></span></TileButton>
+    <span class="ce-swatch"><TileButton variant="bare" pressed={false} data-cover-bg-swatch="" aria-label="" /></span>
   </template>
 </section>
 
@@ -177,12 +195,44 @@ const { open = false, square = false } = Astro.props;
     margin-inline-start: auto;
   }
 
-  .ce-bg {
+  /* the chosen tile's bar: its name and Remove on top, then a labelled row for each kind of change */
+  .ce-chosen-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-3);
+    padding-block-end: var(--space-2);
+    border-block-end: var(--border-hairline) solid var(--color-rule);
+  }
+
+  .ce-place {
+    color: var(--color-text-muted);
+  }
+
+  .ce-rows {
+    display: grid;
+    grid-template-columns: max-content minmax(0, 1fr);
+    column-gap: var(--space-5);
+    row-gap: var(--space-3);
+    padding-block: var(--space-1);
+  }
+
+  .ce-row {
+    display: grid;
+    grid-column: 1 / -1;
+    grid-template-columns: subgrid;
+    align-items: center;
+  }
+
+  .ce-row[hidden] {
+    display: none;
+  }
+
+  .ce-controls {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
-    column-gap: var(--space-2);
-    row-gap: var(--space-1);
+    gap: var(--space-2) var(--space-3);
   }
 
   .ce-swatches {
@@ -194,12 +244,22 @@ const { open = false, square = false } = Astro.props;
     display: none;
   }
 
+  /* a colour from the picture: the whole tile is the colour, its ring the bare tile's */
   .ce-swatch {
     display: block;
-    inline-size: var(--space-6);
-    block-size: var(--space-6);
-    border-radius: var(--radius-xs);
+    inline-size: var(--size-touch);
+    block-size: var(--size-touch);
+    border-radius: var(--radius-sm);
     background: var(--swatch);
+    box-shadow: inset 0 0 0 var(--border-hairline) var(--color-border);
+  }
+
+  .ce-custom {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-1);
+    padding-inline-start: var(--space-2);
+    border-inline-start: var(--border-hairline) solid var(--color-rule);
   }
 
   .ce {

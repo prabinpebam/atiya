@@ -83,11 +83,12 @@ export function initCoverBackground(root: HTMLElement, panel: () => HTMLElement 
     if (!box || !t || host.chosen() !== id || box.dataset.for !== id) return;
     box.replaceChildren(
       ...hexes.map((hex) => {
-        const b = (t.content.firstElementChild as HTMLElement).cloneNode(true) as HTMLElement;
+        const cell = (t.content.firstElementChild as HTMLElement).cloneNode(true) as HTMLElement;
+        const b = cell.querySelector<HTMLElement>('[data-cover-bg-swatch]')!;
         b.dataset.coverBgSwatch = hex;
         b.setAttribute('aria-label', `Use ${hex} from the picture`);
-        b.querySelector<HTMLElement>('.ce-swatch')?.style.setProperty('--swatch', hex);
-        return b;
+        cell.style.setProperty('--swatch', hex);
+        return cell;
       }),
     );
     pressSwatches(host.colour(id));

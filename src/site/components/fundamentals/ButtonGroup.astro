@@ -1,0 +1,176 @@
+---
+/**
+ * A row of buttons joined into one control: a set of actions that belong together (move left, right, up,
+ * down), or a set of choices where one is on (Fill or Fit). Each segment shows words, an icon, or an icon
+ * alone, which then shows its label as a tooltip.
+ * @tier fundamental
+ * @a11y A group (role="group") named by its label; every segment is a native button, named by its words or its label.
+ * @a11y A choice is a toggle (aria-pressed), and the one on is filled as well as marked; a script may move it.
+ * @a11y At least 44 px to touch: each segment's touch area reaches past its edges.
+ * @key Tab: moves from segment to segment
+ * @key Enter: presses a segment
+ * @key Space: presses a segment
+ */
+import { svgOf, type IconName } from '../../design/icons';
+
+export interface ButtonGroupOption {
+  /** What it does or chooses ("Move left", "Fill"). Shown, or the tooltip when the icon stands alone. */
+  label: string;
+  /** An icon before its words, or in their place. */
+  icon?: IconName;
+  /** Shows only the icon (the label is its name and tooltip). */
+  iconOnly?: boolean;
+  /** In a set of choices: whether this one is on. Left out, the segment is an action. */
+  pressed?: boolean;
+  /** Can't be pressed; a script may set it too. */
+  disabled?: boolean;
+  /** Data attributes for this segment's button, where a script finds it. */
+  attrs?: Record<`data-${string}`, string>;
+}
+
+interface Props {
+  /** What the group is for ("Move", "Show it"); names it for assistive technology. */
+  label: string;
+  /** Its segments, in order. */
+  options: ButtonGroupOption[];
+  /** Data attributes pass through to the group. */
+  [data: `data-${string}`]: string | undefined;
+}
+
+const { label, options, ...rest } = Astro.props;
+---
+
+<div class="button-group" role="group" aria-label={label} {...rest}>
+  {
+    options.map((o) => {
+      const i = o.icon ? svgOf(o.icon) : null;
+      const only = Boolean(o.iconOnly && i);
+      return (
+        <button
+          class="segment"
+          type="button"
+          data-press
+          data-only={only ? '' : undefined}
+          data-label={only ? o.label : undefined}
+          aria-label={only ? o.label : undefined}
+          aria-pressed={o.pressed === undefined ? undefined : o.pressed ? 'true' : 'false'}
+          disabled={o.disabled ? true : undefined}
+          {...o.attrs}
+        >
+          {i && (
+            <svg class="glyph" viewBox={i.viewBox} aria-hidden="true" focusable="false" data-icon={i.name}>
+              <Fragment set:html={i.body} />
+            </svg>
+          )}
+          {!only && <span>{o.label}</span>}
+        </button>
+      );
+    })
+  }
+</div>
+
+<style>
+  .button-group {
+    display: inline-flex;
+    flex: none;
+    border: var(--border-control) solid var(--color-border);
+    border-radius: var(--radius-md);
+    background: var(--color-bg);
+  }
+
+  .segment {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-1-5);
+    min-inline-size: var(--c-control-height-sm);
+    block-size: calc(var(--c-control-height-sm) - var(--border-control) * 2);
+    padding: 0 var(--space-3);
+    border: 0;
+    background: transparent;
+    color: var(--color-text);
+    font-family: var(--font-ui);
+    font-size: var(--text-sm);
+    font-weight: var(--weight-semibold);
+    white-space: nowrap;
+    cursor: pointer;
+    transition: background-color var(--duration-instant) var(--ease-standard);
+  }
+
+  .segment[data-only] {
+    padding: 0;
+  }
+
+  .segment + .segment {
+    border-inline-start: var(--border-hairline) solid var(--color-rule);
+  }
+
+  .segment:first-child {
+    border-start-start-radius: inherit;
+    border-end-start-radius: inherit;
+  }
+
+  .segment:last-child {
+    border-start-end-radius: inherit;
+    border-end-end-radius: inherit;
+  }
+
+  /* a 40 px segment still takes a 44 px touch */
+  .segment::before {
+    content: '';
+    position: absolute;
+    inset-block: calc((var(--c-control-height-sm) - var(--size-touch)) / 2);
+    inset-inline: 0;
+  }
+
+  .glyph {
+    flex: none;
+    inline-size: var(--size-icon);
+    block-size: var(--size-icon);
+  }
+
+  @media (hover: hover) {
+    .segment:hover:not(:disabled) {
+      background: var(--color-bg-hover);
+    }
+  }
+
+  .segment:active:not(:disabled) {
+    background: var(--color-bg-hover);
+  }
+
+  .segment[aria-pressed='true'] {
+    background: var(--color-accent-soft);
+    color: var(--color-on-accent-soft);
+  }
+
+  /* an icon alone: its label shows on hover and keyboard focus */
+  .segment[data-only]::after {
+    content: attr(data-label);
+    position: absolute;
+    inset-inline-start: 50%;
+    inset-block-start: calc(100% + var(--space-2));
+    z-index: var(--layer-dropdown);
+    padding: var(--space-1) var(--space-3);
+    border-radius: var(--radius-pill);
+    background: var(--color-text);
+    color: var(--color-bg);
+    font: var(--type-note);
+    pointer-events: none;
+    opacity: 0;
+    transform: translateX(-50%);
+    transition: opacity var(--duration-fast) var(--ease-standard);
+  }
+
+  @media (hover: hover) {
+    .segment[data-only]:hover::after {
+      opacity: 1;
+      transition-delay: var(--duration-slow);
+    }
+  }
+
+  .segment[data-only]:focus-visible::after {
+    opacity: 1;
+  }
+</style>
