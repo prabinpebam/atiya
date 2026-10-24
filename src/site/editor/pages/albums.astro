@@ -15,6 +15,7 @@ import { load } from '../server/screens';
 import { albumCards } from '../server/albumScreens';
 import { albumSections } from '../server/albums';
 import { galleryList } from '../server/gallery';
+import { ALBUMS_LIST_INTRO } from '../model/gallery';
 import { REGIONS_HEADER, regionsAsked, wants } from '../model/regions';
 import { withBase } from '../../design/meta';
 
@@ -40,7 +41,7 @@ const tilesHref = withBase('/_edit/albums/?view=tiles');
   screen="albums"
   heading="Albums"
   intro={view === 'list'
-    ? 'Your albums in the gallery’s order, beside the gallery’s own setup. Drag an album by its handle to put them in your own order.'
+    ? ALBUMS_LIST_INTRO
     : 'Your photo albums: drafts first, then in the gallery’s order. New album makes an untitled one at once, ready to fill; its pictures stay in your library whatever happens to the album.'}
 >
   <Fragment slot="tools">

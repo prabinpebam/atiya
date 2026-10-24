@@ -1,0 +1,38 @@
+/**
+ * The Albums screen's list view (documentation/editor/list-and-details.md B8): choosing between the gallery's setup
+ * and an album opens another page, but nothing above the list moves: the same heading and line, the list and the
+ * details at the same place, and the details open with a heading either way. The editor project, on the fixture
+ * server (port 4330, with the gallery fixture's `fixture-album`).
+ *
+ *   npx playwright test --project=editor -g "editor: albums: list"
+ */
+import { expect, test, type Page } from '@playwright/test';
+import { reset } from '../../scripts/editor-test-server.mjs';
+
+const top = async (page: Page, selector: string) => Math.round((await page.locator(selector).first().boundingBox())!.y);
+
+async function layout(page: Page, details: string) {
+  await expect(page.locator('main h1')).toBeVisible();
+  return {
+    heading: await page.locator('main h1').innerText(),
+    line: await page.locator('.screen-head p').first().innerText(),
+    head: await top(page, '.screen-head'),
+    list: await top(page, '[data-album-list]'),
+    details: await top(page, details),
+  };
+}
+
+test.describe('editor: albums: list and details', () => {
+  test.beforeEach(() => reset());
+
+  test('the header stays put between the gallery and an album', async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 800 });
+    await page.goto('/_edit/albums/?view=list');
+    const gallery = await layout(page, '#gallery-setup-title');
+    expect(gallery.heading).toBe('Albums');
+
+    await page.goto('/_edit/albums/fixture-album/');
+    const album = await layout(page, '[data-album-words] h2');
+    expect(album).toEqual(gallery);
+  });
+});

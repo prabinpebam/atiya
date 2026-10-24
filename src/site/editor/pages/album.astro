@@ -33,7 +33,7 @@ import { galleryList } from '../server/gallery';
 import { bandOf } from '../../content/bands';
 import { albumCounts, albumDates, countWords, dateSpan } from '../../content/album';
 import { settingsOf } from '../model/album';
-import { galleries } from '../model/gallery';
+import { galleries, ALBUMS_LIST_INTRO } from '../model/gallery';
 import { albumPath } from '../../content/repository';
 import { withBase } from '../../design/meta';
 import { hasPrivate, privateRoot } from '../../content/source';
@@ -102,7 +102,7 @@ const ORDERS = [
 ];
 ---
 
-<EditorLayout title={album.title} screen="album" column>
+<EditorLayout title={album.title} screen="album" heading="Albums" intro={ALBUMS_LIST_INTRO}>
   <Fragment slot="title">
     <Link href={withBase('/_edit/albums/')} variant="quiet">Albums</Link>
     <span data-album-heading data-title-line title={album.title}><Text as="span" variant="ui"><strong>{album.title}</strong></Text></span>

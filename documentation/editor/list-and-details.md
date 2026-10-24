@@ -83,6 +83,7 @@ The details keep a form's measure (`--size-popout`) however wide the screen; the
 | B5 | **Removing takes two presses.** The first turns the button into "Remove for good" or "Delete for good" (`data-confirm`); the second removes it. Afterwards the item that took its place is chosen (the next, else the new last), else `new`. |
 | B6 | **Focus stays where the person is.** After choosing, focus stays on the chosen row (on Add, it goes to the new item's first field); after a move, on the same Move button, unless the item reached that end (then on the other); after a removal, on the newly chosen row. |
 | B7 | **Phones.** Under 56 rem the list sits above the details and its rows scroll within a cap (`--c-editor-scope-list`), so the details are never pushed out of reach. |
+| B8 | **Nothing above the list moves.** The screen's heading and line are the same whichever item is chosen, and the list and the details start at the same place. When choosing an item opens a page of its own (an album opens the album editor), that page draws the same heading and line (one constant, like `ALBUMS_LIST_INTRO`), and its details open with the item's name as their heading and a line, as every other details pane does. |
 
 ## 5. Building a new screen on it
 
@@ -111,3 +112,4 @@ The details keep a form's measure (`--size-popout`) however wide the screen; the
   - Recommendations, Albums (its list) and Home highlights were moved onto them, removing their copied layout CSS.
   - Home highlights was rebuilt from a single form of cards into this pattern ([highlights spec §2](../home-views/highlights.md)).
   - Sections (its own `SectionManager` with tabs) and Access (`GrantDetails`, with its state groups) keep their own list contents inside the same `SplitView` and `ListPane`.
+  - The album editor took the Albums screen's heading and line, and its details open with the album's name (B8), so choosing between the gallery and an album no longer moves the list up and down (the owner's report, 24 October 2026).

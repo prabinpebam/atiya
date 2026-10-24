@@ -31,6 +31,9 @@ export interface GallerySettings {
 
 export const ORDER_WORDS: Record<GalleryOrder, string> = { newest: 'Newest first', oldest: 'Oldest first', custom: 'Your own order' };
 
+/** The Albums screen's line while the albums list shows: the same over the gallery's setup and over an album, so nothing moves as you choose. */
+export const ALBUMS_LIST_INTRO = 'Your albums in the gallery’s order, beside the gallery’s own setup. Drag an album by its handle to put them in your own order.';
+
 /** An album as a row of the albums list shows it. */
 export interface AlbumRow {
   /** The album's ID. */
