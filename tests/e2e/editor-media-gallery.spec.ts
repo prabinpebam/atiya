@@ -20,7 +20,7 @@ const upload = (page: Page) => page.locator('[data-editor-upload]');
 
 /** The media screen with its upload form open. */
 async function openUpload(page: Page) {
-  await page.goto('/_edit/media/');
+  await page.goto('/_edit/media/?view=list');
   await page.getByText('Upload a picture or a video').click();
   await expect(upload(page).locator('input[type="file"]')).toBeAttached();
 }
@@ -92,7 +92,7 @@ test.describe('editor: gallery uploads', () => {
     await expect(upload(page).getByRole('button', { name: 'Crop it' })).toBeHidden();
     await upload(page).getByLabel('Alt text').fill('A green card with a yellow sun');
     await upload(page).getByRole('button', { name: 'Upload it' }).click();
-    await expect(page).toHaveURL(/\?id=shared\/e2e-drawing$/, { timeout: 30_000 });
+    await expect(page).toHaveURL(/[?&]id=shared\/e2e-drawing$/, { timeout: 30_000 });
     await expect(status(page)).toContainText('Cleaned before saving: took out', { timeout: 15_000 });
     await expect(status(page)).toContainText('scripts');
 
@@ -113,7 +113,7 @@ test.describe('editor: gallery uploads', () => {
     await expect(upload(page).getByRole('button', { name: 'Crop it' })).toBeVisible();
     await upload(page).getByLabel('Alt text').fill('A green card');
     await upload(page).getByRole('button', { name: 'Upload it' }).click();
-    await expect(page).toHaveURL(/\?id=shared\/e2e-flat$/, { timeout: 30_000 });
+    await expect(page).toHaveURL(/[?&]id=shared\/e2e-flat$/, { timeout: 30_000 });
     expect(existsSync(shared('e2e-flat.svg'))).toBe(false);
     expect((await sharp(readFileSync(shared('e2e-flat.webp'))).metadata()).format).toBe('webp');
   });
@@ -178,7 +178,7 @@ test.describe('editor: gallery uploads', () => {
     await large.getByLabel(/Keep it large/).check();
     await upload(page).getByLabel('Alt text').fill('A blue field with a yellow square');
     await upload(page).getByRole('button', { name: 'Upload it' }).click();
-    await expect(page).toHaveURL(/\?id=shared\/e2e-wide$/, { timeout: 30_000 });
+    await expect(page).toHaveURL(/[?&]id=shared\/e2e-wide$/, { timeout: 30_000 });
 
     const sidecar = readJson(shared('e2e-wide.json'));
     expect(sidecar).toMatchObject({ large: true, taken: '2024-05-06' });
@@ -214,7 +214,7 @@ test.describe('editor: gallery uploads', () => {
   test('Find the focus moves the point to the subject; it is kept when the details are saved', async ({ page }) => {
     const id = `articles/${ARTICLE}/tshirt`;
     const file = join(FIXTURE, 'content/media/articles', ARTICLE, 'tshirt.json');
-    await page.goto(`/_edit/media/?id=${id}`);
+    await page.goto(`/_edit/media/?view=list&id=${id}`);
     const details = page.locator('[data-editor-media-details]');
     await details.getByRole('button', { name: 'Use the centre' }).click();
     await expect(details.locator('input[name="focus"]')).toHaveValue('');
@@ -230,7 +230,7 @@ test.describe('editor: gallery uploads', () => {
   test('the date taken: changed in the details and saved; cleared, it goes from the sidecar', async ({ page }) => {
     const id = 'articles/fixture-album/p01';
     const file = join(FIXTURE, 'content/media/articles/fixture-album/p01.json');
-    await page.goto(`/_edit/media/?id=${id}`);
+    await page.goto(`/_edit/media/?view=list&id=${id}`);
     const details = page.locator('[data-editor-media-details]');
     const taken = details.getByLabel('Date taken');
     await expect(taken).toHaveValue('2026-03-11');

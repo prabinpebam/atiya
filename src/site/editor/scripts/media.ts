@@ -15,7 +15,12 @@ import type { ImageMedia, VideoMedia } from '../../content/schema';
 const nameOf = (id: string) => id.split('/').pop() ?? id;
 
 // a media ID is [a-z0-9-/] only, so it goes in the address as it is (readable, slashes and all)
-const urlFor = (id: string | null) => new URL(`${location.pathname}${id ? `?id=${id}` : ''}`, location.href);
+/** The screen's address with this item open, keeping the view (the list's `view=list`). */
+const urlFor = (id: string | null) => {
+  const view = new URL(location.href).searchParams.get('view');
+  const query = [view ? `view=${encodeURIComponent(view)}` : '', id ? `id=${id}` : ''].filter(Boolean).join('&');
+  return new URL(`${location.pathname}${query ? `?${query}` : ''}`, location.href);
+};
 
 /** The grid's card for a picture marked as the one open, at once (spec §3.6): the details follow. */
 function markCurrent(id: string | null) {

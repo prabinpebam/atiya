@@ -152,7 +152,7 @@ const first = cells[0]?.id;
                   </span>
                 )}
                 {c.cover && <Tag size="sm" tone="highlight">Cover</Tag>}
-                {c.private && <Tag size="sm" icon="lock">Private</Tag>}
+                {c.private && <span class="plate"><Tag size="sm" icon="lock">Private</Tag></span>}
                 {c.needsAlt && <Tag size="sm" tone="negative" icon="error">Needs alt text</Tag>}
               </span>
             </li>
@@ -318,6 +318,13 @@ const first = cells[0]?.id;
     gap: var(--space-1);
     align-items: end;
     justify-content: end;
+  }
+
+  /* the neutral tag is see-through: over a picture it needs the page behind it to be read */
+  .plate {
+    display: inline-flex;
+    border-radius: var(--radius-pill);
+    background: var(--color-bg-raised);
   }
 
   .badge {

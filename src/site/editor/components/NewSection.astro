@@ -16,7 +16,13 @@ import ActionBar from '../../components/compounds/ActionBar.astro';
 import Form from '../kit/Form.astro';
 import IssueNote from '../kit/IssueNote.astro';
 import { VIEW_OPTIONS as VIEWS } from '../server/screens';
+import { MENU_MAX } from '../model/structure';
 
+interface Props {
+  /** The navigation already holds its most entries, so a new section can't go in it. */
+  navFull?: boolean;
+}
+const { navFull = false } = Astro.props;
 ---
 
 <Button variant="secondary" size="sm" icon="plus" data-dialog-open="new-section">New section</Button>
@@ -25,7 +31,8 @@ import { VIEW_OPTIONS as VIEWS } from '../server/screens';
     <TextField label="Title" name="title" required hint="Its heading, and its address made from it." />
     <TextField label="Summary" name="summary" multiline rows={2} optional />
     <Select label="View" name="view" value="features" options={VIEWS} />
-    <Switch label="In the navigation" name="inNav" checked data-sections-in-nav="" />
+    <Switch label="In the navigation" name="inNav" checked={!navFull} disabled={navFull} data-sections-in-nav="" />
+    {navFull && <Text variant="small" tone="muted">{`The navigation is full (${MENU_MAX} entries): remove one on the Navigation screen to add this section to it.`}</Text>}
     <Text variant="small" tone="muted">It goes after the other sections, under the home page.</Text>
     <IssueNote data-editor-form-issue="" />
     <ActionBar align="end">

@@ -83,7 +83,7 @@ test.describe('editor', () => {
         await expect(img).toHaveCSS('object-fit', 'contain');
       }
     };
-    await page.goto(`/_edit/media/?id=articles/${ARTICLE}/tshirt`);
+    await page.goto(`/_edit/media/?view=list&id=articles/${ARTICLE}/tshirt`);
     await check(page.locator('[data-editor-media-grid] img:not([data-upload-img])'));
     await check(page.locator('[data-editor-media-details] .focus img'));
     await page.locator('[data-editor-media-details]').screenshot({ path: test.info().outputPath('editor-square-preview.png') });
@@ -267,7 +267,7 @@ test.describe('editor', () => {
     const site = await context.newPage();
     await site.goto(`/leadership/${ARTICLE}/`);
     const media = await context.newPage();
-    await media.goto(`/_edit/media/?id=${fig.media}`);
+    await media.goto(`/_edit/media/?view=list&id=${fig.media}`);
     const form = media.locator('[data-editor-media-form]');
     await form.getByLabel('Caption').fill('A caption from the media library.');
     await expect(media.locator('[data-editor-save]')).toHaveAttribute('data-state', 'dirty');
@@ -304,9 +304,9 @@ test.describe('editor', () => {
 
   test('another screen shows a change made elsewhere at once, and keeps what is being typed in it until that is saved', async ({ page, context }) => {
     const id = `articles/${ARTICLE}/tshirt`;
-    await page.goto(`/_edit/media/?id=${id}`);
+    await page.goto(`/_edit/media/?view=list&id=${id}`);
     const other = await context.newPage();
-    await other.goto(`/_edit/media/?id=${id}`);
+    await other.goto(`/_edit/media/?view=list&id=${id}`);
     const caption = (p: Page) => p.locator('[data-editor-media-form]').getByLabel('Caption');
     const saveIn = async (p: Page, text: string) => {
       await caption(p).fill(text);
@@ -746,7 +746,7 @@ test.describe('editor', () => {
     await page.keyboard.type('After the list.');
     // a new paragraph is kept once it's left
     await page.keyboard.press('Escape');
-    await expect.poll(() => blocks()[p + 1]).toEqual({ type: 'text', markdown: 'After the list.' });
+    await expect.poll(() => blocks()[p + 1]).toMatchObject({ type: 'text', markdown: 'After the list.' });
     expect(blocks()[p].markdown).toBe(`- ${first}\n- A second item`);
     // Ctrl + Enter in the list's first item: a paragraph after the list, which keeps every item
     await frame(page).locator('ul[data-editor-editable="rich"]').first().locator('li').first().click();
@@ -755,9 +755,9 @@ test.describe('editor', () => {
     await page.keyboard.type('Between.');
     // a new paragraph is kept once it's left
     await page.keyboard.press('Escape');
-    await expect.poll(() => blocks()[p + 1]).toEqual({ type: 'text', markdown: 'Between.' });
+    await expect.poll(() => blocks()[p + 1]).toMatchObject({ type: 'text', markdown: 'Between.' });
     expect(blocks()[p].markdown).toBe(`- ${first}\n- A second item`);
-    expect(blocks()[p + 2]).toEqual({ type: 'text', markdown: 'After the list.' });
+    expect(blocks()[p + 2]).toMatchObject({ type: 'text', markdown: 'After the list.' });
   });
 
   test('the outline: several blocks selected (Shift, Ctrl), moved together by the bar and the keys, deleted together, and undone', async ({ page }) => {
@@ -841,7 +841,9 @@ test.describe('editor', () => {
     await page.locator(`[data-editor-select="${t + 2 * n - 1}"]`).click({ modifiers: ['Shift'] });
     await page.locator('[data-editor-group="turn"]').click();
     await page.locator('#editor-turn [data-editor-turn-to="collection"]').click();
-    await expect.poll(() => blocks()[t]).toEqual(tiles);
+    // the same collection, as a new block (so with a new key)
+    const { key: _was, ...sameTiles } = tiles as typeof tiles & { key?: string };
+    await expect.poll(() => (({ key: _now, ...rest }) => rest)(blocks()[t] as typeof tiles & { key?: string })).toEqual(sameTiles);
     expect(original.type).toBe('text');
   });
 
@@ -858,7 +860,7 @@ test.describe('editor', () => {
     await page.keyboard.press('Control+V');
     await expect.poll(() => blocks().length).toBe(count + 4);
     expect(blocks()[p].type).toBe('text');
-    expect(blocks().slice(p + 1, p + 5)).toEqual([
+    expect(blocks().slice(p + 1, p + 5)).toMatchObject([
       { type: 'heading', level: 3, text: 'Constraint' },
       { type: 'text', markdown: 'A team spread over two cities.' },
       { type: 'heading', level: 3, text: 'Outcome' },
@@ -869,7 +871,7 @@ test.describe('editor', () => {
     await page.locator(`[data-editor-select="${p + 4}"]`).click({ modifiers: ['Shift'] });
     await page.locator('[data-editor-group="turn"]').click();
     await page.locator('#editor-turn [data-editor-turn-to="collection"]').click();
-    await expect.poll(() => blocks()[p + 1]).toEqual({
+    await expect.poll(() => blocks()[p + 1]).toMatchObject({
       type: 'collection',
       layout: 'tiles',
       width: 'popout',
@@ -900,7 +902,7 @@ test.describe('editor', () => {
     );
     await page.keyboard.press('Control+V');
     await expect.poll(() => blocks().length).toBe(count + 3);
-    expect(blocks().slice(p + 1, p + 4)).toEqual([
+    expect(blocks().slice(p + 1, p + 4)).toMatchObject([
       { type: 'heading', level: 2, text: 'Pasted heading' },
       { type: 'text', markdown: '**Bold** and _italic_ with [a link](https://example.com/)' },
       { type: 'text', markdown: '- First **item**\n- Second item' },
@@ -914,8 +916,9 @@ test.describe('editor', () => {
     await expect.poll(() => blocks()[p + 3]?.markdown, { timeout: 15_000 }).toBe('- First **item**\n- Second itemThird, _slanted_\n- **Fourth**');
 
     // prose that keeps its white space (a chat's, a mail's) keeps its links, after the space before the caret
-    await frame(page).locator('p', { hasText: 'Bold and italic' }).click();
-    await page.keyboard.press('End');
+    // (focused, not clicked: the list's toolbar floats over the paragraph above it)
+    await frame(page).locator('p', { hasText: 'Bold and italic' }).focus();
+    await page.keyboard.press('Control+End');
     await page.keyboard.type(' see');
     await page.keyboard.press('Space');
     await copy('<div style="white-space: pre-wrap; font-family: Segoe UI, sans-serif;">the <a href="https://designup.io/">DesignUp</a> site\nand <b>more</b></div>', 'the DesignUp site\nand more');
@@ -1077,8 +1080,10 @@ test.describe('editor', () => {
     await page.goto('/_edit/planet/?building=workshop&tab=settings');
     const form = page.locator('[data-planet-place="workshop"]');
     await form.getByLabel('What it holds').fill('Case studies');
+    const stored = page.waitForEvent('load');
     await form.getByRole('button', { name: 'Save the building' }).click();
     await expect.poll(() => planet().find((p) => p.id === 'workshop')!.kicker).toBe('Case studies');
+    await stored;
 
     // a section shown by two buildings is refused (V15), and nothing changes
     await page.goto('/_edit/planet/?building=workshop&tab=settings');
@@ -1189,13 +1194,13 @@ test.describe('editor', () => {
   });
 
   test('media: an upload becomes a WebP master with its alt text, usable at once; its details save; a used picture cannot be deleted', async ({ page }) => {
-    await page.goto('/_edit/media/');
+    await page.goto('/_edit/media/?view=list');
     await page.getByText('Upload a picture').click();
     const buffer = await sharp({ create: { width: 900, height: 600, channels: 3, background: { r: 30, g: 140, b: 90 } } }).png().toBuffer();
     await page.locator('[data-editor-upload] input[type="file"]').setInputFiles({ name: 'E2E Swatch.png', mimeType: 'image/png', buffer });
     await page.locator('[data-editor-upload]').getByLabel('Alt text').fill('A green swatch');
     await page.locator('[data-editor-upload]').getByRole('button', { name: 'Upload it' }).click();
-    await expect(page).toHaveURL(/\?id=shared\/e2e-swatch$/, { timeout: 30_000 });
+    await expect(page).toHaveURL(/[?&]id=shared\/e2e-swatch$/, { timeout: 30_000 });
     // from the bytes: a path would keep the file open, and Windows would refuse the reset's delete
     expect((await sharp(readFileSync(join(FIXTURE, 'content/media/shared/e2e-swatch.webp'))).metadata()).format).toBe('webp');
 
@@ -1206,20 +1211,20 @@ test.describe('editor', () => {
     expect(readJson(join(FIXTURE, 'content/media/shared/e2e-swatch.json'))).toMatchObject({ alt: 'A green swatch', caption: 'A swatch, uploaded by the test.' });
     await expect(page.getByRole('button', { name: 'Delete the picture' })).toBeEnabled();
 
-    await page.goto(`/_edit/media/?id=articles/${ARTICLE}/tshirt`);
+    await page.goto(`/_edit/media/?view=list&id=articles/${ARTICLE}/tshirt`);
     await expect(page.locator('[data-editor-media-details]').getByRole('link', { name: /Article: Do what makes you proud/ })).toBeVisible();
     await expect(page.getByRole('button', { name: 'Delete the picture' })).toBeDisabled();
   });
 
   test('media: an animated GIF is kept exactly as it is, with a still version for reduced motion', async ({ page }) => {
-    await page.goto('/_edit/media/');
+    await page.goto('/_edit/media/?view=list');
     await page.getByText('Upload a picture').click();
     await page.locator('[data-editor-upload] input[type="file"]').setInputFiles({ name: 'E2E Motion.gif', mimeType: 'image/gif', buffer: ANIMATED_GIF });
     await expect(page.locator('[data-upload-facts]')).toContainText('Kept exactly as it is');
     await expect(page.locator('[data-editor-upload]').getByRole('button', { name: 'Crop it' })).toBeHidden();
     await page.locator('[data-editor-upload]').getByLabel('Alt text').fill('Two changing pixels');
     await page.locator('[data-editor-upload]').getByRole('button', { name: 'Upload it' }).click();
-    await expect(page).toHaveURL(/\?id=shared\/e2e-motion$/, { timeout: 30_000 });
+    await expect(page).toHaveURL(/[?&]id=shared\/e2e-motion$/, { timeout: 30_000 });
 
     expect(readFileSync(join(FIXTURE, 'content/media/shared/e2e-motion.gif')).equals(ANIMATED_GIF)).toBe(true);
     expect(readJson(join(FIXTURE, 'content/media/shared/e2e-motion.json'))).toMatchObject({ file: 'e2e-motion.gif', animation: { poster: 'e2e-motion.poster.webp' } });
@@ -1280,7 +1285,7 @@ test.describe('editor', () => {
 
   test('upload: a picture shows at once (its transparency too), can be cropped before it uploads, and a pasted one fills the form', async ({ page, context }) => {
     await context.grantPermissions(['clipboard-read', 'clipboard-write']);
-    await page.goto('/_edit/media/');
+    await page.goto('/_edit/media/?view=list');
     await page.getByText('Upload a picture').click();
     const form = page.locator('[data-editor-upload]');
     const facts = form.locator('[data-upload-facts]');
@@ -1303,7 +1308,7 @@ test.describe('editor', () => {
     await expect(facts).toHaveText(`800 × 400 px, PNG, transparent. Cropped to ${w} × ${h} px.`);
     await form.getByLabel('Alt text').fill('A clear red mark');
     await form.getByRole('button', { name: 'Upload it' }).click();
-    await expect(page).toHaveURL(/\?id=shared\/clear-mark$/, { timeout: 30_000 });
+    await expect(page).toHaveURL(/[?&]id=shared\/clear-mark$/, { timeout: 30_000 });
     const meta = await sharp(readFileSync(join(FIXTURE, 'content/media/shared/clear-mark.webp'))).metadata();
     expect([meta.width, meta.height, meta.hasAlpha]).toEqual([w, h, true]);
 
@@ -1370,7 +1375,7 @@ test.describe('editor', () => {
     await picker.getByRole('button', { name: 'Upload it' }).click();
     await expect.poll(() => blocks().length, { timeout: 30_000 }).toBe(count + 1);
     const id = `articles/${ARTICLE}/clip`;
-    expect(blocks().at(-1)).toEqual({ type: 'video', media: id, width: 'wide' });
+    expect(blocks().at(-1)).toMatchObject({ type: 'video', media: id, width: 'wide' });
     const sidecar = readJson(join(FIXTURE, `content/media/${id}.json`));
     expect(sidecar).toMatchObject({ kind: 'video', file: 'clip.webm', title: 'A test pattern', width: 320, height: 180, poster: { file: 'clip.poster.webp' }, caption: 'Two seconds of colour bars.' });
     expect(sidecar.duration).toBeCloseTo(2, 0);
@@ -1413,7 +1418,7 @@ test.describe('editor', () => {
     await expect.poll(() => (blocks()[at] as { poster?: string }).poster).toBeUndefined();
 
     // in Media: a video card, its details (the player, its title) and where it's used
-    await page.goto(`/_edit/media/?id=${id}`);
+    await page.goto(`/_edit/media/?view=list&id=${id}`);
     await expect(page.getByRole('button', { name: 'Video: A test pattern' })).toBeVisible();
     await expect(page.locator('[data-editor-media-details] video')).toBeVisible();
     await expect(page.locator('[data-editor-media-details]').getByLabel('Title')).toHaveValue('A test pattern');
@@ -1424,7 +1429,7 @@ test.describe('editor', () => {
     const blocks = readJson(articleFile()).body as { type: string; media?: string; lightbox?: boolean }[];
     const fig = blocks.find((b) => b.type === 'figure' && b.lightbox)!;
     const sidecarFile = join(FIXTURE, `content/media/${fig.media}.json`);
-    await page.goto(`/_edit/media/?id=${fig.media}`);
+    await page.goto(`/_edit/media/?view=list&id=${fig.media}`);
     const form = page.locator('[data-editor-media-dark]');
     await expect(form).toContainText('None: the same picture shows in light and dark mode');
     const { width, height } = (await sharp(readFileSync(join(FIXTURE, `content/media/${fig.media}.webp`))).metadata()) as { width: number; height: number };
@@ -1497,8 +1502,11 @@ test.describe('editor', () => {
     await expect(section('field-notes')).toHaveAttribute('aria-current', 'true');
     await page.getByRole('tab', { name: 'Settings' }).click();
     await expect(page).toHaveURL(/tab=settings/);
+    // the screen opens itself again once the save has answered: the keys go to the new one
+    const reloaded = page.waitForEvent('load');
     await page.locator('[data-sections-hub="field-notes"]').getByRole('button', { name: 'Move up' }).click();
     await expect.poll(() => ids().indexOf('field-notes')).toBe(count - 1);
+    await reloaded;
     // and back down with the keys, on its place in the list
     await expect(page.locator('[data-sections-hub="field-notes"]')).toBeVisible({ timeout: 15_000 });
     await section('field-notes').focus();
@@ -1541,8 +1549,10 @@ test.describe('editor', () => {
     await expect.poll(() => pagesOf('leadership')).toEqual([ARTICLE, two, one]);
     await expect(grip(two)).toBeFocused({ timeout: 15_000 });
     // and a drag within the list: the last to the top
+    const dropped = page.waitForEvent('load');
     await drag(one, page.locator(`[data-manager-row="${ARTICLE}"]`), true);
     await expect.poll(() => pagesOf('leadership')).toEqual([one, ARTICLE, two]);
+    await dropped;
 
     // Find and Show narrow the list
     const panel = page.locator('[data-manager-pages="leadership"]');
@@ -1599,23 +1609,16 @@ test.describe('editor', () => {
     await page.waitForURL(/\/_edit\/sections\/\?section=contact&tab=settings$/);
     await expect(page.locator('[data-editor-status]')).toHaveText(/^Saved/);
 
-    // from Navigation: back in, at the end
+    // a custom link, while Contact is out (the navigation may already be full): added at the end, renamed, moved up one
     await page.goto('/_edit/navigation/');
     await expect(page.locator('[data-nav-entry]')).toHaveCount(count - 1);
-    const add = page.locator('[data-nav-add="section"]');
-    await add.getByRole('combobox', { name: 'Section' }).click();
-    await page.getByRole('option', { name: /^Contact/ }).click();
-    await add.getByRole('button', { name: 'Add section' }).click();
-    await expect.poll(() => nodes().at(-1)).toBe('contact');
-
-    // a custom link: added at the end, renamed, moved up one, then removed
     const link = page.locator('[data-nav-add="link"]');
     await link.getByLabel('Link label').fill('GitHub');
     await link.getByLabel('Address').fill('https://github.com/prabinpebam');
     await link.getByRole('button', { name: 'Add link' }).click();
     await expect.poll(() => menu().at(-1)).toEqual({ label: 'GitHub', href: 'https://github.com/prabinpebam' });
-    expect(menu()).toHaveLength(count + 1);
-    const last = count;
+    expect(menu()).toHaveLength(count);
+    const last = count - 1;
     const label = page.locator(`[data-nav-label="${last}"] input`);
     await label.fill('Code');
     await label.press('Enter');
@@ -1628,12 +1631,22 @@ test.describe('editor', () => {
     await page.goto('/');
     const header = page.getByRole('navigation', { name: 'Sections' });
     await expect(header.getByRole('link', { name: 'Code' })).toHaveAttribute('href', 'https://github.com/prabinpebam');
-    await expect(header.getByRole('link').filter({ hasNotText: 'Explore in 3D' }).last()).toHaveText('Contact');
 
+    // removed, then Contact back in from Navigation, at the end
     await page.goto('/_edit/navigation/');
     await page.getByRole('button', { name: 'Remove Code from the navigation' }).click();
     await expect.poll(() => menu().some((e) => e.label === 'Code')).toBe(false);
+    expect(menu()).toHaveLength(count - 1);
+    const add = page.locator('[data-nav-add="section"]');
+    await add.getByRole('combobox', { name: 'Section' }).click();
+    await page.getByRole('option', { name: /^Contact/ }).click();
+    const back = page.waitForEvent('load');
+    await add.getByRole('button', { name: 'Add section' }).click();
+    await expect.poll(() => nodes().at(-1)).toBe('contact');
     expect(menu()).toHaveLength(count);
+    await back;
+    await page.goto('/');
+    await expect(header.getByRole('link').filter({ hasNotText: 'Explore in 3D' }).last()).toHaveText('Contact');
   });
 
   test('Save to remote from an article stays in a dismissible modal and reports its background progress in the top bar', async ({ page }) => {
@@ -1827,7 +1840,7 @@ test.describe('editor', () => {
 
     const theme = page.getByRole('combobox', { name: 'Colour theme' });
     await theme.click();
-    await page.getByRole('option', { name: 'Dark' }).click();
+    await page.getByRole('option', { name: 'Dark', exact: true }).click();
     await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
     await expect(frame(page).locator('html')).toHaveAttribute('data-theme', 'dark');
     await expect(site.locator('html')).toHaveAttribute('data-theme', 'dark');
@@ -1838,8 +1851,8 @@ test.describe('editor', () => {
     await page.goto('/_edit/media/');
     await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
     await page.getByRole('combobox', { name: 'Colour theme' }).click();
-    await expect(page.getByRole('option', { name: 'Dark' })).toHaveAttribute('aria-selected', 'true');
-    await page.getByRole('option', { name: 'Match system' }).click();
+    await expect(page.getByRole('option', { name: 'Dark', exact: true })).toHaveAttribute('aria-selected', 'true');
+    await page.getByRole('option', { name: 'Match system', exact: true }).click();
     await expect(page.locator('html')).not.toHaveAttribute('data-theme', /./);
     await expect(site.locator('html')).not.toHaveAttribute('data-theme', /./);
   });

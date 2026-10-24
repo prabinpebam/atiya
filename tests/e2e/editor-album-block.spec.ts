@@ -59,6 +59,8 @@ test.describe('editor: albums: the album block', () => {
 
   test('the album block: added from the palette, an album it cannot show said why, its band on the page, its width in the inspector', async ({ page }) => {
     writeDraftAlbum();
+    // written behind the editor's back: wait until its watcher has read it
+    await expect.poll(async () => (await page.request.get('/_edit/albums/')).text(), { timeout: 30_000 }).toContain(`data-album-card="${DRAFT_ALBUM}"`);
     await openArticle(page);
     const count = await outlineRows(page).count();
     await page.locator('[data-editor-outline] [data-editor-add-at]').click();

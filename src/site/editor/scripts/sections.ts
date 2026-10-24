@@ -8,7 +8,7 @@
  * public structure and the private overlay together; a private page can't be taken off the site.
  */
 import { api, refused, saveStatus } from './client';
-import { addHub, nodeIds, placeAll, reorder, setInMenu, unplace, updateHub } from '../model/structure';
+import { MENU_MAX, addHub, inMenu, menuOf, nodeIds, placeAll, reorder, setInMenu, unplace, updateHub } from '../model/structure';
 import { slugify, unique } from '../model/ids';
 import type { ManagerMove, ManagerReorder } from './manager';
 import type { SiteStructure } from '../../content/schema';
@@ -126,6 +126,8 @@ export function initSections(root: HTMLElement, signal: AbortSignal) {
       if (view === 'features' || view === 'list' || view === 'tiles' || view === 'bento' || view === 'albums') fields.view = view;
       const albumOrder = get('albumOrder');
       if (albumOrder === 'newest' || albumOrder === 'oldest' || albumOrder === 'custom') fields.albumOrder = albumOrder;
+      const full = menuOf(state.structure).length >= MENU_MAX;
+      if (nav?.checked && full && !inMenu(state.structure, hub)) return say(form, `The navigation is full (${MENU_MAX} entries): remove one on the Navigation screen first.`);
       let next = updateHub(state.structure, hub, fields);
       // its entry in the top navigation (the same menu the Navigation screen edits)
       if (nav) next = setInMenu(next, hub, nav.checked);
@@ -143,7 +145,9 @@ export function initSections(root: HTMLElement, signal: AbortSignal) {
       const go = new URL(location.href);
       go.searchParams.set(root.dataset.param ?? 'section', id);
       go.searchParams.delete('tab');
-      void put(nav?.checked ? setInMenu(added, id, true) : added, { focus: `[data-manager-section="${id}"]`, form, notice: `Added ${title}`, go });
+      const fits = menuOf(state.structure).length < MENU_MAX;
+      const notice = nav?.checked && !fits ? `Added ${title}. The navigation is full, so it isn't in it.` : `Added ${title}`;
+      void put(nav?.checked && fits ? setInMenu(added, id, true) : added, { focus: `[data-manager-section="${id}"]`, form, notice, go });
     }
   });
 

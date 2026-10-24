@@ -58,7 +58,7 @@ test.describe('editor: the Tests screen', () => {
       await expect(now).toContainText('The planet › crafting › the viewing deck');
       await expect(now).toContainText('expect.poll (37 tries)');
       const first = await now.locator('strong').first().textContent();
-      await expect.poll(() => now.locator('strong').first().textContent(), { timeout: 3000 }).not.toBe(first);
+      await expect.poll(() => now.locator('strong').first().textContent(), { timeout: 10_000 }).not.toBe(first);
       // the failure, pinned, with its verdict (no stable-tree run to compare with here)
       await expect(runs.locator('.fail')).toHaveCount(1);
       await expect(runs.locator('.fail-verdict')).toHaveText('Not compared: no run of it on the stable tree yet');

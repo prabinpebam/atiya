@@ -153,13 +153,13 @@ test.describe('editor: private pages', () => {
     await expect.poll(() => overlay().sections.find((s) => s.section === 'side-projects')?.order?.slice(0, 3)).toEqual(['atiya', 'watai', 'fx-private-alpha']);
     await expect(page.locator('[data-manager-grip="fx-private-alpha"]')).toBeFocused({ timeout: 15_000 });
 
-    // Media: a private page's picture in the library, tagged, filtered, and its details saved where it lives
-    await page.goto('/_edit/media/');
+    // Media: a private page's picture in the library, tagged, filtered, and its details saved where it lives (the list view: the folders and the filters)
+    await page.goto('/_edit/media/?view=list');
     const card = page.locator('[data-media-card="articles/fx-private-alpha/harbour"]');
     await expect(card).toContainText('Private');
     await choose(page, page.locator('[data-editor-media-grid]'), 'Who can see it', /^Private$/);
-    // the fixtures' private media: a picture (with its dark version) and a video
-    await expect(page.locator('[data-media-card]:visible')).toHaveCount(2);
+    // the fixtures' private media: the pages' two (a picture with its dark version, and a video) and the private album's three
+    await expect(page.locator('[data-media-card]:visible')).toHaveCount(5);
     await card.locator('button').click();
     const details = page.locator('[data-editor-media-form]');
     await expect(page.locator('[data-editor-media-details]')).toContainText('Private');
@@ -275,7 +275,10 @@ test.describe('editor: private pages', () => {
 
     // public, from the page's settings: the file moves to content/, in Work, and the link's grant lets it go
     await page.getByRole('tab', { name: 'Page' }).click();
+    // the editor opens itself again once the page has moved: the tab is chosen on the new one
+    const opened = page.waitForEvent('load');
     await choose(page, page, 'Who can see it', /^Everyone/);
+    await opened;
     await expect(tag()).toHaveCount(0, { timeout: 15_000 });
     await ready();
     expect(existsSync(join(FIXTURE, 'content', file))).toBe(true);
@@ -286,7 +289,9 @@ test.describe('editor: private pages', () => {
     await expect(page.getByRole('combobox', { name: 'Section' })).toContainText('Work');
 
     // private again: back into private-pages/, still in Work
+    const reopened = page.waitForEvent('load');
     await choose(page, page, 'Who can see it', /^Private/);
+    await reopened;
     await expect(tag()).toBeVisible({ timeout: 15_000 });
     expect(existsSync(join(PRIVATE, file))).toBe(true);
     expect(existsSync(join(FIXTURE, 'content', file))).toBe(false);

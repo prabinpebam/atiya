@@ -38,7 +38,7 @@ const picture = () => sharp({ create: { width: 1800, height: 1200, channels: 3, 
 
 /** The media screen with its upload form open, and a picture chosen under a name that mustn't leave the page. */
 async function chooseToUpload(page: Page, name = 'Secret Street Number 12.jpg') {
-  await page.goto('/_edit/media/');
+  await page.goto('/_edit/media/?view=list');
   await page.getByText('Upload a picture or a video').click();
   await expect(upload(page).locator('input[type="file"]')).toBeAttached();
   const sent = page.waitForRequest((r) => r.method() === 'POST' && /\/_edit\/api\/ai\/alt$/.test(r.url()));
@@ -69,13 +69,13 @@ test.describe('editor: suggested alt text', () => {
     // unaccepted, it isn't alt text: the upload asks for some
     await form.getByRole('button', { name: 'Upload it' }).click();
     await expect(form.locator('[data-editor-form-issue]')).toContainText('alt text');
-    await expect(page).not.toHaveURL(/\?id=shared\//);
+    await expect(page).not.toHaveURL(/[?&]id=shared\//);
 
     await form.getByRole('button', { name: 'Accept' }).click();
     await expect(altField(form)).toHaveValue(STAND_IN_ALT);
     await expect(offer(form)).toBeHidden();
     await form.getByRole('button', { name: 'Upload it' }).click();
-    await expect(page).toHaveURL(/\?id=shared\/secret-street-number-12$/, { timeout: 30_000 });
+    await expect(page).toHaveURL(/[?&]id=shared\/secret-street-number-12$/, { timeout: 30_000 });
     expect(readJson(join(FIXTURE, 'content/media/shared/secret-street-number-12.json')).alt).toBe(STAND_IN_ALT);
   });
 
@@ -98,7 +98,7 @@ test.describe('editor: suggested alt text', () => {
 
   test("a picture already uploaded: Suggest in its details, once its alt text is emptied, and Accept saves with the details", async ({ page }) => {
     seesPictures();
-    await page.goto(`/_edit/media/?id=articles/${ARTICLE}/tshirt`);
+    await page.goto(`/_edit/media/?view=list&id=articles/${ARTICLE}/tshirt`);
     const pane = details(page);
     const ask = pane.locator('[data-alt-ask]');
     await expect(altField(pane)).toBeVisible();
@@ -128,7 +128,7 @@ test.describe('editor: suggested alt text', () => {
     page.on('request', (r) => {
       if (r.method() === 'POST' && /\/_edit\/api\/ai\/alt$/.test(r.url())) posted = true;
     });
-    await page.goto('/_edit/media/');
+    await page.goto('/_edit/media/?view=list');
     await page.getByText('Upload a picture or a video').click();
     const asked = page.waitForResponse((r) => /\/_edit\/api\/ai\/alt\?/.test(r.url()));
     await upload(page).locator('input[type="file"]').setInputFiles({ name: 'Off.jpg', mimeType: 'image/jpeg', buffer: await picture() });

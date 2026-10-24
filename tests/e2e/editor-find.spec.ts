@@ -11,6 +11,24 @@ import { join } from 'node:path';
 import { FIXTURE, reset } from '../../scripts/editor-test-server.mjs';
 
 const WRITE = { 'content-type': 'application/json', 'X-Editor': '1', Origin: 'http://localhost:4330' };
+const BASE = 'http://localhost:4330';
+/** The dev server's start time, or null while it's down or starting again. */
+const startedAt = async (): Promise<string | null> => {
+  try {
+    return ((await (await fetch(`${BASE}/_edit/__warm`)).json()) as { started?: string }).started ?? null;
+  } catch {
+    return null;
+  }
+};
+/** Waits until the dev server has stayed up, the same start, for 8 s: a reset that changes the ways restarts it once it's quiet. */
+async function settled() {
+  const seen: (string | null)[] = [];
+  for (const end = Date.now() + 120_000; Date.now() < end; await new Promise((r) => setTimeout(r, 4000))) {
+    seen.push(await startedAt());
+    const [a, b, c] = seen.slice(-3);
+    if (seen.length >= 3 && a !== null && a === b && b === c) return;
+  }
+}
 const siteJson = () => JSON.parse(readFileSync(join(FIXTURE, 'content/site.json'), 'utf8'));
 const waysJson = () => JSON.parse(readFileSync(join(FIXTURE, 'content/structures/ways.json'), 'utf8'));
 type Index = {
@@ -25,7 +43,12 @@ test.describe('editor: the action center', () => {
   test.describe.configure({ mode: 'serial' });
   test.setTimeout(240_000);
   test.beforeEach(() => reset());
-  test.afterAll(() => reset());
+  // the last test turns a way off: put it back and let the server finish starting again, so the next file's first page loads
+  test.afterAll(async () => {
+    test.setTimeout(150_000);
+    reset();
+    await settled();
+  });
 
   test("the index lists pages with their words, sections, pictures, the side navigation's screens and the site's settings", async ({ page, request }) => {
     const r = await request.get('/_edit/api/find');

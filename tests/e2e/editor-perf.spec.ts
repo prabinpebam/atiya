@@ -179,7 +179,7 @@ test.describe('editor: no silent wait', () => {
   test.afterAll(() => reset());
 
   test("opening a picture's details: its card at once, the details marked updating, words in the status", async ({ page }) => {
-    await page.goto('/_edit/media/');
+    await page.goto('/_edit/media/?view=list');
     const card = page.locator('[data-editor-media-grid] [data-editor-media]').nth(2);
     const id = (await card.getAttribute('data-editor-media'))!;
     await page.route('**/_edit/media/**', async (route) => {
@@ -196,7 +196,7 @@ test.describe('editor: no silent wait', () => {
   });
 
   test("saving a picture's details: the button busy, then Saved at once; the card changed in place", async ({ page }) => {
-    await page.goto('/_edit/media/?id=articles/do-what-makes-you-proud/tshirt');
+    await page.goto('/_edit/media/?view=list&id=articles/do-what-makes-you-proud/tshirt');
     await page.route('**/_edit/api/media/**', async (route) => {
       if (route.request().method() === 'PUT') await sleep(2000);
       await route.continue();

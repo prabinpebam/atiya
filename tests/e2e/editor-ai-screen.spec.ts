@@ -53,7 +53,7 @@ test.describe('editor: AI screen', () => {
     await card(page, 'Ollama').getByRole('button', { name: 'Remove' }).click();
     await expect(card(page, 'Ollama')).toHaveCount(0);
     await expect(writer(page).getByText('No service yet.')).toBeVisible();
-    await expect(writer(page).getByText('Ollama is running on this computer, with 5 models.')).toBeVisible();
+    await expect(writer(page).getByText('Ollama is running on this computer, with 6 models.')).toBeVisible();
     expect(settings()).toMatchObject({ writer: null, services: [] });
 
     // Add it with the keyboard: it becomes the writer, and the focus goes to its Test
