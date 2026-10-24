@@ -575,7 +575,9 @@ export function initAlbumEditor(root: HTMLElement, signal: AbortSignal) {
     const r = await api<{ id: string; existing?: boolean; title?: string }>('POST', 'linked-video', { url, album: state.id });
     if (!r.ok) {
       task.failed();
-      return announce((r.data.issues ?? []).map((i) => i.message).join(' ') || 'That video couldn’t be added.', 'negative');
+      const why = (r.data.issues ?? []).map(describeIssue).join(' ') || 'That video wasn’t added. Check the address and try again.';
+      saveStatus.failed(`Not added: ${why}`);
+      return announce(why, 'negative');
     }
     void task.done();
     if (input) input.value = '';
@@ -586,10 +588,13 @@ export function initAlbumEditor(root: HTMLElement, signal: AbortSignal) {
   // ---------- the album itself: deleting it ----------
   const deleteAlbum = async () => {
     const task = startTask('Deleting the album…', { el: root.querySelector('[data-album-delete-confirm]') });
+    saveStatus.saving();
     const r = await api('DELETE', `albums/${state.id}`, { ifMatch: { [state.key]: state.version } });
     if (!r.ok) {
       task.failed();
-      return announce((r.data.issues ?? []).map((i) => i.message).join(' ') || 'The album wasn’t deleted.', 'negative');
+      const why = (r.data.issues ?? []).map(describeIssue).join(' ') || 'The album wasn’t deleted. Try again.';
+      saveStatus.failed(`Not deleted: ${why}`);
+      return announce(why, 'negative');
     }
     saveStatus.carry('Album deleted');
     location.href = editorUrl('albums/');
@@ -661,10 +666,13 @@ export function initAlbumEditor(root: HTMLElement, signal: AbortSignal) {
     if (name === 'section') {
       if (!value) return;
       const task = startTask('Moving the album…', { el: root.querySelector('[data-album-setting="section"]') });
+      saveStatus.saving();
       const r = await api('PUT', `albums/${state.id}/section`, { section: value });
       if (!r.ok) {
         task.failed();
-        return announce((r.data.issues ?? []).map((i) => i.message).join(' ') || 'The album wasn’t moved.', 'negative');
+        const why = (r.data.issues ?? []).map(describeIssue).join(' ') || 'The album wasn’t moved. Try again.';
+        saveStatus.failed(`Not moved: ${why}`);
+        return announce(why, 'negative');
       }
       void task.done();
       return saveStatus.saved('Moved to its section');

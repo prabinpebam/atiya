@@ -88,25 +88,22 @@ export function initAlbumActions(root: HTMLElement, signal: AbortSignal) {
     const media = mediaOf(ids);
     if (what === 'album') {
       let target = value('album');
+      const title = value('title');
+      if (target === NEW && !title) return say(what, 'Give the new album a title.');
       const task = startTask(`Adding ${many(media.length, 'item')}…`, { el: button, busyLabel: 'Adding…' });
+      saveStatus.saving();
+      const refused = (why: string) => {
+        task.failed();
+        saveStatus.failed(`Not added: ${why}`);
+        say(what, why);
+      };
       if (target === NEW) {
-        const title = value('title');
-        if (!title) {
-          task.failed();
-          return say(what, 'Give the new album a title.');
-        }
         const made = await api<{ id: string }>('POST', 'albums', { title });
-        if (!made.ok) {
-          task.failed();
-          return say(what, (made.data.issues ?? []).map(describeIssue).join(' ') || 'The album wasn’t made.');
-        }
+        if (!made.ok) return refused((made.data.issues ?? []).map(describeIssue).join(' ') || 'The album wasn’t made. Try again.');
         target = made.data.id;
       }
       const r = await api<{ added: number; skipped: number }>('POST', `albums/${encodeURIComponent(target)}/items`, { media });
-      if (!r.ok) {
-        task.failed();
-        return say(what, (r.data.issues ?? []).map(describeIssue).join(' ') || 'They weren’t added.');
-      }
+      if (!r.ok) return refused((r.data.issues ?? []).map(describeIssue).join(' ') || 'They weren’t added. Try again.');
       void task.done();
       dialog(what)?.close();
       const skipped = r.data.skipped ? ` ${r.data.skipped} ${r.data.skipped === 1 ? 'was' : 'were'} already there.` : '';

@@ -26,7 +26,6 @@ const HTTPS = /^https:\/\/[^\s/]+\.[^\s]+$/;
 const MONTH = /^\d{4}-(0[1-9]|1[0-2])$/;
 /** Unsaved changes here, kept across the screen's redraws (each sets the script up again). */
 let unsaved = false;
-let listening = false;
 
 /** The screen for `rec` (and the section Where they show is for), drawn again, then focus on `focus`. */
 async function show(rec: string, opts: { section?: string | null; focus?: string; push?: boolean } = {}) {
@@ -67,16 +66,13 @@ export function initRecommendations(root: HTMLElement, signal: AbortSignal) {
       e.preventDefault();
       if (!leave()) return;
       unsaved = false;
-      saveStatus.saved();
+      saveStatus.clean();
       const rec = go.dataset.recsGo!;
       void show(rec, { push: true, focus: rec === 'new' ? 'input[name="name"]' : `[data-recs-go="${rec}"]` });
     },
     { signal },
   );
-  if (!listening) {
-    listening = true;
-    window.addEventListener('popstate', () => void show(new URL(location.href).searchParams.get('rec') ?? ''));
-  }
+  window.addEventListener('popstate', () => void show(new URL(location.href).searchParams.get('rec') ?? ''), { signal });
 
   // ---------- where they show ----------
   if (place) {
@@ -103,7 +99,7 @@ export function initRecommendations(root: HTMLElement, signal: AbortSignal) {
         if (t.name === 'section') {
           if (!leave()) return;
           unsaved = false;
-          saveStatus.saved();
+          saveStatus.clean();
           void show('place', { section: t.value, focus: '[data-recs-place] [role="combobox"]' });
           return;
         }

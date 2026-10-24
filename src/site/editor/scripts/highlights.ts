@@ -21,7 +21,6 @@ const KEY = '/content/highlights.json';
 const REGION = 'highlights';
 /** Unsaved changes here, kept across the screen's redraws (each sets the script up again). */
 let unsaved = false;
-let listening = false;
 
 /** The screen for `slide`, drawn again, then focus on `focus`. */
 async function show(slide: string, opts: { focus?: string; push?: boolean } = {}) {
@@ -75,16 +74,13 @@ export function initHighlights(root: HTMLElement, signal: AbortSignal) {
       e.preventDefault();
       if (link.getAttribute('aria-disabled') === 'true' || !leave()) return;
       unsaved = false;
-      saveStatus.saved();
+      saveStatus.clean();
       const slide = link.dataset.highlightsGo!;
       void show(slide, { push: true, focus: slide === 'new' ? '[data-highlights-new] [role="combobox"]' : go(slide) });
     },
     { signal },
   );
-  if (!listening) {
-    listening = true;
-    window.addEventListener('popstate', () => void show(new URL(location.href).searchParams.get('slide') ?? ''));
-  }
+  window.addEventListener('popstate', () => void show(new URL(location.href).searchParams.get('slide') ?? ''), { signal });
 
   if (!form) return;
   const changed = () => {
