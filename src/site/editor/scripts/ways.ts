@@ -4,7 +4,7 @@
  * change. Turning a way on or off restarts the dev server (what's built is decided at its start), so the
  * screen waits for the new server, saying so, before it shows the result.
  */
-import { api, describeIssue, editorUrl, saveStatus, startTask } from './client';
+import { api, editorUrl, refused, saveStatus, startTask } from './client';
 import { setMode, setPrimary } from '../model/ways';
 import type { Ways } from '../../modes/contract';
 
@@ -62,7 +62,7 @@ export function initWays(form: HTMLFormElement, signal: AbortSignal) {
     saveStatus.saving();
     const r = await api('PUT', 'ways', { ways: next, ifMatch: { '/content/structures/ways.json': state.version } });
     if (!r.ok) {
-      const why = (r.data.issues ?? []).map(describeIssue).join(' ') || "The change wasn't saved.";
+      const why = refused(r, "The change wasn't saved.");
       saveStatus.failed(`Not saved: ${why}`);
       say(why);
       return;

@@ -10,7 +10,7 @@ import { extractColors, seedFromSwatches, type Swatch } from '../../theme/extrac
 import { COLOR_GROUPS, DEFAULT_THEME, PAIRINGS, PALETTES, TYPE_SCALES, copyTheme, isPreset, pairingOf, presetById, typeScaleOf, type ColorRole, type Colors, type FontRole, type Neutral, type Theme, type TypeSettings } from '../../theme/model';
 import type { ThemeBase } from '../../theme/base';
 import type { FontFile } from '../../theme/fonts';
-import { api, describeIssue, editorUrl, saveStatus } from './client';
+import { api, editorUrl, refused, saveStatus } from './client';
 import { TYPE_SLIDERS, contrastWords, copyName, fromPercent, offers, roleContrast, sameTheme, startingTheme, statusLine, swatchesOf, toPercent, type ThemeEntry } from '../model/theme';
 
 interface State {
@@ -322,8 +322,8 @@ export function initThemePanel(panel: HTMLElement, signal: AbortSignal) {
     const key = `/content/themes/${t.id}.json`;
     const r = await api<{ versions: Record<string, string | null> }>('PUT', `themes/${t.id}`, { theme: t, ifMatch: { [key]: version } });
     if (!r.ok) {
-      saveStatus.failed(r.data.issues?.map(describeIssue).join(' ') ?? 'Not saved');
-      say(r.data.issues?.map(describeIssue).join(' ') ?? "The theme wasn't saved.");
+      saveStatus.failed(refused(r, "The theme wasn't saved."));
+      say(refused(r, "The theme wasn't saved."));
       return null;
     }
     saveStatus.saved(`Theme: ${t.name}`);
@@ -331,7 +331,7 @@ export function initThemePanel(panel: HTMLElement, signal: AbortSignal) {
   };
   const apply = async (id: string) => {
     const r = await api<{ versions: Record<string, string | null> }>('PUT', 'themes/active', { id, ifMatch: { '/content/site.json': siteVersion } });
-    if (!r.ok) return say(r.data.issues?.map(describeIssue).join(' ') ?? "The theme wasn't applied.");
+    if (!r.ok) return say(refused(r, "The theme wasn't applied."));
     siteVersion = r.data.versions?.['/content/site.json'] ?? siteVersion;
     active = id;
     say(`${saved(id).name} is the site's theme now.`);
@@ -377,7 +377,7 @@ export function initThemePanel(panel: HTMLElement, signal: AbortSignal) {
     deleteDialog!.close();
     const id = chosen;
     const r = await api<{ versions: Record<string, string | null> }>('DELETE', `themes/${id}`, { ifMatch: { [`/content/themes/${id}.json`]: entries.get(id)!.version } });
-    if (!r.ok) return say(r.data.issues?.map(describeIssue).join(' ') ?? "The theme wasn't deleted.");
+    if (!r.ok) return say(refused(r, "The theme wasn't deleted."));
     const name = saved(id).name;
     entries.delete(id);
     delete drafts[id];
@@ -463,7 +463,7 @@ export function initThemePanel(panel: HTMLElement, signal: AbortSignal) {
     const category = form.querySelector<HTMLElement>('[data-theme-import-category] [aria-selected="true"]')?.dataset.value ?? 'sans-serif';
     say('Importing the font…');
     const r = await api<{ font?: FontFile; message?: string }>('POST', 'themes/fonts', { url, category });
-    if (!r.ok || !r.data.font) return say(r.data.message ?? r.data.issues?.map(describeIssue).join(' ') ?? "The font wasn't imported.");
+    if (!r.ok || !r.data.font) return say(r.data.message ?? refused(r, "The font wasn't imported."));
     const f = r.data.font;
     // the browser must read it too, else it's no use: a font that won't parse is said so, and the fallback stays
     try {

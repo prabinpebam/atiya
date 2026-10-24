@@ -3,7 +3,7 @@
  * (an untitled draft made at once, then opened with its title selected), copying an album's address and deleting
  * one after asking, saying what it keeps.
  */
-import { announce, api, describeIssue, editorUrl, saveStatus, startTask } from './client';
+import { announce, api, editorUrl, refused, saveStatus, startTask } from './client';
 
 /** Wires the Albums screen's cards (`root`, the AlbumCards part); Add album and the delete dialog are the page's. */
 export function initAlbums(root: HTMLElement, signal: AbortSignal) {
@@ -74,7 +74,7 @@ export function initAlbums(root: HTMLElement, signal: AbortSignal) {
         saveStatus.saved(`Deleted ${title}`);
       } else {
         task.failed();
-        saveStatus.failed(r.data.issues?.map(describeIssue).join(' ') || `Couldn't delete ${title}`);
+        saveStatus.failed(refused(r, `${title} wasn’t deleted.`));
       }
     },
     { signal },
@@ -98,7 +98,7 @@ export async function newAlbum(body: { title?: string; section?: string } = {}) 
   const r = await api<{ id?: string; note?: string }>('POST', 'albums', body);
   if (!r.ok || !r.data.id) {
     task.failed();
-    saveStatus.failed(r.data.issues?.map(describeIssue).join(' ') || "Couldn't make the album");
+    saveStatus.failed(refused(r, 'The album wasn’t made.'));
     return;
   }
   void task.done();

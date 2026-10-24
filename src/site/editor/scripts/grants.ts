@@ -8,7 +8,8 @@
  * narrows it, and the line over it says what's chosen. Every write is one call to the editor API; the list
  * and the details are then drawn again from the server (`swapRegions`).
  */
-import { announce, api, describeIssue, saveStatus, swapRegions, type Issue } from './client';
+import { announce, api, type Issue, saveStatus, swapRegions } from './client';
+import { refusal } from '../model/feedback';
 import { scopeLine } from '../model/access';
 
 const DETAIL = 'access-detail';
@@ -273,7 +274,7 @@ export function initGrantDetails(root: HTMLElement, signal: AbortSignal) {
     focus?.focus();
   };
   const failed = (issues: Issue[] | undefined, fallback: string) => {
-    const text = (issues ?? []).map(describeIssue).join('; ') || fallback;
+    const text = refusal(issues, fallback, { sep: '; ' });
     saveStatus.failed(`Not saved: ${text}`);
     say(text);
     const field = (issues ?? []).map((i) => i.path).find(Boolean);

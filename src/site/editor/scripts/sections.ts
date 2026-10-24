@@ -7,7 +7,7 @@
  * ones (documentation/access/spec.md §8.2): a move that involves one is made by the server, which writes the
  * public structure and the private overlay together; a private page can't be taken off the site.
  */
-import { api, describeIssue, saveStatus } from './client';
+import { api, refused, saveStatus } from './client';
 import { addHub, nodeIds, placeAll, reorder, setInMenu, unplace, updateHub } from '../model/structure';
 import { slugify, unique } from '../model/ids';
 import type { ManagerMove, ManagerReorder } from './manager';
@@ -43,7 +43,7 @@ export function initSections(root: HTMLElement, signal: AbortSignal) {
       else location.reload();
       return;
     }
-    const why = (r.data.issues ?? []).map(describeIssue).join(' ') || "The change wasn't saved.";
+    const why = refused(r, "The change wasn't saved.");
     saveStatus.failed(`Not saved: ${why}`);
     say(o.form ?? null, why);
   };
@@ -66,7 +66,7 @@ export function initSections(root: HTMLElement, signal: AbortSignal) {
           location.reload();
           return;
         }
-        const why = (r.data.issues ?? []).map(describeIssue).join(' ') || "The change wasn't saved.";
+        const why = refused(r, "The change wasn't saved.");
         saveStatus.failed(`Not saved: ${why}`);
         say(null, why);
       })();

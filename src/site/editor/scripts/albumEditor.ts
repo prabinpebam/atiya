@@ -13,7 +13,7 @@ import { SaveQueue } from '../model/queue';
 import { addItems, addText, editText, moveBy, moveItems, moveToEnd, moveToStart, pickRange, pickToggle, removeItems, setCoverLead, setItemDownload, setItemPlay, setSettings, setWords, sortAlbum, type AlbumSettings } from '../model/album';
 import { isVideoFile, needsConversion, pictureSizeIssue, posterTime, refusedFormat, svgChoices, typeOf, videoSizeIssue } from '../model/upload';
 import { takenOf } from '../model/exif';
-import { TAB, announce, api, describeIssue, editorUrl, onContentChange, saveStatus, startTask, swapRegions } from './client';
+import { announce, api, editorUrl, onContentChange, refused, saveStatus, startTask, swapRegions, TAB } from './client';
 import { fillPicker } from './picker';
 import { initAlbumCover } from './albumCover';
 import { rowStep } from './photoSelection';
@@ -75,7 +75,7 @@ export function initAlbumEditor(root: HTMLElement, signal: AbortSignal) {
         dialog('album-conflict')?.showModal();
         return 'stop';
       }
-      const why = (r.data.issues ?? []).map(describeIssue).join(' ') || 'The album wasn’t saved.';
+      const why = refused(r, 'The album wasn’t saved.');
       doc = structuredClone(saved);
       undos.pop();
       saveStatus.failed(why);
@@ -575,7 +575,7 @@ export function initAlbumEditor(root: HTMLElement, signal: AbortSignal) {
     const r = await api<{ id: string; existing?: boolean; title?: string }>('POST', 'linked-video', { url, album: state.id });
     if (!r.ok) {
       task.failed();
-      const why = (r.data.issues ?? []).map(describeIssue).join(' ') || 'That video wasn’t added. Check the address and try again.';
+      const why = refused(r, 'That video wasn’t added. Check the address and try again.');
       saveStatus.failed(`Not added: ${why}`);
       return announce(why, 'negative');
     }
@@ -592,7 +592,7 @@ export function initAlbumEditor(root: HTMLElement, signal: AbortSignal) {
     const r = await api('DELETE', `albums/${state.id}`, { ifMatch: { [state.key]: state.version } });
     if (!r.ok) {
       task.failed();
-      const why = (r.data.issues ?? []).map(describeIssue).join(' ') || 'The album wasn’t deleted. Try again.';
+      const why = refused(r, 'The album wasn’t deleted. Try again.');
       saveStatus.failed(`Not deleted: ${why}`);
       return announce(why, 'negative');
     }
@@ -609,7 +609,7 @@ export function initAlbumEditor(root: HTMLElement, signal: AbortSignal) {
       if (field === 'title' && !value.trim()) return saveStatus.failed('Give the album a title.');
       change(setWords(doc, { [field]: value }), '', { typing: true });
       if (field === 'title')
-        document.querySelectorAll<HTMLElement>('[data-album-heading]').forEach((h) => {
+        document.querySelectorAll<HTMLElement>('[data-album-heading], #album-words-title').forEach((h) => {
           (h.querySelector('strong') ?? h).textContent = value.trim();
           h.title = value.trim();
         });
@@ -670,7 +670,7 @@ export function initAlbumEditor(root: HTMLElement, signal: AbortSignal) {
       const r = await api('PUT', `albums/${state.id}/section`, { section: value });
       if (!r.ok) {
         task.failed();
-        const why = (r.data.issues ?? []).map(describeIssue).join(' ') || 'The album wasn’t moved. Try again.';
+        const why = refused(r, 'The album wasn’t moved. Try again.');
         saveStatus.failed(`Not moved: ${why}`);
         return announce(why, 'negative');
       }

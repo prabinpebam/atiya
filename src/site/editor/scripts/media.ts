@@ -5,7 +5,7 @@
  * details are rendered again from the server. Gallery spec §4: Find the focus (measured by the server, saved
  * with the details), Make it standard, and Replace's choices (an SVG's two ways, Keep it large).
  */
-import { api, announce, describeIssue, feedbackTiming, saveStatus, startTask, swapRegions } from './client';
+import { announce, api, feedbackTiming, refused, saveStatus, startTask, swapRegions } from './client';
 import { openCrop } from './crop';
 import { initAltSuggest } from './altSuggest';
 import { showUploadOptions, sizeOf, uploadNote } from './uploadOptions';
@@ -181,7 +181,7 @@ export function initMediaDetails(root: HTMLElement, signal: AbortSignal) {
       const r = await api<{ focus?: string | null }>('POST', `media/${state.id}/focus`);
       if (!r.ok) {
         task.failed();
-        return announce(`The focus wasn't found: ${(r.data.issues ?? []).map(describeIssue).join(' ') || 'try again'}`, 'negative');
+        return announce(refused(r, 'The focus wasn’t found.', { lead: true }), 'negative');
       }
       void task.done();
       if (!r.data.focus) return announce('No clear subject: the focus point stays where it is.');
@@ -231,7 +231,7 @@ export function initMediaDetails(root: HTMLElement, signal: AbortSignal) {
       const r = await api('PUT', `media/${state.id}`, { sidecar: next, ifMatch: { [state.key]: state.version } });
       if (!r.ok) {
         task.failed();
-        const why = (r.data.issues ?? []).map(describeIssue).join(' ') || "The details weren't saved.";
+        const why = refused(r, "The details weren't saved.");
         saveStatus.failed(`Not saved: ${why}`);
         return say(form, r.status === 409 ? 'Its details changed elsewhere since you opened it. Open it again to see them.' : why);
       }
@@ -275,7 +275,7 @@ export function initMediaDetails(root: HTMLElement, signal: AbortSignal) {
       const r = await api<{ width: number; height: number; lightWidth: number; lightHeight: number; removed?: string[] }>('POST', `media/${state.id}/dark`, d);
       if (!r.ok) {
         task.failed();
-        const why = (r.data.issues ?? []).map(describeIssue).join(' ') || "The dark version wasn't saved.";
+        const why = refused(r, "The dark version wasn't saved.");
         saveStatus.failed(`Not saved: ${why}`);
         return say(darkForm, why);
       }
@@ -293,7 +293,7 @@ export function initMediaDetails(root: HTMLElement, signal: AbortSignal) {
     async () => {
       saveStatus.saving();
       const r = await api('DELETE', `media/${state.id}/dark`);
-      if (!r.ok) return saveStatus.failed(`Not removed: ${(r.data.issues ?? []).map(describeIssue).join(' ') || 'the change was refused'}`);
+      if (!r.ok) return saveStatus.failed(refused(r, 'It wasn’t removed.', { lead: true }));
       await swapRegions(['media-details', 'media-grid']);
       saveStatus.saved(`Removed the dark version of ${nameOf(state.id)}: the picture shows in both modes`);
     },
@@ -313,8 +313,8 @@ export function initMediaDetails(root: HTMLElement, signal: AbortSignal) {
       showUploadOptions(replace!, null);
       uploadNote(replace!, '');
       if (!file) return;
-      const refused = refusedFormat(file);
-      if (refused) return say(replace!, refused);
+      const badFormat = refusedFormat(file);
+      if (badFormat) return say(replace!, badFormat);
       const type = typeOf(file);
       const apng = type === 'image/png' && (await file.arrayBuffer().then((b) => isApng(new Uint8Array(b)), () => false));
       const { width, height } = await sizeOf(file);
@@ -331,8 +331,8 @@ export function initMediaDetails(root: HTMLElement, signal: AbortSignal) {
       const d = new FormData(replace);
       const file = d.get('file');
       if (!(file instanceof File) || !file.size) return say(replace, 'Choose the new picture.');
-      const refused = refusedFormat(file);
-      if (refused) return say(replace, refused);
+      const badFormat = refusedFormat(file);
+      if (badFormat) return say(replace, badFormat);
       say(replace, '');
       const button = replace.querySelector<HTMLButtonElement>('button[type="submit"]');
       if (button?.getAttribute('aria-busy') === 'true') return;
@@ -341,7 +341,7 @@ export function initMediaDetails(root: HTMLElement, signal: AbortSignal) {
       const r = await api<{ removed?: string[] }>('POST', `media/${state.id}/replace`, d);
       if (!r.ok) {
         task.failed();
-        const why = (r.data.issues ?? []).map(describeIssue).join(' ') || "It wasn't replaced.";
+        const why = refused(r, "It wasn't replaced.");
         saveStatus.failed(`Not replaced: ${why}`);
         return say(replace, why);
       }
@@ -363,7 +363,7 @@ export function initMediaDetails(root: HTMLElement, signal: AbortSignal) {
       const r = await api('POST', `media/${state.id}/standard`);
       if (!r.ok) {
         task.failed();
-        return saveStatus.failed(`Not made standard: ${(r.data.issues ?? []).map(describeIssue).join(' ') || 'the change was refused'}`);
+        return saveStatus.failed(refused(r, 'It wasn’t made standard.', { lead: true }));
       }
       void task.done();
       await swapRegions(['media-details', 'media-grid']);
@@ -381,7 +381,7 @@ function wireDelete(root: HTMLElement, id: string, signal: AbortSignal) {
       saveStatus.saving();
       const r = await api('DELETE', `media/${id}`);
       (root.querySelector('#delete-media') as HTMLDialogElement | null)?.close();
-      if (!r.ok) return saveStatus.failed(`Not deleted: ${(r.data.issues ?? []).map(describeIssue).join(' ') || 'something still uses it'}`);
+      if (!r.ok) return saveStatus.failed(refused(r, 'It wasn’t deleted: something still uses it. Check where it’s used first.', { lead: true }));
       await show(null, false).then(() => history.replaceState(null, '', urlFor(null)));
       saveStatus.saved(`Deleted ${nameOf(id)}`);
     },
@@ -420,7 +420,7 @@ function initVideoDetails(root: HTMLElement, state: { id: string; key: string; v
       saveStatus.saving();
       const r = await api('PUT', `media/${state.id}`, { sidecar: next, ifMatch: { [state.key]: state.version } });
       if (!r.ok) {
-        const why = (r.data.issues ?? []).map(describeIssue).join(' ') || "The details weren't saved.";
+        const why = refused(r, "The details weren't saved.");
         saveStatus.failed(`Not saved: ${why}`);
         return say(r.status === 409 ? 'Its details changed elsewhere since you opened it. Open it again to see them.' : why);
       }

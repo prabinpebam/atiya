@@ -4,7 +4,7 @@
  * copying a grant's message again. Everything else a code or link can change is on the Access screen
  * (scripts/grants.ts). Each is one call to the API; the list of who it's shared with then refreshes.
  */
-import { announce, api, describeIssue, saveStatus, swapRegions, type Issue } from './client';
+import { announce, api, type Issue, refused, saveStatus, swapRegions } from './client';
 
 async function copy(text: string) {
   try {
@@ -22,7 +22,7 @@ export function initSharing(root: HTMLElement, signal: AbortSignal) {
 
   const done = async (r: { ok: boolean; data: { issues?: Issue[] } }, what: string) => {
     if (!r.ok) {
-      const text = (r.data.issues ?? []).map(describeIssue).join('; ') || 'That didn’t work: try again.';
+      const text = refused(r, 'That didn’t work: try again.', { sep: '; ' });
       saveStatus.failed(text);
       if (issue) {
         issue.textContent = text;

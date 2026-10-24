@@ -3,7 +3,7 @@
  * navigation, `menus.primary` in the site structure. Each change is one store transaction (PUT
  * structure, with its version), checked against the content contract (V17); a refusal says why.
  */
-import { api, describeIssue, saveStatus } from './client';
+import { api, refused, saveStatus } from './client';
 import { MENU_MAX, addLink, menuOf, moveEntry, relabelEntry, removeEntry, setInMenu } from '../model/structure';
 import type { SiteStructure } from '../../content/schema';
 
@@ -30,7 +30,7 @@ export function initNavigation(root: HTMLElement, signal: AbortSignal) {
       location.reload();
       return;
     }
-    const why = (r.data.issues ?? []).map(describeIssue).join(' ') || "The change wasn't saved.";
+    const why = refused(r, "The change wasn't saved.");
     saveStatus.failed(`Not saved: ${why}`);
     say(why);
   };

@@ -5,7 +5,7 @@
  * a section of the site (V16), and a section is shown by one building at most (V15). A refusal says why, in
  * the form.
  */
-import { api, describeIssue, saveStatus } from './client';
+import { api, refused, saveStatus } from './client';
 import { updatePlace } from '../model/planet';
 import type { PlaceId, PlanetStructure } from '../../content/schema';
 
@@ -34,7 +34,7 @@ export function initPlanet(root: HTMLElement, signal: AbortSignal) {
       location.reload();
       return;
     }
-    const why = (r.data.issues ?? []).map(describeIssue).join(' ') || "The change wasn't saved.";
+    const why = refused(r, "The change wasn't saved.");
     saveStatus.failed(`Not saved: ${why}`);
     say(o.form ?? null, why);
   };

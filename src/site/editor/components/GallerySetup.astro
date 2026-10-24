@@ -9,14 +9,13 @@
  * @a11y A form named by its heading; Save reports in the status line, a missing title is said beside the field.
  */
 import Button from '../../components/fundamentals/Button.astro';
-import Heading from '../../components/fundamentals/Heading.astro';
 import HiddenField from '../../components/fundamentals/HiddenField.astro';
 import Select from '../../components/fundamentals/Select.astro';
 import Switch from '../../components/fundamentals/Switch.astro';
-import Text from '../../components/fundamentals/Text.astro';
 import TextField from '../../components/fundamentals/TextField.astro';
 import ActionBar from '../../components/compounds/ActionBar.astro';
 import ChoiceGroup from '../../components/compounds/ChoiceGroup.astro';
+import DetailPane from '../kit/DetailPane.astro';
 import Form from '../kit/Form.astro';
 import { ORDER_WORDS, type Gallery } from '../model/gallery';
 import { SECTION_ALBUM_ORDERS } from '../../content/schema';
@@ -40,19 +39,18 @@ const ORDER_HINTS: Record<string, string> = {
 };
 ---
 
-<section class="gallery-setup" data-region="gallery-setup" data-gallery-setup={gallery?.id} data-version={version ?? ''} aria-labelledby="gallery-setup-title">
-  <header class="head">
-    <Heading level={2} size="h3" id="gallery-setup-title">
-      {gallery ? 'The gallery' : 'No gallery yet'}
-    </Heading>
-    <Text variant="ui" tone="muted">
-      {
-        gallery
-          ? 'What the gallery section is called, the line under its title, and the order of its albums. Drag an album in the list to put them in your own order.'
-          : 'A section whose view is Albums shows your albums. Make one on the Sections screen; your albums wait here till then.'
-      }
-    </Text>
-  </header>
+<DetailPane
+  title={gallery ? 'The gallery' : 'No gallery yet'}
+  titleId="gallery-setup-title"
+  line={
+    gallery
+      ? 'What the gallery section is called, the line under its title, and the order of its albums. Drag an album in the list to put them in your own order.'
+      : 'A section whose view is Albums shows your albums. Make one on the Sections screen; your albums wait here till then.'
+  }
+  data-region="gallery-setup"
+  data-gallery-setup={gallery?.id}
+  data-version={version ?? ''}
+>
   {
     gallery && (
       <Form gap="xl" width="measure" labelledby="gallery-setup-title" data-gallery-form="">
@@ -76,7 +74,7 @@ const ORDER_HINTS: Record<string, string> = {
       </Form>
     )
   }
-</section>
+</DetailPane>
 
 <script>
   import { each } from '../../scripts/page';
@@ -84,18 +82,3 @@ const ORDER_HINTS: Record<string, string> = {
 
   each<HTMLElement>('[data-gallery-setup]', (root, signal) => initGallerySetup(root, signal));
 </script>
-
-<style>
-  .gallery-setup {
-    display: grid;
-    align-content: start;
-    gap: var(--space-8);
-    min-inline-size: 0;
-  }
-
-  .head {
-    display: grid;
-    gap: var(--space-2);
-    max-inline-size: var(--size-measure);
-  }
-</style>

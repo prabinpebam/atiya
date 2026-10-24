@@ -3,7 +3,7 @@
  * model and private-pages switch, Add, Remove), then the writer and the cards are drawn again and the focus is
  * put back where it was. Test is busy on its own button, and its result is announced.
  */
-import { announce, api, describeIssue, saveStatus, startTask, swapRegions, type Reply } from './client';
+import { announce, api, refused, type Reply, saveStatus, startTask, swapRegions } from './client';
 import { PRIVATE_LINE, removeQuestion, testLine, type AiService, type CloudKind } from '../model/aiServices';
 import { picturesTestLine } from '../model/altText';
 
@@ -24,7 +24,7 @@ async function refresh(focus?: string, label?: string) {
   if (focus) document.querySelector<HTMLElement>(focus)?.focus();
 }
 
-const why = (r: Reply) => (r.data.issues ?? []).map(describeIssue).join(' ') || "The change wasn't saved.";
+const why = (r: Reply) => refused(r, "The change wasn't saved.");
 
 /** Saves one change, says so, and draws the screen again; a refusal is said and returned. */
 async function save(method: string, path: string, body: unknown, what: string, focus?: (r: Reply) => string | undefined): Promise<Reply> {

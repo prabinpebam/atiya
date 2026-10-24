@@ -2,7 +2,7 @@
  * The gallery's setup (documentation/gallery/spec.md §9.1): its title, description and order of albums saved
  * together; the Section choice (with more than one gallery) shows another gallery's setup and albums.
  */
-import { api, describeIssue, saveStatus, startTask, swapRegions } from './client';
+import { api, refused, saveStatus, startTask, swapRegions } from './client';
 
 /** Wires one gallery setup (`root`, the GallerySetup part). */
 export function initGallerySetup(root: HTMLElement, signal: AbortSignal) {
@@ -31,7 +31,7 @@ export function initGallerySetup(root: HTMLElement, signal: AbortSignal) {
       const r = await api('PUT', `gallery/${id}`, { settings, version: root.dataset.version || null });
       if (!r.ok) {
         task.failed();
-        saveStatus.failed(r.data.issues?.map(describeIssue).join(' ') || "Couldn't save the gallery");
+        saveStatus.failed(refused(r, 'The gallery wasn’t saved.'));
         return;
       }
       void task.done();

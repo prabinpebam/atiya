@@ -6,7 +6,7 @@
  * redraw after the save (the outline and inspector regions swapped in, the canvas loaded behind the old
  * one and swapped in when ready) only confirms it. It talks to the canvas by postMessage (same origin only).
  */
-import { api, announce, describeIssue, onContentChange, refreshPending, saveStatus, startTask, swapRegions, type Issue, type Task } from './client';
+import { announce, api, describeIssue, type Issue, onContentChange, refreshPending, refused, saveStatus, startTask, swapRegions, type Task } from './client';
 import { fillPicker } from './picker';
 import { isStructural, originsOf, renameTree, targetsOf, type Origin } from '../model/optimistic';
 import * as ops from '../model/ops';
@@ -139,7 +139,7 @@ export function initEditor(root: HTMLElement, signal: AbortSignal) {
       }
       doc = structuredClone(saved);
       if (job.ready?.length) toCanvas({ type: 'table-unlock' });
-      const why = (r.data.issues ?? []).map(describeIssue).join('; ') || 'the change was refused';
+      const why = refused(r, 'the change was refused', { sep: '; ' });
       if (job.optimistic) {
         // shown at once and refused: every view goes back to the last saved document, and says so (§3.6 rule 4)
         renderOutline();
@@ -927,7 +927,7 @@ export function initEditor(root: HTMLElement, signal: AbortSignal) {
     const r = await api('PUT', `articles/${state.id}/access`, { access: to, ...(section ? { section } : {}) });
     if (!r.ok) {
       showIssues((r.data.issues ?? []).map((i) => ({ ...i, path: i.path === 'section' ? '__section' : '__access' })));
-      saveStatus.failed(`Not changed: ${(r.data.issues ?? []).map(describeIssue).join('; ') || 'the change was refused'}`);
+      saveStatus.failed(refused(r, 'It wasn’t changed.', { lead: true, sep: '; ' }));
       await swap(['inspector']);
       return;
     }
@@ -956,7 +956,7 @@ export function initEditor(root: HTMLElement, signal: AbortSignal) {
     if (!confirm('Change this page’s address? Every link to it stops working, including magic links already sent.')) return;
     saveStatus.saving();
     const r = await api('POST', `articles/${state.id}/address`);
-    if (!r.ok) return void saveStatus.failed(`Not changed: ${(r.data.issues ?? []).map(describeIssue).join('; ') || 'the change was refused'}`);
+    if (!r.ok) return void saveStatus.failed(refused(r, 'It wasn’t changed.', { lead: true, sep: '; ' }));
     saveStatus.carry('Address changed');
     location.reload();
   });

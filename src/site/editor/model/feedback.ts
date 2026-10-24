@@ -51,3 +51,26 @@ export function underWay(done: string): string {
   const verb = UNDER_WAY[first];
   return verb ? [verb, ...rest].join(' ') : `Saving: ${done}`;
 }
+
+/** A problem the server found, as the editor API reports it. */
+export interface IssueLike {
+  path?: string;
+  message: string;
+}
+
+/** An issue in words, for the status and field messages. */
+export const describeIssue = (i: IssueLike) => `${i.path ? `${i.path}: ` : ''}${i.message}`;
+
+/** A fallback that already says how to put it right ("Check the address and try again."). */
+const SAYS_FIX = /\b(try again|check)\b/i;
+
+/**
+ * A refused change in words (an error says what happened and how to fix it): what the server found wrong,
+ * else `happened` and how to put it right ("The album wasn't saved. Try again."). With `lead`, the server's
+ * words follow what happened ("It wasn't changed: slug: already used"); `sep` joins several.
+ */
+export function refusal(issues: readonly IssueLike[] | undefined, happened: string, opts: { lead?: boolean; sep?: string } = {}): string {
+  const said = (issues ?? []).map(describeIssue).join(opts.sep ?? ' ');
+  if (!said) return SAYS_FIX.test(happened) ? happened : `${happened} Try again.`;
+  return opts.lead ? `${happened.replace(/[.:]\s*$/, '')}: ${said}` : said;
+}

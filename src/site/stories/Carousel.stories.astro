@@ -64,7 +64,7 @@ const HIGHLIGHTS = [{ src: '', alt: 'A year on GitHub', caption: '', width: 21, 
 <Example title="Trusted mixed highlights" layout="block" description="The same track, peek and controls carry a custom interactive chart, a page excerpt, an album cover and a single picture. No automatic rotation.">
   <Carousel items={HIGHLIGHTS} label="Mixed home highlights" content peek>
     {(n: number) => n === 0
-      ? <ContributionHero title="" embedded data={{ ...CONTRIBUTION_SAMPLE, stats: contributionStats(CONTRIBUTION_SAMPLE) }} />
+      ? <ContributionHero embedded data={{ ...CONTRIBUTION_SAMPLE, stats: contributionStats(CONTRIBUTION_SAMPLE) }} />
       : <HighlightCard title={n === 1 ? 'Finding a shared direction' : n === 2 ? 'An afternoon outdoors' : 'A waterfall'} text={n === 1 ? 'A small team tried three approaches together.' : n === 2 ? 'A few scenes from the same walk.' : undefined} href={n < 3 ? `#example-${n === 1 ? 'page' : 'album'}` : undefined} picture={SAMPLES[n]} settings={{ display: 'fit' }} />}
   </Carousel>
 </Example>

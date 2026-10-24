@@ -4,7 +4,7 @@
  * goes to the field's own folder: site/ for the social image, people/<id>/ for the portrait); links added
  * and removed as rows.
  */
-import { api, describeIssue, saveStatus, swapRegions } from './client';
+import { api, refused, saveStatus, swapRegions } from './client';
 import { fillPicker } from './picker';
 import type { Person, SiteSettings } from '../../content/schema';
 
@@ -142,7 +142,7 @@ export function initSettings(root: HTMLElement, signal: AbortSignal) {
     saveStatus.saving();
     const r = await api('PUT', path, body);
     if (!r.ok) {
-      const why = (r.data.issues ?? []).map(describeIssue).join(' ') || `${what} weren't saved.`;
+      const why = refused(r, `${what} weren't saved.`);
       saveStatus.failed(`Not saved: ${why}`);
       return say(form, r.status === 409 ? 'This file changed elsewhere since you opened it. Reload the page to see it, then make your change again.' : why);
     }

@@ -3,7 +3,8 @@
  * and push) and Push again. A publish that committed comes back to the screen with its commit in the
  * address, which shows its result and the link to its deploy; a push that failed says why.
  */
-import { api, announce, describeIssue, remoteSaveStatus, swapRegions } from './client';
+import { announce, api, refused, remoteSaveStatus, swapRegions } from './client';
+import { refusal } from '../model/feedback';
 import { messageFor, privateNote, saveLabel } from '../model/selection';
 
 // the changes unticked (by resource), kept while the list is drawn again; a save clears them
@@ -126,7 +127,7 @@ export function initPublish(root: HTMLElement, signal: AbortSignal) {
         dialog?.close();
         announce('Discarding\u2026');
         const r = await api('POST', 'discard', { keys });
-        if (!r.ok) return announce(`Not discarded: ${(r.data.issues ?? []).map(describeIssue).join(' ') || 'the change was refused'}`, 'negative');
+        if (!r.ok) return announce(refused(r, 'It wasn’t discarded.', { lead: true }), 'negative');
         await swapRegions(['publish', 'publish-issues']);
         announce(`Discarded: ${name}`);
         return;
@@ -252,7 +253,7 @@ export function initPublish(root: HTMLElement, signal: AbortSignal) {
       const r = await api<PublishReply>('POST', 'publish', { message, ...(keys ? { keys } : {}) });
       if (button) button.disabled = false;
       if (!r.ok || !r.data.commit) {
-        const why = [r.data.reason, ...(r.data.issues ?? []).map(describeIssue)].filter(Boolean).join(' ') || "It wasn't saved to remote.";
+        const why = refusal([...(r.data.reason ? [{ message: r.data.reason }] : []), ...(r.data.issues ?? [])], "It wasn't saved to remote.");
         say(issue, why);
         if (inArticleDialog) remoteSaveStatus.failed('Save to remote failed');
         else announce(`Not saved: ${why}`, 'negative');

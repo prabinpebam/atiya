@@ -5,7 +5,7 @@
  * album editor's save). `album:selection` opens the dialog for the chosen items. In the library (the Media screen,
  * §9.9) the chosen items are library items already, and there's no album of their own.
  */
-import { announce, api, describeIssue, saveStatus, startTask } from './client';
+import { announce, api, refused, saveStatus, startTask } from './client';
 import { batchProblem, type WordsChange } from '../model/albumViewer';
 import type { Album } from '../../content/schema';
 
@@ -92,18 +92,18 @@ export function initAlbumActions(root: HTMLElement, signal: AbortSignal) {
       if (target === NEW && !title) return say(what, 'Give the new album a title.');
       const task = startTask(`Adding ${many(media.length, 'item')}…`, { el: button, busyLabel: 'Adding…' });
       saveStatus.saving();
-      const refused = (why: string) => {
+      const turnedDown = (why: string) => {
         task.failed();
         saveStatus.failed(`Not added: ${why}`);
         say(what, why);
       };
       if (target === NEW) {
         const made = await api<{ id: string }>('POST', 'albums', { title });
-        if (!made.ok) return refused((made.data.issues ?? []).map(describeIssue).join(' ') || 'The album wasn’t made. Try again.');
+        if (!made.ok) return turnedDown(refused(made, 'The album wasn’t made. Try again.'));
         target = made.data.id;
       }
       const r = await api<{ added: number; skipped: number }>('POST', `albums/${encodeURIComponent(target)}/items`, { media });
-      if (!r.ok) return refused((r.data.issues ?? []).map(describeIssue).join(' ') || 'They weren’t added. Try again.');
+      if (!r.ok) return turnedDown(refused(r, 'They weren’t added. Try again.'));
       void task.done();
       dialog(what)?.close();
       const skipped = r.data.skipped ? ` ${r.data.skipped} ${r.data.skipped === 1 ? 'was' : 'were'} already there.` : '';
@@ -118,7 +118,7 @@ export function initAlbumActions(root: HTMLElement, signal: AbortSignal) {
     const r = await api('PUT', 'media-words', { changes });
     if (!r.ok) {
       task.failed();
-      const why = (r.data.issues ?? []).map(describeIssue).join(' ') || 'Nothing was changed.';
+      const why = refused(r, 'Nothing was changed.');
       saveStatus.failed(`Not saved: ${why}`);
       return say(what, why);
     }

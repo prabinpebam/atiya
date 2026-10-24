@@ -98,7 +98,7 @@ const { mode, sections = [], section = '', kind = 'note', article, protectable =
 
 <script>
   import { each } from '../../scripts/page';
-  import { api, editorUrl, describeIssue } from '../scripts/client';
+  import { api, editorUrl, refused } from '../scripts/client';
 
   const show = (form: HTMLElement, text: string) => {
     const el = form.querySelector<HTMLElement>('[data-editor-form-issue]')!;
@@ -117,7 +117,7 @@ const { mode, sections = [], section = '', kind = 'note', article, protectable =
       show(form, '');
       const r = await api<{ id: string }>('POST', 'articles', body);
       if (r.ok) location.assign(editorUrl(`articles/${r.data.id}/`));
-      else show(form, (r.data.issues ?? []).map(describeIssue).join(' ') || "Couldn't create it.");
+      else show(form, refused(r, "Couldn't create it."));
     });
   });
 
@@ -130,7 +130,7 @@ const { mode, sections = [], section = '', kind = 'note', article, protectable =
       const withMedia = new FormData(form).get('media') ? '?media=1' : '';
       const r = await api('DELETE', `articles/${id}${withMedia}`);
       if (r.ok) location.assign(editorUrl('articles/'));
-      else show(form, (r.data.issues ?? []).map(describeIssue).join(' ') || "Couldn't delete it.");
+      else show(form, refused(r, "Couldn't delete it."));
     });
   });
 </script>

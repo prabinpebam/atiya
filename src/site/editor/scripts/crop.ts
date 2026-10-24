@@ -5,7 +5,7 @@
  * elsewhere on the picture (the box centres there), the arrow keys, + and −, Home, Shape and Size. Save asks
  * the server to cut (never the original) and hands the picture that now shows the crop to the screen.
  */
-import { api, announce, describeIssue, saveStatus } from './client';
+import { announce, api, refused, saveStatus } from './client';
 import { centreOn, largest, move, ratioLabel, ratioOfShape, resize, resizeTo, sizeOf, whole, withRatio, type Bounds, type Handle, type Rect } from '../model/crop';
 import { specTip, type PictureSpec } from '../../design/pictures';
 
@@ -130,7 +130,7 @@ export function initCrop(root: HTMLElement, signal: AbortSignal) {
     }
     const got = await api<{ source: Source; rect: Rect | null; isCopy: boolean }>('GET', `media/${r.id}/crop`);
     if (!got.ok) {
-      announce(`Can't crop it: ${(got.data.issues ?? []).map(describeIssue).join(' ') || 'the picture wasn\u2019t found.'}`, 'negative');
+      announce(refused(got, 'The picture wasn\u2019t found, so it can\u2019t be cropped. Check it is still in Media.', { lead: true }), 'negative');
       return;
     }
     const { source, rect: saved, isCopy } = got.data;
@@ -247,7 +247,7 @@ export function initCrop(root: HTMLElement, signal: AbortSignal) {
     const res = await api<{ id: string; width: number; height: number }>('POST', `media/${r.id}/crop`, { rect: whole(rect, b), copy: !!r.copy });
     save.disabled = false;
     if (!res.ok) {
-      const why = (res.data.issues ?? []).map(describeIssue).join(' ') || "The crop wasn't saved.";
+      const why = refused(res, "The crop wasn't saved.");
       saveStatus.failed(`Not saved: ${why}`);
       return say(why);
     }

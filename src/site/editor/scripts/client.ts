@@ -5,7 +5,7 @@
  * status. Every editor screen's script uses it.
  */
 import { savedLine, SAVE_TEXT, type SaveState } from '../model/status';
-import { cssTime, taskLine, type TaskView } from '../model/feedback';
+import { cssTime, describeIssue, refusal, taskLine, type TaskView } from '../model/feedback';
 import { ALWAYS, REGIONS_HEADER, regionsHeader } from '../model/regions';
 
 export interface Issue {
@@ -520,8 +520,10 @@ export async function swapRegions(names: string[], url = location.href, keep?: (
   return next;
 }
 
-/** An issue in words, for the status and field messages. */
-export const describeIssue = (i: Issue) => `${i.path ? `${i.path}: ` : ''}${i.message}`;
+export { describeIssue };
+
+/** A refused reply in words: what the server found wrong, else what happened and how to put it right (`refusal`). */
+export const refused = (r: { data: { issues?: Issue[] } }, happened: string, opts?: { lead?: boolean; sep?: string }) => refusal(r.data.issues, happened, opts);
 
 // ---------- what waits to be saved to remote ----------
 let pendingTimer = 0;

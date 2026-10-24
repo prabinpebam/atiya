@@ -5,7 +5,7 @@
  * standard, and the review's Enter: saved, then on to the next picture that needs alt text. A change made
  * elsewhere draws it again, unless something here waits to be saved.
  */
-import { announce, api, describeIssue, onContentChange, saveStatus, startTask, TAB } from './client';
+import { announce, api, onContentChange, refused, saveStatus, startTask, TAB } from './client';
 import { initRichFields } from './richtext';
 import { initAltSuggest } from './altSuggest';
 import { SaveQueue } from '../model/queue';
@@ -78,9 +78,9 @@ export function initMediaInfo(panel: HTMLElement, signal: AbortSignal) {
           saveStatus.failed('Not saved: its words were changed elsewhere.');
           return 'stop';
         }
-        const refused = (r.data.issues ?? []).map(describeIssue).join(' ') || 'The words weren’t saved.';
-        say(refused);
-        saveStatus.failed(`Not saved: ${refused}`);
+        const why = refused(r, 'The words weren’t saved.');
+        say(why);
+        saveStatus.failed(why);
         return 'failed';
       }
       failed = false;
@@ -178,7 +178,7 @@ export function initMediaInfo(panel: HTMLElement, signal: AbortSignal) {
         const r = await api<{ focus?: string | null }>('POST', `media/${state.media.id}/focus`);
         if (!r.ok) {
           task.failed();
-          return announce(`The focus wasn't found: ${(r.data.issues ?? []).map(describeIssue).join(' ') || 'try again'}`, 'negative');
+          return announce(refused(r, 'The focus wasn’t found.', { lead: true }), 'negative');
         }
         void task.done();
         if (!r.data.focus) return announce('No clear subject: the focus point stays where it is.');
@@ -194,7 +194,7 @@ export function initMediaInfo(panel: HTMLElement, signal: AbortSignal) {
         const r = await api('POST', `media/${state.media.id}/standard`);
         if (!r.ok) {
           task.failed();
-          return saveStatus.failed(`Not made standard: ${(r.data.issues ?? []).map(describeIssue).join(' ') || 'the change was refused'}`);
+          return saveStatus.failed(refused(r, 'It wasn’t made standard.', { lead: true }));
         }
         void task.done();
         saveStatus.saved('Made it standard: saved again at 2560 px');

@@ -11,3 +11,7 @@ import { CONTRIBUTION_SAMPLE as snapshot } from '../design/samples';
     <Button href="#activity" variant="primary">Explore the work</Button>
   </ContributionHero>
 </Example>
+
+<Example title="Embedded in a highlight" layout="block" description="embedded: only the chart and its statistics, with no introduction or outside spacing, as a home highlight's GitHub slide shows it. It lays out by its own width, so a narrower column stacks the statistics under the calendar.">
+  <ContributionHero embedded data={{ ...snapshot, stats: contributionStats(snapshot) }} />
+</Example>

@@ -3,7 +3,7 @@
  * its steps and field, a value is checked as it's typed, and Save writes content/site.json's `services`
  * through the store (model/services.ts makes the settings).
  */
-import { api, describeIssue, saveStatus, swapRegions } from './client';
+import { api, refused, saveStatus, swapRegions } from './client';
 import { dashboardOf, valueIssue, withContact, withCounts, type ServiceChoice } from '../model/services';
 import { fits, shapeText } from '../../services/services';
 import type { SiteSettings } from '../../content/schema';
@@ -99,7 +99,7 @@ export function initServices(root: HTMLElement, signal: AbortSignal) {
       saveStatus.saving();
       const res = await api('PUT', 'site', { site: r.site, ifMatch: { '/content/site.json': state.siteVersion } });
       if (!res.ok) {
-        const why = (res.data.issues ?? []).map(describeIssue).join(' ') || "The settings weren't saved.";
+        const why = refused(res, "The settings weren't saved.");
         saveStatus.failed(`Not saved: ${why}`);
         return say(form, res.status === 409 ? 'This file changed elsewhere since you opened it. Reload the page to see it, then make your change again.' : why);
       }

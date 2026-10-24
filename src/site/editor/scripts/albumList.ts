@@ -2,7 +2,7 @@
  * The albums list (documentation/gallery/spec.md §9.2): Add album, and the gallery's albums moved by their
  * handles (a drag, or Alt with Up or Down on a handle or an album), saved at once as the owner's own order.
  */
-import { announce, api, describeIssue, saveStatus, startTask, swapRegions } from './client';
+import { announce, api, refused, saveStatus, startTask, swapRegions } from './client';
 import { newAlbum } from './albums';
 
 const rowsOf = (list: HTMLElement) => [...list.querySelectorAll<HTMLElement>(':scope > [data-album-row]')];
@@ -26,7 +26,7 @@ export function initAlbumList(root: HTMLElement, signal: AbortSignal) {
     const r = await api('PUT', `gallery/${gallery}/order`, { albums: after });
     if (!r.ok) {
       task.failed();
-      saveStatus.failed(r.data.issues?.map(describeIssue).join(' ') || "Couldn't save the order");
+      saveStatus.failed(refused(r, 'The order wasn’t saved.'));
       for (const id of before) {
         const el = list.querySelector(`:scope > [data-album-row="${CSS.escape(id)}"]`);
         if (el) list.append(el);

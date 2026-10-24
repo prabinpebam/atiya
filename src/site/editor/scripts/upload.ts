@@ -8,7 +8,7 @@
  * into a picture, Keep it large past 2560 px, the note that an animated PNG is kept as a still; a format the
  * site can't keep is refused before anything is sent, and a HEIC's date taken is read before it's converted.
  */
-import { announce, api, describeIssue, saveStatus, startTask } from './client';
+import { announce, api, refused, saveStatus, startTask } from './client';
 import { canCrop, openCrop } from './crop';
 import { initAltSuggest } from './altSuggest';
 import { keptAsDrawing, showUploadOptions, uploadNote } from './uploadOptions';
@@ -368,7 +368,7 @@ export function initUpload(root: HTMLElement, signal: AbortSignal) {
     const r = await api<{ id: string }>('POST', 'media', data);
     if (!r.ok) {
       task.failed();
-      const why = (r.data.issues ?? []).map(describeIssue).join(' ') || "Couldn't upload it.";
+      const why = refused(r, "It wasn't uploaded.");
       saveStatus.failed(`Not uploaded: ${why}`);
       return say(why);
     }
@@ -399,7 +399,7 @@ export function initUpload(root: HTMLElement, signal: AbortSignal) {
       const r = await api<{ id: string; removed?: string[] }>('POST', 'media', data);
       if (!r.ok) {
         task.failed();
-        const why = (r.data.issues ?? []).map(describeIssue).join(' ') || "Couldn't upload it.";
+        const why = refused(r, "It wasn't uploaded.");
         saveStatus.failed(`Not uploaded: ${why}`);
         return say(why);
       }

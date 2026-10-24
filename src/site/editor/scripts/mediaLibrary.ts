@@ -4,7 +4,7 @@
  * date and Set the place go to albumActions; Delete asks first, saying which albums it leaves, and is refused while
  * a page uses it) and Add link (a linked video).
  */
-import { api, announce, describeIssue, saveStatus, startTask, swapRegions } from './client';
+import { announce, api, refused, saveStatus, startTask, swapRegions } from './client';
 import { initPhotoSelection } from './photoSelection';
 import { deleteVerdict } from '../model/library';
 
@@ -107,7 +107,7 @@ export function initLibraryScreen(root: HTMLElement, signal: AbortSignal) {
       const r = await api<{ albums: number }>('POST', 'media-delete', { ids });
       if (!r.ok) {
         task.failed();
-        const why = (r.data.issues ?? []).map(describeIssue).join(' ') || 'Nothing was deleted.';
+        const why = refused(r, 'Nothing was deleted.');
         saveStatus.failed(`Not deleted: ${why}`);
         const words = dialog.querySelector('[data-library-delete-words]');
         if (words) words.textContent = why;
@@ -150,7 +150,7 @@ export function initLibraryScreen(root: HTMLElement, signal: AbortSignal) {
       const r = await api<{ id: string; existing?: boolean; title?: string }>('POST', 'linked-video', { url });
       if (!r.ok) {
         task.failed();
-        return say((r.data.issues ?? []).map(describeIssue).join(' ') || 'It wasn’t added.');
+        return say(refused(r, 'It wasn’t added.'));
       }
       void task.done();
       link.close();

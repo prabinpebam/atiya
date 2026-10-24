@@ -35,4 +35,11 @@ test.describe('editor: albums: list and details', () => {
     const album = await layout(page, '[data-album-words] h2');
     expect(album).toEqual(gallery);
   });
+
+  test("typing the album's title renames its details' heading and the top bar's", async ({ page }) => {
+    await page.goto('/_edit/albums/fixture-album/');
+    await page.locator('[data-album-words]').getByLabel('Title', { exact: true }).fill('Harbour walks');
+    await expect(page.locator('#album-words-title')).toHaveText('Harbour walks');
+    await expect(page.locator('[data-title-line][data-album-heading]')).toHaveText('Harbour walks');
+  });
 });

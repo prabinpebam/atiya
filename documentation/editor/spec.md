@@ -161,6 +161,8 @@ Edit mode always says what's become of a change, and every open page shows a cha
   | The dev server isn't answering (its socket dropped) | warning, on a red pill | Offline: nothing saves |
 
   A moment's note (Moved, Uploaded, Updated from another tab) has the line for a few seconds (a problem for longer) while the mark keeps the save state. A screen that reloads after its save (Sections, Navigation, Planet) carries the saved state to the page it loads. Leaving a screen with unsaved changes, or while a save is under way, asks first (not the editor's own reload after a save). The line is a live region.
+
+  A refused change's words come from one rule, `refused(reply, happened)` in `scripts/client.ts` (pure: `refusal` in `model/feedback.ts`): what the check found wrong, or else what happened and how to put it right ("The album wasn't saved. Try again."). No script joins the issues itself (`tests/unit/editorRefusal.test.ts`).
 - **Every change reaches every open page** (§8.4): the server pushes each change, with the editor tab that made it, to every page the dev server shows.
   - A **page of the site** reloads once the changes settle (typing saves about once a second), so an open article shows a caption saved in Media at once.
   - The **article editor** takes in a change to its own article from another tab or from disk at once (the outline, the inspector, the canvas and the versions it saves against) when nothing here is unsaved; with unsaved typing, it stops its saves and shows the conflict (§8.3), so nothing is lost or written over. Anything else it shows (a picture's caption, the sections, a page it links to) comes in once the typing stops.

@@ -7,7 +7,7 @@
  * The status says Saved once the screen shows it. A change made elsewhere redraws it too, unless something here is
  * unsaved.
  */
-import { announce, api, describeIssue, onContentChange, saveStatus, swapRegions, track } from './client';
+import { announce, api, onContentChange, refused, saveStatus, swapRegions, track } from './client';
 import { underWay } from '../model/feedback';
 import { cleanRecommendation, moveRecommendation, recommendationIdFor, removeRecommendation, upsertRecommendation, wantsProfilePhoto, type Recommendation, type RecommendationSettings } from '../model/recommendations';
 
@@ -51,7 +51,7 @@ export function initRecommendations(root: HTMLElement, signal: AbortSignal) {
     el.textContent = text;
     el.hidden = !text;
   };
-  const why = (r: { data: { issues?: Parameters<typeof describeIssue>[0][] } }) => (r.data.issues ?? []).map(describeIssue).join(' ') || "The change wasn't saved.";
+  const why = (r: Parameters<typeof refused>[0]) => refused(r, "The change wasn't saved.");
   const changed = (what: string) => {
     unsaved = true;
     saveStatus.dirty(what);

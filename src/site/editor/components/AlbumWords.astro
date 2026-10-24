@@ -1,17 +1,17 @@
 ---
 /**
- * An album's words and facts at the top of its editor (documentation/gallery/spec.md §9.2): its name as the details'
- * heading (renamed as the title is typed), then the title, the short
+ * An album's words and facts at the top of its editor (documentation/gallery/spec.md §9.2), in the kit's
+ * DetailPane: its name as the details' heading (renamed as the title is typed), then the title, the short
  * description and the introduction, typed in place and saved as they're typed; then the facts worked out from its
  * items (the counts, the span of dates, and how many pictures need alt text).
  * @tier editor
  * @a11y Each field is labelled; the facts are a polite live region, so a change in the counts is heard.
  */
-import Heading from '../../components/fundamentals/Heading.astro';
 import TextField from '../../components/fundamentals/TextField.astro';
 import Text from '../../components/fundamentals/Text.astro';
 import Tag from '../../components/fundamentals/Tag.astro';
 import Button from '../../components/fundamentals/Button.astro';
+import DetailPane from '../kit/DetailPane.astro';
 
 interface Props {
   /** The album's title. */
@@ -33,11 +33,8 @@ interface Props {
 const { title, summary = '', description = '', count, dates, needAlt, status } = Astro.props;
 ---
 
-<div class="words" data-album-words>
-  <header class="head">
-    <Heading level={2} size="h3"><span data-album-heading>{title}</span></Heading>
-    <Text variant="ui" tone="muted">Its title and words, its cover and its pictures. What you type is saved as you go.</Text>
-  </header>
+<DetailPane title={title} titleId="album-words-title" line="Its title and words, its cover and its pictures. What you type is saved as you go." data-album-words="">
+<div class="words">
   <TextField label="Title" value={title} maxlength={120} data-album-field="title" />
   <TextField label="Short description" value={summary} multiline rows={2} maxlength={240} optional hint="Under its band, and on its cards." data-album-field="summary" />
   <TextField label="Introduction" value={description} multiline rows={4} maxlength={1500} optional hint="At the top of its page. Markdown: **bold**, *italic* and [links](https://…)." data-album-field="description" />
@@ -62,19 +59,13 @@ const { title, summary = '', description = '', count, dates, needAlt, status } =
     }
   </p>
 </div>
+</DetailPane>
 
 <style>
   .words {
     display: grid;
     gap: var(--space-3);
     max-inline-size: var(--size-measure);
-  }
-
-  /* the album's name over its details, as the gallery's setup has its own, the same gap below as there */
-  .head {
-    display: grid;
-    gap: var(--space-2);
-    margin-block-end: var(--space-5);
   }
 
   .facts {

@@ -30,7 +30,7 @@ const items: CarouselItem[] = slides.map((s) => s.picture ? { ...s.picture, capt
   {(n: number) => {
     const slide = slides[n];
     return slide.item.type === 'custom' && index.github
-      ? <ContributionHero title="" data={{ ...index.github, stats: contributionStats(index.github) }} embedded />
+      ? <ContributionHero data={{ ...index.github, stats: contributionStats(index.github) }} embedded />
       : slide.picture && <HighlightCard title={slide.title} text={slide.text} href={slide.href} picture={slide.picture} settings={settings} priority={n === 0} />;
   }}
 </Carousel>}

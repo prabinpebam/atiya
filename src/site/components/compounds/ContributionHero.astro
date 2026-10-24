@@ -16,8 +16,8 @@ import { stableId } from '../../design/stableId';
 import type { ContributionData } from '../../scripts/contributionRules';
 
 interface Props {
-  /** The person's name: this page's one h1. */
-  title: string;
+  /** The person's name: this page's one h1. Left out when embedded, which draws no introduction. */
+  title?: string;
   /** The introduction, from the home page's content. */
   standfirst?: string;
   /** A validated public-profile snapshot and its derived statistics. */
@@ -27,7 +27,7 @@ interface Props {
   /** Only the chart and statistics, without the page introduction or outside spacing (a trusted highlight slide). */
   embedded?: boolean;
 }
-const { title, standfirst, data, level = 1, embedded = false } = Astro.props;
+const { title = '', standfirst, data, level = 1, embedded = false } = Astro.props;
 const uid = stableId(Astro, 'ContributionHero');
 const heading = `contribution-${uid}`;
 const hint = `contribution-hint-${uid}`;

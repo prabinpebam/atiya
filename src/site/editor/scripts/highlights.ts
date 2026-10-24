@@ -6,7 +6,7 @@
  * the screen shows it. A refused save keeps what was typed and says why in the form. A change made elsewhere
  * redraws the screen, unless something here is unsaved.
  */
-import { api, describeIssue, onContentChange, saveStatus, swapRegions, track } from './client';
+import { api, onContentChange, refused, saveStatus, swapRegions, track } from './client';
 import { underWay } from '../model/feedback';
 import { addHighlight, excerptHighlight, HIGHLIGHT_MAX, moveHighlight, removeHighlight, type Highlights, type HighlightChoice } from '../model/highlights';
 
@@ -53,7 +53,7 @@ export function initHighlights(root: HTMLElement, signal: AbortSignal) {
     saveStatus.saving();
     const r = await track(underWay(what), { el: el ?? form }, () => api('PUT', 'highlights', { highlights: next, ifMatch: { [KEY]: state.version } }));
     if (!r.ok) {
-      const why = (r.data.issues ?? []).map(describeIssue).join(' ') || "The change wasn't saved. Try again.";
+      const why = refused(r, "The change wasn't saved. Try again.");
       say(r.status === 409 ? `${why} What you typed is kept. Reopen this screen to see the newer version before trying again.` : why);
       saveStatus.failed(`Not saved: ${why}`);
       return false;

@@ -6,7 +6,7 @@
  * and goes back to the grid at the item when it closes. In a review of alt text (§9.8) it keeps the suggestions
  * asked for, asks for the strip's others in turn, and offers Accept all once every one has one.
  */
-import { announce, api, describeIssue, swapRegions } from './client';
+import { announce, api, refused, swapRegions } from './client';
 
 const REGION = 'album-viewer';
 const typing = (t: EventTarget | null) => t instanceof Element && !!t.closest('input, textarea, select, [contenteditable="true"], [role="combobox"], [role="listbox"]');
@@ -126,7 +126,7 @@ export function initViewerHost(root: HTMLElement, signal: AbortSignal) {
     button.setAttribute('aria-busy', 'true');
     const r = await api('PUT', 'media-words', { changes: list.map((s) => ({ id: s.media, words: { alt: known.get(s.media) } })) });
     button.removeAttribute('aria-busy');
-    if (!r.ok) return announce(`The suggestions weren’t saved: ${(r.data.issues ?? []).map(describeIssue).join(' ') || 'try again'}`, 'negative');
+    if (!r.ok) return announce(refused(r, 'The suggestions weren’t saved.', { lead: true }), 'negative');
     root.dispatchEvent(new CustomEvent('album:redraw'));
     dialog.close();
     announce(`Saved ${list.length} alt texts: every picture in the review has its words.`);
