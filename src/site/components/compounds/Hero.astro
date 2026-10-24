@@ -2,8 +2,8 @@
 /**
  * A page's opening: the title set large in soft Fraunces, a standfirst, the page's one or two actions,
  * and a picture given room. Split puts the picture beside the words; stacked puts it below, wide;
- * type leaves the picture out and lets the headline carry the page; divided has no picture either, and sets the
- * title beside the standfirst, actions and notes, so what follows (the home's highlights) comes up close.
+ * type leaves the picture out and lets the headline carry the page; divided has no picture either: the title and
+ * standfirst in one column, the actions in the other, so what follows (the home's highlights) comes up close.
  * @tier compound
  * @a11y The title is the page's h1; the picture has its own alt (or is marked decorative when the words say it all).
  */
@@ -33,7 +33,7 @@ interface Props {
   kicker?: string;
   /** The picture beside or below the words. */
   picture?: HeroPicture;
-  /** split: words and picture side by side; stacked: the picture below, wide; type: no picture; divided: no picture, the title beside the rest. */
+  /** split: words and picture side by side; stacked: the picture below, wide; type: no picture; divided: no picture, the title and standfirst beside the actions. */
   layout?: 'split' | 'stacked' | 'type' | 'divided';
   /** display for a front page; h1 for an inner page. */
   size?: 'display' | 'h1';
@@ -43,6 +43,8 @@ interface Props {
 
 const { title, standfirst, kicker, picture, layout = picture ? 'split' : 'type', size = 'display', level = 1 } = Astro.props;
 const hasActions = Astro.slots.has('default');
+// a note given conditionally still counts as given, so only one with something in it is drawn
+const note = Astro.slots.has('note') ? (await Astro.slots.render('note')).trim() : '';
 const titleId = `hero-${stableId(Astro, 'Hero')}`;
 ---
 
@@ -53,12 +55,14 @@ const titleId = `hero-${stableId(Astro, 'Hero')}`;
         <div class="title">
           {kicker && <Text variant="label" tone="muted">{kicker}</Text>}
           <Heading level={level} size={size} id={titleId}>{title}</Heading>
-        </div>
-        <div class="lede">
           {standfirst && <Text variant="standfirst" narrow>{standfirst}</Text>}
-          {hasActions && <div class="actions"><slot /></div>}
-          {Astro.slots.has('note') && <div class="note"><slot name="note" /></div>}
         </div>
+        {(hasActions || note) && (
+          <div class="lede">
+            {hasActions && <div class="actions"><slot /></div>}
+            {note && <div class="note" set:html={note} />}
+          </div>
+        )}
       </div>
     ) : (
       <div class="words">
@@ -66,7 +70,7 @@ const titleId = `hero-${stableId(Astro, 'Hero')}`;
         <Heading level={level} size={size} id={titleId}>{title}</Heading>
         {standfirst && <Text variant="standfirst" narrow>{standfirst}</Text>}
         {hasActions && <div class="actions"><slot /></div>}
-        {Astro.slots.has('note') && <div class="note"><slot name="note" /></div>}
+        {note && <div class="note" set:html={note} />}
       </div>
     )
   }
@@ -112,10 +116,20 @@ const titleId = `hero-${stableId(Astro, 'Hero')}`;
     padding-block-start: var(--space-12);
   }
 
+  /* the title grows to its own line; the actions take what's left, stacking before the title wraps */
   .hero[data-layout='divided'] .words {
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-    column-gap: var(--space-10);
+    grid-template-columns: minmax(0, max-content) minmax(min-content, 1fr);
+    column-gap: var(--space-12);
     align-items: center;
+  }
+
+  .hero[data-layout='divided'] .lede {
+    justify-items: end;
+  }
+
+  .hero[data-layout='divided'] .actions {
+    justify-content: end;
+    margin-block-start: 0;
   }
 
   .title,
@@ -184,6 +198,14 @@ const titleId = `hero-${stableId(Astro, 'Hero')}`;
   @media (max-width: 56rem) {
     .hero[data-layout='divided'] .words {
       grid-template-columns: minmax(0, 1fr);
+    }
+
+    .hero[data-layout='divided'] .lede {
+      justify-items: start;
+    }
+
+    .hero[data-layout='divided'] .actions {
+      justify-content: start;
     }
   }
 

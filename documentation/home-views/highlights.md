@@ -6,6 +6,7 @@
 
 The name, introduction and ways into the site stay above the highlights; the sections stay below. This is the **classic home only**, at `/` when Classic is the default, and at `/views/classic/`. Other home views and the capability spine's own highlights are unchanged.
 
+The opening above the highlights has two columns: the name and the introduction's first line in the first, the ways into the site (Explore the planet, Read the site) in the second. Below 56rem they stack in that order. The introduction's other lines, and the note on how the site was built, are a quiet footnote under the sections, not part of the opening.
 The existing GitHub calendar becomes a reusable contribution chart without a second copy of the owner's name or introduction. Its 2D/3D controls, month labels, hover/tap details, bounded tumble, return, theme and statistics remain.
 
 | Slide | Its source | What the visitor sees | Primary action |
