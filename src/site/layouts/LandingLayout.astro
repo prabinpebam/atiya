@@ -9,7 +9,6 @@ import PageShell from '../components/compounds/PageShell.astro';
 import SiteHeader from '../components/compounds/SiteHeader.astro';
 import Hero, { type HeroPicture } from '../components/compounds/Hero.astro';
 import SiteFooter from '../components/compounds/SiteFooter.astro';
-import Heading from '../components/fundamentals/Heading.astro';
 import Text from '../components/fundamentals/Text.astro';
 import Lightbox from '../components/compounds/Lightbox.astro';
 import type { NavItem } from '../components/compounds/SiteHeader.astro';
@@ -32,7 +31,7 @@ interface Props {
   canonical?: string;
   /** A home page: the router PageShell runs in the head (documentation/home-views/switcher.md §3). */
   home?: HomeRouting;
-  /** The classic highlights opening: a split introduction and a shared-carousel area below it. */
+  /** The classic highlights opening: Hero's divided layout (no picture), with the carousel area below it. */
   highlights?: boolean;
   /** Eligible slides exist; disabled/empty highlights leave no empty carousel spacing. */
   showHighlights?: boolean;
@@ -46,20 +45,13 @@ const [standfirst, ...notes] = hero.standfirst?.split(/\n+/).map((line) => line.
   <SiteHeader nav={nav} access />
   <main id="main" class="landing" tabindex="-1">
     <slot name="hero">
-      {highlights ? <section class="highlight-opening">
-        <Heading level={1} size="display">{hero.title}</Heading>
-        <div class="introduction">
-          {standfirst && <Text variant="standfirst" narrow>{standfirst}</Text>}
-          <div class="actions"><slot /></div>
-          {notes.map((note) => <Text variant="small" tone="muted" narrow>{note}</Text>)}
-        </div>
-      </section> : <Hero {...hero} standfirst={standfirst}>
+      <Hero {...hero} layout={highlights ? 'divided' : hero.layout} picture={highlights ? undefined : hero.picture} standfirst={standfirst}>
         <slot />
         {(notes.length > 0 || Astro.slots.has('note')) && <Fragment slot="note">
           {notes.map((note) => <Text variant="small" tone="muted" narrow>{note}</Text>)}
           {Astro.slots.has('note') && <slot name="note" />}
         </Fragment>}
-      </Hero>}
+      </Hero>
     </slot>
     {highlights && showHighlights && <div class="highlights"><slot name="highlights" /></div>}
     {
@@ -88,16 +80,8 @@ const [standfirst, ...notes] = hero.standfirst?.split(/\n+/).map((line) => line.
     padding-inline: var(--space-gutter);
     scroll-margin-block-start: calc(var(--size-chrome-block) + var(--space-8));
   }
-  .highlight-opening, .highlights { max-inline-size: var(--size-wide); margin-inline: auto; padding-inline: var(--space-gutter); }
-  .highlight-opening { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-items: center; gap: var(--space-10); padding-block-start: var(--space-12); }
-  .introduction { display: grid; gap: var(--space-4); }
-  .actions { display: flex; align-items: center; flex-wrap: wrap; gap: var(--space-3); }
-  .highlights { margin-block-start: var(--space-10); }
-  @media (max-width: 56rem) {
-    .highlight-opening { grid-template-columns: minmax(0, 1fr); gap: var(--space-6); align-items: start; }
-  }
+  .highlights { max-inline-size: var(--size-wide); margin-inline: auto; margin-block-start: var(--space-10); padding-inline: var(--space-gutter); }
   @media (max-width: 40rem) {
-    .highlight-opening { padding-block-start: var(--space-8); }
     .highlights { margin-block-start: var(--space-8); }
   }
 </style>

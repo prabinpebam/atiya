@@ -2,7 +2,8 @@
 /**
  * A page's opening: the title set large in soft Fraunces, a standfirst, the page's one or two actions,
  * and a picture given room. Split puts the picture beside the words; stacked puts it below, wide;
- * type leaves the picture out and lets the headline carry the page.
+ * type leaves the picture out and lets the headline carry the page; divided has no picture either, and sets the
+ * title beside the standfirst, actions and notes, so what follows (the home's highlights) comes up close.
  * @tier compound
  * @a11y The title is the page's h1; the picture has its own alt (or is marked decorative when the words say it all).
  */
@@ -32,8 +33,8 @@ interface Props {
   kicker?: string;
   /** The picture beside or below the words. */
   picture?: HeroPicture;
-  /** split: words and picture side by side; stacked: the picture below, wide; type: no picture. */
-  layout?: 'split' | 'stacked' | 'type';
+  /** split: words and picture side by side; stacked: the picture below, wide; type: no picture; divided: no picture, the title beside the rest. */
+  layout?: 'split' | 'stacked' | 'type' | 'divided';
   /** display for a front page; h1 for an inner page. */
   size?: 'display' | 'h1';
   /** The title's level: 1 on a page, 2 when shown inside another page (the library). */
@@ -46,21 +47,31 @@ const titleId = `hero-${stableId(Astro, 'Hero')}`;
 ---
 
 <section class="hero" data-layout={layout} aria-labelledby={titleId}>
-  <div class="words">
-    {kicker && <Text variant="label" tone="muted">{kicker}</Text>}
-    <Heading level={level} size={size} id={titleId}>{title}</Heading>
-    {standfirst && <Text variant="standfirst" narrow>{standfirst}</Text>}
-    {
-      hasActions && (
-        <div class="actions">
-          <slot />
-        </div>
-      )
-    }
-    {Astro.slots.has('note') && <div class="note"><slot name="note" /></div>}
-  </div>
   {
-    picture && layout !== 'type' && (
+    layout === 'divided' ? (
+      <div class="words">
+        <div class="title">
+          {kicker && <Text variant="label" tone="muted">{kicker}</Text>}
+          <Heading level={level} size={size} id={titleId}>{title}</Heading>
+        </div>
+        <div class="lede">
+          {standfirst && <Text variant="standfirst" narrow>{standfirst}</Text>}
+          {hasActions && <div class="actions"><slot /></div>}
+          {Astro.slots.has('note') && <div class="note"><slot name="note" /></div>}
+        </div>
+      </div>
+    ) : (
+      <div class="words">
+        {kicker && <Text variant="label" tone="muted">{kicker}</Text>}
+        <Heading level={level} size={size} id={titleId}>{title}</Heading>
+        {standfirst && <Text variant="standfirst" narrow>{standfirst}</Text>}
+        {hasActions && <div class="actions"><slot /></div>}
+        {Astro.slots.has('note') && <div class="note"><slot name="note" /></div>}
+      </div>
+    )
+  }
+  {
+    picture && layout !== 'type' && layout !== 'divided' && (
       <div class="picture">
         <Image
           src={picture.src}
@@ -95,6 +106,22 @@ const titleId = `hero-${stableId(Astro, 'Hero')}`;
 
   .hero[data-layout='stacked'] {
     gap: var(--space-block);
+  }
+
+  .hero[data-layout='divided'] {
+    padding-block-start: var(--space-12);
+  }
+
+  .hero[data-layout='divided'] .words {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    column-gap: var(--space-10);
+    align-items: center;
+  }
+
+  .title,
+  .lede {
+    display: grid;
+    gap: var(--space-4);
   }
 
   .words {
@@ -153,6 +180,13 @@ const titleId = `hero-${stableId(Astro, 'Hero')}`;
     }
   }
 
+  /* the divided title stacks above the rest once the two can't share a line */
+  @media (max-width: 56rem) {
+    .hero[data-layout='divided'] .words {
+      grid-template-columns: minmax(0, 1fr);
+    }
+  }
+
   /* a phone held upright: one column, the picture first, less room above it */
   @media (max-width: 40rem) {
     .hero {
@@ -167,11 +201,16 @@ const titleId = `hero-${stableId(Astro, 'Hero')}`;
     .hero[data-layout='split'] .picture {
       order: -1;
     }
+
+    .hero[data-layout='divided'] {
+      padding-block-start: var(--space-8);
+    }
   }
 
   /* a phone on its side: side by side (above), with the name near the top */
   @media (max-height: 30rem) {
-    .hero {
+    .hero,
+    .hero[data-layout='divided'] {
       gap: var(--space-8);
       padding-block-start: var(--space-8);
     }
