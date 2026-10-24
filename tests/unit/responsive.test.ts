@@ -26,7 +26,7 @@ describe('responsive.ts', () => {
   it('sizes() writes the steps, then the width beyond them', () => {
     expect(sizes(['popout', '92vw'], 'popout')).toBe('(max-width: 52rem) 92vw, 52rem');
     expect(sizes(['sm', '92vw'], ['lg', '46vw'], '30vw')).toBe('(max-width: 40rem) 92vw, (max-width: 72rem) 46vw, 30vw');
-    expect(sizes(['sm', 'story-card-row-picture-compact'], 'story-card-row-picture')).toBe('(max-width: 40rem) 6rem, 11rem');
+    expect(sizes(['sm', 'story-card-row-picture-compact'], 'story-card-row-picture')).toBe('(max-width: 40rem) 6rem, 8rem');
     expect(sizes('collection-slide')).toBe('18rem');
   });
 

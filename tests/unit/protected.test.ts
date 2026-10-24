@@ -157,7 +157,7 @@ describe('the rules (V23 to V32)', () => {
     expect(problems((d) => d['/content/articles/khonjel.json'].body.push({ type: 'video', media: 'articles/fx-private-beta/tidepool' }))).toMatch(/the video .* is private.*V25/);
     expect(problems((d) => d['/content/articles/khonjel.json'].body.push({ type: 'text', markdown: 'See [it](ref:article/fx-private-alpha).' }))).toMatch(/links to "fx-private-alpha".*V25/);
     expect(problems((d) => (d['/content/articles/khonjel.json'].related = [{ type: 'article', id: 'fx-private-beta' }]))).toMatch(/related names "fx-private-beta".*V25/);
-    expect(problems((d) => d['/content/structures/site.json'].menus.primary.push({ node: 'fx-private-alpha' }))).toMatch(/node "fx-private-alpha" is a private page.*V25/);
+    expect(problems((d) => d['/content/structures/site.json'].menus.primary.splice(-1, 1, { node: 'fx-private-alpha' }))).toMatch(/node "fx-private-alpha" is a private page.*V25/);
   });
 
   it('V25: a redirect never leads to a private page (skipped, with a warning)', () => {
