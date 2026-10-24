@@ -82,6 +82,8 @@
     "c.contribution.chart-height": {"v":"26rem"},
     "c.contribution.chart-height-small": {"v":"15rem"},
     "c.contribution.glow": {"v":"14px"},
+    "c.contribution.query-phone": {"v":"36.45rem"},
+    "c.contribution.query-stack": {"v":"51.5rem"},
     "c.contribution.stats-width": {"v":"14rem"},
     "c.contribution.tip-width": {"v":"17rem"},
     "c.control.border": {"v":"var(--color-border)"},
@@ -482,6 +484,23 @@
     "weight.semibold": {"v":"600"}
   },
   "entries": [
+    {
+      "date": "2026-10-24",
+      "changes": {
+        "c.contribution.query-phone": [
+          null,
+          {
+            "v": "36.45rem"
+          }
+        ],
+        "c.contribution.query-stack": [
+          null,
+          {
+            "v": "51.5rem"
+          }
+        ]
+      }
+    },
     {
       "date": "2026-10-23",
       "changes": {

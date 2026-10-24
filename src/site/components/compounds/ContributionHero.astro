@@ -140,6 +140,7 @@ const stats = data.stats;
     padding: var(--space-12) var(--space-gutter) 0;
     display: grid;
     gap: var(--space-10);
+    container: contribution / inline-size;
   }
   .intro {
     display: grid;
@@ -212,16 +213,19 @@ const stats = data.stats;
   dl div { display: flex; justify-content: space-between; gap: var(--space-3); }
   dt { color: var(--color-text-muted); }
   dd { margin: 0; font-weight: var(--weight-semibold); font-variant-numeric: tabular-nums; color: var(--color-text); }
-  @media (max-width: 56rem) {
+  @container contribution (width < 51.5rem) {
     .intro { grid-template-columns: minmax(0, 1fr); gap: var(--space-6); align-items: start; }
     .dashboard { grid-template-columns: minmax(0, 1fr); }
     .stats { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   }
-  @media (max-width: 40rem) {
-    .contribution-hero { padding-block-start: var(--space-8); gap: var(--space-8); }
+  @container contribution (width < 36.45rem) {
     canvas { block-size: var(--c-contribution-chart-height-small); }
     .stats { grid-template-columns: minmax(0, 1fr); }
     .view-controls { justify-content: space-between; inline-size: 100%; }
+  }
+  /* the standalone opening's own spacing on a phone: the container can't query itself */
+  @media (max-width: 40rem) {
+    .contribution-hero:not([data-embedded]) { padding-block-start: var(--space-8); gap: var(--space-8); }
   }
   @media (forced-colors: active) {
     canvas { outline: var(--border-control) solid CanvasText; }
