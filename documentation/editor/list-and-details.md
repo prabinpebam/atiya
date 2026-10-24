@@ -41,6 +41,8 @@ It doesn't apply to:
 - **a canvas or a grid of pictures:** the article editor, the album editor's photo grid, Media and the Albums tiles view, where the pictures are the list;
 - **a report:** the dashboard, Save to remote, Tests.
 
+One screen is a **known exception, waiting on a rebuild:** **AI** (`/_edit/ai/`). Its services are a collection (added, edited, tested and removed one by one), but it shows them as cards with a form each, and Remove asks with the browser's own confirm instead of a two-press Remove. It was built before this pattern was written down (AI services stage S4) and is recorded here rather than counted as following it. The rebuild puts the services in a `ListPane` (the writer and the decider as its settings row, Add a service in `add`) beside a `DetailPane` for the chosen service (its model, private pages, Test and a two-press Remove), keyed by `?service=` ([AI services §16](./ai-services.md#16-as-built)). It's the owner's to schedule, and until then no new screen may follow its lead.
+
 A new screen that seems to need something else is a design decision for the owner, not a default.
 
 ## 3. Anatomy

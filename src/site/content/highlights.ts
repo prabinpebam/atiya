@@ -48,6 +48,9 @@ export interface HighlightCandidate {
   title: string;
 }
 
+/** The custom slides a site can show: each one's title, and the label its pager thumbnail shows instead of a picture. */
+export const CUSTOM_SLIDES = { github: { title: 'A year on GitHub', label: 'GitHub' } } as const;
+
 /** A typed identity, separate from a slide's stable ID. */
 export const highlightSource = (item: HighlightItem): string =>
   item.type === 'custom' ? `custom:${item.custom}` : item.type === 'article' ? `article:${item.article}` : item.type === 'album' ? `album:${item.album}` : `image:${item.media}`;
@@ -74,7 +77,7 @@ function albumCover(index: Index, album: string): string | undefined {
 
 /** A slide's current source words, image and address, or a precise reason it waits. No file/URL resolution. */
 export function highlightState(index: Index, item: HighlightItem): HighlightState {
-  if (item.type === 'custom') return { title: 'A year on GitHub', ...(!index.github ? { reason: 'Add a public GitHub snapshot first.' } : {}) };
+  if (item.type === 'custom') return { title: CUSTOM_SLIDES[item.custom].title, ...(!index.github ? { reason: 'Add a public GitHub snapshot first.' } : {}) };
   if (item.type === 'image') {
     const image = index.media.get(item.media);
     return { title: image?.caption || image?.alt || item.media, media: item.media, ...(!publicImage(index, item.media) ? { reason: 'Choose an existing public picture.' } : {}) };

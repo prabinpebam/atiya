@@ -4,10 +4,11 @@ import Carousel, { type CarouselItem } from '../components/compounds/Carousel.as
 import ContributionHero from '../components/compounds/ContributionHero.astro';
 import HighlightCard from '../components/compounds/HighlightCard.astro';
 import { content } from './repository';
-import { defaultHighlights, visibleHighlights, type HighlightItem } from './highlights';
+import { CUSTOM_SLIDES, defaultHighlights, visibleHighlights, type HighlightItem } from './highlights';
 import { picture, video, embedPoster, type Picture } from './pictures';
 import { contributionStats } from './github';
 import { withBase } from '../design/meta';
+import { PICTURE_SPECS } from '../design/pictures';
 
 const index = content();
 const settings = defaultHighlights(index);
@@ -24,7 +25,10 @@ const slides: Slide[] = await Promise.all(visibleHighlights(index).map(async ({ 
   }
   return { item, title: state.title, text: state.text, href: state.href ? withBase(state.href) : undefined, picture: p };
 }));
-const items: CarouselItem[] = slides.map((s) => s.picture ? { ...s.picture, caption: '', alt: s.title } : { src: '', alt: s.title, caption: '', width: 21, height: 9, thumbnailLabel: 'GitHub' });
+// a custom slide has no picture: its frame is the wide shape's, its thumbnail a label
+const [width, height] = PICTURE_SPECS.wide.ratio.split('/').map(Number);
+const items: CarouselItem[] = slides.map((s) => s.picture ? { ...s.picture, caption: '', alt: s.title }
+  : { src: '', alt: s.title, caption: '', width, height, thumbnailLabel: s.item.type === 'custom' ? CUSTOM_SLIDES[s.item.custom].label : s.title });
 ---
 {slides.length > 0 && <Carousel {...settings} items={items} content id="home-highlights">
   {(n: number) => {

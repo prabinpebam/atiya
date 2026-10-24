@@ -9,6 +9,10 @@
   "rounded": true,
   "shadow": false,
   "items": [
-    { "id": "github", "type": "custom", "custom": "github" }
+    {
+      "id": "github",
+      "type": "custom",
+      "custom": "github"
+    }
   ]
 }
