@@ -3,7 +3,7 @@
  * pages, sections, people and codes, and the design library's sample paintings for pictures. Never the site's
  * content: a story must look the same on any site, and nothing private may appear in one.
  */
-import { sample, SAMPLE_VIDEO } from '../../design/samples';
+import { CONTRIBUTION_SAMPLE, sample, SAMPLE_VIDEO } from '../../design/samples';
 import { withBase } from '../../design/meta';
 import type { Article, Block, Person, PlanetStructure, SiteSettings, SiteStructure } from '../../content/schema';
 import type { Issue } from '../../content/load';
@@ -21,7 +21,8 @@ import type { PhotoCell } from '../kit/PhotoGrid.astro';
 import type { ViewerItem } from '../model/albumViewer';
 import type { Picture } from '../../content/pictures';
 import { rowLine, type AlbumRow, type Gallery } from '../model/gallery';
-import type { Highlights, HighlightChoice, HighlightDetail } from '../model/highlights';
+import { chartData } from '../model/highlightChart';
+import { sourceFacts, type Highlights, type HighlightChoice, type HighlightDetail, type SlidePreviewData } from '../model/highlights';
 
 /** The classic home's made-up curation, without reading any site's resources. */
 export const HIGHLIGHTS: Highlights = {
@@ -34,12 +35,15 @@ export const HIGHLIGHTS: Highlights = {
   ],
 };
 
-/** Public text-only picker choices, including GitHub without a saved snapshot. */
+/** Public sources to pick, including GitHub without a saved snapshot and three that aren't slides yet. */
 export const HIGHLIGHT_CHOICES: HighlightChoice[] = [
-  { key: 'custom:github', title: 'Chart: A year on GitHub', reason: 'Add a public GitHub snapshot first.', item: { id: 'choice-github', type: 'custom', custom: 'github' } },
-  { key: 'article:a-walk-round-the-pond', title: 'Page: A walk round the pond', item: HIGHLIGHTS.items[0] },
-  { key: 'album:by-the-pond', title: 'Album: By the pond', reason: 'Publish it to show it.', item: HIGHLIGHTS.items[1] },
-  { key: 'image:samples/pond', title: 'Picture: The pond', item: HIGHLIGHTS.items[2] },
+  { key: 'custom:github', title: 'Chart: A year on GitHub', name: 'A year on GitHub', reason: 'Add a public GitHub snapshot first.', item: { id: 'choice-github', type: 'custom', custom: 'github' } },
+  { key: 'article:a-walk-round-the-pond', title: 'Page: A walk round the pond', name: 'A walk round the pond', media: 'samples/pond', item: HIGHLIGHTS.items[0] },
+  { key: 'article:the-workshop-diary', title: 'Page: The workshop diary', name: 'The workshop diary', media: 'samples/workshop', item: { id: 'choice-workshop', type: 'article', article: 'the-workshop-diary' } },
+  { key: 'article:notes-on-pace', title: 'Page: Notes on pace', name: 'Notes on pace', reason: 'Publish it to show it.', item: { id: 'choice-pace', type: 'article', article: 'notes-on-pace' } },
+  { key: 'album:by-the-pond', title: 'Album: By the pond', name: 'By the pond', reason: 'Publish it to show it.', media: 'samples/bridge', item: HIGHLIGHTS.items[1] },
+  { key: 'image:samples/pond', title: 'Picture: The pond', name: 'The pond', media: 'samples/pond', item: HIGHLIGHTS.items[2] },
+  { key: 'image:samples/plaza', title: 'Picture: The plaza', name: 'The plaza', media: 'samples/plaza', item: { id: 'choice-plaza', type: 'image', media: 'samples/plaza' } },
 ];
 
 /** One waiting slide beside two ready sources. */
@@ -457,3 +461,68 @@ export const OTHER_ALBUMS = [
   { id: 'walks', title: 'Walks on the planet' },
   { id: 'night', title: 'The plaza at night' },
 ];
+/** Add slide's tile pictures, by source key (the page draws them on demand); the pond's has a dark mode version. */
+export const SOURCE_THUMBS: Record<string, { thumb: string; width: number; height: number; dark?: { src: string; width: number; height: number } }> = Object.fromEntries(
+  HIGHLIGHT_CHOICES.filter((c) => c.media).map((c) => {
+    const s = sample(c.media!.replace('samples/', ''));
+    const dark = c.media === 'samples/pond' ? { src: plaza.thumb, width: plaza.width, height: plaza.height } : undefined;
+    return [c.key, { thumb: s.thumb, width: s.width, height: s.height, ...(dark ? { dark } : {}) }];
+  }),
+);
+
+/** A page previewed in Add slide: its slide as the home would draw it. */
+export const SLIDE_PREVIEW_PAGE: SlidePreviewData = {
+  source: HIGHLIGHT_CHOICES[2],
+  facts: sourceFacts(HIGHLIGHT_CHOICES[2].item, { text: 'A year of small builds.', href: '/notes/the-workshop-diary/', media: 'samples/workshop' }, 4),
+  words: { title: 'The workshop diary', text: 'A year of small builds on a long bench, and what each one taught.', href: '#workshop' },
+  picture: pictureOf(workshop),
+  back: '?slide=new',
+};
+
+/** A waiting page previewed in Add slide: no picture yet, why it waits and where to put that right. */
+export const SLIDE_PREVIEW_WAITING: SlidePreviewData = {
+  source: HIGHLIGHT_CHOICES[3],
+  facts: sourceFacts(HIGHLIGHT_CHOICES[3].item, {}, 4),
+  words: { title: 'Notes on pace' },
+  fix: { href: '#notes-on-pace', label: 'Edit page' },
+  back: '?slide=new&kind=page',
+};
+
+/** The GitHub chart previewed in Add slide, with made-up activity. */
+export const SLIDE_PREVIEW_CHART: SlidePreviewData = {
+  source: { ...HIGHLIGHT_CHOICES[0], reason: undefined },
+  facts: sourceFacts(HIGHLIGHT_CHOICES[0].item, {}, 4),
+  words: { title: 'A year on GitHub' },
+  chart: chartData(CONTRIBUTION_SAMPLE),
+  back: '?slide=new&kind=chart',
+};
+
+/** The GitHub chart before a snapshot is saved: why it waits, with nowhere in edit mode to put it right. */
+export const SLIDE_PREVIEW_CHART_WAITING: SlidePreviewData = {
+  source: HIGHLIGHT_CHOICES[0],
+  facts: sourceFacts(HIGHLIGHT_CHOICES[0].item, {}, 4),
+  words: { title: 'A year on GitHub' },
+  back: '?slide=new&kind=chart',
+};
+
+/** A draft album previewed in Add slide: its cover drawn, and where to publish it. */
+export const SLIDE_PREVIEW_ALBUM: SlidePreviewData = {
+  source: HIGHLIGHT_CHOICES[4],
+  facts: sourceFacts({ id: 'choice-by-the-pond', type: 'album', album: 'by-the-pond' }, { text: 'Stones, water and a bridge.', media: 'samples/bridge' }, 4),
+  words: { title: 'By the pond', text: 'Stones, water and a bridge.' },
+  picture: pictureOf(bridge),
+  fix: { href: '#by-the-pond', label: 'Edit album' },
+  back: '?slide=new&kind=album',
+};
+
+/** A picture previewed in Add slide: shown whole, with its caption. */
+export const SLIDE_PREVIEW_PICTURE: SlidePreviewData = {
+  source: HIGHLIGHT_CHOICES[6],
+  facts: sourceFacts(HIGHLIGHT_CHOICES[6].item, { caption: plaza.caption }, 4),
+  words: { title: 'The plaza', text: plaza.caption },
+  picture: pictureOf(plaza),
+  back: '?slide=new&kind=picture',
+};
+
+/** A failed drawing in Add slide: the picture exists, but couldn't be drawn here. */
+export const SLIDE_PREVIEW_FAILED: SlidePreviewData = { ...SLIDE_PREVIEW_PICTURE, picture: undefined, pictureFailed: true };

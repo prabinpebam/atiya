@@ -1,7 +1,8 @@
 /**
  * The Home highlights screen (documentation/home-views/highlights.md §2), a list beside the chosen one's details
  * (documentation/editor/list-and-details.md). Choosing in the list draws the screen again for `?slide=` (a slide,
- * `new` or `settings`) without a reload. Every action (the carousel's settings, Add slide, a slide's excerpt, Move
+ * `new` or `settings`) without a reload; Add slide's two steps (§2.1) are addresses too: its sources (`kind`, `q`)
+ * and one previewed (`source`), so Back and a reload return to the same step. Every action (the carousel's settings, Add slide, a slide's excerpt, Move
  * up, Move down, Remove slide) saves the whole file with its version (PUT highlights); the status says Saved once
  * the screen shows it. A refused save keeps what was typed and says why in the form. A change made elsewhere
  * redraws the screen, unless something here is unsaved.
@@ -22,10 +23,9 @@ const REGION = 'highlights';
 /** Unsaved changes here, kept across the screen's redraws (each sets the script up again). */
 let unsaved = false;
 
-/** The screen for `slide`, drawn again, then focus on `focus`. */
-async function show(slide: string, opts: { focus?: string; push?: boolean } = {}) {
-  const url = new URL(location.href);
-  url.searchParams.set('slide', slide);
+/** The screen for `to` (a slide's ID, `new` or `settings`, or an address of this screen), drawn again, then focus on `focus`. */
+async function show(to: string | URL, opts: { focus?: string; push?: boolean } = {}) {
+  const url = typeof to === 'string' ? new URL(`?slide=${encodeURIComponent(to)}`, location.href) : to;
   if (opts.push) history.pushState(history.state, '', url);
   else history.replaceState(history.state, '', url);
   const drawn = await swapRegions([REGION], url.href, () => unsaved);
@@ -69,18 +69,32 @@ export function initHighlights(root: HTMLElement, signal: AbortSignal) {
   root.addEventListener(
     'click',
     (e) => {
-      const link = (e.target as HTMLElement).closest<HTMLAnchorElement>('[data-highlights-go]');
-      if (!link || e.defaultPrevented || (e as MouseEvent).metaKey || (e as MouseEvent).ctrlKey) return;
+      const t = e.target as HTMLElement;
+      if (e.defaultPrevented || (e as MouseEvent).metaKey || (e as MouseEvent).ctrlKey) return;
+      // a source's tile: its preview, keeping the kind and search to come back to
+      const tile = t.closest<HTMLElement>('[data-highlight-source]');
+      if (tile) {
+        e.preventDefault();
+        const url = new URL(location.href);
+        url.searchParams.set('source', tile.dataset.highlightSource!);
+        void show(url, { push: true, focus: '[data-highlights-back]' });
+        return;
+      }
+      const link = t.closest<HTMLElement>('[data-highlights-go]');
+      if (!link) return;
       e.preventDefault();
       if (link.getAttribute('aria-disabled') === 'true' || !leave()) return;
       unsaved = false;
       saveStatus.clean();
       const slide = link.dataset.highlightsGo!;
-      void show(slide, { push: true, focus: slide === 'new' ? '[data-highlights-new] [role="combobox"]' : go(slide) });
+      const href = link.getAttribute('href');
+      const back = link.dataset.highlightsBack;
+      const focus = back ? `[data-highlight-source="${CSS.escape(back)}"]` : slide === 'new' ? '[data-source-search] input' : go(slide);
+      void show(href ? new URL(href, location.href) : slide, { push: true, focus });
     },
     { signal },
   );
-  window.addEventListener('popstate', () => void show(new URL(location.href).searchParams.get('slide') ?? ''), { signal });
+  window.addEventListener('popstate', () => void show(new URL(location.href)), { signal });
 
   if (!form) return;
   const changed = () => {
@@ -126,7 +140,7 @@ export function initHighlights(root: HTMLElement, signal: AbortSignal) {
           say(h.items.length >= HIGHLIGHT_MAX ? 'The carousel is full. Remove a slide to add another.' : 'That source is already a slide. Choose another.');
           return;
         }
-        await save({ ...h, items }, 'Added slide', id, choice.item.type === 'article' ? 'textarea[name="excerpt"]' : go(id));
+        await save({ ...h, items: excerptHighlight(items, id, field('excerpt')?.value ?? '') }, 'Added slide', id, go(id));
         return;
       }
       // ---------- a slide's excerpt ----------

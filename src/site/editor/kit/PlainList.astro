@@ -1,8 +1,9 @@
 ---
 /**
  * A list without bullets or indent, its items one under another a set space apart: the rows of a screen's list
- * (the changes to save, the content's issues, a picture's uses, a section's links). Its items are the caller's
- * own `<li>`s, styled by the caller.
+ * (the changes to save, the content's issues, a picture's uses, a section's links), or tiles side by side, as many
+ * across as fit (the media library's pictures, Add slide's sources). Its items are the caller's own `<li>`s, styled
+ * by the caller.
  * @tier kit
  * @a11y Still a list (ul or ol) to assistive tech, with its count of items; name it (label) when there are several lists near it.
  */
@@ -12,16 +13,18 @@ interface Props {
   as?: 'ul' | 'ol';
   /** The space between its items: none (rows ruled apart by their own borders), xs, sm or md. */
   gap?: 'none' | 'xs' | 'sm' | 'md';
+  /** Rows one under another, or tiles side by side, each at least a thumbnail wide. */
+  layout?: 'rows' | 'tiles';
   /** Names the list (aria-label). */
   label?: string;
   /** Data attributes pass through to the list (the screen's hooks). */
   [data: `data-${string}`]: string | undefined;
 }
 
-const { as: Tag = 'ul', gap = 'none', label, ...rest } = Astro.props;
+const { as: Tag = 'ul', gap = 'none', layout = 'rows', label, ...rest } = Astro.props;
 ---
 
-<Tag class="plain-list" data-gap={gap} aria-label={label} {...rest}><slot /></Tag>
+<Tag class="plain-list" data-gap={gap} data-layout={layout} aria-label={label} {...rest}><slot /></Tag>
 
 <style>
   .plain-list {
@@ -41,6 +44,10 @@ const { as: Tag = 'ul', gap = 'none', label, ...rest } = Astro.props;
 
   .plain-list[data-gap='md'] {
     gap: var(--space-3);
+  }
+
+  .plain-list[data-layout='tiles'] {
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, var(--c-editor-thumb)), 1fr));
   }
 
   .plain-list[hidden] {

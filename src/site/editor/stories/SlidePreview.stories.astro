@@ -1,0 +1,27 @@
+---
+import Example from '../../library/Example.astro';
+import SlidePreview from '../components/SlidePreview.astro';
+import { HIGHLIGHTS, SLIDE_PREVIEW_ALBUM, SLIDE_PREVIEW_CHART, SLIDE_PREVIEW_CHART_WAITING, SLIDE_PREVIEW_FAILED, SLIDE_PREVIEW_PAGE, SLIDE_PREVIEW_PICTURE, SLIDE_PREVIEW_WAITING } from './samples';
+---
+
+<Example title="A page, ready" description="Drawn with the carousel's own card and settings, then what the slide uses, an optional excerpt and Add slide." layout="block">
+  <SlidePreview {...SLIDE_PREVIEW_PAGE} settings={HIGHLIGHTS} labelledby="story-preview-page" />
+</Example>
+<Example title="A page, waiting" description="Nothing to draw yet: why it waits, that it keeps its place once added, and where to put it right." layout="block">
+  <SlidePreview {...SLIDE_PREVIEW_WAITING} settings={HIGHLIGHTS} labelledby="story-preview-waiting" />
+</Example>
+<Example title="An album, waiting" description="Its cover drawn as the slide would show it, why it waits, and the album to publish." layout="block">
+  <SlidePreview {...SLIDE_PREVIEW_ALBUM} settings={HIGHLIGHTS} labelledby="story-preview-album" />
+</Example>
+<Example title="A picture" description="The picture as the slide shows it, with its caption, and no excerpt to write." layout="block">
+  <SlidePreview {...SLIDE_PREVIEW_PICTURE} settings={HIGHLIGHTS} labelledby="story-preview-picture" />
+</Example>
+<Example title="A picture that couldn't be drawn" description="It exists, but drawing it here failed: the stage says so and how to try again." layout="block">
+  <SlidePreview {...SLIDE_PREVIEW_FAILED} settings={HIGHLIGHTS} labelledby="story-preview-failed" />
+</Example>
+<Example title="The GitHub chart" description="The chart as the home shows it, still: its controls work on the home, not here." layout="block">
+  <SlidePreview {...SLIDE_PREVIEW_CHART} settings={HIGHLIGHTS} labelledby="story-preview-chart" />
+</Example>
+<Example title="The GitHub chart, waiting" description="No snapshot saved yet: why it waits, with no link, since nothing in edit mode puts it right." layout="block">
+  <SlidePreview {...SLIDE_PREVIEW_CHART_WAITING} settings={HIGHLIGHTS} labelledby="story-preview-chart-waiting" />
+</Example>

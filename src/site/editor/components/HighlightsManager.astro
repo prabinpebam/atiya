@@ -3,7 +3,7 @@
  * The Home highlights screen (documentation/home-views/highlights.md §2), laid out as every collection is in edit
  * mode (documentation/editor/list-and-details.md): a list on the left, Carousel settings above its rule and the
  * slides under it (Add slide first, then the slides in order), beside the chosen one's details on the right: a
- * slide, the new one's source, or the carousel's settings. Sources stay linked, never copied; removing a slide never
+ * slide, Add slide (its sources, then one previewed, passed in by the page as `new`), or the carousel's settings. Sources stay linked, never copied; removing a slide never
  * deletes its source. The whole is one region, drawn again from the server after every choice and save.
  * @tier editor
  * @a11y The list is a navigation landmark whose current item says so (aria-current); the details are a section
@@ -26,7 +26,7 @@ import DetailPane from '../kit/DetailPane.astro';
 import PlainList from '../kit/PlainList.astro';
 import Form from '../kit/Form.astro';
 import IssueNote from '../kit/IssueNote.astro';
-import { freeChoices, HIGHLIGHT_MAX, settingsLine, slideIcon, slideLine, type Highlights, type HighlightChoice, type HighlightDetail } from '../model/highlights';
+import { HIGHLIGHT_MAX, settingsLine, slideIcon, slideLine, type Highlights, type HighlightChoice, type HighlightDetail } from '../model/highlights';
 
 interface Props {
   /** The effective saved configuration (including absent-file compatibility). */
@@ -46,7 +46,6 @@ const index = h.items.findIndex((i) => i.id === selected);
 const slide = index >= 0 ? h.items[index] : undefined;
 const mode = selected === 'settings' ? 'settings' : slide ? 'slide' : 'new';
 const detail = slide ? details[slide.id] : undefined;
-const free = freeChoices(choices, h.items);
 const full = h.items.length >= HIGHLIGHT_MAX;
 const count = `${h.items.length} of ${HIGHLIGHT_MAX} slides`;
 const TITLE = 'highlights-detail-title';
@@ -132,22 +131,8 @@ const state = JSON.stringify({ highlights: h, version, choices, selected: slide?
           </Form>
         </DetailPane>
       ) : (
-        <DetailPane title="Add slide" titleId={TITLE} line="Choose a public page, album or picture, or your GitHub year. A waiting source keeps its place until it can be shown.">
-          <Form gap="xl" data-highlights-new="" labelledby={TITLE}>
-            {full ? (
-              <Text variant="ui">The carousel holds up to {HIGHLIGHT_MAX} slides. Remove one to add another.</Text>
-            ) : free.length ? (
-              <Select label="Source" name="source" placeholder="Choose a public source" options={free.map((c) => ({ value: c.key, label: c.title, description: c.reason ? `Waiting: ${c.reason}` : undefined }))} />
-            ) : (
-              <Text variant="ui">Every public source is already a slide.</Text>
-            )}
-            <IssueNote data-editor-form-issue="" />
-            {!full && free.length > 0 && (
-              <ActionBar>
-                <Button variant="primary" type="submit" icon="plus">Add slide</Button>
-              </ActionBar>
-            )}
-          </Form>
+        <DetailPane title="Add slide" titleId={TITLE} line="See each public page, album or picture, or your GitHub year, as the home would show it, then add it. A waiting source keeps its place until it can be shown.">
+          {full ? <Text variant="ui">The carousel holds up to {HIGHLIGHT_MAX} slides. Remove one to add another.</Text> : <slot name="new" />}
         </DetailPane>
       )
     }
@@ -167,7 +152,13 @@ const state = JSON.stringify({ highlights: h, version, choices, selected: slide?
 </style>
 <script>
   import { each } from '../../scripts/page';
+  import { setupContributions } from '../../scripts/contributions';
   import { initHighlights } from '../scripts/highlights';
+  import { fillSources, initSlideSources } from '../scripts/slideSources';
 
   each<HTMLElement>('[data-editor-highlights]', (el, signal) => initHighlights(el, signal));
+  // Add slide's parts are drawn only on that step, so their scripts live here, where the screen always has them
+  each<HTMLElement>('[data-slide-sources]', (el, signal) => initSlideSources(el, signal));
+  each<HTMLElement>('[data-region="highlight-sources"]', (el) => fillSources(el, () => false));
+  each<HTMLElement>('[data-highlight-preview] [data-contributions]', (el, signal) => setupContributions(el, signal));
 </script>

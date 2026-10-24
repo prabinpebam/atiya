@@ -13,11 +13,11 @@ import { lookupOf } from './albums';
 // ---------- what the screens draw ----------
 
 /** A thumbnail: a picture's card size, a video's or linked video's poster. */
-export async function thumbOf(index: ContentIndex, media: string): Promise<{ thumb: string; alt: string; bg?: string; drawing?: boolean; width: number; height: number }> {
+export async function thumbOf(index: ContentIndex, media: string): Promise<{ thumb: string; alt: string; bg?: string; drawing?: boolean; width: number; height: number; dark?: { src: string; width: number; height: number } }> {
   try {
     if (index.media.has(media)) {
       const p = await picture(media, 'card');
-      return { thumb: p.thumb, alt: p.alt, bg: p.bg, width: p.width, height: p.height, ...(p.drawing ? { drawing: true } : {}) };
+      return { thumb: p.thumb, alt: p.alt, bg: p.bg, width: p.width, height: p.height, ...(p.drawing ? { drawing: true } : {}), ...(p.dark ? { dark: { src: p.dark.thumb, width: p.dark.width, height: p.dark.height } } : {}) };
     }
     if (index.videos.has(media)) {
       const v = await video(media, 'card');

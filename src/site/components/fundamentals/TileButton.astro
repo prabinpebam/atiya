@@ -5,6 +5,7 @@
  * (the slot); the tile frames it, and takes the accent on hover and when it's the one picked.
  * @tier fundamental
  * @a11y A native button named by what it holds (or its aria-label); a line that explains it is tied with aria-describedby.
+ * @a11y Given an address (href), it's a link instead, for a tile that goes somewhere (a preview, another screen): it can be opened in a new tab, and is never pressed or disabled.
  * @a11y The picked tile is pressed (aria-pressed="true") or current (aria-current="true"), and its border says so as well as its fill; disabled, it's faded and can't be pressed.
  * @a11y At least 44 px tall in every variant.
  * @key Enter: presses it
@@ -14,6 +15,8 @@
 interface Props {
   /** outlined: a ruled card that fills with the accent on hover (a choice among kinds); framed: a frame shows on hover and when picked (a picture in a grid); chip: a small inline swatch with words; thumbnail: a small picture, edge to edge; bare: nothing of its own, filling its place and taking its corners from it, with a ring just inside its edge when picked (a tile in an arranger). */
   variant?: 'outlined' | 'framed' | 'chip' | 'thumbnail' | 'bare';
+  /** Where it goes: given, it's a link (a tile that opens something), and `pressed` and `disabled` don't apply. */
+  href?: string;
   /** Marks it as the one shown (aria-current="true"); a script may move it. */
   current?: boolean;
   /** In a set where several can be picked: whether this one is (aria-pressed). Left out, it isn't a toggle. */
@@ -30,22 +33,30 @@ interface Props {
   [data: `data-${string}`]: string | undefined;
 }
 
-const { variant = 'outlined', current = false, pressed, disabled = false, ...rest } = Astro.props;
+const { variant = 'outlined', href, current = false, pressed, disabled = false, ...rest } = Astro.props;
 const toggle = pressed === undefined ? undefined : pressed ? 'true' : 'false';
 ---
 
-<button
-  class="tile"
-  data-press
-  type="button"
-  data-variant={variant}
-  aria-current={current ? 'true' : undefined}
-  aria-pressed={toggle}
-  disabled={disabled ? true : undefined}
-  {...rest}
->
-  <slot />
-</button>
+{
+  href ? (
+    <a class="tile" data-press href={href} data-variant={variant} aria-current={current ? 'true' : undefined} {...rest}>
+      <slot />
+    </a>
+  ) : (
+    <button
+      class="tile"
+      data-press
+      type="button"
+      data-variant={variant}
+      aria-current={current ? 'true' : undefined}
+      aria-pressed={toggle}
+      disabled={disabled ? true : undefined}
+      {...rest}
+    >
+      <slot />
+    </button>
+  )
+}
 
 <style>
   .tile {
@@ -60,6 +71,7 @@ const toggle = pressed === undefined ? undefined : pressed ? 'true' : 'false';
     color: var(--color-text);
     font-family: var(--font-ui);
     text-align: start;
+    text-decoration: none;
     cursor: pointer;
     transition:
       border-color var(--duration-fast) var(--ease-standard),

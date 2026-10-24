@@ -2,21 +2,80 @@
 /** The classic home's curated highlights. Dev only: the editor integration injects this route. */
 import EditorLayout from '../EditorLayout.astro';
 import HighlightsManager from '../components/HighlightsManager.astro';
+import SlideSources, { type SourceThumb } from '../components/SlideSources.astro';
+import SlidePreview from '../components/SlidePreview.astro';
 import ContentIssues from '../components/ContentIssues.astro';
 import { load } from '../server/screens';
 import { readDoc } from '../server/store';
 import { HIGHLIGHTS_KEY } from '../server/highlights';
-import { chosenSlide, HIGHLIGHT_REGIONS, highlightsView } from '../model/highlights';
+import { thumbOf } from '../server/albumScreens';
+import { chartData } from '../model/highlightChart';
+import { chosenKind, chosenSlide, chosenSource, fixPlace, HIGHLIGHT_REGIONS, highlightsView, sourceFacts, sourceTiles, type SlidePreviewData } from '../model/highlights';
 import { regionsAsked, wants } from '../model/regions';
+import { highlightState } from '../../content/highlights';
+import { slidePicture } from '../../content/highlightPictures';
+import { timedAsync } from '../../content/timing';
+import { withBase } from '../../design/meta';
 
 export const prerender = false;
+const SOURCES = 'highlight-sources';
 const loaded = load();
 const asked = regionsAsked(Astro.request.headers.get('X-Editor-Regions'));
-const view = loaded.ok && wants(asked, ...HIGHLIGHT_REGIONS) ? highlightsView(loaded.index) : null;
+const view = loaded.ok && wants(asked, ...HIGHLIGHT_REGIONS, SOURCES) ? highlightsView(loaded.index) : null;
 const version = view ? readDoc(HIGHLIGHTS_KEY)?.version ?? null : null;
-const selected = view ? chosenSlide(view.highlights.items, Astro.url.searchParams.get('slide')) : 'new';
+const params = Astro.url.searchParams;
+const selected = view ? chosenSlide(view.highlights.items, params.get('slide')) : 'new';
+const kind = chosenKind(params.get('kind'));
+const query = params.get('q') ?? '';
+const source = view && selected === 'new' ? chosenSource(view.choices, view.highlights.items, params.get('source')) : null;
+const tiles = view && selected === 'new' && !source ? sourceTiles(view.choices, view.highlights.items) : [];
+
+// the tiles' pictures only when they're asked for on their own, so a screen is never drawn waiting on every picture
+let thumbs: Record<string, SourceThumb> | undefined;
+if (loaded.ok && tiles.length && asked?.has(SOURCES) && !wants(asked, ...HIGHLIGHT_REGIONS)) {
+  const index = loaded.index;
+  thumbs = await timedAsync('highlights:thumbs', async () =>
+    Object.fromEntries(await Promise.all(tiles.filter((t) => t.media).map(async (t) => [t.key, await thumbOf(index, t.media!)] as const))),
+  );
+}
+
+// the source previewed: drawn as the home would draw it
+const preview = await (async (): Promise<SlidePreviewData | null> => {
+  if (!loaded.ok || !view || !source) return null;
+  const index = loaded.index;
+  const state = highlightState(index, source.item);
+  const picture = state.media ? await slidePicture(index, state.media).catch(() => undefined) : undefined;
+  const chart = source.item.type === 'custom' && index.github ? chartData(index.github) : undefined;
+  const caption = source.item.type === 'image' ? index.media.get(source.item.media)?.caption : undefined;
+  const place = fixPlace(source.item);
+  const back = new URLSearchParams({ slide: 'new', ...(kind !== 'all' ? { kind } : {}), ...(query ? { q: query } : {}) });
+  return {
+    source,
+    facts: sourceFacts(source.item, { text: state.text, href: state.href, media: state.media, caption }, view.highlights.items.length + 1),
+    words: { title: state.title, text: state.text, href: state.href ? withBase(state.href) : undefined },
+    picture,
+    pictureFailed: !!state.media && !picture,
+    chart,
+    fix: place ? { href: withBase(`/_edit/${place.path}`), label: place.label } : undefined,
+    back: `?${back}`,
+  };
+})();
 ---
 
 <EditorLayout title="Home highlights" screen="highlights" heading="Home highlights" intro="Choose what the classic home shows below its introduction. Slides stay linked to their pages and pictures. Each change saves here; save to remote to put it on the site.">
-  {view ? <HighlightsManager {...view} version={version} selected={selected} /> : !loaded.ok ? <ContentIssues issues={loaded.issues} /> : null}
+  {
+    view ? (
+      <HighlightsManager {...view} version={version} selected={selected}>
+        <Fragment slot="new">
+          {preview ? (
+            <SlidePreview {...preview} settings={view.highlights} labelledby="highlights-detail-title" />
+          ) : (
+            <SlideSources tiles={tiles} kind={kind} query={query} thumbs={thumbs} />
+          )}
+        </Fragment>
+      </HighlightsManager>
+    ) : !loaded.ok ? (
+      <ContentIssues issues={loaded.issues} />
+    ) : null
+  }
 </EditorLayout>

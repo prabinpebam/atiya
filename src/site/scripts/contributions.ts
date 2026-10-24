@@ -1,7 +1,14 @@
 import { calendarKey, columnAt, contributionScene, ISOMETRIC, readableMonths, returnOrientation, tumble, type ContributionData, type ContributionScene, type Orientation, type Point } from './contributionRules';
 
-/** Canvas uses the site's resolved colour roles, including a library example's own colour scheme. */
+const started = new WeakSet<HTMLElement>();
+
+/**
+ * Canvas uses the site's resolved colour roles, including a library example's own colour scheme. Sets up one chart,
+ * once: the hero's own script and a screen that swaps a chart in (edit mode's preview) may both ask.
+ */
 export function setupContributions(root: HTMLElement, signal: AbortSignal) {
+  if (started.has(root)) return;
+  started.add(root);
   const canvas = root.querySelector<HTMLCanvasElement>('[data-contribution-canvas]')!;
   const context = canvas.getContext('2d');
   const status = root.querySelector<HTMLElement>('[data-contribution-status]')!;

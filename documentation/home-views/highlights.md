@@ -7,6 +7,7 @@
 The name, introduction and ways into the site stay above the highlights; the sections stay below. This is the **classic home only**, at `/` when Classic is the default, and at `/views/classic/`. Other home views and the capability spine's own highlights are unchanged.
 
 The opening above the highlights has two columns: the name and the introduction's first line in the first, the ways into the site (Explore the planet, Read the site) in the second. Below 56rem they stack in that order. The introduction's other lines, and the note on how the site was built, are a quiet footnote under the sections, not part of the opening.
+
 The existing GitHub calendar becomes a reusable contribution chart without a second copy of the owner's name or introduction. Its 2D/3D controls, month labels, hover/tap details, bounded tumble, return, theme and statistics remain.
 
 | Slide | Its source | What the visitor sees | Primary action |
@@ -23,13 +24,82 @@ Custom means an engine-owned renderer from a trusted catalogue, with GitHub the 
 Edit mode gains **Home highlights**, reachable from its navigation and action centre. It's a [list and details](../editor/list-and-details.md) screen, like Sections and Recommendations: the list holds **Carousel settings** above a rule, then **Add slide** and the slides in order (each with its kind and whether it's ready or waiting, and why); the details show what's chosen (`?slide=<id>`, `settings` or `new`). Each action saves on its own. It offers:
 
 1. Show/hide the highlights area and name the carousel.
-2. Add a GitHub, page, album or image slide by selecting an existing resource. Only public resources are offered. No made-up content is added.
+2. Add a GitHub, page, album or image slide by browsing the public sources and previewing one as the carousel would show it, then adding it (§2.1). Only public resources are offered. No made-up content is added.
 3. Choose a page excerpt (optional, at most 280 characters, found in the article's own plain text); leaving it empty uses the article's summary. Titles and pictures stay linked to the source rather than copied.
 4. Reorder with Move up/Move down buttons in a slide's details, and remove a slide (two presses) without deleting its source.
 5. Set **Peek**, previous/next **buttons**, and pager **dots**, **filmstrip** or **wrapping filmstrip**. Dots-only is buttons off and dots selected. Picture display (fill, fit, actual, tile), automatic background, rounded corners and shadow use the article carousel's existing options.
 6. Save through the versioned content store, with the standard busy and saved/failed feedback. Conflicts preserve unsaved input. Other open screens and the preview hear changes.
 
 A carousel holds at most 12 slides. Item IDs are stable and unique; the same source cannot be added twice. The owner can save an empty or disabled carousel. Empty is an intentional absence, not an instruction to restore the planet picture.
+
+### 2.1 Adding a slide: choose by seeing
+
+Add slide was first a dropdown of titles. But the kinds differ: a live chart, a page with its picture and words, an album's cover, one picture. A title alone doesn't say how a slide will look, whether it can show yet, or what it needs. So choosing meant adding, looking at the home and removing. Adding is now a **sources step** and a **preview step**, both in the details pane. Promise served: the classic home leads with what best represents the owner now, and he sets that up without trial and error.
+
+| # | Job: when I…, I want to…, so I can… |
+|---|---|
+| J1 | When I want the home to lead with my best recent work, I want to find it among everything public, so I can put it in front quickly. |
+| J2 | When several kinds could tell the same story (a page or its album, a picture or the chart), I want to see how each would look as a slide, so I can choose the strongest without adding and removing. |
+| J3 | When something I want isn't ready, I want to know before choosing what it needs and where to fix it, so a slide that never shows doesn't surprise me. |
+| J4 | When a source is already a slide, I want to see that rather than wonder where it went, so I go straight to it. |
+
+| # | User-can statement | Jobs |
+|---|---|---|
+| U1 | A person can narrow the sources to one kind, see how many of each there are, and read what that kind shows and where it leads. | J1, J2 |
+| U2 | A person can find a source by its name. | J1 |
+| U3 | A person can browse sources by their picture, name and kind, and see whether each is ready, waiting (and why) or already a slide. | J1, J3, J4 |
+| U4 | A person can see a source as the home's carousel would show it, with the carousel's settings, before adding it. | J2 |
+| U5 | A person can read, before adding, where the slide leads, the words and picture it uses, and, for one that waits, what it needs, with a way to fix it. | J3 |
+| U6 | A person can set a page's excerpt as they add it. | J2 |
+| U7 | A person can go from a source that's already a slide to that slide. | J4 |
+| U8 | A person can do all of it by keyboard, with a screen reader and on a phone, and reload, back and forward keep what they chose. | J1 to J4 |
+| U9 | A person can't add a private source or the same source twice. Opening the screen never waits for every source's picture. | J1 |
+
+**Task flow.**
+
+1. **Add slide** (the list) opens the sources step (`?slide=new`, with `&kind=` and `&q=` once a kind or a search is chosen, replacing the history entry rather than adding one).
+   - The sources are listed at once, by name, kind and status. Their pictures fill in afterwards: each shimmers until its picture arrives, in their own region (`highlight-sources`). This is a responsive wait, and the screen never waits for it.
+   - Ready sources come first, then waiting ones, then those already slides. Within each group the order is chart, page, album, picture, then by name.
+2. **Narrow it.** Choosing a kind or typing a name filters in place, at once. The count line says how many are left, and the address keeps the kind and the search. With no match it says so and suggests another name or All.
+3. **Choose a source.** A ready or waiting source opens the preview step (`?slide=new&source=<key>`).
+   - The preview is the slide drawn by the carousel's own renderers (`HighlightCard`, the embedded `ContributionHero`) with the carousel's settings.
+   - The details say what it is, where it leads, the words and picture it uses, and the place it will take.
+   - A waiting source still previews when it has a picture; without one, the preview says what's missing. The details give the reason and a link to the screen that fixes it (the page or album editor, the picture's details). Adding it anyway keeps its place until it can show.
+   - A page has its excerpt field here.
+   - **Back to sources** (or the browser's back) returns with the kind and the search kept.
+   - A source that's already a slide is marked "Slide N" and goes to that slide.
+4. **Add slide** saves the source, with the excerpt typed for a page, using the file's version, then chooses the new slide (`?slide=<id>`) with the focus on its row.
+   - When the carousel is full, both steps say so and Add slide in the list is disabled.
+   - A refused save (an excerpt that isn't word for word) says why and keeps the preview and what was typed.
+
+**The UI.**
+
+- The details pane's heading is **Add slide** in both steps, with the same line, so nothing above the content moves between them.
+- **The sources step:**
+  - a kind filter: one choice per kind, each with its count (All, Charts, Pages, Albums, Pictures), and a line under it on what the chosen kind shows;
+  - **Find a source**;
+  - a polite count line;
+  - a grid of source tiles: the picture whole (3:2), or the kind's icon when there's none; the name; the kind and status line; and a "Slide N" tag on one that's already added.
+- **The preview step:**
+  - Back to sources;
+  - the source's name;
+  - the framed preview, with a note that it's drawn with the carousel's settings;
+  - the details, led by its Status (Ready to show or Waiting), then Kind, Opens, Words, Picture, Place;
+  - the waiting note and its fix link;
+  - the excerpt field (a page);
+  - Add slide.
+
+The kinds' lines:
+
+- Charts: "A live chart drawn from your public data, with its own controls."
+- Pages: "A page's lead picture and title, with its summary or a line you choose. Opens the page."
+- Albums: "An album's cover, title and summary. Opens the album."
+- Pictures: "One library picture with its caption. Opens it full size."
+
+| # | Assumption | Criterion | Check |
+|---|---|---|---|
+| A1 | Seeing the slide before adding ends the add, look and remove loop. | The owner adds the slide he meant on the first try. | The owner's review of the flow |
+| A2 | Every source's picture (about 180) can fill in after the screen shows, quickly enough to browse. | Pictures appear within 2 s of the step opening with a warm picture cache. | The `editor:swap` measure for `highlight-sources` |
 
 ## 3. Content contract and safety
 
@@ -85,6 +155,7 @@ The article `Carousel` is extended with a trusted render-function slot, called w
 | HC7 | Visual quality | Affected story/home/editor screenshots in light/dark at phone, tablet and desktop; review each intended baseline change |
 | HC8 | Existing behavior and build safety | Affected unit suites, types, production build/budgets/leak check, existing carousel regressions; no new dependency or live service call |
 | HC9 | Documented and local | This spec and evidence agree with the build; content/editor docs linked; clean scoped local work, no push or deployment |
+| HC10 | Adding is choosing by seeing (§2.1) | Unit cases for the kinds, counts, order, search, chosen source and fix links. Editor E2E: filter and search, preview of each kind with its details, a waiting source's reason and fix link, an added source going to its slide, adding a page with its excerpt from the preview, back keeping the kind and search, reload by address, the first draw without the sources' pictures, and axe in both themes at 360 px. Screenshots of both steps in light and dark |
 
 ## 6. As-built evidence
 
@@ -94,10 +165,11 @@ Built locally on `feature/home-highlights-carousel`. The owner configuration con
 |---|---|
 | HC1, HC2 | `highlights.test.ts`, `editorHighlights.test.ts`: all item kinds/options, exact maximum, duplicate IDs/sources, verbatim excerpts, missing/private sources, delete/access transitions, derived media usage, alt text and degraded dev loading. The actual fixture home excludes draft pages/albums, restores them on republish, and hides empty/disabled highlights without bringing back the planet picture. |
 | HC3, HC4 | Twelve public browser cases passed across `highlights.spec.ts`, `contributions.spec.ts` and the affected `site.spec.ts` carousel cases. The mixed story uses the existing article carousel; the editor fixture checks repository-resolved lead/cover, exact excerpt, canonical links and the full-image lightbox. |
-| HC5 | Rebuilt as list and details on 24 October 2026 ([list and details](../editor/list-and-details.md)): the carousel settings, Add slide and the slides in the list, the chosen one in the details, every action saved on its own. Five `editor-highlights.spec.ts` cases passed on the rebuilt screen: add all four kinds, the excerpt, Move up and Move down with the ends disabled and the focus kept, settings, reopen by address, the two-press remove choosing the slide that took its place, a refused excerpt keeping its words, clean cross-tab updates, dirty input kept through a 409, public resolution, no image on the screen, axe in both themes at 360 px. |
+| HC5 | Rebuilt as list and details on 24 October 2026 ([list and details](../editor/list-and-details.md)): the carousel settings, Add slide and the slides in the list, the chosen one in the details, every action saved on its own. Five `editor-highlights.spec.ts` cases passed on the rebuilt screen: add all four kinds, the excerpt, Move up and Move down with the ends disabled and the focus kept, settings, reopen by address, the two-press remove choosing the slide that took its place, a refused excerpt keeping its words, clean cross-tab updates, dirty input kept through a 409, public resolution, no image on a slide's details, axe in both themes at 360 px. Add slide's own flow is HC10. |
 | HC6 | Existing GitHub touch/tumble and reduced-motion tests passed inside the new home carousel; nested chart keys do not change slides, focused track keys do, and offscreen contents are inert. Axe passes in both themes, with public reflow at 320 px and editor reflow at 390 px. |
 | HC7 | The rebuild (24 October 2026) updated, on purpose, the HighlightsManager, RecommendationsManager, AlbumList, ListPane, ListLink and DetailPane story baselines; each was reviewed in both themes. Before it, the four affected visual groups passed during intentional baseline capture. All 38 added/changed images were reviewed: mixed carousel, cards and editor parts in both themes, including phone; only the two home phone baselines changed. Existing carousel examples retained their order and baselines. |
 | HC8 | 677 affected unit tests passed; the full Astro type check passed with existing hints only. `build-parity.mjs` passed both production builds, bundle budgets and sealed-output leak checks: 1,465 identical files, matching sealed shapes, only the expected docs difference. Landing eager JavaScript is 16.6 KB gzip; game/gate budgets remain unchanged. |
 | HC9 | This page, the content model and editor screen catalogue describe the implementation. No dependency or live service call was added. The work remains local. |
+| HC10 | Built on 24 October 2026 (§2.1): SlideSources and SlidePreview parts with stories, the rules pure in `model/highlights.ts` (kinds, counts, order, search, the chosen source, fix links, facts) with unit cases. Six `editor-highlights.spec.ts` cases pass on the new flow, among them: a kind and a search narrowing in place and kept in the address; a preview of each kind (the chart, a page, an album, a picture) with its details; a waiting page's reason and its Edit page link; a page added with its excerpt from the preview; an invented excerpt refused with the preview and its words kept; Back and the browser's back keeping the kind and search; a reload by address; a source that's already a slide going to it; no picture in the step's first HTML; axe in both themes at 360 px on a slide, the sources and a preview. On the owner's content, 179 sources draw at once and their pictures fill in about 0.6 s after the step opens (A2's 2 s met). Dark versions of pictures follow the theme on the tiles. After the design system review: each tile is a link to its preview (or to the slide it already is), named by its name and described by its status line, so it can open in a new tab; a tile focused by Back keeps the focus when the pictures arrive; the kind toggles' focus ring shows in full inside their scroller; a picture that couldn't be drawn says so and how to try again. |
 
 Deliberately not run: the unrelated full game/editor suites and performance benchmark. This change uses existing carousel and input infrastructure; the focused existing carousel, GitHub and editor cases cover its behavior.

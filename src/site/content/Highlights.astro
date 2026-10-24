@@ -5,7 +5,8 @@ import ContributionHero from '../components/compounds/ContributionHero.astro';
 import HighlightCard from '../components/compounds/HighlightCard.astro';
 import { content } from './repository';
 import { CUSTOM_SLIDES, defaultHighlights, visibleHighlights, type HighlightItem } from './highlights';
-import { picture, video, embedPoster, type Picture } from './pictures';
+import type { Picture } from './pictures';
+import { slidePicture } from './highlightPictures';
 import { contributionStats } from './github';
 import { withBase } from '../design/meta';
 import { PICTURE_SPECS } from '../design/pictures';
@@ -14,15 +15,7 @@ const index = content();
 const settings = defaultHighlights(index);
 interface Slide { item: HighlightItem; title: string; text?: string; href?: string; picture?: Picture }
 const slides: Slide[] = await Promise.all(visibleHighlights(index).map(async ({ item, state }): Promise<Slide> => {
-  let p: Picture | undefined;
-  if (state.media) {
-    if (index.videos.has(state.media)) {
-      const v = await video(state.media, 'wide');
-      if (v.poster) p = { ...v.poster, alt: v.title, full: v.poster.src, caption: v.caption, bg: '' };
-    }
-    else if (index.embeds.has(state.media)) p = await embedPoster(state.media, 'wide');
-    else p = await picture(state.media, 'wide');
-  }
+  const p = state.media ? await slidePicture(index, state.media) : undefined;
   return { item, title: state.title, text: state.text, href: state.href ? withBase(state.href) : undefined, picture: p };
 }));
 // a custom slide has no picture: its frame is the wide shape's, its thumbnail a label

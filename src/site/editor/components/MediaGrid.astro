@@ -39,6 +39,7 @@ import Progress from '../../components/fundamentals/Progress.astro';
 import Skeleton from '../../components/fundamentals/Skeleton.astro';
 import ActionBar from '../../components/compounds/ActionBar.astro';
 import IssueNote from '../kit/IssueNote.astro';
+import PlainList from '../kit/PlainList.astro';
 import StatusNote from '../kit/StatusNote.astro';
 import Fieldset from '../kit/Fieldset.astro';
 import AltSuggestion from '../kit/AltSuggestion.astro';
@@ -169,18 +170,18 @@ const groups = [...new Set(media.map((m) => m.owner))].map((o) => ({ owner: o, l
   }
   {
     pending && (
-      <div class="placeholder" aria-hidden="true">
-        <Skeleton shape="block" ratio="4/3" />
-        <Skeleton shape="block" ratio="4/3" />
-        <Skeleton shape="block" ratio="4/3" />
-      </div>
+      <PlainList layout="tiles" gap="md" aria-hidden="true" data-media-placeholder="">
+        <li><Skeleton shape="block" ratio="4/3" /></li>
+        <li><Skeleton shape="block" ratio="4/3" /></li>
+        <li><Skeleton shape="block" ratio="4/3" /></li>
+      </PlainList>
     )
   }
   {
     groups.map((g) => (
       <section class="group" data-media-group aria-label={g.label}>
         <Heading level={3} size="ui">{g.label}</Heading>
-        <ul class="grid">
+        <PlainList layout="tiles" gap="md">
           {g.items.map((m) => (
         <li data-media-card={m.id} data-media-kind={m.kind ?? 'image'} data-find={`${m.id} ${m.alt}`.toLowerCase()} data-private={m.private ? '' : undefined}>
           <TileButton variant="framed" pressed={mode === 'pick' ? false : undefined} current={mode === 'library' && m.id === selected} data-editor-media={m.id} aria-label={m.kind === 'video' ? `Video: ${m.alt || m.id}` : m.alt || m.id}>
@@ -199,7 +200,7 @@ const groups = [...new Set(media.map((m) => m.owner))].map((o) => ({ owner: o, l
           </TileButton>
         </li>
           ))}
-        </ul>
+        </PlainList>
       </section>
     ))
   }
@@ -329,14 +330,6 @@ const groups = [...new Set(media.map((m) => m.owner))].map((o) => ({ owner: o, l
   }
 
 
-  .grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(min(100%, var(--c-editor-thumb)), 1fr));
-    gap: var(--space-3);
-    margin: 0;
-    padding: 0;
-    list-style: none;
-  }
 
   li[hidden] {
     display: none;
@@ -353,13 +346,6 @@ const groups = [...new Set(media.map((m) => m.owner))].map((o) => ({ owner: o, l
     display: flex;
     align-items: center;
     gap: var(--space-1);
-  }
-
-  /* the picker filling, a page at a time: how far it's got, and where the cards will be */
-  .placeholder {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(var(--c-editor-thumb), 1fr));
-    gap: var(--space-3);
   }
 </style>
 

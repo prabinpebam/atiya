@@ -1,0 +1,145 @@
+---
+/**
+ * Add slide's first step (documentation/home-views/highlights.md §2.1): every public source as a tile with its
+ * picture, name, kind and status, narrowed by kind (with each kind's count and what it shows) and by name. Ready
+ * sources come first, then waiting ones, then those already slides, which say so and go to their slide. The
+ * tiles' pictures are drawn on demand in their own region (`highlight-sources`): until they arrive each shimmers.
+ * Home highlights' script sets it up; the page passes it into the screen's Add slide details.
+ * @tier editor
+ * @a11y The kinds are a group of toggles (aria-pressed); the search is a labelled search field; the count line is
+ * polite, so a narrowed list is read out without moving the focus. Each tile is a link to its preview (or to the
+ * slide it already is), named by its name, with its status line as its description.
+ * @key Enter on a tile: previews it, or goes to the slide it already is.
+ */
+import ButtonGroup from '../../components/fundamentals/ButtonGroup.astro';
+import TextField from '../../components/fundamentals/TextField.astro';
+import TileButton from '../../components/fundamentals/TileButton.astro';
+import Image from '../../components/fundamentals/Image.astro';
+import Skeleton from '../../components/fundamentals/Skeleton.astro';
+import Icon from '../../components/fundamentals/Icon.astro';
+import Tag from '../../components/fundamentals/Tag.astro';
+import Text from '../../components/fundamentals/Text.astro';
+import StatusNote from '../kit/StatusNote.astro';
+import PlainList from '../kit/PlainList.astro';
+import { kindLine, shownSources, SLIDE_KIND, SOURCE_KINDS, sourceCounts, sourcesLine, type SourceKind, type SourceTile } from '../model/highlights';
+
+/** A tile's picture: its card-sized file and shape. */
+export interface SourceThumb {
+  /** Its dark mode version's card-sized file, if it has one: shown when the screen is dark. */
+  dark?: { src: string; width: number; height: number };
+  /** The file's address; empty when it couldn't be drawn. */
+  thumb: string;
+  /** Its width, for its shape. */
+  width: number;
+  /** Its height, for its shape. */
+  height: number;
+}
+
+interface Props {
+  /** Every source, in the order shown (`sourceTiles`). */
+  tiles: SourceTile[];
+  /** The kind shown, from the address. */
+  kind: 'all' | SourceKind;
+  /** The search, from the address. */
+  query?: string;
+  /** Each source's picture by its key; left out, the pictures are still to come (each tile shimmers). */
+  thumbs?: Record<string, SourceThumb>;
+}
+
+const { tiles, kind, query = '', thumbs } = Astro.props;
+const counts = sourceCounts(tiles);
+const shown = new Set(shownSources(tiles, kind, query).map((t) => t.key));
+const plural = Object.fromEntries(Object.values(SLIDE_KIND).map((k) => [k.kind, k.plural]));
+const kinds = [{ value: 'all' as const, label: 'All' }, ...SOURCE_KINDS.map((k) => ({ value: k, label: plural[k] as string }))];
+/** A tile's address: its preview, with the kind and search to come back to, or the slide it already is. */
+const hrefOf = (t: SourceTile) =>
+  `?${new URLSearchParams(t.slide ? { slide: t.slide.id } : { slide: 'new', ...(kind !== 'all' ? { kind } : {}), ...(query ? { q: query } : {}), source: t.key })}`;
+---
+
+<div class="slide-sources" data-slide-sources>
+  <div class="finders">
+    <div class="kinds" data-scrollbar="">
+      <ButtonGroup label="Show sources of a kind" options={kinds.map((k) => ({ label: `${k.label} ${counts[k.value]}`, pressed: k.value === kind, attrs: { 'data-source-kind': k.value } }))} />
+    </div>
+    <StatusNote live="off" data-source-kind-line="">{kindLine(kind)}</StatusNote>
+    <TextField label="Find a source" type="search" icon="search" value={query} autocomplete="off" data-source-search="" />
+    <StatusNote data-source-count="">{sourcesLine(shown.size, kind, query)}</StatusNote>
+  </div>
+  <PlainList layout="tiles" gap="md" label="Sources" data-region="highlight-sources" data-sources-pending={thumbs ? undefined : ''}>
+    {
+      tiles.map((t, i) => {
+        const pic = t.media ? thumbs?.[t.key] : undefined;
+        return (
+          <li data-source-tile={t.key} data-kind={t.kind} data-name={t.name} hidden={!shown.has(t.key)}>
+            <TileButton
+              variant="framed"
+              href={hrefOf(t)}
+              aria-labelledby={`source-name-${i}`}
+              aria-describedby={`source-line-${i}`}
+              data-highlight-source={t.slide ? undefined : t.key}
+              data-highlights-go={t.slide?.id}
+            >
+              <span class="picture">
+                {pic?.thumb ? (
+                  <Image src={pic.thumb} dark={pic.dark} alt="" width={pic.width} height={pic.height} ratio="3/2" display="fit" rounded={false} />
+                ) : t.media && !thumbs ? (
+                  <Skeleton shape="block" ratio="3/2" />
+                ) : (
+                  <span class="no-picture"><Icon name={t.icon} size="lg" /></span>
+                )}
+              </span>
+              <span class="name" id={`source-name-${i}`}>{t.name}</span>
+              <Text as="span" variant="small" tone="muted" id={`source-line-${i}`}>{t.line}</Text>
+              {t.slide && <Tag size="sm" tone="accent">Slide {t.slide.place}</Tag>}
+            </TileButton>
+          </li>
+        );
+      })
+    }
+  </PlainList>
+</div>
+
+<style>
+  .slide-sources {
+    display: grid;
+    gap: var(--space-5);
+  }
+
+  .finders {
+    display: grid;
+    gap: var(--space-3);
+  }
+
+  li[hidden] {
+    display: none;
+  }
+
+  /* the toggles scroll sideways where they don't fit (a phone), and never widen the pane; the padding keeps
+     their focus ring and touch area inside the scroller, and the inline margin lines them up with the rest */
+  .kinds {
+    overflow-x: auto;
+    contain: inline-size;
+    padding-block: max(calc(var(--border-focus) + var(--border-focus-offset)), calc((var(--size-touch) - var(--c-control-height-sm)) / 2));
+    padding-inline: calc(var(--border-focus) + var(--border-focus-offset));
+    margin-inline: calc((var(--border-focus) + var(--border-focus-offset)) * -1);
+  }
+
+  .picture {
+    display: block;
+  }
+
+  .no-picture {
+    display: grid;
+    place-items: center;
+    aspect-ratio: 3 / 2;
+    background: var(--color-bg-sunk);
+    color: var(--color-text-muted);
+  }
+
+  .name {
+    overflow: hidden;
+    font: var(--type-label);
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+</style>

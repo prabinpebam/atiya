@@ -6,6 +6,7 @@ import Button from '../../components/fundamentals/Button.astro';
 import Avatar from '../../components/fundamentals/Avatar.astro';
 import Tag from '../../components/fundamentals/Tag.astro';
 import Text from '../../components/fundamentals/Text.astro';
+import ButtonGroup from '../../components/fundamentals/ButtonGroup.astro';
 import { RECOMMENDATIONS } from './samples';
 
 const person = RECOMMENDATIONS[0];
@@ -40,3 +41,18 @@ const person = RECOMMENDATIONS[0];
     <Text variant="ui">The source picker goes here.</Text>
   </DetailPane>
 </Example>
+
+<Example title="A wide child" description="A row wider than the pane scrolls in its own scroller: the pane's single track never grows past its column, so the page doesn't scroll sideways on a phone." layout="block">
+  <DetailPane title="Add slide" titleId="story-detail-wide" line="Choose a kind, then a source.">
+    <div class="demo-wide" data-scrollbar="">
+      <ButtonGroup label="Show sources of a kind" options={['All 12', 'Charts 1', 'Pages 6', 'Albums 2', 'Pictures 3'].map((label, i) => ({ label, pressed: i === 0 }))} />
+    </div>
+  </DetailPane>
+</Example>
+
+<style>
+  .demo-wide {
+    overflow-x: auto;
+    contain: inline-size;
+  }
+</style>

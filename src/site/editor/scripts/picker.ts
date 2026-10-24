@@ -25,14 +25,14 @@ function merge(grid: HTMLElement, next: HTMLElement) {
     if (list) list.append(...[...group.querySelectorAll('ul > li')].map((li) => document.importNode(li, true)));
     else {
       const groups = grid.querySelectorAll('[data-media-group]');
-      const after = groups[groups.length - 1] ?? grid.querySelector('[data-media-preparing], .placeholder, [data-editor-media-found]');
+      const after = groups[groups.length - 1] ?? grid.querySelector('[data-media-preparing], [data-media-placeholder], [data-editor-media-found]');
       const added = document.importNode(group, true);
       if (after) after.after(added);
       else grid.append(added);
     }
   }
   // the shimmer goes with the first cards; the line saying how far it's got is the latest page's (none on the last)
-  grid.querySelector(':scope > .placeholder')?.remove();
+  grid.querySelector(':scope > [data-media-placeholder]')?.remove();
   const line = grid.querySelector('[data-media-preparing]');
   const fresh = next.querySelector('[data-media-preparing]');
   if (line && fresh) line.replaceWith(document.importNode(fresh, true));

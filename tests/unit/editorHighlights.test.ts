@@ -5,7 +5,7 @@ import { randomUUID } from 'node:crypto';
 import { dirname, join } from 'node:path';
 import sharp from 'sharp';
 import { loadContent } from '../../src/site/content/load';
-import { addHighlight, chosenSlide, excerptHighlight, freeChoices, highlightsView, highlightSource, HIGHLIGHT_MAX, HIGHLIGHT_REGIONS, moveHighlight, removeHighlight, settingsLine, SLIDE_KIND, slideIcon, slideLine, type Highlights, type HighlightItem } from '../../src/site/editor/model/highlights';
+import { addHighlight, chosenKind, chosenSlide, chosenSource, excerptHighlight, fixPlace, freeChoices, highlightsView, highlightSource, HIGHLIGHT_MAX, HIGHLIGHT_REGIONS, kindLine, matchesSource, moveHighlight, removeHighlight, settingsLine, shownSources, SLIDE_KIND, slideIcon, slideLine, sourceCounts, sourcesLine, sourceFacts, sourceTiles, type HighlightChoice, type Highlights, type HighlightItem } from '../../src/site/editor/model/highlights';
 import { liveRegions } from '../../src/site/editor/model/live';
 import { regionsAsked, regionsHeader, wants } from '../../src/site/editor/model/regions';
 import { references } from '../../src/site/editor/model/references';
@@ -75,7 +75,7 @@ describe('home highlights curation', () => {
     expect(slideLine(mixed[2], { reason: 'Publish it to show it.' })).toBe('Album · Waiting: Publish it to show it.');
     expect(settingsLine({ ...base(), items: mixed })).toBe('Shown · 4 slides · dots');
     expect(settingsLine({ ...base(), enabled: false, pager: 'filmstrip-wrap', items: [mixed[0]] })).toBe('Hidden · 1 slide · wrapping filmstrip');
-    const choices = mixed.map((item) => ({ key: highlightSource(item), title: item.id, item }));
+    const choices = mixed.map((item) => ({ key: highlightSource(item), title: item.id, name: item.id, item }));
     expect(freeChoices(choices, [mixed[0], mixed[2]]).map((c) => c.item.id)).toEqual(['page', 'image']);
   });
   it('keeps IDs and references through add, order, remove and verbatim excerpt changes without mutating its input', () => {
@@ -229,5 +229,87 @@ describe('home highlights through the versioned store', () => {
     const media = readDoc<Record<string, unknown>>(mediaKey)!;
     expect(await commit({ changes: [{ key: mediaKey, bytes: jsonBytes({ ...media.value, visibility: 'notPublishable' }) }], ifMatch: { [mediaKey]: media.version } })).toMatchObject({ ok: false, status: 422 });
     expect(contentState().generation).toBeGreaterThan(0);
+  });
+});
+
+describe('adding a slide: choosing by seeing (§2.1)', () => {
+  const choice = (item: HighlightItem, name: string, extra: Partial<HighlightChoice> = {}): HighlightChoice => ({ key: highlightSource(item), title: name, name, item, ...extra });
+  const choices: HighlightChoice[] = [
+    choice({ id: 'x', type: 'image', media: 'shared/zebra' }, 'Zebra crossing', { media: 'shared/zebra' }),
+    choice({ id: 'x', type: 'article', article: 'b' }, 'Building a café', { media: 'shared/b-lead' }),
+    choice({ id: 'x', type: 'article', article: 'a' }, 'A draft page', { reason: 'Publish it to show it.' }),
+    choice({ id: 'x', type: 'album', album: 'trip' }, 'A trip', { media: 'shared/cover' }),
+    choice({ id: 'x', type: 'custom', custom: 'github' }, 'A year on GitHub'),
+    choice({ id: 'x', type: 'image', media: 'shared/apple' }, 'Apple tree', { media: 'shared/apple' }),
+  ];
+  const slides: HighlightItem[] = [{ id: 's1', type: 'custom', custom: 'github' }, { id: 's2', type: 'image', media: 'shared/apple' }];
+
+  it('orders ready sources first, then waiting ones, then those already slides; by kind, then by name', () => {
+    const tiles = sourceTiles(choices, slides);
+    expect(tiles.map((t) => t.name)).toEqual(['Building a café', 'A trip', 'Zebra crossing', 'A draft page', 'A year on GitHub', 'Apple tree']);
+    expect(tiles.map((t) => t.status)).toEqual(['ready', 'ready', 'ready', 'waiting', 'added', 'added']);
+    expect(tiles[0]).toMatchObject({ kind: 'page', icon: 'article', media: 'shared/b-lead', line: 'Page · Ready to show' });
+    expect(tiles[3]).toMatchObject({ reason: 'Publish it to show it.', line: 'Page · Waiting: Publish it to show it.' });
+    expect(tiles[4]).toMatchObject({ kind: 'chart', icon: 'github', slide: { id: 's1', place: 1 }, line: 'Chart · Already a slide' });
+    expect(tiles[5]).toMatchObject({ slide: { id: 's2', place: 2 }, line: 'Picture · Already a slide' });
+    expect(tiles[4]).not.toHaveProperty('media');
+  });
+
+  it('counts each kind and all, and reads the kind from the address, else all', () => {
+    expect(sourceCounts(sourceTiles(choices, slides))).toEqual({ all: 6, chart: 1, page: 2, album: 1, picture: 2 });
+    expect(chosenKind('album')).toBe('album');
+    expect(chosenKind('custom')).toBe('all');
+    expect(chosenKind(null)).toBe('all');
+    expect(kindLine('all')).toMatch(/charts, pages, albums and pictures/);
+    expect(kindLine('picture')).toBe(SLIDE_KIND.image.what);
+  });
+
+  it('finds by every word, in any order, ignoring case and accents, within the chosen kind', () => {
+    expect(matchesSource('Building a café', 'CAFE build')).toBe(true);
+    expect(matchesSource('Building a café', 'cafe tea')).toBe(false);
+    expect(matchesSource('Anything', '   ')).toBe(true);
+    const tiles = sourceTiles(choices, slides);
+    expect(shownSources(tiles, 'picture', '').map((t) => t.name)).toEqual(['Zebra crossing', 'Apple tree']);
+    expect(shownSources(tiles, 'all', 'tr a').map((t) => t.name)).toEqual(['A trip', 'Apple tree']);
+  });
+
+  it('says how many are shown, and what to try when none match', () => {
+    expect(sourcesLine(6, 'all', '')).toBe('6 sources.');
+    expect(sourcesLine(1, 'page', '')).toBe('1 page.');
+    expect(sourcesLine(2, 'picture', 'tree')).toBe('2 pictures match “tree”.');
+    expect(sourcesLine(0, 'album', 'zzz')).toBe('No album matches “zzz”. Try another name, or All.');
+    expect(sourcesLine(0, 'all', 'zzz')).toBe('No source matches “zzz”. Try another name.');
+    expect(sourcesLine(0, 'chart', '')).toBe('No charts to show yet.');
+  });
+
+  it('previews only a source that is offered and not already a slide', () => {
+    expect(chosenSource(choices, slides, 'album:trip')?.name).toBe('A trip');
+    expect(chosenSource(choices, slides, 'article:a')?.reason).toMatch(/Publish/);
+    expect(chosenSource(choices, slides, 'custom:github')).toBeNull();
+    expect(chosenSource(choices, slides, 'article:gone')).toBeNull();
+    expect(chosenSource(choices, slides, null)).toBeNull();
+  });
+
+  it('points a waiting source to the screen that puts it right; a chart has none', () => {
+    expect(fixPlace({ id: 'x', type: 'article', article: 'a' })).toEqual({ path: 'articles/a/', label: 'Edit page' });
+    expect(fixPlace({ id: 'x', type: 'album', album: 'trip' })).toEqual({ path: 'albums/trip/', label: 'Edit album' });
+    expect(fixPlace({ id: 'x', type: 'image', media: 'shared/a b' })).toEqual({ path: 'media/?id=shared%2Fa%20b', label: 'Edit picture' });
+    expect(fixPlace({ id: 'x', type: 'custom', custom: 'github' })).toBeNull();
+  });
+
+  it('lists what each kind of slide would use: where it leads, its words, its picture and its place', () => {
+    const detail = (f: { term: string; detail: string }[]) => Object.fromEntries(f.map((x) => [x.term, x.detail]));
+    expect(detail(sourceFacts({ id: 'x', type: 'article', article: 'a' }, { text: 'Sum', href: '/work/a/', media: 'm' }, 3))).toEqual({
+      Kind: 'Page', Opens: 'The page at /work/a/', Words: 'Its title, and its summary or the excerpt below', Picture: 'Its lead picture', Place: 'Slide 3, at the end',
+    });
+    expect(detail(sourceFacts({ id: 'x', type: 'album', album: 't' }, {}, 1))).toMatchObject({ Opens: "The album, once it's placed in a section", Words: 'Its title (it has no summary)', Picture: 'None yet: choose a cover', Place: 'Slide 1' });
+    expect(detail(sourceFacts({ id: 'x', type: 'image', media: 'm' }, { caption: 'At dusk' }, 2))).toMatchObject({ Opens: 'The picture full size', Words: 'Its caption: At dusk', Picture: 'This picture' });
+    expect(detail(sourceFacts({ id: 'x', type: 'custom', custom: 'github' }, {}, 2)).Picture).toBe('None: the chart draws itself');
+  });
+  it('gives every offered source its name and, where it has one, the picture its slide shows', () => {
+    const view = highlightsView(loadContent(docs(), masters));
+    expect(view.choices.find((c) => c.key === 'article:a')).toMatchObject({ name: 'A public page', media: 'shared/page-lead' });
+    expect(view.choices.find((c) => c.key === 'album:trip')).toMatchObject({ name: 'A public album', media: 'shared/album-cover' });
+    expect(view.choices.find((c) => c.key === 'custom:github')).not.toHaveProperty('media');
   });
 });

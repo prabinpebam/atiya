@@ -29,16 +29,15 @@ const select = async (page: Page, label: string, option: string) => {
 };
 const said = async (page: Page, what: string) => expect(status(page)).toContainText(what, { timeout: 30_000 });
 const ids = (page: Page) => rows(page).evaluateAll((elements) => elements.map((e) => (e as HTMLElement).dataset.highlightRow!));
-/** Opens Add slide, chooses the fixture source `key` and adds it; the details then show the new slide. */
-const addSource = async (page: Page, key: string) => {
+/** Opens Add slide, chooses the fixture source `key` by its tile, sees its preview and adds it (with `excerpt` for a page); the details then show the new slide. */
+const addSource = async (page: Page, key: string, excerpt?: string) => {
   const before = await rows(page).count();
   await go(page, 'new').click();
-  await expect(screen(page).locator('[data-highlights-new]')).toBeVisible();
-  const title = await screen(page).locator('[data-highlights-state]').evaluate((element, key) => {
-    return JSON.parse(element.textContent!).choices.find((c: { key: string }) => c.key === key)?.title as string | undefined;
-  }, key);
-  expect(title, `Fixture source ${key} is offered`).toBeTruthy();
-  await select(page, 'Source', title!);
+  await expect(screen(page).locator('[data-slide-sources]')).toBeVisible();
+  await screen(page).locator(`[data-highlight-source="${key}"]`).click();
+  await expect(screen(page).locator(`[data-highlight-preview="${key}"]`)).toBeVisible();
+  await expect(screen(page).locator('[data-highlights-back]')).toBeFocused();
+  if (excerpt !== undefined) await screen(page).getByRole('textbox', { name: 'Page excerpt' }).fill(excerpt);
   await screen(page).locator('[data-highlights-new]').getByRole('button', { name: 'Add slide', exact: true }).click();
   await said(page, 'Added slide');
   await expect(rows(page)).toHaveCount(before + 1);
@@ -74,20 +73,16 @@ test.describe('editor: home highlights', () => {
     await page.goto('/_edit/highlights/');
     await expect(page.getByRole('heading', { level: 1, name: 'Home highlights' })).toBeVisible();
     await expect(page.getByRole('navigation', { name: 'Edit mode' }).getByRole('link', { name: /Home highlights/ })).toHaveCount(1);
-    // empty: the list says so, and the details offer Add slide
+    // empty: the list says so, and the details offer the sources
     await expect(list(page)).toContainText('No slides yet');
-    await expect(screen(page).locator('[data-highlights-new]')).toBeVisible();
+    await expect(screen(page).locator('[data-slide-sources]')).toBeVisible();
     await expect(go(page, 'settings')).toContainText('Shown · 0 slides · dots');
 
     await addSource(page, 'custom:github');
-    await addSource(page, 'article:fixture-album-note');
+    // a page's excerpt is set in its preview, as it's added
+    await addSource(page, 'article:fixture-album-note', 'A few words before the pictures.');
     await expect(rows(page).nth(1)).toContainText('Waiting: Add a lead picture');
-    // a new page slide takes the focus to its excerpt
-    const excerpt = screen(page).getByRole('textbox', { name: 'Page excerpt' });
-    await expect(excerpt).toBeFocused();
-    await excerpt.fill('A few words before the pictures.');
-    await screen(page).getByRole('button', { name: 'Save slide', exact: true }).click();
-    await said(page, 'Saved slide');
+    await expect(screen(page).getByRole('textbox', { name: 'Page excerpt' })).toHaveValue('A few words before the pictures.');
     await addSource(page, 'album:fixture-album');
     await addSource(page, 'image:articles/fixture-album/p02');
     const added = await ids(page);
@@ -146,8 +141,21 @@ test.describe('editor: home highlights', () => {
 
   test('refuses an invented excerpt with failed-save feedback, keeps the input, and saves intentional empty highlights', async ({ page }) => {
     await page.goto('/_edit/highlights/');
-    await addSource(page, 'article:fixture-album-note');
+    // refused as it's added: the preview stays, with what was typed
+    await screen(page).locator('[data-highlight-source="article:fixture-album-note"]').click();
     const excerpt = () => screen(page).getByRole('textbox', { name: 'Page excerpt' });
+    await excerpt().fill('These invented words do not belong to the page.');
+    const refusedAdd = page.waitForResponse((r) => r.url().includes('/_edit/api/highlights') && r.request().method() === 'PUT');
+    await screen(page).getByRole('button', { name: 'Add slide', exact: true }).click();
+    expect((await refusedAdd).status()).toBe(422);
+    await expect(issue(page)).toContainText('word for word');
+    await expect(screen(page).locator('[data-highlight-preview="article:fixture-album-note"]')).toBeVisible();
+    await expect(excerpt()).toHaveValue('These invented words do not belong to the page.');
+    await expect(rows(page)).toHaveCount(0);
+    await excerpt().fill('');
+    await screen(page).getByRole('button', { name: 'Add slide', exact: true }).click();
+    await said(page, 'Added slide');
+    // refused on the slide itself
     await excerpt().fill('These invented words do not belong to the page.');
     const refused = page.waitForResponse((r) => r.url().includes('/_edit/api/highlights') && r.request().method() === 'PUT');
     await screen(page).getByRole('button', { name: 'Save slide' }).click();
@@ -161,7 +169,7 @@ test.describe('editor: home highlights', () => {
     await said(page, 'Saved slide');
     await removeChosen(page);
     await expect(rows(page)).toHaveCount(0);
-    await expect(screen(page).locator('[data-highlights-new]')).toBeVisible();
+    await expect(screen(page).locator('[data-slide-sources]')).toBeVisible();
     await page.reload();
     await expect(rows(page)).toHaveCount(0);
     await expect(list(page)).toContainText('No slides yet');
@@ -307,19 +315,105 @@ test.describe('editor: home highlights', () => {
     await expect(page.locator('h1')).toHaveCount(1);
   });
 
-  test('has no image preload on the screen path and keeps labelled, accessible controls at phone widths in both themes', async ({ page }) => {
+  test('adds by seeing: kinds, search, a preview of each kind, waiting and fixes, a source already a slide, back and reload', async ({ page }) => {
+    // the step's first draw has no picture: they come as their own region after it shows
+    const html = await (await page.request.get('/_edit/highlights/?slide=new')).text();
+    const region = html.slice(html.indexOf('data-region="highlight-sources"'));
+    expect(region.slice(0, region.indexOf('</ul>'))).not.toContain('<img');
+    await page.goto('/_edit/highlights/?slide=new');
+    const sources = screen(page).locator('[data-slide-sources]');
+    await expect.poll(() => sources.locator('[data-region="highlight-sources"]').getAttribute('data-sources-pending')).toBeNull();
+    await expect(sources.locator('img').first()).toBeVisible();
+
+    // a kind narrows the tiles, says what it shows and is kept in the address
+    await sources.locator('[data-source-kind="album"]').click();
+    await expect(sources.locator('[data-source-kind="album"]')).toHaveAttribute('aria-pressed', 'true');
+    await expect(sources.locator('[data-source-kind-line]')).toContainText("An album's cover");
+    await expect(page).toHaveURL(/[?&]kind=album/);
+    const shownKinds = () => sources.locator('[data-source-tile]:not([hidden])').evaluateAll((els) => els.map((e) => (e as HTMLElement).dataset.kind));
+    expect(new Set(await shownKinds())).toEqual(new Set(['album']));
+    // a search narrows by name, and says when nothing matches
+    const search = sources.getByRole('searchbox', { name: 'Find a source' });
+    await search.fill('no such source anywhere');
+    await expect(sources.locator('[data-source-count]')).toContainText('No album matches');
+    const name = await sources.locator('[data-source-tile="album:fixture-album"]').getAttribute('data-name');
+    const word = name!.split(/\s+/)[0];
+    await search.fill(word);
+    await expect(sources.locator('[data-source-tile="album:fixture-album"]')).toBeVisible();
+    await expect(page).toHaveURL(new RegExp(`[?&]q=${encodeURIComponent(word)}`));
+
+    // the album's preview, then Back to the same kind, search and tile
+    await sources.locator('[data-highlight-source="album:fixture-album"]').click();
+    const preview = screen(page).locator('[data-highlight-preview="album:fixture-album"]');
+    await expect(preview).toBeVisible();
+    await expect(preview.locator('.facts')).toContainText('Album');
+    await expect(preview.locator('.stage img')).toBeVisible();
+    await screen(page).locator('[data-highlights-back]').click();
+    await expect(sources.locator('[data-highlight-source="album:fixture-album"]')).toBeFocused();
+    // the pictures arriving keep the focus on that tile
+    await expect.poll(() => sources.locator('[data-region="highlight-sources"]').getAttribute('data-sources-pending')).toBeNull();
+    await expect(sources.locator('[data-highlight-source="album:fixture-album"]')).toBeFocused();
+    // a tile is a link to its preview, named by its name, its status line describing it
+    const tile = sources.getByRole('link', { name: name!, exact: true });
+    await expect(tile).toHaveAttribute('href', /[?&]source=album%3Afixture-album/);
+    await expect(tile).toHaveAccessibleDescription(/Album · /);
+    await expect(page).toHaveURL(/[?&]kind=album/);
+    await expect(sources.getByRole('searchbox', { name: 'Find a source' })).toHaveValue(word);
+    // the browser's back moves between the steps too (Back to sources is a link, so it's an entry of its own)
+    await page.goBack();
+    await expect(preview).toBeVisible();
+    await page.goBack();
+    await expect(sources.locator('[data-source-tile="album:fixture-album"]')).toBeVisible();
+    await expect(page).toHaveURL(/[?&]kind=album/);
+
+    // a waiting page says what it needs and links to fix it
+    await page.goto('/_edit/highlights/?slide=new&source=article:fixture-album-note');
+    const page1 = screen(page).locator('[data-highlight-preview="article:fixture-album-note"]');
+    await expect(page1.locator('.facts')).toContainText('Waiting');
+    await expect(page1.locator('[data-source-waiting]')).toContainText('Add a lead picture');
+    await expect(page1.getByRole('link', { name: 'Edit page' })).toHaveAttribute('href', /\/_edit\/articles\/fixture-album-note\//);
+    // a picture and the chart, each as the home would show it
+    await page.goto('/_edit/highlights/?slide=new&source=image:articles/fixture-album/p02');
+    await expect(screen(page).locator('[data-highlight-preview="image:articles/fixture-album/p02"] .stage img')).toBeVisible();
+    await page.goto('/_edit/highlights/?slide=new&source=custom:github');
+    const chart = screen(page).locator('[data-highlight-preview="custom:github"]');
+    await expect(chart.locator('.facts')).toContainText('Chart');
+    await expect(chart.locator('.stage [data-contributions]')).toHaveCount(1);
+    await chart.getByRole('button', { name: 'Add slide', exact: true }).click();
+    await said(page, 'Added slide');
+    const [github] = await ids(page);
+
+    // a source already a slide goes to that slide
+    await go(page, 'new').click();
+    await screen(page).locator(`[data-source-tile="custom:github"] [data-highlights-go="${github}"]`).click();
+    await expect(page).toHaveURL(new RegExp(`[?&]slide=${github}`));
+    await expect(screen(page).locator('[data-slide-sources]')).toHaveCount(0);
+    await expect(go(page, github)).toHaveAttribute('aria-current', 'true');
+  });
+
+  test('has no image preload on a slide, and keeps labelled, accessible controls at phone widths in both themes on every step', async ({ page }) => {
     await page.setViewportSize({ width: 360, height: 800 });
     await page.goto('/_edit/highlights/');
     await addSource(page, 'article:fixture-album-note');
     await addSource(page, 'album:fixture-album');
     await expect(screen(page).locator('img')).toHaveCount(0);
-    for (const theme of ['light', 'dark']) {
-      await page.evaluate((value) => document.documentElement.dataset.theme = value, theme);
-      // the theme's colour transitions settle before contrast is measured
-      await page.waitForFunction(() => document.getAnimations().every((a) => a.playState !== 'running'));
-      expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
-      const results = await new AxeBuilder({ page }).include('[data-editor-highlights]').analyze();
-      expect(results.violations.filter((v) => v.impact === 'serious' || v.impact === 'critical')).toEqual([]);
-    }
+    const checkBothThemes = async () => {
+      for (const theme of ['light', 'dark']) {
+        await page.evaluate((value) => document.documentElement.dataset.theme = value, theme);
+        // the theme's colour transitions settle before contrast is measured
+        await page.waitForFunction(() => document.getAnimations().every((a) => a.playState !== 'running'));
+        expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+        const results = await new AxeBuilder({ page }).include('[data-editor-highlights]').analyze();
+        expect(results.violations.filter((v) => v.impact === 'serious' || v.impact === 'critical')).toEqual([]);
+      }
+    };
+    await checkBothThemes();
+    // the sources, once their pictures are in, and a preview
+    await page.goto('/_edit/highlights/?slide=new');
+    await expect.poll(() => screen(page).locator('[data-region="highlight-sources"]').getAttribute('data-sources-pending')).toBeNull();
+    await checkBothThemes();
+    await page.goto('/_edit/highlights/?slide=new&source=image:articles/fixture-album/p02');
+    await expect(screen(page).locator('[data-highlight-preview]')).toBeVisible();
+    await checkBothThemes();
   });
 });

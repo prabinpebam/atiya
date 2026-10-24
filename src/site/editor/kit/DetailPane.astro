@@ -48,6 +48,8 @@ const { title, titleId, line, ...rest } = Astro.props;
 <style>
   .detail-pane {
     display: grid;
+    /* one column the pane's width: a wide child (a row of toggles, a long word) scrolls or wraps in it, never widens it */
+    grid-template-columns: minmax(0, 1fr);
     align-content: start;
     gap: var(--space-8);
     min-inline-size: 0;

@@ -1,0 +1,149 @@
+---
+/**
+ * Add slide's second step (documentation/home-views/highlights.md §2.1): one source drawn as the home's carousel
+ * would show it (the carousel's own HighlightCard, or the embedded GitHub chart), with the carousel's settings,
+ * then what it uses (its kind, where it leads, its words, its picture and its place), why it waits and where to put
+ * that right, a page's excerpt, and Add slide. Back to sources keeps the kind and the search. The preview can't be
+ * used (inert): it shows the look; the details say the rest.
+ * @tier editor
+ * @a11y The source's name is a heading; the details are a description list; a waiting source's reason is text with
+ * a named link to fix it; the form is named by the details' heading and a refused add is said in its alert.
+ */
+import Button from '../../components/fundamentals/Button.astro';
+import Heading from '../../components/fundamentals/Heading.astro';
+import HiddenField from '../../components/fundamentals/HiddenField.astro';
+import Icon from '../../components/fundamentals/Icon.astro';
+import Tag from '../../components/fundamentals/Tag.astro';
+import Text from '../../components/fundamentals/Text.astro';
+import TextField from '../../components/fundamentals/TextField.astro';
+import ActionBar from '../../components/compounds/ActionBar.astro';
+import ContributionHero from '../../components/compounds/ContributionHero.astro';
+import HighlightCard from '../../components/compounds/HighlightCard.astro';
+import Form from '../kit/Form.astro';
+import IssueNote from '../kit/IssueNote.astro';
+import { slideIcon, type Highlights, type SlidePreviewData } from '../model/highlights';
+
+interface Props extends SlidePreviewData {
+  /** The carousel's settings, which the preview is drawn with. */
+  settings: Highlights;
+  /** The id of the details' heading, which names the form. */
+  labelledby: string;
+}
+
+const { source, facts, settings, words, picture, pictureFailed, chart, fix, back, labelledby } = Astro.props;
+const missing = pictureFailed ? "The picture couldn't be drawn here. Reload to try again." : source.reason ? 'No picture yet.' : 'No picture to show.';
+---
+
+<div class="slide-preview" data-highlight-preview={source.key}>
+  <div>
+    <Button variant="quiet" size="sm" icon="arrow-left" href={back} data-highlights-go="new" data-highlights-back={source.key}>Back to sources</Button>
+  </div>
+  <Heading level={3} size="h4">{source.name}</Heading>
+  <figure class="frame">
+    <div class="stage" inert>
+      {
+        chart ? (
+          <ContributionHero data={chart} embedded />
+        ) : picture ? (
+          <HighlightCard title={words.title} text={words.text} href={words.href} picture={picture} settings={settings} />
+        ) : (
+          <span class="missing">
+            <Icon name={slideIcon(source.item)} size="lg" />
+            <Text as="span" variant="ui" tone="muted">{missing}</Text>
+          </span>
+        )
+      }
+    </div>
+    <figcaption><Text as="span" variant="small" tone="muted">How the home would show it, with the carousel's settings.</Text></figcaption>
+  </figure>
+  <dl class="facts">
+    <div class="fact">
+      <dt><Text as="span" variant="label">Status</Text></dt>
+      <dd><Tag size="sm" tone={source.reason ? 'highlight' : 'positive'}>{source.reason ? 'Waiting' : 'Ready to show'}</Tag></dd>
+    </div>
+    {
+      facts.map((f) => (
+        <div class="fact">
+          <dt><Text as="span" variant="label">{f.term}</Text></dt>
+          <dd><Text as="span" variant="ui">{f.detail}</Text></dd>
+        </div>
+      ))
+    }
+  </dl>
+  {
+    source.reason && (
+      <div class="waiting" data-source-waiting="">
+        <Icon name="info" tone="tonal" />
+        <Text variant="ui">Waiting: {source.reason} Added now, it keeps its place and shows once that's done.</Text>
+        {fix && <span class="fix"><Button variant="secondary" size="sm" icon="edit" href={fix.href}>{fix.label}</Button></span>}
+      </div>
+    )
+  }
+  <Form gap="lg" data-highlights-new="" labelledby={labelledby}>
+    <HiddenField name="source" value={source.key} />
+    {source.item.type === 'article' && <TextField label="Page excerpt" name="excerpt" multiline optional maxlength={280} hint="Copy up to 280 characters word for word from the page. Leave it empty to use its summary." />}
+    <IssueNote data-editor-form-issue="" />
+    <ActionBar>
+      <Button variant="primary" type="submit" icon="plus">Add slide</Button>
+    </ActionBar>
+  </Form>
+</div>
+
+<style>
+  .slide-preview {
+    display: grid;
+    gap: var(--space-5);
+  }
+
+  .frame {
+    display: grid;
+    gap: var(--space-2);
+    margin: 0;
+  }
+
+  /* room below for the picture's shadow, as the carousel keeps it */
+  .stage {
+    overflow: hidden;
+    padding: var(--space-4) var(--space-4) var(--c-image-shadow-room);
+    border: var(--border-hairline) solid var(--color-border);
+    border-radius: var(--radius-md);
+    background: var(--color-bg);
+  }
+
+  .missing {
+    display: grid;
+    place-items: center;
+    gap: var(--space-2);
+    padding: var(--space-8) var(--space-4);
+    background: var(--color-bg-sunk);
+    color: var(--color-text-muted);
+    text-align: center;
+  }
+
+  .facts {
+    display: grid;
+    grid-template-columns: max-content minmax(0, 1fr);
+    gap: var(--space-3) var(--space-5);
+    margin: 0;
+  }
+
+  .fact {
+    display: contents;
+  }
+
+  dd {
+    margin: 0;
+  }
+
+  .waiting {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    gap: var(--space-2) var(--space-3);
+    align-items: start;
+  }
+
+  .fix {
+    grid-column: 2;
+    justify-self: start;
+  }
+</style>

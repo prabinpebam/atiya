@@ -1,7 +1,9 @@
 ---
 import Example from '../../library/Example.astro';
 import HighlightsManager from '../components/HighlightsManager.astro';
-import { HIGHLIGHTS, HIGHLIGHT_CHOICES, HIGHLIGHT_DETAILS } from './samples';
+import SlideSources from '../components/SlideSources.astro';
+import { sourceTiles } from '../model/highlights';
+import { HIGHLIGHTS, HIGHLIGHT_CHOICES, HIGHLIGHT_DETAILS, SOURCE_THUMBS } from './samples';
 ---
 
 <Example title="A slide chosen" description="The slides in order beside the chosen one: a page with its excerpt, Move up and Move down without dragging, and Remove slide, which never deletes the page." layout="block" bleed>
@@ -10,6 +12,8 @@ import { HIGHLIGHTS, HIGHLIGHT_CHOICES, HIGHLIGHT_DETAILS } from './samples';
 <Example title="Carousel settings" description="Above the rule: whether the carousel shows, its label and how it moves and shows pictures, the same for every slide." layout="block" bleed>
   <HighlightsManager highlights={HIGHLIGHTS} choices={HIGHLIGHT_CHOICES} details={HIGHLIGHT_DETAILS} version="sample" selected="settings" />
 </Example>
-<Example title="Add slide, none yet" description="Hidden and empty: the list says so, and the details offer every public source still free, waiting ones saying why." layout="block" bleed>
-  <HighlightsManager highlights={{ ...HIGHLIGHTS, enabled: false, items: [] }} choices={HIGHLIGHT_CHOICES} details={{}} version={null} selected="new" />
+<Example title="Add slide, none yet" description="Hidden and empty: the list says so, and the details show every public source as a tile to preview, waiting ones saying why." layout="block" bleed>
+  <HighlightsManager highlights={{ ...HIGHLIGHTS, enabled: false, items: [] }} choices={HIGHLIGHT_CHOICES} details={{}} version={null} selected="new">
+    <Fragment slot="new"><SlideSources tiles={sourceTiles(HIGHLIGHT_CHOICES, [])} kind="all" thumbs={SOURCE_THUMBS} /></Fragment>
+  </HighlightsManager>
 </Example>

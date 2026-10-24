@@ -1,0 +1,30 @@
+---
+import Example from '../../library/Example.astro';
+import SlideSources from '../components/SlideSources.astro';
+import { sourceTiles } from '../model/highlights';
+import { HIGHLIGHTS, HIGHLIGHT_CHOICES, SOURCE_THUMBS } from './samples';
+
+const tiles = sourceTiles(HIGHLIGHT_CHOICES, HIGHLIGHTS.items);
+---
+
+<Example title="Every source, with pictures" description="Ready sources first, then waiting ones saying why, then those already slides, which go to their slide. The kinds show their counts; the pond's picture has a dark mode version." layout="block">
+  <SlideSources tiles={tiles} kind="all" thumbs={SOURCE_THUMBS} />
+</Example>
+<Example title="Pictures still to come" description="Drawn at once without the pictures, which shimmer until they arrive in their own region." layout="block">
+  <SlideSources tiles={tiles} kind="all" />
+</Example>
+<Example title="Pages, searched" description="One kind with what it shows, narrowed by a search; the count says how many match." layout="block">
+  <SlideSources tiles={tiles} kind="page" query="workshop" thumbs={SOURCE_THUMBS} />
+</Example>
+<Example title="Charts" description="The GitHub chart, waiting until a public snapshot is saved." layout="block">
+  <SlideSources tiles={tiles} kind="chart" thumbs={SOURCE_THUMBS} />
+</Example>
+<Example title="Albums" description="An album shows its cover; a draft says it waits to be published." layout="block">
+  <SlideSources tiles={tiles} kind="album" thumbs={SOURCE_THUMBS} />
+</Example>
+<Example title="Pictures" description="Single pictures, the one already a slide last." layout="block">
+  <SlideSources tiles={tiles} kind="picture" thumbs={SOURCE_THUMBS} />
+</Example>
+<Example title="Nothing matches" description="A search with no match says so, and what to try." layout="block">
+  <SlideSources tiles={tiles} kind="album" query="zebra" thumbs={SOURCE_THUMBS} />
+</Example>
