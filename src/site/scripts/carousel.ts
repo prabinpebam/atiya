@@ -57,7 +57,7 @@ export function setupCarousel(root: HTMLElement, signal: AbortSignal, tokens: Ca
       else dot.removeAttribute('aria-current');
     });
     slides.forEach((slide, n) => {
-      const body = slide.querySelector<HTMLElement>('.slide-body');
+      const body = slide.querySelector<HTMLElement>('[data-carousel-part="body"]');
       if (body) body.inert = n !== current;
     });
     // a filmstrip that scrolls keeps the frame being shown in view (within itself, not the page)

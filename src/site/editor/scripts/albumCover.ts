@@ -184,7 +184,6 @@ export function initAlbumCover(root: HTMLElement, signal: AbortSignal, host: Cov
       const it = factsOf(t.item);
       const wide = wideOf(album, t.item);
       el.dataset.coverPlace = t.item;
-      el.toggleAttribute('data-chosen', t.item === chosen);
       setRect(el, t);
       const b = el.querySelector<HTMLElement>('[data-cover-tile]')!;
       b.dataset.coverTile = t.item;

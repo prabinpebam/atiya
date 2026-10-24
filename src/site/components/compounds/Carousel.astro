@@ -152,7 +152,7 @@ const shape = `--slide-shape: ${tallest.width} / ${tallest.height}`;
           );
           return (
             <div class="slide" role="group" aria-roledescription="slide" aria-label={`${index + 1} of ${total}`} data-carousel-slide>
-              {content ? <div class="slide-body content"><Fragment set:html={panels[index]} /></div> : <figure class="slide-body">
+              {content ? <div class="slide-body content" data-carousel-part="body"><Fragment set:html={panels[index]} /></div> : <figure class="slide-body" data-carousel-part="body">
                 <div class="slide-frame">
                   {item.video ? (
                     <Video

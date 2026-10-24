@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { ContentError, loadContent, loadContentLeavingOut, type ContentIndex } from '../../src/site/content/load';
-import { checkHighlights, defaultHighlights, highlightCandidates, highlightMedia, highlightState, highlightsFile, HIGHLIGHT_MAX, type HighlightItem } from '../../src/site/content/highlights';
+import { checkHighlights, defaultHighlights, highlightCandidates, highlightMedia, highlightState, highlightsFile, HIGHLIGHT_MAX, visibleHighlights, type HighlightItem } from '../../src/site/content/highlights';
 import { article, album } from '../../src/site/content/schema';
 
 const pic = 'library/picture';
@@ -87,6 +87,14 @@ describe('home highlights contract', () => {
     c.albums.set('album', album.parse({ ...c.albums.get('album'), items: [] }));
     expect(highlightState(c, picks[2]).reason).toMatch(/cover picture/);
     expect(c.highlights!.items.map((i) => i.id)).toEqual(picks.map((i) => i.id));
+  });
+  it('shows only the slides that are ready, in order, and none while turned off', () => {
+    const c = index();
+    // no GitHub snapshot and a draft album: those two wait, the page and the picture show
+    expect(visibleHighlights(c).map((s) => s.item.id)).toEqual(['page', 'picture']);
+    expect(visibleHighlights(c).every((s) => !s.state.reason)).toBe(true);
+    c.highlights = { ...c.highlights!, enabled: false };
+    expect(visibleHighlights(c)).toEqual([]);
   });
   it('does not offer private/unpublishable media or private pages/albums', () => {
     const c = index();

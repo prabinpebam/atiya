@@ -1,7 +1,4 @@
 ---
-import Icon from '../../components/fundamentals/Icon.astro';
-import type { IconName } from '../../design/icons';
-
 /**
  * A row in a list-and-details screen's list (ListPane): a link that shows its details, with its name, lines
  * under it (its address, its kind, its dates), an optional mark before it (icon, or the mark slot: a face)
@@ -11,6 +8,8 @@ import type { IconName } from '../../design/icons';
  * @a11y A link named by everything it shows; the one whose details show is aria-current="true", which its colour follows.
  * @a11y The focus ring is drawn inside the row, so a list that scrolls never clips it.
  */
+import Icon from '../../components/fundamentals/Icon.astro';
+import type { IconName } from '../../design/icons';
 
 interface Props {
   /** Where it goes: its details, by the screen's address (`?grant=…`). */

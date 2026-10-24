@@ -80,7 +80,7 @@ const state = JSON.stringify({ items, listVersion, structureVersion, section: se
         <ListLink href="?rec=place" current={mode === 'place'} name="Where they show" meta={[placeLine]} icon="settings" data-recs-go="place" />
       </Fragment>
       <Fragment slot="add">
-        <Button variant="primary" icon="plus" href="?rec=new" block data-recs-go="new" data-chosen={mode === 'new' ? '' : undefined}>Add recommendation</Button>
+        <Button variant="primary" icon="plus" href="?rec=new" block data-recs-go="new">Add recommendation</Button>
       </Fragment>
       {
         items.length ? (

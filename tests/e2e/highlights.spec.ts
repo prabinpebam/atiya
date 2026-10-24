@@ -52,7 +52,7 @@ test.describe('home highlights', () => {
     await page.keyboard.press('ArrowRight');
     await expect(chart).toHaveAttribute('data-active-date', CONTRIBUTION_SECOND_WEEK);
     await expect(count).toHaveText('1 of 4');
-    expect(await carousel.locator('[data-carousel-slide]').nth(1).locator('.slide-body').evaluate((e) => (e as HTMLElement).inert)).toBe(true);
+    expect(await carousel.locator('[data-carousel-slide]').nth(1).locator('[data-carousel-part="body"]').evaluate((e) => (e as HTMLElement).inert)).toBe(true);
     const before = await carousel.locator('[data-carousel-track]').boundingBox();
     await carousel.locator('[data-carousel-track]').focus();
     await page.keyboard.press('ArrowRight');

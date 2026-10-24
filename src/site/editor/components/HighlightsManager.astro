@@ -61,7 +61,7 @@ const state = JSON.stringify({ highlights: h, version, choices, selected: slide?
           <ListLink href="?slide=settings" current={mode === 'settings'} name="Carousel settings" meta={[settingsLine(h)]} icon="settings" data-highlights-go="settings" />
         </Fragment>
         <Fragment slot="add">
-          <Button variant="primary" icon="plus" href="?slide=new" block disabled={full} data-highlights-go="new" data-chosen={mode === 'new' ? '' : undefined}>Add slide</Button>
+          <Button variant="primary" icon="plus" href="?slide=new" block disabled={full} data-highlights-go="new">Add slide</Button>
           <Text variant="small" tone="muted">{full ? `${count}: remove one to add another.` : count}</Text>
         </Fragment>
         {

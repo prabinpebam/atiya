@@ -2,7 +2,7 @@
  * Home highlights' editor rules: trusted source choices, stable slide IDs and immutable list operations.
  * The content contract owns eligibility and validation; the editor never copies source titles or pictures.
  */
-import { defaultHighlights, highlightCandidates, highlightState, HIGHLIGHT_MAX, type Highlights, type HighlightItem } from '../../content/highlights';
+import { defaultHighlights, highlightCandidates, highlightSource, highlightState, HIGHLIGHT_MAX, type Highlights, type HighlightItem } from '../../content/highlights';
 import type { ContentIndex } from '../../content/load';
 
 export { HIGHLIGHT_MAX };
@@ -33,13 +33,8 @@ export interface HighlightDetail {
   reason?: string;
 }
 
-/** The same source can appear only once, independently of its slide ID. */
-export function highlightSource(item: HighlightItem): string {
-  if (item.type === 'custom') return `custom:${item.custom}`;
-  if (item.type === 'article') return `article:${item.article}`;
-  if (item.type === 'album') return `album:${item.album}`;
-  return `image:${item.media}`;
-}
+/** The same source can appear only once, independently of its slide ID (the content's rule). */
+export { highlightSource };
 
 /** Adds a trusted picker choice without changing any existing slide IDs or mutating the list. */
 export function addHighlight(items: HighlightItem[], choice: HighlightItem, id: string): HighlightItem[] {

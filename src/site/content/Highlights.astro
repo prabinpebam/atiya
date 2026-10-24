@@ -4,7 +4,7 @@ import Carousel, { type CarouselItem } from '../components/compounds/Carousel.as
 import ContributionHero from '../components/compounds/ContributionHero.astro';
 import HighlightCard from '../components/compounds/HighlightCard.astro';
 import { content } from './repository';
-import { defaultHighlights, highlightState, type HighlightItem } from './highlights';
+import { defaultHighlights, visibleHighlights, type HighlightItem } from './highlights';
 import { picture, video, embedPoster, type Picture } from './pictures';
 import { contributionStats } from './github';
 import { withBase } from '../design/meta';
@@ -12,22 +12,18 @@ import { withBase } from '../design/meta';
 const index = content();
 const settings = defaultHighlights(index);
 interface Slide { item: HighlightItem; title: string; text?: string; href?: string; picture?: Picture }
-const slides: Slide[] = settings.enabled ? await Promise.all(settings.items.flatMap((item) => {
-  const state = highlightState(index, item);
-  if (state.reason) return [];
-  return [(async (): Promise<Slide> => {
-    let p: Picture | undefined;
-    if (state.media) {
-      if (index.videos.has(state.media)) {
-        const v = await video(state.media, 'wide');
-        if (v.poster) p = { ...v.poster, alt: v.title, full: v.poster.src, caption: v.caption, bg: '' };
-      }
-      else if (index.embeds.has(state.media)) p = await embedPoster(state.media, 'wide');
-      else p = await picture(state.media, 'wide');
+const slides: Slide[] = await Promise.all(visibleHighlights(index).map(async ({ item, state }): Promise<Slide> => {
+  let p: Picture | undefined;
+  if (state.media) {
+    if (index.videos.has(state.media)) {
+      const v = await video(state.media, 'wide');
+      if (v.poster) p = { ...v.poster, alt: v.title, full: v.poster.src, caption: v.caption, bg: '' };
     }
-    return { item, title: state.title, text: state.text, href: state.href ? withBase(state.href) : undefined, picture: p };
-  })()];
-})) : [];
+    else if (index.embeds.has(state.media)) p = await embedPoster(state.media, 'wide');
+    else p = await picture(state.media, 'wide');
+  }
+  return { item, title: state.title, text: state.text, href: state.href ? withBase(state.href) : undefined, picture: p };
+}));
 const items: CarouselItem[] = slides.map((s) => s.picture ? { ...s.picture, caption: '', alt: s.title } : { src: '', alt: s.title, caption: '', width: 21, height: 9, thumbnailLabel: 'GitHub' });
 ---
 {slides.length > 0 && <Carousel {...settings} items={items} content id="home-highlights">

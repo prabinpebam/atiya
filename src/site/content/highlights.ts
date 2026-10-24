@@ -95,6 +95,13 @@ export function highlightState(index: Index, item: HighlightItem): HighlightStat
   return { title: source.title, text, media, href: route?.path, ...(reason ? { reason } : {}) };
 }
 
+/** The slides the home page shows now: none while turned off, and never one that waits (it has a reason). */
+export function visibleHighlights(index: Index): { item: HighlightItem; state: HighlightState }[] {
+  const settings = defaultHighlights(index);
+  if (!settings.enabled) return [];
+  return settings.items.map((item) => ({ item, state: highlightState(index, item) })).filter(({ state }) => !state.reason);
+}
+
 /** A video's/linked video's poster can stand for an album, never private or unpublishable media. */
 function publicPoster(index: Index, id: string): boolean {
   const m = index.videos.get(id) ?? index.embeds.get(id);

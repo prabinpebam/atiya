@@ -96,8 +96,6 @@ export function initAccessList(root: HTMLElement, signal: AbortSignal) {
       if (a.dataset.accessGo === shownId) a.setAttribute('aria-current', 'true');
       else a.removeAttribute('aria-current');
     }
-    const add = root.querySelector<HTMLElement>('.list-head [data-access-go="new"]');
-    if (add) add.toggleAttribute('data-chosen', shownId === 'new');
   };
   const choose = async (grant: string, push: boolean) => {
     const form = unsavedDetail();

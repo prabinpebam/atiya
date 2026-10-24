@@ -54,7 +54,7 @@ const count = (n: number) => `${n} ${n === 1 ? 'code or link' : 'codes and links
     <Fragment slot="list">
     <ListPane label="Access codes and magic links" scroll="last" data-access-list="">
       <div class="list-head">
-        <Button variant="primary" icon="plus" href="?grant=new" block data-access-go="new" data-chosen={selected === 'new' ? '' : undefined}>Share with someone</Button>
+        <Button variant="primary" icon="plus" href="?grant=new" block data-access-go="new">Share with someone</Button>
         <TextField label="Find someone" type="search" icon="search" hint="By name, organisation, why, notes or what it opens." data-access-find="" />
         <div class="selects">
           <Select label="Show" size="sm" value="all" options={SHOW} data-access-show="" />
