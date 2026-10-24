@@ -43,3 +43,11 @@ export function cssTime(value: string, fallback: number): number {
   if (!Number.isFinite(n)) return fallback;
   return /ms$/.test(v) ? n : /s$/.test(v) ? n * 1000 : n;
 }
+const UNDER_WAY: Record<string, string> = { Saved: 'Saving', Added: 'Adding', Moved: 'Moving', Removed: 'Removing', Deleted: 'Deleting' };
+
+/** A wait's words from what its status says once done: "Moved slide to place 2" is "Moving slide to place 2". */
+export function underWay(done: string): string {
+  const [first, ...rest] = done.split(' ');
+  const verb = UNDER_WAY[first];
+  return verb ? [verb, ...rest].join(' ') : `Saving: ${done}`;
+}

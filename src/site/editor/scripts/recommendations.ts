@@ -8,6 +8,7 @@
  * unsaved.
  */
 import { announce, api, describeIssue, onContentChange, saveStatus, swapRegions, track } from './client';
+import { underWay } from '../model/feedback';
 import { cleanRecommendation, moveRecommendation, recommendationIdFor, removeRecommendation, upsertRecommendation, wantsProfilePhoto, type Recommendation, type RecommendationSettings } from '../model/recommendations';
 
 interface State {
@@ -148,7 +149,7 @@ export function initRecommendations(root: HTMLElement, signal: AbortSignal) {
   /** Saves the whole list; on success `then` runs (its photo), the screen shows `rec`, and the status says what was saved. */
   const saveList = async (items: Recommendation[], what: string, rec: string, focus: string, el?: Element | null, then?: () => Promise<string | void>): Promise<boolean> => {
     saveStatus.saving();
-    const r = await track(`Saving ${what.toLowerCase()}`, { el }, () => api('PUT', 'recommendations', { items, ifMatch: { [state.listKey]: state.listVersion } }));
+    const r = await track(underWay(what), { el }, () => api('PUT', 'recommendations', { items, ifMatch: { [state.listKey]: state.listVersion } }));
     if (!r.ok) {
       saveStatus.failed(`Not saved: ${why(r)}`);
       say(issueOf(form), why(r));
@@ -244,7 +245,7 @@ export function initRecommendations(root: HTMLElement, signal: AbortSignal) {
         // twice: the first press asks, the second deletes
         if (!del.hasAttribute('data-confirm')) {
           del.setAttribute('data-confirm', '');
-          const l = del.querySelector('.label');
+          const l = del.querySelector('[data-button-label]');
           if (l) l.textContent = 'Delete for good';
           return;
         }

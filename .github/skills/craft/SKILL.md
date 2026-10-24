@@ -9,4 +9,4 @@ description: "Use at the start of any product or feature work, and whenever unsu
 
 Read and follow [the canonical `craft` skill](../../../agentic-craft/skills/craft/SKILL.md) from the pinned agentic-craft kit (if it's missing, run `git submodule update --init agentic-craft`). Its own links resolve beside it.
 
-This repository's rules come first: AGENTS.md, "Agent kits", and the documents it names. Here, product intent is each area's spec and plan under `documentation/`. The Craft facts in AGENTS.md name them and this repository's design systems, copy rules and budgets, which win over the kit's generic defaults.
+This repository's rules come first: AGENTS.md, "Agent kits", and the documents it names. Here, product intent is each area's spec and plan under `documentation/`. The Craft facts in AGENTS.md name them and this repository's design systems, copy rules and budgets, which win over the kit's generic defaults. A UI that manages a collection in edit mode starts from the established list-and-details pattern (`documentation/editor/list-and-details.md`), not a new layout.

@@ -1,6 +1,8 @@
 /**
- * Home highlights on the isolated editor fixture: four trusted kinds, options, stable ordering,
- * removal, waiting sources, failed saves and cross-tab version conflicts. Never writes real content.
+ * Home highlights on the isolated editor fixture, a list beside the chosen one's details
+ * (documentation/editor/list-and-details.md): the four trusted kinds, the carousel's settings, stable
+ * ordering, two-press removal, waiting sources, refused saves and cross-tab version conflicts. Every action
+ * saves on its own. Never writes real content.
  */
 import { expect, test, type Page } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
@@ -16,25 +18,44 @@ const base = (): Highlights => ({
 const file = () => join(FIXTURE, 'content', 'highlights.json');
 const saved = (): Highlights => JSON.parse(readFileSync(file(), 'utf8'));
 const screen = (page: Page) => page.locator('[data-editor-highlights]');
-const rows = (page: Page) => screen(page).locator('[data-highlight-row]');
+const list = (page: Page) => screen(page).locator('[data-highlights-list]');
+const rows = (page: Page) => list(page).locator('[data-highlight-row]');
+const go = (page: Page, id: string) => screen(page).locator(`[data-highlights-go="${id}"]`);
 const status = (page: Page) => page.locator('[data-editor-status]');
 const issue = (page: Page) => screen(page).locator('[data-editor-form-issue]');
 const select = async (page: Page, label: string, option: string) => {
   await screen(page).getByRole('combobox', { name: label, exact: true }).click();
   await page.getByRole('option', { name: new RegExp(`^${option.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(?:$|\\s)`) }).click();
 };
+const said = async (page: Page, what: string) => expect(status(page)).toContainText(what, { timeout: 30_000 });
+const ids = (page: Page) => rows(page).evaluateAll((elements) => elements.map((e) => (e as HTMLElement).dataset.highlightRow!));
+/** Opens Add slide, chooses the fixture source `key` and adds it; the details then show the new slide. */
 const addSource = async (page: Page, key: string) => {
+  const before = await rows(page).count();
+  await go(page, 'new').click();
+  await expect(screen(page).locator('[data-highlights-new]')).toBeVisible();
   const title = await screen(page).locator('[data-highlights-state]').evaluate((element, key) => {
     return JSON.parse(element.textContent!).choices.find((c: { key: string }) => c.key === key)?.title as string | undefined;
   }, key);
   expect(title, `Fixture source ${key} is offered`).toBeTruthy();
-  await select(page, 'Add a source', title!);
-  await screen(page).getByRole('button', { name: 'Add slide', exact: true }).click();
+  await select(page, 'Source', title!);
+  await screen(page).locator('[data-highlights-new]').getByRole('button', { name: 'Add slide', exact: true }).click();
+  await said(page, 'Added slide');
+  await expect(rows(page)).toHaveCount(before + 1);
+  await expect(screen(page).locator('[data-highlights-slide]')).toBeVisible();
 };
-const save = async (page: Page) => {
-  await screen(page).getByRole('button', { name: 'Save highlights', exact: true }).click();
-  await expect(status(page)).toContainText('Saved home highlights', { timeout: 30_000 });
-  await expect(screen(page).getByRole('button', { name: 'Save highlights' })).toBeEnabled();
+/** Chooses a slide (or `settings`, `new`) in the list. */
+const choose = async (page: Page, id: string) => {
+  await go(page, id).click();
+  await expect(page).toHaveURL(new RegExp(`[?&]slide=${id}`));
+  await expect(go(page, id)).toHaveAttribute('aria-current', 'true');
+};
+const removeChosen = async (page: Page) => {
+  const remove = screen(page).locator('[data-highlight-remove]');
+  await remove.click();
+  await expect(remove).toHaveText(/Remove for good/);
+  await remove.click();
+  await said(page, 'Removed slide');
 };
 
 test.describe('editor: home highlights', () => {
@@ -49,25 +70,46 @@ test.describe('editor: home highlights', () => {
   });
   test.afterAll(() => reset());
 
-  test('adds every kind, edits settings and verbatim text, orders with buttons, saves, reopens and removes without deleting sources', async ({ page }) => {
+  test('is list and details: adds every kind, saves verbatim text and settings, orders and removes without deleting sources', async ({ page }) => {
     await page.goto('/_edit/highlights/');
     await expect(page.getByRole('heading', { level: 1, name: 'Home highlights' })).toBeVisible();
     await expect(page.getByRole('navigation', { name: 'Edit mode' }).getByRole('link', { name: /Home highlights/ })).toHaveCount(1);
-    await expect(screen(page).getByRole('button', { name: 'Add slide', exact: true })).toBeDisabled();
+    // empty: the list says so, and the details offer Add slide
+    await expect(list(page)).toContainText('No slides yet');
+    await expect(screen(page).locator('[data-highlights-new]')).toBeVisible();
+    await expect(go(page, 'settings')).toContainText('Shown · 0 slides · dots');
+
     await addSource(page, 'custom:github');
-    await expect(screen(page).getByRole('button', { name: 'Add slide', exact: true })).toBeDisabled();
     await addSource(page, 'article:fixture-album-note');
     await expect(rows(page).nth(1)).toContainText('Waiting: Add a lead picture');
-    await rows(page).nth(1).getByRole('textbox', { name: 'Page excerpt' }).fill('A few words before the pictures.');
+    // a new page slide takes the focus to its excerpt
+    const excerpt = screen(page).getByRole('textbox', { name: 'Page excerpt' });
+    await expect(excerpt).toBeFocused();
+    await excerpt.fill('A few words before the pictures.');
+    await screen(page).getByRole('button', { name: 'Save slide', exact: true }).click();
+    await said(page, 'Saved slide');
     await addSource(page, 'album:fixture-album');
     await addSource(page, 'image:articles/fixture-album/p02');
-    const ids = await rows(page).evaluateAll((elements) => elements.map((e) => (e as HTMLElement).dataset.highlightRow));
-    expect(new Set(ids).size).toBe(4);
-    await expect(rows(page).first().getByRole('button', { name: 'Move up', exact: true })).toBeDisabled();
-    await expect(rows(page).last().getByRole('button', { name: 'Move down', exact: true })).toBeDisabled();
-    await rows(page).last().getByRole('button', { name: 'Move up', exact: true }).click();
-    await expect(rows(page).nth(2).getByRole('button', { name: 'Move up', exact: true })).toBeFocused();
-    await rows(page).nth(2).getByRole('button', { name: 'Move up', exact: true }).click();
+    const added = await ids(page);
+    expect(new Set(added).size).toBe(4);
+    // the list's count, and what each slide says it is
+    await expect(list(page)).toContainText('4 of');
+    await expect(rows(page).first()).toContainText('GitHub');
+
+    // ordering in the chosen one's details: the ends are disabled, the focus stays on the move
+    await choose(page, added[0]);
+    await expect(screen(page).getByRole('button', { name: 'Move up', exact: true })).toBeDisabled();
+    await choose(page, added[3]);
+    await expect(screen(page).getByRole('button', { name: 'Move down', exact: true })).toBeDisabled();
+    await screen(page).getByRole('button', { name: 'Move up', exact: true }).click();
+    await said(page, 'Moved slide to place 3');
+    await expect(screen(page).getByRole('button', { name: 'Move up', exact: true })).toBeFocused();
+    await screen(page).getByRole('button', { name: 'Move up', exact: true }).click();
+    await said(page, 'Moved slide to place 2');
+    expect(await ids(page)).toEqual([added[0], added[3], added[1], added[2]]);
+
+    // the carousel's settings are the list's first row
+    await choose(page, 'settings');
     await screen(page).getByRole('textbox', { name: 'Carousel label' }).fill('From the fixture');
     await screen(page).getByRole('switch', { name: 'Show home highlights' }).uncheck();
     await screen(page).getByRole('checkbox', { name: 'Peek at neighbours' }).check();
@@ -77,76 +119,82 @@ test.describe('editor: home highlights', () => {
     await screen(page).getByRole('checkbox', { name: 'Show picture shadow' }).check();
     await select(page, 'Pager', 'Wrapping filmstrip');
     await select(page, 'Picture display', 'Tile');
-    await save(page);
+    await screen(page).getByRole('button', { name: 'Save carousel settings', exact: true }).click();
+    await said(page, 'Saved carousel settings');
     expect(saved()).toMatchObject({
       label: 'From the fixture', enabled: false, peek: true, arrows: false, pager: 'filmstrip-wrap',
       display: 'tile', background: true, rounded: false, shadow: true,
     });
-    expect(saved().items.map((i) => i.id)).toEqual([ids[0], ids[3], ids[1], ids[2]]);
+    expect(saved().items.map((i) => i.id)).toEqual([added[0], added[3], added[1], added[2]]);
     expect(saved().items[2]).toMatchObject({ type: 'article', text: 'A few words before the pictures.' });
-    await page.reload();
+    await expect(go(page, 'settings')).toContainText('Hidden · 4 slides · wrapping filmstrip');
+
+    // reopened by its address
+    await page.goto(`/_edit/highlights/?slide=${added[1]}`);
+    await expect(screen(page).getByRole('textbox', { name: 'Page excerpt' })).toHaveValue('A few words before the pictures.');
+    await page.goto('/_edit/highlights/?slide=settings');
     await expect(screen(page).getByRole('textbox', { name: 'Carousel label' })).toHaveValue('From the fixture');
-    await expect(screen(page).getByRole('switch', { name: 'Show home highlights' })).not.toBeChecked();
     await expect(screen(page).getByRole('combobox', { name: 'Pager', exact: true })).toContainText('Wrapping filmstrip');
-    await expect(rows(page).nth(2).getByRole('textbox', { name: 'Page excerpt' })).toHaveValue('A few words before the pictures.');
-    await rows(page).last().getByRole('button', { name: 'Remove slide', exact: true }).click();
-    await save(page);
-    expect(saved().items).toHaveLength(3);
+
+    // removing takes two presses, chooses the slide that took its place, and never deletes the source
+    await choose(page, added[2]);
+    await removeChosen(page);
+    expect(saved().items.map((i) => i.id)).toEqual([added[0], added[3], added[1]]);
+    await expect(go(page, added[1])).toHaveAttribute('aria-current', 'true');
     expect(JSON.parse(readFileSync(join(FIXTURE, 'content', 'albums', 'fixture-album.json'), 'utf8')).id).toBe('fixture-album');
-    await select(page, 'Pager', 'Filmstrip');
-    await select(page, 'Picture display', 'Fit');
-    await save(page);
-    expect(saved()).toMatchObject({ pager: 'filmstrip', display: 'fit' });
-    await select(page, 'Pager', 'Dots');
-    await select(page, 'Picture display', 'Actual');
-    await save(page);
-    expect(saved()).toMatchObject({ pager: 'dots', display: 'actual', arrows: false });
   });
 
   test('refuses an invented excerpt with failed-save feedback, keeps the input, and saves intentional empty highlights', async ({ page }) => {
     await page.goto('/_edit/highlights/');
     await addSource(page, 'article:fixture-album-note');
-    const excerpt = () => rows(page).first().getByRole('textbox', { name: 'Page excerpt' });
+    const excerpt = () => screen(page).getByRole('textbox', { name: 'Page excerpt' });
     await excerpt().fill('These invented words do not belong to the page.');
     const refused = page.waitForResponse((r) => r.url().includes('/_edit/api/highlights') && r.request().method() === 'PUT');
-    await screen(page).getByRole('button', { name: 'Save highlights' }).click();
+    await screen(page).getByRole('button', { name: 'Save slide' }).click();
     expect((await refused).status()).toBe(422);
     await expect(issue(page)).toContainText('word for word');
     await expect(status(page)).toContainText('Not saved');
     await expect(excerpt()).toHaveValue('These invented words do not belong to the page.');
-    expect(saved().items).toEqual([]);
+    expect(saved().items[0]).not.toHaveProperty('text', 'These invented words do not belong to the page.');
     await excerpt().fill('A few words before the pictures.');
-    await save(page);
-    await rows(page).first().getByRole('button', { name: 'Remove slide' }).click();
-    await save(page);
+    await screen(page).getByRole('button', { name: 'Save slide' }).click();
+    await said(page, 'Saved slide');
+    await removeChosen(page);
+    await expect(rows(page)).toHaveCount(0);
+    await expect(screen(page).locator('[data-highlights-new]')).toBeVisible();
     await page.reload();
     await expect(rows(page)).toHaveCount(0);
-    await expect(screen(page).locator('[data-highlight-empty]')).toBeVisible();
+    await expect(list(page)).toContainText('No slides yet');
     expect(saved()).toMatchObject({ enabled: true, items: [] });
   });
 
   test('preserves dirty input on cross-tab updates and a 409, while clean screens follow changes', async ({ page, context }) => {
-    await page.goto('/_edit/highlights/');
+    await page.goto('/_edit/highlights/?slide=settings');
     const other = await context.newPage();
-    await other.goto('/_edit/highlights/');
-    await screen(other).getByRole('textbox', { name: 'Carousel label' }).fill('A shared change');
-    await save(other);
-    await expect(screen(page).getByRole('textbox', { name: 'Carousel label' })).toHaveValue('A shared change', { timeout: 30_000 });
-    await screen(page).getByRole('textbox', { name: 'Carousel label' }).fill('My unsaved words');
-    await screen(other).getByRole('textbox', { name: 'Carousel label' }).fill('The newer saved words');
-    await save(other);
-    await expect(issue(page)).toContainText('Content changed elsewhere', { timeout: 30_000 });
-    await expect(screen(page).getByRole('textbox', { name: 'Carousel label' })).toHaveValue('My unsaved words');
+    await other.goto('/_edit/highlights/?slide=settings');
+    const label = (p: Page) => screen(p).getByRole('textbox', { name: 'Carousel label' });
+    const saveSettings = async (p: Page) => {
+      await screen(p).getByRole('button', { name: 'Save carousel settings' }).click();
+      await said(p, 'Saved carousel settings');
+    };
+    await label(other).fill('A shared change');
+    await saveSettings(other);
+    await expect(label(page)).toHaveValue('A shared change', { timeout: 30_000 });
+    await label(page).fill('My unsaved words');
+    await label(other).fill('The newer saved words');
+    await saveSettings(other);
+    // a change made elsewhere never draws over what's typed here
+    await page.waitForTimeout(1500);
+    await expect(label(page)).toHaveValue('My unsaved words');
     const conflict = page.waitForResponse((r) => r.url().includes('/_edit/api/highlights') && r.request().method() === 'PUT');
-    await screen(page).getByRole('button', { name: 'Save highlights' }).click();
+    await screen(page).getByRole('button', { name: 'Save carousel settings' }).click();
     expect((await conflict).status()).toBe(409);
-    await expect(issue(page)).toContainText('Your unsaved input is kept');
+    await expect(issue(page)).toContainText('What you typed is kept');
     await expect(status(page)).toContainText('Not saved');
     expect(saved().label).toBe('The newer saved words');
-    await expect(screen(page).getByRole('textbox', { name: 'Carousel label' })).toHaveValue('My unsaved words');
+    await expect(label(page)).toHaveValue('My unsaved words');
     await other.close();
   });
-
   test('resolves real fixture sources on the home page, and hiding, drafts, republication and empty settings leave no stale slides or fallback', async ({ page }) => {
     const content = join(FIXTURE, 'content');
     const read = (name: string) => JSON.parse(readFileSync(join(content, ...name.split('/')), 'utf8'));
@@ -267,6 +315,8 @@ test.describe('editor: home highlights', () => {
     await expect(screen(page).locator('img')).toHaveCount(0);
     for (const theme of ['light', 'dark']) {
       await page.evaluate((value) => document.documentElement.dataset.theme = value, theme);
+      // the theme's colour transitions settle before contrast is measured
+      await page.waitForFunction(() => document.getAnimations().every((a) => a.playState !== 'running'));
       expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
       const results = await new AxeBuilder({ page }).include('[data-editor-highlights]').analyze();
       expect(results.violations.filter((v) => v.impact === 'serious' || v.impact === 'critical')).toEqual([]);

@@ -39,21 +39,20 @@ const { gallery, albums, elsewhere, current, setupHref, tilesHref } = Astro.prop
 ---
 
 <div class="album-list" data-region="album-list" data-album-list data-gallery={gallery?.id}>
-  <ListPane label="Albums" scroll="last">
-    <div class="gallery-entry">
+  <ListPane label="Albums" scroll="rows">
+    <Fragment slot="head">
       <ListLink href={setupHref} current={current === 'gallery'} name={gallery?.title ?? 'Gallery'} meta={[gallery?.line ?? 'No section shows albums yet']} data-album-list-setup="">
         <span slot="mark" class="thumb" data-blank>
           <Icon name="settings" />
         </span>
       </ListLink>
-    </div>
-    <div class="tools">
+    </Fragment>
+    <div slot="add" class="tools">
       <span class="new">
         <Button variant="primary" icon="plus" block data-album-list-new="">New album</Button>
       </span>
       <IconButton label="Show as tiles" icon="views" variant="secondary" href={tilesHref} />
     </div>
-    <div class="albums" data-scrollbar>
       {
         albums.length ? (
           <PlainList as="ol" gap="xs" label={`In ${gallery?.title ?? 'the gallery'}`} data-album-list-rows="">
@@ -98,7 +97,6 @@ const { gallery, albums, elsewhere, current, setupHref, tilesHref } = Astro.prop
           </div>
         )
       }
-    </div>
   </ListPane>
 </div>
 
@@ -114,30 +112,18 @@ const { gallery, albums, elsewhere, current, setupHref, tilesHref } = Astro.prop
     min-inline-size: 0;
   }
 
-  /* the gallery above the rule, then New album staying in view and the albums scrolling under it */
-  .gallery-entry {
-    display: grid;
-    padding: var(--space-3) var(--space-3) var(--space-2);
-    border-block-end: var(--border-hairline) solid var(--color-rule);
-  }
-
+  /* New album beside Show as tiles, in the list's add row */
   .tools {
-    display: flex;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
     align-items: center;
     gap: var(--space-2);
-    padding: var(--space-3) var(--space-3) 0;
   }
 
   .new {
     display: grid;
-    flex: 1;
   }
 
-  .albums {
-    min-block-size: 0;
-    overflow: auto;
-    padding: var(--space-3);
-  }
 
   .album-row {
     display: flex;

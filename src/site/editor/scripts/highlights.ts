@@ -1,188 +1,181 @@
-/** Home highlights' one-save form: optimistic ordering, versioned saves and live updates without losing input. */
-import { announce, api, describeIssue, onContentChange, saveStatus, swapRegions, track } from './client';
-import { addHighlight, excerptHighlight, highlightSource, HighlightEdits, HIGHLIGHT_MAX, moveHighlight, removeHighlight, type Highlights, type HighlightChoice, type HighlightDetail } from '../model/highlights';
+/**
+ * The Home highlights screen (documentation/home-views/highlights.md §2), a list beside the chosen one's details
+ * (documentation/editor/list-and-details.md). Choosing in the list draws the screen again for `?slide=` (a slide,
+ * `new` or `settings`) without a reload. Every action (the carousel's settings, Add slide, a slide's excerpt, Move
+ * up, Move down, Remove slide) saves the whole file with its version (PUT highlights); the status says Saved once
+ * the screen shows it. A refused save keeps what was typed and says why in the form. A change made elsewhere
+ * redraws the screen, unless something here is unsaved.
+ */
+import { api, describeIssue, onContentChange, saveStatus, swapRegions, track } from './client';
+import { underWay } from '../model/feedback';
+import { addHighlight, excerptHighlight, HIGHLIGHT_MAX, moveHighlight, removeHighlight, type Highlights, type HighlightChoice } from '../model/highlights';
 
 interface State {
   highlights: Highlights;
   version: string | null;
   choices: HighlightChoice[];
-  details: Record<string, HighlightDetail>;
+  selected: string;
 }
 
 const KEY = '/content/highlights.json';
 const REGION = 'highlights';
+/** Unsaved changes here, kept across the screen's redraws (each sets the script up again). */
+let unsaved = false;
+let listening = false;
 
-/** Wires a single screen instance; every listener ends when its region is replaced. */
+/** The screen for `slide`, drawn again, then focus on `focus`. */
+async function show(slide: string, opts: { focus?: string; push?: boolean } = {}) {
+  const url = new URL(location.href);
+  url.searchParams.set('slide', slide);
+  if (opts.push) history.pushState(history.state, '', url);
+  else history.replaceState(history.state, '', url);
+  const drawn = await swapRegions([REGION], url.href, () => unsaved);
+  if (drawn && opts.focus) document.querySelector<HTMLElement>(`[data-region="${REGION}"] ${opts.focus}`)?.focus();
+}
+
+const leave = () => !unsaved || confirm('Leave without saving your changes?');
+
 export function initHighlights(root: HTMLElement, signal: AbortSignal) {
   const state = JSON.parse(root.querySelector('[data-highlights-state]')?.textContent ?? '{}') as State;
-  const form = root.querySelector<HTMLFormElement>('[data-highlights-form]')!;
-  const list = root.querySelector<HTMLOListElement>('[data-highlight-list]')!;
-  const issue = root.querySelector<HTMLElement>('[data-editor-form-issue]')!;
-  const add = root.querySelector<HTMLButtonElement>('[data-highlight-add]')!;
-  const submit = form.querySelector<HTMLButtonElement>('[type="submit"]')!;
-  let items = state.highlights.items;
-  const edits = new HighlightEdits();
-  const say = (message: string) => {
-    issue.textContent = message;
-    issue.hidden = !message;
+  const h = state.highlights;
+  const form = root.querySelector<HTMLFormElement>('[data-highlights-settings], [data-highlights-new], [data-highlights-slide]');
+  const issue = form?.querySelector<HTMLElement>('[data-editor-form-issue]');
+  const say = (text: string) => {
+    if (!issue) return;
+    issue.textContent = text;
+    issue.hidden = !text;
   };
-  const changed = () => {
-    edits.change();
-    form.dataset.unsaved = '';
-    say('');
-    saveStatus.dirty('Home highlights');
-  };
-  const field = (name: string) => form.elements.namedItem(name) as HTMLInputElement;
-  const read = (): Highlights => ({
-    ...state.highlights,
-    label: field('label').value,
-    enabled: field('enabled').checked,
-    peek: field('peek').checked,
-    arrows: field('arrows').checked,
-    pager: field('pager').value as Highlights['pager'],
-    display: field('display').value as Highlights['display'],
-    background: field('background').checked,
-    rounded: field('rounded').checked,
-    shadow: field('shadow').checked,
-    items,
-  });
-  const rows = () => [...list.querySelectorAll<HTMLElement>('[data-highlight-row]')];
-  const refresh = () => {
-    const elements = rows();
-    elements.forEach((row, i) => {
-      row.querySelector<HTMLButtonElement>('[data-highlight-move="up"]')!.disabled = i === 0;
-      row.querySelector<HTMLButtonElement>('[data-highlight-move="down"]')!.disabled = i === elements.length - 1;
-    });
-    const source = field('source').value;
-    const chosen = state.choices.find((c) => c.key === source);
-    add.disabled = items.length >= HIGHLIGHT_MAX || !chosen || items.some((i) => highlightSource(i) === chosen.key);
-    root.querySelector('[data-highlight-count]')!.textContent = `${items.length} of ${HIGHLIGHT_MAX} slides`;
-    root.querySelector<HTMLElement>('[data-highlight-empty]')!.hidden = items.length > 0;
-    for (const option of root.querySelectorAll<HTMLElement>('[data-select] [data-option]')) {
-      if (!option.closest('[data-select]')?.querySelector('input[name="source"]')) continue;
-      option.setAttribute('aria-disabled', items.some((i) => highlightSource(i) === option.dataset.value) ? 'true' : 'false');
-    }
-  };
+  const field = (name: string) => form?.elements.namedItem(name) as HTMLInputElement | null;
+  const go = (id: string) => `[data-highlights-go="${id}"]`;
 
-  const append = (choice: HighlightChoice, id: string) => {
-    const template = root.querySelector<HTMLTemplateElement>('[data-highlight-template]')!;
-    const row = template.content.firstElementChild!.cloneNode(true) as HTMLElement;
-    row.dataset.highlightRow = id;
-    row.querySelector('[data-highlight-title]')!.textContent = choice.title;
-    row.querySelector('[data-highlight-reason]')!.textContent = choice.reason ? `Waiting: ${choice.reason}` : 'Ready to show';
-    const wrap = row.querySelector('[data-highlight-excerpt-wrap]')!;
-    if (choice.item.type !== 'article') wrap.remove();
-    else {
-      const oldId = row.querySelector<HTMLTextAreaElement>('textarea')!.id;
-      for (const element of wrap.querySelectorAll<HTMLElement>('[id], [for], [aria-describedby]')) {
-        for (const attr of ['id', 'for', 'aria-describedby']) {
-          const value = element.getAttribute(attr);
-          if (value) element.setAttribute(attr, value.replaceAll(oldId, `highlight-${id}-excerpt`));
-        }
-      }
-      row.querySelector<HTMLTextAreaElement>('textarea')!.name = `excerpt-${id}`;
-    }
-    list.append(row);
-  };
-
-  form.addEventListener('input', (event) => {
-    const target = event.target as HTMLInputElement;
-    const row = target.closest<HTMLElement>('[data-highlight-row]');
-    if (row && target.closest('[data-highlight-excerpt]')) items = excerptHighlight(items, row.dataset.highlightRow!, target.value);
-    changed();
-  }, { signal });
-  form.addEventListener('change', (event) => {
-    if ((event.target as HTMLInputElement).name !== 'source') changed();
-    refresh();
-  }, { signal });
-  root.addEventListener('click', (event) => {
-    const button = (event.target as HTMLElement).closest<HTMLButtonElement>('[data-highlight-add], [data-highlight-move], [data-highlight-remove]');
-    if (!button || button.disabled) return;
-    if (button === add) {
-      const choice = state.choices.find((c) => c.key === field('source').value);
-      if (!choice) return;
-      const id = `slide-${crypto.randomUUID()}`;
-      const next = addHighlight(items, choice.item, id);
-      if (next === items) return;
-      items = next;
-      append(choice, id);
-      refresh();
-      const row = rows().at(-1)!;
-      (row.querySelector<HTMLElement>('textarea') ?? row.querySelector<HTMLElement>('[data-highlight-remove]'))?.focus();
-      announce('Added slide');
-    } else {
-      const row = button.closest<HTMLElement>('[data-highlight-row]')!;
-      const id = row.dataset.highlightRow!;
-      const before = items.findIndex((i) => i.id === id);
-      if (button.hasAttribute('data-highlight-remove')) {
-        items = removeHighlight(items, id);
-        row.remove();
-        refresh();
-        const next = rows()[Math.min(before, items.length - 1)];
-        (next?.querySelector<HTMLElement>('[data-highlight-remove]') ?? root.querySelector<HTMLElement>('[role="combobox"]'))?.focus();
-        announce('Removed slide');
-      } else {
-        const direction = button.dataset.highlightMove === 'up' ? -1 : 1;
-        const next = moveHighlight(items, id, direction);
-        if (next === items) return;
-        items = next;
-        const elements = rows();
-        if (direction === -1) list.insertBefore(row, elements[before - 1]);
-        else list.insertBefore(elements[before + 1], row);
-        refresh();
-        const focus = button.disabled ? row.querySelector<HTMLButtonElement>(`[data-highlight-move="${direction === -1 ? 'down' : 'up'}"]`) : button;
-        focus?.focus();
-        announce(`Moved slide to position ${before + direction + 1}`);
-      }
-    }
-    changed();
-    refresh();
-  }, { signal });
-
-  form.addEventListener('submit', async (event) => {
-    event.preventDefault();
-    if (edits.saving) return;
-    const value = read();
-    const before = edits.begin();
-    submit.disabled = true;
+  /** Saves the whole file; on success the screen shows `slide` with the focus on `focus`, and the status says `what`. */
+  const save = async (next: Highlights, what: string, slide: string, focus: string, el?: Element | null): Promise<boolean> => {
     say('');
     saveStatus.saving();
-    try {
-      const reply = await track('Saving home highlights', { el: root }, () => api('PUT', 'highlights', { highlights: value, ifMatch: { [KEY]: state.version } }));
-      if (!reply.ok) {
-        edits.failed();
-        form.dataset.unsaved = '';
-        const why = (reply.data.issues ?? []).map(describeIssue).join(' ') || 'The highlights could not be saved. Try again.';
-        say(reply.status === 409 ? `${why} Your unsaved input is kept. Reopen this screen to review the saved version before trying again.` : why);
-        saveStatus.failed(`Not saved: ${issue.textContent}`);
-        return;
-      }
-      state.version = reply.data.versions?.[KEY] ?? state.version;
-      edits.saved(before);
-      if (edits.dirty) {
-        saveStatus.dirty('Saved earlier changes; newer home highlights changes are not saved yet');
-        return;
-      }
-      delete form.dataset.unsaved;
-      saveStatus.saved('Saved home highlights');
-      await swapRegions([REGION], location.href, () => edits.dirty, { label: 'Updating home highlights' });
-    } catch {
-      edits.failed();
-      form.dataset.unsaved = '';
-      say('The highlights could not be saved or refreshed. Your input is kept. Check your connection and try again.');
-      saveStatus.failed(issue.textContent!);
-    } finally {
-      edits.end();
-      submit.disabled = false;
+    const r = await track(underWay(what), { el: el ?? form }, () => api('PUT', 'highlights', { highlights: next, ifMatch: { [KEY]: state.version } }));
+    if (!r.ok) {
+      const why = (r.data.issues ?? []).map(describeIssue).join(' ') || "The change wasn't saved. Try again.";
+      say(r.status === 409 ? `${why} What you typed is kept. Reopen this screen to see the newer version before trying again.` : why);
+      saveStatus.failed(`Not saved: ${why}`);
+      return false;
     }
-  }, { signal });
+    unsaved = false;
+    // said once the screen shows it, so nothing chosen meanwhile is redrawn away
+    await show(slide, { focus });
+    saveStatus.saved(what);
+    return true;
+  };
 
+  // ---------- choosing in the list ----------
+  root.addEventListener(
+    'click',
+    (e) => {
+      const link = (e.target as HTMLElement).closest<HTMLAnchorElement>('[data-highlights-go]');
+      if (!link || e.defaultPrevented || (e as MouseEvent).metaKey || (e as MouseEvent).ctrlKey) return;
+      e.preventDefault();
+      if (link.getAttribute('aria-disabled') === 'true' || !leave()) return;
+      unsaved = false;
+      saveStatus.saved();
+      const slide = link.dataset.highlightsGo!;
+      void show(slide, { push: true, focus: slide === 'new' ? '[data-highlights-new] [role="combobox"]' : go(slide) });
+    },
+    { signal },
+  );
+  if (!listening) {
+    listening = true;
+    window.addEventListener('popstate', () => void show(new URL(location.href).searchParams.get('slide') ?? ''));
+  }
+
+  if (!form) return;
+  const changed = () => {
+    unsaved = true;
+    say('');
+    saveStatus.dirty(form.hasAttribute('data-highlights-settings') ? 'Carousel settings' : 'Home highlights');
+  };
+  form.addEventListener('input', changed, { signal });
+  form.addEventListener('change', changed, { signal });
+
+  form.addEventListener(
+    'submit',
+    async (e) => {
+      e.preventDefault();
+      // ---------- the carousel's settings ----------
+      if (form.hasAttribute('data-highlights-settings')) {
+        const checked = (name: string) => !!field(name)?.checked;
+        const next: Highlights = {
+          ...h,
+          enabled: checked('enabled'),
+          label: field('label')?.value ?? h.label,
+          peek: checked('peek'),
+          arrows: checked('arrows'),
+          pager: (field('pager')?.value || h.pager) as Highlights['pager'],
+          display: (field('display')?.value || h.display) as Highlights['display'],
+          background: checked('background'),
+          rounded: checked('rounded'),
+          shadow: checked('shadow'),
+        };
+        await save(next, 'Saved carousel settings', 'settings', 'button[type="submit"]');
+        return;
+      }
+      // ---------- a new slide ----------
+      if (form.hasAttribute('data-highlights-new')) {
+        const choice = state.choices.find((c) => c.key === field('source')?.value);
+        if (!choice) {
+          say('Choose a source to add, then press Add slide.');
+          return;
+        }
+        const id = `slide-${crypto.randomUUID()}`;
+        const items = addHighlight(h.items, choice.item, id);
+        if (items === h.items) {
+          say(h.items.length >= HIGHLIGHT_MAX ? 'The carousel is full. Remove a slide to add another.' : 'That source is already a slide. Choose another.');
+          return;
+        }
+        await save({ ...h, items }, 'Added slide', id, choice.item.type === 'article' ? 'textarea[name="excerpt"]' : go(id));
+        return;
+      }
+      // ---------- a slide's excerpt ----------
+      const id = state.selected;
+      await save({ ...h, items: excerptHighlight(h.items, id, field('excerpt')?.value ?? '') }, 'Saved slide', id, 'button[type="submit"]');
+    },
+    { signal },
+  );
+
+  // ---------- moving and removing the chosen slide ----------
+  root.addEventListener(
+    'click',
+    async (e) => {
+      const t = e.target as HTMLElement;
+      const id = state.selected;
+      const at = h.items.findIndex((i) => i.id === id);
+      if (at < 0) return;
+      const move = t.closest<HTMLButtonElement>('[data-highlight-move]');
+      if (move && !move.disabled) {
+        const by = Number(move.dataset.highlightMove) as 1 | -1;
+        // focus stays on the same move, unless it's now at the end it moved towards (then on the other)
+        const i = at + by;
+        const atEnd = i <= 0 || i >= h.items.length - 1;
+        await save({ ...h, items: moveHighlight(h.items, id, by) }, `Moved slide to place ${i + 1}`, id, `[data-highlight-move="${atEnd ? -by : by}"]`, move);
+        return;
+      }
+      const remove = t.closest<HTMLButtonElement>('[data-highlight-remove]');
+      if (!remove) return;
+      // twice: the first press asks, the second removes (the source itself is never deleted)
+      if (!remove.hasAttribute('data-confirm')) {
+        remove.setAttribute('data-confirm', '');
+        const label = remove.querySelector('[data-button-label]');
+        if (label) label.textContent = 'Remove for good';
+        return;
+      }
+      const rest = removeHighlight(h.items, id);
+      const next = rest[Math.min(at, rest.length - 1)]?.id ?? 'new';
+      await save({ ...h, items: rest }, 'Removed slide', next, next === 'new' ? go('new') : go(next), remove);
+    },
+    { signal },
+  );
+
+  // a change made elsewhere (another tab, a source renamed or published): drawn again unless something here is unsaved
   onContentChange(() => {
-    if (edits.keep) {
-      say('Content changed elsewhere. Your unsaved input is kept; saving may need a review of the newer version.');
-      return;
-    }
-    void swapRegions([REGION], location.href, () => edits.keep, { quiet: true }).catch(() => announce('The highlights could not be refreshed. Reload this screen to try again.', 'negative'));
+    if (unsaved) return;
+    void swapRegions([REGION], location.href, () => unsaved, { quiet: true });
   }, signal);
-  refresh();
 }

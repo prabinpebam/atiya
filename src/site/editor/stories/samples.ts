@@ -44,9 +44,9 @@ export const HIGHLIGHT_CHOICES: HighlightChoice[] = [
 
 /** One waiting slide beside two ready sources. */
 export const HIGHLIGHT_DETAILS: Record<string, HighlightDetail> = {
-  'pond-page': { title: 'Page: A walk round the pond' },
-  'pond-album': { title: 'Album: By the pond', reason: 'Publish it to show it.' },
-  'pond-picture': { title: 'Image: The pond' },
+  'pond-page': { title: 'Page: A walk round the pond', name: 'A walk round the pond' },
+  'pond-album': { title: 'Album: By the pond', name: 'By the pond', reason: 'Publish it to show it.' },
+  'pond-picture': { title: 'Image: The pond', name: 'The pond' },
 };
 
 const pond = sample('pond');

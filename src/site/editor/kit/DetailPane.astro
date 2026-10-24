@@ -1,0 +1,84 @@
+---
+/**
+ * The details column of a list-and-details screen (documentation/editor/list-and-details.md): beside the
+ * ListPane, the chosen item's heading and a line under it, its own actions at the header's end (Move up and Move
+ * down), then its form. A face or picture can lead the heading (the lead slot) and tags follow the line (the tags
+ * slot). It keeps a form's measure however wide the screen is.
+ * @tier kit
+ * @a11y A section named by its heading (aria-labelledby): give the form inside the same id as its labelledby.
+ */
+import Heading from '../../components/fundamentals/Heading.astro';
+import Text from '../../components/fundamentals/Text.astro';
+
+interface Props {
+  /** Its heading: the chosen item's name, the new one's (Add slide) or the screen's settings. */
+  title: string;
+  /** The heading's id, which names the section and the form inside it. */
+  titleId: string;
+  /** A line under the heading: what the item is, or what the screen does here. */
+  line?: string;
+  /** Data attributes pass through to the section (the screen's hooks). */
+  [data: `data-${string}`]: string | undefined;
+}
+
+const { title, titleId, line, ...rest } = Astro.props;
+---
+
+<section class="detail-pane" aria-labelledby={titleId} {...rest}>
+  <header class="detail-head">
+    <div class="detail-who">
+      <slot name="lead" />
+      <div class="detail-title">
+        <Heading level={2} size="h3" id={titleId}>{title}</Heading>
+        {line && <Text variant="ui" tone="muted">{line}</Text>}
+        {
+          Astro.slots.has('tags') && (
+            <div class="detail-tags">
+              <slot name="tags" />
+            </div>
+          )
+        }
+      </div>
+    </div>
+    <slot name="actions" />
+  </header>
+  <slot />
+</section>
+
+<style>
+  .detail-pane {
+    display: grid;
+    align-content: start;
+    gap: var(--space-8);
+    min-inline-size: 0;
+    max-inline-size: var(--size-popout);
+  }
+
+  .detail-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-4);
+  }
+
+  .detail-who {
+    display: flex;
+    align-items: center;
+    gap: var(--space-4);
+    min-inline-size: 0;
+  }
+
+  .detail-title {
+    display: grid;
+    gap: var(--space-1);
+    min-inline-size: 0;
+  }
+
+  /* tags keep their own width, side by side, never stretched to the title's */
+  .detail-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+  }
+</style>

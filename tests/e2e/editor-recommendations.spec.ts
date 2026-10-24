@@ -76,7 +76,7 @@ test.describe('editor: recommendations', () => {
   test('the screen lists them beside the chosen one: adds, edits, hides, orders and deletes them, and turns them on for About', async ({ page }) => {
     await page.goto('/_edit/recommendations/');
     const list = page.getByRole('navigation', { name: 'Recommendations' });
-    const detail = page.locator('[data-editor-recs] .detail');
+    const detail = page.locator('[data-editor-recs] [data-recs-detail]');
     const row = (id: string) => list.locator(`[data-rec-row="${id}"]`);
     const save = (name: string) => detail.getByRole('button', { name, exact: true }).click();
     // with none yet, the details are a new one's form
@@ -104,7 +104,7 @@ test.describe('editor: recommendations', () => {
     await detail.locator('input[name="file"]').setInputFiles(join(process.cwd(), 'public/avatars/skater.webp'));
     await save('Save recommendation');
     await expect(row('test-person-one').locator('img')).toBeVisible({ timeout: 30_000 });
-    await expect(detail.locator('.head img')).toBeVisible();
+    await expect(detail.locator('header img')).toBeVisible();
     expect((recsFile().items[0] as { photo?: string }).photo).toMatch(/^shared\/test-person-one-photo/);
 
     // a link that isn't https is refused in the form, said in words; then hidden

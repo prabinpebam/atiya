@@ -14,7 +14,6 @@ import Button from '../../components/fundamentals/Button.astro';
 import Checkbox from '../../components/fundamentals/Checkbox.astro';
 import FileField from '../../components/fundamentals/FileField.astro';
 import Heading from '../../components/fundamentals/Heading.astro';
-import Icon from '../../components/fundamentals/Icon.astro';
 import Select from '../../components/fundamentals/Select.astro';
 import Switch from '../../components/fundamentals/Switch.astro';
 import Tag from '../../components/fundamentals/Tag.astro';
@@ -26,6 +25,7 @@ import SplitView from '../../components/compounds/SplitView.astro';
 import ActionBar from '../../components/compounds/ActionBar.astro';
 import ListPane from '../kit/ListPane.astro';
 import ListLink from '../kit/ListLink.astro';
+import DetailPane from '../kit/DetailPane.astro';
 import PlainList from '../kit/PlainList.astro';
 import Form from '../kit/Form.astro';
 import IssueNote from '../kit/IssueNote.astro';
@@ -75,57 +75,38 @@ const state = JSON.stringify({ items, listVersion, structureVersion, section: se
 <div class="recs" data-region="recommendations" data-editor-recs>
   <SplitView>
     <Fragment slot="list">
-    <ListPane label="Recommendations" scroll="last" data-recs-list="">
-      <div class="list-head">
-        <ListLink href="?rec=place" current={mode === 'place'} name="Where they show" meta={[placeLine]} data-recs-go="place">
-          <span slot="mark" class="mark">
-            <Icon name="settings" />
-          </span>
-        </ListLink>
-      </div>
-      <div class="add">
+    <ListPane label="Recommendations" scroll="rows" data-recs-list="">
+      <Fragment slot="head">
+        <ListLink href="?rec=place" current={mode === 'place'} name="Where they show" meta={[placeLine]} icon="settings" data-recs-go="place" />
+      </Fragment>
+      <Fragment slot="add">
         <Button variant="primary" icon="plus" href="?rec=new" block data-recs-go="new" data-chosen={mode === 'new' ? '' : undefined}>Add recommendation</Button>
-      </div>
-      <div class="people" data-scrollbar>
-        {
-          items.length ? (
-            <PlainList as="ol" gap="xs">
-              {items.map((r) => (
-                <li data-rec-row={r.id}>
-                  <ListLink href={`?rec=${r.id}`} current={r.id === rec?.id} name={r.name} meta={[r.hidden ? `Hidden · ${r.title}` : r.title]} data-recs-go={r.id}>
-                    <Fragment slot="mark">
-                      <Avatar name={r.name} src={photos[r.id]} size="sm" decorative />
-                    </Fragment>
-                  </ListLink>
-                </li>
-              ))}
-            </PlainList>
-          ) : (
-            <p class="empty">
-              <Text as="span" variant="small" tone="muted">
-                None yet. Add the first: their name, their title, a link to their profile and their words.
-              </Text>
-            </p>
-          )
-        }
-      </div>
+      </Fragment>
+      {
+        items.length ? (
+          <PlainList as="ol" gap="xs">
+            {items.map((r) => (
+              <li data-rec-row={r.id}>
+                <ListLink href={`?rec=${r.id}`} current={r.id === rec?.id} name={r.name} meta={[r.hidden ? `Hidden · ${r.title}` : r.title]} data-recs-go={r.id}>
+                  <Fragment slot="mark">
+                    <Avatar name={r.name} src={photos[r.id]} size="sm" decorative />
+                  </Fragment>
+                </ListLink>
+              </li>
+            ))}
+          </PlainList>
+        ) : (
+          <Text variant="small" tone="muted">
+            None yet. Add the first: their name, their title, a link to their profile and their words.
+          </Text>
+        )
+      }
     </ListPane>
     </Fragment>
 
-    <section class="detail" aria-labelledby="recs-detail-title">
-      {
-        mode === 'place' ? (
-          <div class="pane">
-            <header class="head">
-              <div class="title">
-                <Heading level={2} size="h3" id="recs-detail-title">
-                  Where they show
-                </Heading>
-                <Text variant="ui" tone="muted">
-                  Each section has its own settings: whether it shows them, where among its pages and how.
-                </Text>
-              </div>
-            </header>
+    {
+      mode === 'place' ? (
+        <DetailPane title="Where they show" titleId="recs-detail-title" line="Each section has its own settings: whether it shows them, where among its pages and how." data-recs-detail="">
             {section ? (
               <Form gap="xl" data-recs-place="" labelledby="recs-detail-title">
                 <div class="fields">
@@ -174,48 +155,36 @@ const state = JSON.stringify({ items, listVersion, structureVersion, section: se
                 The site has no sections yet. Add one on the Sections screen first.
               </Text>
             )}
-          </div>
-        ) : (
-          <div class="pane">
-            <header class="head">
-              {rec ? (
-                <Fragment>
-                  <div class="who">
-                    <Avatar name={rec.name} src={photos[rec.id]} size="lg" decorative />
-                    <div class="title">
-                      <Heading level={2} size="h3" id="recs-detail-title">
-                        {rec.name}
-                      </Heading>
-                      <Text variant="ui" tone="muted">
-                        {rec.title}
-                      </Text>
-                      {rec.hidden && (
-                        <span class="tags">
-                          <Tag size="sm">Hidden</Tag>
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                  <ActionBar gap="sm">
-                    <Button variant="secondary" size="sm" icon="arrow-up" disabled={index === 0} data-rec-move="-1">
-                      Move up
-                    </Button>
-                    <Button variant="secondary" size="sm" icon="arrow-down" disabled={index === items.length - 1} data-rec-move="1">
-                      Move down
-                    </Button>
-                  </ActionBar>
-                </Fragment>
-              ) : (
-                <div class="title">
-                  <Heading level={2} size="h3" id="recs-detail-title">
-                    Add recommendation
-                  </Heading>
-                  <Text variant="ui" tone="muted">
-                    What someone you've worked with says about you, with their name, their title and a link to their profile.
-                  </Text>
-                </div>
-              )}
-            </header>
+        </DetailPane>
+      ) : (
+        <DetailPane
+          title={rec ? rec.name : 'Add recommendation'}
+          titleId="recs-detail-title"
+          line={rec ? rec.title : "What someone you've worked with says about you, with their name, their title and a link to their profile."}
+          data-recs-detail=""
+        >
+          {rec && (
+            <Fragment slot="lead">
+              <Avatar name={rec.name} src={photos[rec.id]} size="lg" decorative />
+            </Fragment>
+          )}
+          {rec?.hidden && (
+            <Fragment slot="tags">
+              <Tag size="sm">Hidden</Tag>
+            </Fragment>
+          )}
+          {rec && (
+            <Fragment slot="actions">
+              <ActionBar gap="sm">
+                <Button variant="secondary" size="sm" icon="arrow-up" disabled={index === 0} data-rec-move="-1">
+                  Move up
+                </Button>
+                <Button variant="secondary" size="sm" icon="arrow-down" disabled={index === items.length - 1} data-rec-move="1">
+                  Move down
+                </Button>
+              </ActionBar>
+            </Fragment>
+          )}
             <Form gap="xl" data-recs-form="" labelledby="recs-detail-title">
               <HiddenField name="id" value={rec?.id ?? ''} />
               <section class="part" aria-labelledby="recs-who">
@@ -261,10 +230,9 @@ const state = JSON.stringify({ items, listVersion, structureVersion, section: se
                 )}
               </ActionBar>
             </Form>
-          </div>
-        )
-      }
-    </section>
+        </DetailPane>
+      )
+    }
   </SplitView>
   <script is:inline type="application/json" data-recs-state set:html={state} />
 </div>
@@ -272,74 +240,6 @@ const state = JSON.stringify({ items, listVersion, structureVersion, section: se
 <style>
   .recs {
     min-inline-size: 0;
-  }
-
-  /* the list stays in view: where they show above the rule, then the people's group (Add recommendation on top,
-     staying in view, and the people scrolling under it), beside a long form */
-  .list-head {
-    display: grid;
-    padding: var(--space-3);
-    border-block-end: var(--border-hairline) solid var(--color-rule);
-  }
-
-  .add {
-    display: grid;
-    padding: var(--space-3) var(--space-3) 0;
-  }
-
-  .people {
-    min-block-size: 0;
-    overflow: auto;
-    scrollbar-width: none;
-    padding: var(--space-3);
-  }
-
-  /* the place's icon, as wide as the people's faces under it */
-  .mark {
-    display: grid;
-    place-items: center;
-    inline-size: var(--size-avatar-sm);
-  }
-
-  .empty {
-    margin: 0;
-    padding: var(--space-2);
-  }
-
-  .detail {
-    display: grid;
-    min-inline-size: 0;
-  }
-
-  .pane {
-    display: grid;
-    gap: var(--space-8);
-    max-inline-size: var(--size-popout);
-  }
-
-  .head {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    justify-content: space-between;
-    gap: var(--space-4);
-  }
-
-  .who {
-    display: flex;
-    align-items: center;
-    gap: var(--space-4);
-    min-inline-size: 0;
-  }
-
-  .title {
-    display: grid;
-    gap: var(--space-1);
-    min-inline-size: 0;
-  }
-
-  .tags {
-    display: flex;
   }
 
   .part {
@@ -354,13 +254,6 @@ const state = JSON.stringify({ items, listVersion, structureVersion, section: se
 
   .after[hidden] {
     display: none;
-  }
-
-  /* one column: the list above the details */
-  @media (max-width: 56rem) {
-    .people {
-      max-block-size: var(--c-editor-scope-list);
-    }
   }
 </style>
 

@@ -351,6 +351,15 @@
       "group": "Content and publishing/Edit mode"
     },
     {
+      "path": "editor/list-and-details.md",
+      "title": "Edit mode: list and details",
+      "order": 25.25,
+      "icon": "view_sidebar",
+      "status": "draft",
+      "updated": "2026-10-24",
+      "group": "Content and publishing/Edit mode"
+    },
+    {
       "path": "editor/table-editing.md",
       "title": "Inline table editing",
       "order": 25.3,

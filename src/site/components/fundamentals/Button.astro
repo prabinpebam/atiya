@@ -79,7 +79,7 @@ const end = policy.newTab ? svgOf('external') : iconEnd ? svgOf(iconEnd) : null;
       </svg>
     )
   }
-  <span class="label"><slot /></span>
+  <span class="label" data-button-label><slot /></span>
   {
     end && (
       <svg class="icon end" viewBox={end.viewBox} aria-hidden="true" focusable="false" data-icon={end.name} data-icon-tone={tonal}>

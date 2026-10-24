@@ -11,28 +11,6 @@ export type { Highlights, HighlightItem };
 /** Both the layout's whole-screen live update and this form's own region must render its content. */
 export const HIGHLIGHT_REGIONS = ['screen', 'highlights'] as const;
 
-/** Tracks the saved revision without letting a failed/older save or a cross-tab refresh discard input. */
-export class HighlightEdits {
-  private revision = 0;
-  private savedRevision = 0;
-  /** A request still holds the screen's version and snapshot. */
-  saving = false;
-  /** Something typed or reordered here has not been saved. */
-  get dirty(): boolean { return this.revision !== this.savedRevision; }
-  /** External redraws must keep both unsaved input and a save in flight. */
-  get keep(): boolean { return this.dirty || this.saving; }
-  /** A local input or list change starts another revision. */
-  change(): void { this.revision++; }
-  /** Captures the exact revision sent, while newer changes can still be made. */
-  begin(): number { this.saving = true; return this.revision; }
-  /** Only the sent revision was saved; later typing remains dirty. */
-  saved(revision: number): void { this.savedRevision = revision; }
-  /** A refusal, conflict or network error keeps this screen editable and protected from redraws. */
-  failed(): void { if (!this.dirty) this.change(); }
-  /** Ends the request without changing whether input is saved. */
-  end(): void { this.saving = false; }
-}
-
 /** A public resource offered by the text-only source picker. */
 export interface HighlightChoice {
   /** The source's unique key, not its slide ID. */
@@ -47,8 +25,10 @@ export interface HighlightChoice {
 
 /** One saved pick's current title and eligibility, as the list shows it. */
 export interface HighlightDetail {
-  /** Its current source title. */
+  /** Its current source title, after its kind ("Page: A walk"). */
   title: string;
+  /** Its current source title alone, as the list row names it. */
+  name: string;
   /** Why it waits, if it cannot render now. */
   reason?: string;
 }
@@ -108,7 +88,44 @@ export function highlightsView(index: ContentIndex): { highlights: Highlights; c
   });
   const details = Object.fromEntries(highlights.items.map((item) => {
     const state = highlightState(index, item);
-    return [item.id, { title: `${kind[item.type]}: ${state.title}`, reason: state.reason }];
+    return [item.id, { title: `${kind[item.type]}: ${state.title}`, name: state.title, reason: state.reason }];
   }));
   return { highlights, choices, details };
 }
+
+/** What the details column shows (documentation/editor/list-and-details.md): a slide, `new` or the carousel's `settings`. */
+export type SlideChoice = string;
+
+/** The asked slide if it's saved, else `new` or `settings` as asked, else the first slide, else Add slide. */
+export function chosenSlide(items: readonly { id: string }[], asked: string | null): SlideChoice {
+  if (asked === 'new' || asked === 'settings') return asked;
+  return items.find((i) => i.id === asked)?.id ?? items[0]?.id ?? 'new';
+}
+
+/** Each kind's word and list mark. */
+export const SLIDE_KIND: Record<HighlightItem['type'], { label: string; icon: 'code' | 'article' | 'gallery' | 'image' }> = {
+  custom: { label: 'Custom', icon: 'code' },
+  article: { label: 'Page', icon: 'article' },
+  album: { label: 'Album', icon: 'gallery' },
+  image: { label: 'Picture', icon: 'image' },
+};
+
+/** A slide's list mark: GitHub's own for its chart. */
+export const slideIcon = (item: HighlightItem): 'github' | (typeof SLIDE_KIND)[HighlightItem['type']]['icon'] =>
+  item.type === 'custom' && item.custom === 'github' ? 'github' : SLIDE_KIND[item.type].icon;
+
+/** A slide's line under its name: its kind, and whether it shows or why it waits. */
+export const slideLine = (item: HighlightItem, detail?: { reason?: string }): string =>
+  `${SLIDE_KIND[item.type].label} · ${detail?.reason ? `Waiting: ${detail.reason}` : 'Ready to show'}`;
+
+const PAGER: Record<NonNullable<Highlights['pager']>, string> = { dots: 'dots', filmstrip: 'filmstrip', 'filmstrip-wrap': 'wrapping filmstrip' };
+
+/** The carousel settings row's line: shown or hidden, its slide count and its pager. */
+export function settingsLine(h: Highlights): string {
+  const n = h.items.length;
+  return `${h.enabled ? 'Shown' : 'Hidden'} · ${n} ${n === 1 ? 'slide' : 'slides'} · ${PAGER[h.pager ?? 'dots']}`;
+}
+
+/** The sources Add slide still offers: one place per source. */
+export const freeChoices = (choices: readonly HighlightChoice[], items: readonly HighlightItem[]): HighlightChoice[] =>
+  choices.filter((c) => !items.some((i) => highlightSource(i) === c.key));

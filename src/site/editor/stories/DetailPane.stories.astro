@@ -1,0 +1,42 @@
+---
+import Example from '../../library/Example.astro';
+import DetailPane from '../kit/DetailPane.astro';
+import ActionBar from '../../components/compounds/ActionBar.astro';
+import Button from '../../components/fundamentals/Button.astro';
+import Avatar from '../../components/fundamentals/Avatar.astro';
+import Tag from '../../components/fundamentals/Tag.astro';
+import Text from '../../components/fundamentals/Text.astro';
+import { RECOMMENDATIONS } from './samples';
+
+const person = RECOMMENDATIONS[0];
+---
+
+<Example title="A chosen item" description="Its name and what it is, its own actions at the header's end, then its form." layout="block">
+  <DetailPane title="The pond at dusk" titleId="story-detail-item" line="Page · Ready to show">
+    <Fragment slot="actions">
+      <ActionBar gap="sm">
+        <Button variant="secondary" size="sm" icon="arrow-up" disabled>Move up</Button>
+        <Button variant="secondary" size="sm" icon="arrow-down">Move down</Button>
+      </ActionBar>
+    </Fragment>
+    <Text variant="ui">Slide 1 of 3. Its title and pictures come from its source, so change them there.</Text>
+  </DetailPane>
+</Example>
+
+<Example title="A face and a tag" description="The lead slot puts a face before the heading; the tags slot follows the line." layout="block">
+  <DetailPane title={person.name} titleId="story-detail-person" line={person.title}>
+    <Fragment slot="lead">
+      <Avatar name={person.name} size="lg" decorative />
+    </Fragment>
+    <Fragment slot="tags">
+      <Tag size="sm">Hidden</Tag>
+    </Fragment>
+    <Text variant="ui">Their words, their profile and whether they show.</Text>
+  </DetailPane>
+</Example>
+
+<Example title="Adding one" description="No item yet: the heading names the action, and the line says what to choose." layout="block">
+  <DetailPane title="Add slide" titleId="story-detail-new" line="Choose a public page, album or picture, or your GitHub year.">
+    <Text variant="ui">The source picker goes here.</Text>
+  </DetailPane>
+</Example>

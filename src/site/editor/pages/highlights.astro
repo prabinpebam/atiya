@@ -6,7 +6,7 @@ import ContentIssues from '../components/ContentIssues.astro';
 import { load } from '../server/screens';
 import { readDoc } from '../server/store';
 import { HIGHLIGHTS_KEY } from '../server/highlights';
-import { HIGHLIGHT_REGIONS, highlightsView } from '../model/highlights';
+import { chosenSlide, HIGHLIGHT_REGIONS, highlightsView } from '../model/highlights';
 import { regionsAsked, wants } from '../model/regions';
 
 export const prerender = false;
@@ -14,8 +14,9 @@ const loaded = load();
 const asked = regionsAsked(Astro.request.headers.get('X-Editor-Regions'));
 const view = loaded.ok && wants(asked, ...HIGHLIGHT_REGIONS) ? highlightsView(loaded.index) : null;
 const version = view ? readDoc(HIGHLIGHTS_KEY)?.version ?? null : null;
+const selected = view ? chosenSlide(view.highlights.items, Astro.url.searchParams.get('slide')) : 'new';
 ---
 
-<EditorLayout title="Home highlights" screen="highlights" heading="Home highlights" intro="Choose what the classic home shows below its introduction. Sources stay linked to their pages and pictures. Save here, then save to remote to put the changes on the site.">
-  {view ? <HighlightsManager {...view} version={version} /> : !loaded.ok ? <ContentIssues issues={loaded.issues} /> : null}
+<EditorLayout title="Home highlights" screen="highlights" heading="Home highlights" intro="Choose what the classic home shows below its introduction. Slides stay linked to their pages and pictures. Each change saves here; save to remote to put it on the site.">
+  {view ? <HighlightsManager {...view} version={version} selected={selected} /> : !loaded.ok ? <ContentIssues issues={loaded.issues} /> : null}
 </EditorLayout>

@@ -1,11 +1,15 @@
 ---
 /**
- * The classic home's curated highlights: a public-source picker, ordered slides and the shared carousel's
- * presentation options. Everything saves together; source titles and pictures remain linked, never copied.
+ * The Home highlights screen (documentation/home-views/highlights.md §2), laid out as every collection is in edit
+ * mode (documentation/editor/list-and-details.md): a list on the left, Carousel settings above its rule and the
+ * slides under it (Add slide first, then the slides in order), beside the chosen one's details on the right: a
+ * slide, the new one's source, or the carousel's settings. Sources stay linked, never copied; removing a slide never
+ * deletes its source. The whole is one region, drawn again from the server after every choice and save.
  * @tier editor
- * @a11y Labelled fields, a named ordered list, native move buttons and a live error line. The list never
- * requires dragging; moving or removing a row preserves keyboard focus.
- * @key Move up / Move down: changes a slide's place without dragging.
+ * @a11y The list is a navigation landmark whose current item says so (aria-current); the details are a section
+ * named by its heading; every field is labelled; a refused save is named in a live alert in the form. Ordering
+ * never needs a drag: the details' Move up and Move down keep the focus on the slide moved.
+ * @key Move up / Move down: changes the chosen slide's place without dragging.
  */
 import Button from '../../components/fundamentals/Button.astro';
 import Checkbox from '../../components/fundamentals/Checkbox.astro';
@@ -14,11 +18,15 @@ import Select from '../../components/fundamentals/Select.astro';
 import Switch from '../../components/fundamentals/Switch.astro';
 import Text from '../../components/fundamentals/Text.astro';
 import TextField from '../../components/fundamentals/TextField.astro';
+import SplitView from '../../components/compounds/SplitView.astro';
 import ActionBar from '../../components/compounds/ActionBar.astro';
+import ListPane from '../kit/ListPane.astro';
+import ListLink from '../kit/ListLink.astro';
+import DetailPane from '../kit/DetailPane.astro';
+import PlainList from '../kit/PlainList.astro';
 import Form from '../kit/Form.astro';
 import IssueNote from '../kit/IssueNote.astro';
-import { HIGHLIGHT_MAX, type Highlights, type HighlightChoice, type HighlightDetail } from '../model/highlights';
-import { stableId } from '../../design/stableId';
+import { freeChoices, HIGHLIGHT_MAX, settingsLine, slideIcon, slideLine, type Highlights, type HighlightChoice, type HighlightDetail } from '../model/highlights';
 
 interface Props {
   /** The effective saved configuration (including absent-file compatibility). */
@@ -27,98 +35,139 @@ interface Props {
   version: string | null;
   /** Public resources available to pick, including sources waiting to be published. */
   choices: HighlightChoice[];
-  /** Current source titles and waiting reasons for the saved rows. */
+  /** Current source titles and waiting reasons for the saved slides. */
   details: Record<string, HighlightDetail>;
+  /** What the details show: a slide's ID, `new` (Add slide) or `settings` (the carousel's). */
+  selected: string;
 }
 
-const { highlights: h, version, choices, details } = Astro.props;
-const state = JSON.stringify({ highlights: h, version, choices, details }).replace(/</g, '\\u003c');
-const slidesId = `highlights-slides-${stableId(Astro, 'HighlightsManager')}`;
-const optionsId = `${slidesId}-options`;
+const { highlights: h, version, choices, details, selected } = Astro.props;
+const index = h.items.findIndex((i) => i.id === selected);
+const slide = index >= 0 ? h.items[index] : undefined;
+const mode = selected === 'settings' ? 'settings' : slide ? 'slide' : 'new';
+const detail = slide ? details[slide.id] : undefined;
+const free = freeChoices(choices, h.items);
+const full = h.items.length >= HIGHLIGHT_MAX;
+const count = `${h.items.length} of ${HIGHLIGHT_MAX} slides`;
+const TITLE = 'highlights-detail-title';
+const state = JSON.stringify({ highlights: h, version, choices, selected: slide?.id ?? mode }).replace(/</g, '\\u003c');
 ---
 
-<section class="highlights-manager" data-region="highlights" data-editor-highlights>
-  <Form label="Home highlights" gap="xl" data-highlights-form="">
-    <section class="group" aria-label="Visibility and label">
-      <Switch label="Show home highlights" name="enabled" checked={h.enabled} />
-      <TextField label="Carousel label" name="label" value={h.label} maxlength={80} required />
-    </section>
-    <section class="group" aria-labelledby={slidesId}>
-      <Heading level={2} size="h3" id={slidesId}>Slides</Heading>
-      <Text variant="ui" tone="muted">Choose up to {HIGHLIGHT_MAX} public sources. A waiting source stays in its place until it can be shown. Removing a slide never deletes its source.</Text>
-      <div class="group">
-        <Select label="Add a source" name="source" placeholder="Choose a public source" options={choices.map((c) => ({ value: c.key, label: c.title, description: c.reason ? `Waiting: ${c.reason}` : undefined }))} />
-        <div><Button icon="plus" data-highlight-add="" disabled={h.items.length >= HIGHLIGHT_MAX}>Add slide</Button></div>
-      </div>
-      <p class="count" aria-live="polite" data-highlight-count>{h.items.length} of {HIGHLIGHT_MAX} slides</p>
-      <p class="empty" data-highlight-empty hidden={h.items.length > 0}>No slides. Save to leave the highlights area empty.</p>
-      <ol class="slides" aria-label="Highlight slides" data-highlight-list>
-        {h.items.map((item, i) => (
-          <li class="slide" data-highlight-row={item.id}>
-            <div class="row-head">
-              <strong class="title" data-highlight-title>{details[item.id]?.title ?? 'Highlight'}</strong>
-              <div class="moves">
-                <Button variant="quiet" data-highlight-move="up" disabled={i === 0}>Move up</Button>
-                <Button variant="quiet" data-highlight-move="down" disabled={i === h.items.length - 1}>Move down</Button>
-                <Button variant="quiet" data-highlight-remove="">Remove slide</Button>
-              </div>
-            </div>
-            <p class="eligibility" data-highlight-reason>{details[item.id]?.reason ? `Waiting: ${details[item.id].reason}` : 'Ready to show'}</p>
-            {item.type === 'article' && <TextField label="Page excerpt" name={`excerpt-${item.id}`} value={item.text ?? ''} multiline optional maxlength={280} hint="Copy up to 280 characters verbatim from the page. Leave empty to use its summary." data-highlight-excerpt="" />}
-          </li>
-        ))}
-      </ol>
-    </section>
-    <section class="group" aria-labelledby={optionsId}>
-      <Heading level={2} size="h3" id={optionsId}>Carousel options</Heading>
-      <div class="options">
-        <Checkbox label="Peek at neighbours" name="peek" checked={h.peek} />
-        <Checkbox label="Show arrow buttons" name="arrows" checked={h.arrows} />
-        <Select label="Pager" name="pager" value={h.pager} options={[{ value: 'dots', label: 'Dots' }, { value: 'filmstrip', label: 'Filmstrip' }, { value: 'filmstrip-wrap', label: 'Wrapping filmstrip' }]} />
-        <Select label="Picture display" name="display" value={h.display} options={['fill', 'fit', 'actual', 'tile'].map((value) => ({ value, label: value[0].toUpperCase() + value.slice(1) }))} />
-        <Checkbox label="Use automatic background" name="background" checked={h.background} />
-        <Checkbox label="Round picture corners" name="rounded" checked={h.rounded} />
-        <Checkbox label="Show picture shadow" name="shadow" checked={h.shadow} />
-      </div>
-    </section>
-    <IssueNote data-editor-form-issue="" />
-    <ActionBar><Button type="submit" variant="primary" icon="check">Save highlights</Button></ActionBar>
-  </Form>
-  <template data-highlight-template>
-    <li class="slide" data-highlight-row="">
-      <div class="row-head">
-        <strong class="title" data-highlight-title>Highlight</strong>
-        <div class="moves">
-          <Button variant="quiet" data-highlight-move="up">Move up</Button>
-          <Button variant="quiet" data-highlight-move="down">Move down</Button>
-          <Button variant="quiet" data-highlight-remove="">Remove slide</Button>
-        </div>
-      </div>
-      <p class="eligibility" data-highlight-reason></p>
-      <div data-highlight-excerpt-wrap>
-        <TextField label="Page excerpt" name="excerpt-new" multiline optional maxlength={280} hint="Copy up to 280 characters verbatim from the page. Leave empty to use its summary." data-highlight-excerpt="" />
-      </div>
-    </li>
-  </template>
+<div class="highlights" data-region="highlights" data-editor-highlights>
+  <SplitView>
+    <Fragment slot="list">
+      <ListPane label="Home highlights" scroll="rows" data-highlights-list="">
+        <Fragment slot="head">
+          <ListLink href="?slide=settings" current={mode === 'settings'} name="Carousel settings" meta={[settingsLine(h)]} icon="settings" data-highlights-go="settings" />
+        </Fragment>
+        <Fragment slot="add">
+          <Button variant="primary" icon="plus" href="?slide=new" block disabled={full} data-highlights-go="new" data-chosen={mode === 'new' ? '' : undefined}>Add slide</Button>
+          <Text variant="small" tone="muted">{full ? `${count}: remove one to add another.` : count}</Text>
+        </Fragment>
+        {
+          h.items.length ? (
+            <PlainList as="ol" gap="xs" label="Slides, in order">
+              {h.items.map((item) => (
+                <li data-highlight-row={item.id}>
+                  <ListLink href={`?slide=${item.id}`} current={item.id === slide?.id} name={details[item.id]?.name ?? 'Untitled slide'} meta={[slideLine(item, details[item.id])]} icon={slideIcon(item)} data-highlights-go={item.id} />
+                </li>
+              ))}
+            </PlainList>
+          ) : (
+            <Text variant="small" tone="muted">
+              No slides yet, so the home shows no highlights. Add the first: a page, an album, a picture or your GitHub year.
+            </Text>
+          )
+        }
+      </ListPane>
+    </Fragment>
+
+    {
+      mode === 'settings' ? (
+        <DetailPane title="Carousel settings" titleId={TITLE} line="How the carousel shows on the classic home, the same for every slide.">
+          <Form gap="xl" data-highlights-settings="" labelledby={TITLE}>
+            <section class="part" aria-labelledby="highlights-showing">
+              <Heading level={3} size="h4" id="highlights-showing">Showing</Heading>
+              <Switch label="Show home highlights" name="enabled" checked={h.enabled} />
+              <TextField label="Carousel label" name="label" value={h.label} maxlength={80} required hint="Names the carousel for screen readers." />
+            </section>
+            <section class="part" aria-labelledby="highlights-moving">
+              <Heading level={3} size="h4" id="highlights-moving">Moving between slides</Heading>
+              <Checkbox label="Peek at neighbours" name="peek" checked={h.peek} />
+              <Checkbox label="Show arrow buttons" name="arrows" checked={h.arrows} />
+              <Select label="Pager" name="pager" value={h.pager} options={[{ value: 'dots', label: 'Dots' }, { value: 'filmstrip', label: 'Filmstrip' }, { value: 'filmstrip-wrap', label: 'Wrapping filmstrip' }]} />
+            </section>
+            <section class="part" aria-labelledby="highlights-pictures">
+              <Heading level={3} size="h4" id="highlights-pictures">Pictures</Heading>
+              <Select label="Picture display" name="display" value={h.display} options={['fill', 'fit', 'actual', 'tile'].map((value) => ({ value, label: value[0].toUpperCase() + value.slice(1) }))} />
+              <Checkbox label="Use automatic background" name="background" checked={h.background} />
+              <Checkbox label="Round picture corners" name="rounded" checked={h.rounded} />
+              <Checkbox label="Show picture shadow" name="shadow" checked={h.shadow} />
+            </section>
+            <IssueNote data-editor-form-issue="" />
+            <ActionBar>
+              <Button variant="primary" type="submit">Save carousel settings</Button>
+            </ActionBar>
+          </Form>
+        </DetailPane>
+      ) : slide ? (
+        <DetailPane title={detail?.name ?? 'Untitled slide'} titleId={TITLE} line={slideLine(slide, detail)}>
+          <Fragment slot="actions">
+            <ActionBar gap="sm">
+              <Button variant="secondary" size="sm" icon="arrow-up" disabled={index === 0} data-highlight-move="-1">Move up</Button>
+              <Button variant="secondary" size="sm" icon="arrow-down" disabled={index === h.items.length - 1} data-highlight-move="1">Move down</Button>
+            </ActionBar>
+          </Fragment>
+          <Form gap="xl" data-highlights-slide="" labelledby={TITLE}>
+            <section class="part" aria-labelledby="highlights-source">
+              <Heading level={3} size="h4" id="highlights-source">Source</Heading>
+              <Text variant="ui">Slide {index + 1} of {h.items.length}. Its title and pictures come from its source, so change them there.</Text>
+              {slide.type === 'article' && <TextField label="Page excerpt" name="excerpt" value={slide.text ?? ''} multiline optional maxlength={280} hint="Copy up to 280 characters word for word from the page. Leave it empty to use its summary." />}
+            </section>
+            <IssueNote data-editor-form-issue="" />
+            <ActionBar align={slide.type === 'article' ? 'between' : 'start'}>
+              {slide.type === 'article' && <Button variant="primary" type="submit">Save slide</Button>}
+              <Button variant="quiet" icon="delete" data-highlight-remove="">Remove slide</Button>
+            </ActionBar>
+          </Form>
+        </DetailPane>
+      ) : (
+        <DetailPane title="Add slide" titleId={TITLE} line="Choose a public page, album or picture, or your GitHub year. A waiting source keeps its place until it can be shown.">
+          <Form gap="xl" data-highlights-new="" labelledby={TITLE}>
+            {full ? (
+              <Text variant="ui">The carousel holds up to {HIGHLIGHT_MAX} slides. Remove one to add another.</Text>
+            ) : free.length ? (
+              <Select label="Source" name="source" placeholder="Choose a public source" options={free.map((c) => ({ value: c.key, label: c.title, description: c.reason ? `Waiting: ${c.reason}` : undefined }))} />
+            ) : (
+              <Text variant="ui">Every public source is already a slide.</Text>
+            )}
+            <IssueNote data-editor-form-issue="" />
+            {!full && free.length > 0 && (
+              <ActionBar>
+                <Button variant="primary" type="submit" icon="plus">Add slide</Button>
+              </ActionBar>
+            )}
+          </Form>
+        </DetailPane>
+      )
+    }
+  </SplitView>
   <script is:inline type="application/json" data-highlights-state set:html={state} />
-</section>
+</div>
 
 <style>
-  .highlights-manager { max-inline-size: var(--size-popout); }
-  .group { display: grid; gap: var(--space-4); }
-  .options { display: grid; gap: var(--space-4); }
-  .slides { display: grid; gap: var(--space-4); padding: 0; margin: 0; list-style: none; }
-  .slide { display: grid; gap: var(--space-3); padding: var(--space-4); border: var(--border-hairline) solid var(--color-border); border-radius: var(--radius-md); }
-  .row-head { display: grid; gap: var(--space-3); }
-  .moves { display: flex; flex-wrap: wrap; gap: var(--space-2); }
-  .title { font: var(--type-label); }
-  .count, .eligibility, .empty { margin: 0; color: var(--color-text-muted); font: var(--type-note); }
-  .empty[hidden] { display: none; }
-  .highlights-manager[data-busy='on'] { outline: var(--border-hairline) solid var(--color-accent); }
-</style>
+  .highlights {
+    min-inline-size: 0;
+  }
 
+  .part {
+    display: grid;
+    gap: var(--space-4);
+  }
+</style>
 <script>
   import { each } from '../../scripts/page';
   import { initHighlights } from '../scripts/highlights';
+
   each<HTMLElement>('[data-editor-highlights]', (el, signal) => initHighlights(el, signal));
 </script>

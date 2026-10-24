@@ -11,7 +11,7 @@ import { join } from 'node:path';
 import { changes, filesOf, forgetChanges, parseStatusV2, peekChanges } from '../../src/site/editor/server/git';
 import { ALWAYS, regionsAsked, regionsHeader, wants } from '../../src/site/editor/model/regions';
 import { articleOf, liveRegions, mediaIdOf, pageShows, screenShows } from '../../src/site/editor/model/live';
-import { cssTime, elapsedText, taskLine } from '../../src/site/editor/model/feedback';
+import { cssTime, elapsedText, taskLine, underWay } from '../../src/site/editor/model/feedback';
 import { isStructural, originsOf, renameIndex, renameTree, targetsOf } from '../../src/site/editor/model/optimistic';
 import * as ops from '../../src/site/editor/model/ops';
 import type { Block } from '../../src/site/content/schema';
@@ -160,6 +160,15 @@ describe('never a silent wait: the words (spec §2.2)', () => {
     expect(cssTime(' 300ms', 0)).toBe(300);
     expect(cssTime('2s', 0)).toBe(2000);
     expect(cssTime('', 7)).toBe(7);
+  });
+
+  it('turns what a save says once done into its words while under way', () => {
+    expect(underWay('Saved carousel settings')).toBe('Saving carousel settings');
+    expect(underWay('Moved slide to place 2')).toBe('Moving slide to place 2');
+    expect(underWay('Added Grace’s recommendation')).toBe('Adding Grace’s recommendation');
+    expect(underWay('Removed slide')).toBe('Removing slide');
+    expect(underWay('Deleted a page')).toBe('Deleting a page');
+    expect(underWay('Published')).toBe('Saving: Published');
   });
 });
 

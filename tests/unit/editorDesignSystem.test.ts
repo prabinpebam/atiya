@@ -185,9 +185,36 @@ describe("edit mode: its shared pieces built once (DS2-12)", () => {
       expect(existsSync(join(ROOT, 'src/site/components/compounds', `${name}.astro`)), name).toBe(true);
       expect(existsSync(join(ROOT, 'src/site/stories', `${name}.stories.astro`)), `${name}'s story`).toBe(true);
     }
-    for (const name of ['IssueNote', 'Form', 'FormFoot', 'Panel', 'PanelGrid', 'ListPane', 'ListLink', 'PlainList', 'Grip', 'RichField', 'ChoiceTiles', 'StatusNote', 'Fieldset']) expect(KIT.map(nameOf), name).toContain(name);
+    for (const name of ['IssueNote', 'Form', 'FormFoot', 'Panel', 'PanelGrid', 'ListPane', 'ListLink', 'DetailPane', 'PlainList', 'Grip', 'RichField', 'ChoiceTiles', 'StatusNote', 'Fieldset']) expect(KIT.map(nameOf), name).toContain(name);
     // the Access, Recommendations and Sections screens lay out their list and details with SplitView
     for (const name of ['AccessManager', 'RecommendationsManager', 'SectionManager']) expect(read(join(EDITOR, 'components', `${name}.astro`)), name).toMatch(/<SplitView\b/);
+  });
+
+  // documentation/editor/list-and-details.md: every screen that manages a collection composes the pattern's pieces
+  // own: the list's contents are the screen's (Access: search and filters over groups by state, its details GrantDetails in a slot; Sections: tabs)
+  const MANAGERS: Record<string, { page?: string; details?: boolean; own?: true }> = {
+    AccessManager: { own: true },
+    SectionManager: { own: true },
+    RecommendationsManager: { details: true },
+    HighlightsManager: { details: true },
+    AlbumList: { page: 'albums' },
+  };
+
+  it('every collection screen is list and details: SplitView beside a ListPane of ListLink rows, never its own copy of the layout (list-and-details.md §6)', () => {
+    const named = readdirSync(join(EDITOR, 'components')).filter((f) => /Manager\.astro$/.test(f)).map((f) => f.replace(/\.astro$/, ''));
+    expect(named.filter((n) => !(n in MANAGERS)), 'a new *Manager part goes in MANAGERS, built on the pattern').toEqual([]);
+    for (const [name, { page, details, own }] of Object.entries(MANAGERS)) {
+      const src = read(join(EDITOR, 'components', `${name}.astro`));
+      const layout = page ? read(join(EDITOR, 'pages', `${page}.astro`)) : src;
+      expect(layout, `${name}: SplitView`).toMatch(/<SplitView\b/);
+      expect(src, `${name}: ListPane`).toMatch(/<ListPane\b/);
+      expect(src, `${name}: ListLink rows`).toMatch(/<ListLink\b/);
+      if (details) expect(src, `${name}: DetailPane`).toMatch(/<DetailPane\b/);
+      if (own) continue;
+      const style = src.match(/<style>([\s\S]*?)<\/style>/)?.[1] ?? '';
+      const copied = [...style.matchAll(/^\s*\.(list-head|people|detail|pane|head|who|title|mark)\s*\{/gm)].map((m) => m[1]);
+      expect(copied, `${name} restyles the pattern's anatomy: use ListPane's head and add slots, ListLink's icon and DetailPane`).toEqual([]);
+    }
   });
 
   it("a script finds a shared piece by a data attribute, never by a class the piece doesn't draw", () => {

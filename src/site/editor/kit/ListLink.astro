@@ -1,7 +1,10 @@
 ---
+import Icon from '../../components/fundamentals/Icon.astro';
+import type { IconName } from '../../design/icons';
+
 /**
  * A row in a list-and-details screen's list (ListPane): a link that shows its details, with its name, lines
- * under it (its address, its kind, its dates), an optional mark before it (the mark slot: an icon or a face)
+ * under it (its address, its kind, its dates), an optional mark before it (icon, or the mark slot: a face)
  * and something after it (the end slot: a count). The one whose details show is marked current. Long words are
  * cut short with an ellipsis, so every row keeps one line each.
  * @tier kit
@@ -18,22 +21,30 @@ interface Props {
   name: string;
   /** Lines under its name, each cut short to one line. */
   meta?: string[];
+  /** Its mark, an icon in a box as wide as a small face, so icon rows line up with rows of faces (instead of the mark slot). */
+  icon?: IconName;
   /** How the mark sits beside the words: centred, or on the first line (for rows of several lines). */
   align?: 'center' | 'start';
   /** Data attributes pass through to the link (the screen's hooks: which one it is, a drop target while a drag is over it). */
   [data: `data-${string}`]: string | undefined;
 }
 
-const { href, current = false, name, meta = [], align = 'center', ...rest } = Astro.props;
+const { href, current = false, name, meta = [], icon, align = 'center', ...rest } = Astro.props;
 const mark = Astro.slots.has('mark');
 ---
 
 <a class="list-link" href={href} aria-current={current ? 'true' : undefined} data-align={align} {...rest}>
   {
-    mark && (
-      <span class="list-link-mark">
-        <slot name="mark" />
+    icon ? (
+      <span class="list-link-mark" data-icon-mark>
+        <Icon name={icon} />
       </span>
+    ) : (
+      mark && (
+        <span class="list-link-mark">
+          <slot name="mark" />
+        </span>
+      )
     )
   }
   <span class="words">
@@ -89,6 +100,11 @@ const mark = Astro.slots.has('mark');
   .list-link-mark {
     display: grid;
     flex: none;
+  }
+
+  .list-link-mark[data-icon-mark] {
+    place-items: center;
+    inline-size: var(--size-avatar-sm);
   }
 
   .list-link[data-align='start'] .list-link-mark {

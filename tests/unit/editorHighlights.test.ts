@@ -5,7 +5,7 @@ import { randomUUID } from 'node:crypto';
 import { dirname, join } from 'node:path';
 import sharp from 'sharp';
 import { loadContent } from '../../src/site/content/load';
-import { addHighlight, excerptHighlight, highlightsView, highlightSource, HighlightEdits, HIGHLIGHT_MAX, HIGHLIGHT_REGIONS, moveHighlight, removeHighlight, type Highlights, type HighlightItem } from '../../src/site/editor/model/highlights';
+import { addHighlight, chosenSlide, excerptHighlight, freeChoices, highlightsView, highlightSource, HIGHLIGHT_MAX, HIGHLIGHT_REGIONS, moveHighlight, removeHighlight, settingsLine, slideIcon, slideLine, type Highlights, type HighlightItem } from '../../src/site/editor/model/highlights';
 import { liveRegions } from '../../src/site/editor/model/live';
 import { regionsAsked, regionsHeader, wants } from '../../src/site/editor/model/regions';
 import { references } from '../../src/site/editor/model/references';
@@ -60,36 +60,24 @@ describe('home highlights curation', () => {
     expect(wants(regionsAsked(regionsHeader([])), ...HIGHLIGHT_REGIONS)).toBe(false);
   });
 
-  it('keeps dirty input through cross-tab refreshes, conflicts and saves completing after newer typing', () => {
-    const edits = new HighlightEdits();
-    expect(edits.keep).toBe(false);
-    edits.change();
-    expect(edits.dirty).toBe(true);
-    expect(edits.keep).toBe(true);
-    const sent = edits.begin();
-    edits.change();
-    edits.saved(sent);
-    edits.end();
-    expect(edits.dirty).toBe(true);
-    expect(edits.keep).toBe(true);
-    edits.begin();
-    edits.failed();
-    edits.end();
-    expect(edits.dirty).toBe(true);
-    const retried = edits.begin();
-    edits.saved(retried);
-    expect(edits.dirty).toBe(false);
-    expect(edits.keep).toBe(true);
-    edits.end();
-    expect(edits.keep).toBe(false);
-    // Even a refused first save (with no edits yet) must not be redrawn away.
-    const first = new HighlightEdits();
-    first.begin();
-    first.failed();
-    first.end();
-    expect(first.keep).toBe(true);
+  it('chooses the asked slide, else Add slide or the carousel settings as asked, else the first slide, else Add slide', () => {
+    expect(chosenSlide(mixed, 'album')).toBe('album');
+    expect(chosenSlide(mixed, 'settings')).toBe('settings');
+    expect(chosenSlide(mixed, 'new')).toBe('new');
+    expect(chosenSlide(mixed, 'gone')).toBe('github');
+    expect(chosenSlide(mixed, null)).toBe('github');
+    expect(chosenSlide([], null)).toBe('new');
   });
 
+  it('names each slide by its kind and status, the settings row by what shows, and offers each source once', () => {
+    expect(mixed.map(slideIcon)).toEqual(['github', 'article', 'gallery', 'image']);
+    expect(slideLine(mixed[1])).toBe('Page · Ready to show');
+    expect(slideLine(mixed[2], { reason: 'Publish it to show it.' })).toBe('Album · Waiting: Publish it to show it.');
+    expect(settingsLine({ ...base(), items: mixed })).toBe('Shown · 4 slides · dots');
+    expect(settingsLine({ ...base(), enabled: false, pager: 'filmstrip-wrap', items: [mixed[0]] })).toBe('Hidden · 1 slide · wrapping filmstrip');
+    const choices = mixed.map((item) => ({ key: highlightSource(item), title: item.id, item }));
+    expect(freeChoices(choices, [mixed[0], mixed[2]]).map((c) => c.item.id)).toEqual(['page', 'image']);
+  });
   it('keeps IDs and references through add, order, remove and verbatim excerpt changes without mutating its input', () => {
     const initial = [mixed[0], mixed[1]];
     const withAlbum = addHighlight(initial, mixed[2], 'stable-album');
@@ -124,6 +112,7 @@ describe('home highlights curation', () => {
     index.highlights = { ...base(), enabled: false, items: mixed };
     view = highlightsView(index);
     expect(view.details.page.title).toBe('Page: A public page');
+    expect(view.details.page.name).toBe('A public page');
     expect(view.details.page.reason).toMatch(/Publish/i);
     expect(view.details.github.reason).toMatch(/snapshot/i);
     expect(view.highlights.enabled).toBe(false);

@@ -4,9 +4,12 @@ import HighlightsManager from '../components/HighlightsManager.astro';
 import { HIGHLIGHTS, HIGHLIGHT_CHOICES, HIGHLIGHT_DETAILS } from './samples';
 ---
 
-<Example title="Ordered public sources" description="A page excerpt, a waiting album and a picture. Move buttons work without dragging; sources stay linked." layout="block" bleed>
-  <HighlightsManager highlights={HIGHLIGHTS} choices={HIGHLIGHT_CHOICES} details={HIGHLIGHT_DETAILS} version="sample" />
+<Example title="A slide chosen" description="The slides in order beside the chosen one: a page with its excerpt, Move up and Move down without dragging, and Remove slide, which never deletes the page." layout="block" bleed>
+  <HighlightsManager highlights={HIGHLIGHTS} choices={HIGHLIGHT_CHOICES} details={HIGHLIGHT_DETAILS} version="sample" selected="pond-page" />
 </Example>
-<Example title="Hidden and empty" description="An empty list is deliberate. Hiding highlights keeps the chosen presentation options." layout="block" bleed>
-  <HighlightsManager highlights={{ ...HIGHLIGHTS, enabled: false, items: [] }} choices={HIGHLIGHT_CHOICES} details={{}} version={null} />
+<Example title="Carousel settings" description="Above the rule: whether the carousel shows, its label and how it moves and shows pictures, the same for every slide." layout="block" bleed>
+  <HighlightsManager highlights={HIGHLIGHTS} choices={HIGHLIGHT_CHOICES} details={HIGHLIGHT_DETAILS} version="sample" selected="settings" />
+</Example>
+<Example title="Add slide, none yet" description="Hidden and empty: the list says so, and the details offer every public source still free, waiting ones saying why." layout="block" bleed>
+  <HighlightsManager highlights={{ ...HIGHLIGHTS, enabled: false, items: [] }} choices={HIGHLIGHT_CHOICES} details={{}} version={null} selected="new" />
 </Example>

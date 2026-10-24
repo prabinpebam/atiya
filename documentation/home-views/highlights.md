@@ -19,12 +19,12 @@ Custom means an engine-owned renderer from a trusted catalogue, with GitHub the 
 
 ## 2. Owner configuration
 
-Edit mode gains **Home highlights**, reachable from its navigation and action centre. It offers:
+Edit mode gains **Home highlights**, reachable from its navigation and action centre. It's a [list and details](../editor/list-and-details.md) screen, like Sections and Recommendations: the list holds **Carousel settings** above a rule, then **Add slide** and the slides in order (each with its kind and whether it's ready or waiting, and why); the details show what's chosen (`?slide=<id>`, `settings` or `new`). Each action saves on its own. It offers:
 
 1. Show/hide the highlights area and name the carousel.
 2. Add a GitHub, page, album or image slide by selecting an existing resource. Only public resources are offered. No made-up content is added.
 3. Choose a page excerpt (optional, at most 280 characters, found in the article's own plain text); leaving it empty uses the article's summary. Titles and pictures stay linked to the source rather than copied.
-4. Reorder with Move up/Move down buttons, and remove a slide without deleting its source.
+4. Reorder with Move up/Move down buttons in a slide's details, and remove a slide (two presses) without deleting its source.
 5. Set **Peek**, previous/next **buttons**, and pager **dots**, **filmstrip** or **wrapping filmstrip**. Dots-only is buttons off and dots selected. Picture display (fill, fit, actual, tile), automatic background, rounded corners and shadow use the article carousel's existing options.
 6. Save through the versioned content store, with the standard busy and saved/failed feedback. Conflicts preserve unsaved input. Other open screens and the preview hear changes.
 
@@ -93,9 +93,9 @@ Built locally on `feature/home-highlights-carousel`. The owner configuration con
 |---|---|
 | HC1, HC2 | `highlights.test.ts`, `editorHighlights.test.ts`: all item kinds/options, exact maximum, duplicate IDs/sources, verbatim excerpts, missing/private sources, delete/access transitions, derived media usage, alt text and degraded dev loading. The actual fixture home excludes draft pages/albums, restores them on republish, and hides empty/disabled highlights without bringing back the planet picture. |
 | HC3, HC4 | Twelve public browser cases passed across `highlights.spec.ts`, `contributions.spec.ts` and the affected `site.spec.ts` carousel cases. The mixed story uses the existing article carousel; the editor fixture checks repository-resolved lead/cover, exact excerpt, canonical links and the full-image lightbox. |
-| HC5 | Five `editor-highlights.spec.ts` cases passed: add all four kinds, settings, excerpt, order/remove, save/reopen, failed validation, clean cross-tab updates, dirty input/version conflicts, public resolution and no image preload. |
+| HC5 | Rebuilt as list and details on 24 October 2026 ([list and details](../editor/list-and-details.md)): the carousel settings, Add slide and the slides in the list, the chosen one in the details, every action saved on its own. Five `editor-highlights.spec.ts` cases passed on the rebuilt screen: add all four kinds, the excerpt, Move up and Move down with the ends disabled and the focus kept, settings, reopen by address, the two-press remove choosing the slide that took its place, a refused excerpt keeping its words, clean cross-tab updates, dirty input kept through a 409, public resolution, no image on the screen, axe in both themes at 360 px. |
 | HC6 | Existing GitHub touch/tumble and reduced-motion tests passed inside the new home carousel; nested chart keys do not change slides, focused track keys do, and offscreen contents are inert. Axe passes in both themes, with public reflow at 320 px and editor reflow at 390 px. |
-| HC7 | The four affected visual groups passed during intentional baseline capture. All 38 added/changed images were reviewed: mixed carousel, cards and editor parts in both themes, including phone; only the two home phone baselines changed. Existing carousel examples retained their order and baselines. |
+| HC7 | The rebuild (24 October 2026) updated, on purpose, the HighlightsManager, RecommendationsManager, AlbumList, ListPane, ListLink and DetailPane story baselines; each was reviewed in both themes. Before it, the four affected visual groups passed during intentional baseline capture. All 38 added/changed images were reviewed: mixed carousel, cards and editor parts in both themes, including phone; only the two home phone baselines changed. Existing carousel examples retained their order and baselines. |
 | HC8 | 677 affected unit tests passed; the full Astro type check passed with existing hints only. `build-parity.mjs` passed both production builds, bundle budgets and sealed-output leak checks: 1,465 identical files, matching sealed shapes, only the expected docs difference. Landing eager JavaScript is 16.6 KB gzip; game/gate budgets remain unchanged. |
 | HC9 | This page, the content model and editor screen catalogue describe the implementation. No dependency or live service call was added. The work remains local. |
 

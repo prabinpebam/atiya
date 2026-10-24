@@ -1,12 +1,14 @@
 ---
 /**
- * The list column of a list-and-details screen (SplitView's list slot: the Sections, Recommendations and
- * Access screens): a raised, ruled panel that stays in view under the top bar while a long form beside it
- * scrolls. Taller than the window, either the whole panel scrolls, or only its last part does, its tools
- * staying on top. Under 56 rem, above the details, it runs as long as it needs.
+ * The list column of a list-and-details screen (documentation/editor/list-and-details.md; SplitView's list slot:
+ * the Sections, Recommendations, Access and Home highlights screens): a raised, ruled panel that stays in view
+ * under the top bar while a long form beside it scrolls. Taller than the window, either the whole panel scrolls,
+ * or only its last part does, its tools staying on top. With scroll="rows" it draws the pattern's parts itself:
+ * the screen-wide settings row above a rule (the head slot), the Add action (the add slot) and the rows (the
+ * default slot), which alone scroll. Under 56 rem, above the details, it runs as long as it needs (its rows capped).
  * @tier kit
  * @a11y A navigation landmark named by its label when its links show the details (as="nav"); a plain group otherwise.
- * @a11y What scrolls carries data-scrollbar (the overlay handle); give the scrolling part it when only the last part scrolls.
+ * @a11y What scrolls carries data-scrollbar (the overlay handle); give the scrolling part it when only the last part scrolls (scroll="rows" does it itself).
  */
 
 interface Props {
@@ -14,8 +16,8 @@ interface Props {
   as?: 'nav' | 'div';
   /** Names the navigation landmark. */
   label?: string;
-  /** What scrolls when it's taller than the window: the whole panel (padded, its parts apart), or only its last part (the caller's own scroller), its other parts staying on top. */
-  scroll?: 'whole' | 'last';
+  /** What scrolls when it's taller than the window: the whole panel (padded, its parts apart), only its last part (the caller's own scroller), or only the rows it draws under its head and add slots. */
+  scroll?: 'whole' | 'last' | 'rows';
   /** Data attributes pass through to the panel (the screen's hooks, data-scrollbar). */
   [data: `data-${string}`]: string | undefined;
 }
@@ -23,7 +25,29 @@ interface Props {
 const { as: Tag = 'nav', label, scroll = 'whole', ...rest } = Astro.props;
 ---
 
-<Tag class="list-pane" aria-label={label} data-scroll={scroll} {...rest}><slot /></Tag>
+{
+  scroll === 'rows' ? (
+    <Tag class="list-pane" aria-label={label} data-scroll={scroll} {...rest}>
+      {Astro.slots.has('head') && (
+        <div class="list-pane-head">
+          <slot name="head" />
+        </div>
+      )}
+      {Astro.slots.has('add') && (
+        <div class="list-pane-add">
+          <slot name="add" />
+        </div>
+      )}
+      <div class="list-pane-rows" data-scrollbar>
+        <slot />
+      </div>
+    </Tag>
+  ) : (
+    <Tag class="list-pane" aria-label={label} data-scroll={scroll} {...rest}>
+      <slot />
+    </Tag>
+  )
+}
 
 <style>
   .list-pane {
@@ -43,15 +67,40 @@ const { as: Tag = 'nav', label, scroll = 'whole', ...rest } = Astro.props;
   }
 
   /* its parts in a column: the last (with min-block-size: 0 and its own overflow) gives way when it's too tall */
-  .list-pane[data-scroll='last'] {
+  .list-pane[data-scroll='last'],
+  .list-pane[data-scroll='rows'] {
     display: flex;
     flex-direction: column;
+  }
+
+  /* the screen-wide settings row, ruled off from the collection under it */
+  .list-pane-head {
+    display: grid;
+    padding: var(--space-3);
+    border-block-end: var(--border-hairline) solid var(--color-rule);
+  }
+
+  /* Add stays in view on top of the rows */
+  .list-pane-add {
+    display: grid;
+    gap: var(--space-2);
+    padding: var(--space-3) var(--space-3) 0;
+  }
+
+  .list-pane-rows {
+    min-block-size: 0;
+    overflow: auto;
+    padding: var(--space-3);
   }
 
   @media (max-width: 56rem) {
     .list-pane {
       position: static;
       max-block-size: none;
+    }
+
+    .list-pane-rows {
+      max-block-size: var(--c-editor-scope-list);
     }
   }
 </style>
