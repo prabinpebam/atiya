@@ -203,6 +203,54 @@ Spec, navigation modes, plan and Definitions of Done: [documentation/desktop/](.
 - **Tests never touch real GitHub:** they use the fake GitHub (`src/core/setup/fake-github.mjs`, real bare repositories). Run the app's E2E through the launcher: `node scripts/test-run.mjs --by agent --purpose "…" -- -c apps/desktop/playwright.config.mjs`. A live check against GitHub is made on purpose only, on a test account.
 - **The engine names no owner:** a site's name and features (the planet, the design library, the docs) come from its content and `atiya.json` (`integrations/features.mjs`). `npm run build:site-only` and `npm run build:starter` build the starter as someone else's site and check it.
 
+### Agent kits (Slate, agentic-craft, agent-orchestration)
+
+The owner's three kits, each a pinned git submodule (`main`) used through thin discovery files. Each one works alone; together they split the work with no overlap:
+
+| Kit | Owns | Here |
+|---|---|---|
+| [Slate](./slate/README.md) (`slate/`) | How documentation is written and read | `documentation/`, the `slate` skill (see **Documentation site**) |
+| [agentic-craft](https://github.com/prabinpebam/agentic-craft) (`agentic-craft/`) | What is worth building and what success means | The `craft` skill and its seven others; the `grounding-critic` and `design-system-auditor` agents |
+| [agent-orchestration](https://github.com/prabinpebam/agent-orchestration) (`agent-orchestration/`) | How work is carried out, checked and adapted | The `orchestrate` skill and its four others; the `throughput-reviewer` agent |
+
+Where they meet: a spec and its Definitions of Done are Slate pages in `documentation/`, reasoned with Craft (promise, user-can statements, assumptions, evidence) and carried out with Orchestration (mode, increments, checks, log), with this file's Validation tiers choosing the checks.
+
+**Which instruction wins** (highest first):
+1. The owner's explicit instruction in the conversation (for example "don't deploy until I say so"), within the platform's safety, security and package policies.
+2. This file and the repository documents it names: specs, the design systems, Validation, the security rules.
+3. The repository's own skills (`article-writing`, `ink-sketch`) for their tasks.
+4. The kits' canonical skills and agents: generic defaults that fill gaps.
+5. An `AGENTS.md` inside `slate/`, `agentic-craft/` or `agent-orchestration/` governs work on that package upstream, never this site.
+
+**Conflicts, resolved:**
+- **Discovery files are generated:** `node scripts/agent-kits.mjs` writes each kit skill's adapter in `.github/skills/<name>/` (the kit's description, a pointer to the canonical skill and one line of this repository's rules) and each kit agent in `.github/agents/` (the kit's text plus this repository's inputs); `--check` and `tests/unit/agentKits.test.ts` fail on drift. Change the notes in the script, never the generated files. Never run the kits' installers here: they copy whole skills over the adapters and add generic sections to this file.
+- **One throughput reviewer:** agent-orchestration's, with eight questions (it adds "traced to intent"), plus this repository's log, deploy and parity runs, holds and checks. It replaces the hand-written one.
+- **Design system, copy and performance:** this repository's systems, glossary, budgets and tests win over Craft's generic ones; never use the kit's `tools/` (tokens, style and copy linters) or its templates here.
+- **Specs before building:** Craft's "grounded or not built" applies to new features and changes of intent, written into the area's existing spec. A fix or the owner's feedback on a built feature traces to its spec and never waits for a new one (Orchestration: never stop a code task to ask for a formal spec). New specs and Definitions of Done use Craft's stable IDs (P1, J1, U1, A1, O1, PD1, 1.1); older pages aren't renumbered.
+- **Modes:** attended is Orchestration's "work with me", unattended its "keep going unattended" (**Working modes and throughput**); its goal modes (show me the UX sooner, prove the risky assumption, make this production-ready) apply on top. Say the mode in one line when starting multi-step work.
+- **Publishing:** Orchestration never assumes publishing is allowed; here the default is to merge to `main`, push (which deploys) and watch the runs. An owner's hold wins: then stop at validated and ready, unpushed, and say what's waiting. Never tag or publish a release without the owner.
+- **Work plans and handoffs:** Orchestration's templates aren't copied. A planned stage lives in the area's `plan.md`; anything smaller keeps its plan in the session workspace, and handoffs go in the reply. Neither is committed unless the owner asks.
+- **Updating:** `pwsh -File scripts/update-agent-kits.ps1` (refuses local changes, moves both kits to upstream `main`, runs their own tests, regenerates and checks); review and commit the pointers with `.github/` together. Fresh checkouts run `git submodule update --init slate agentic-craft agent-orchestration`. Kit changes go upstream, never into the submodules here. No build reads the kits: CI never fetches them and the engine pack leaves them out.
+
+<!-- agentic-craft:start -->
+#### Craft facts
+
+- **Product artifacts:** each area's spec, with its assumptions and decisions (`documentation/<area>/spec.md`) · its Definitions of Done (`documentation/<area>/plan.md`, or the spec's own); `documentation/docs-manifest.json` lists the areas
+- **Design system:** the website's tokens `src/site/design/` (`site.resolver.json`), built with `node scripts/build-site-tokens.mjs` · components by tier `src/site/components/fundamentals/`, `src/site/components/compounds/`, `src/site/layouts/`, edit mode's `src/site/editor/` · library at `/design/` (edit mode's parts at `/_edit/library/`) · the game's tokens `src/design/tokens.json`, `node scripts/build-tokens.mjs`, gallery `/play/gallery/` · glossary: **Copy** in this file and the design systems' copy rules
+- **Performance:** benchmark `npm run perf:bench` (edit mode and the site), `npm run perf:audit` (the planet) · baseline `perf/baseline.json` · budgets `perf/budgets.json`, and `npm run verify:prod`'s bundle budgets
+<!-- agentic-craft:end -->
+
+<!-- agent-orchestration:start -->
+#### Orchestration facts
+
+- **Product intent:** the Craft facts above; without a spec, three lines (goal, done when, limits) in the session workspace
+- **Work plan:** the area's `documentation/<area>/plan.md` for planned stages; the session workspace for anything smaller
+- **Commands by validation tier:** unit, related files `npx vitest related <files> --run` · types `npm run check` · one end-to-end test `node scripts/test-run.mjs --by agent --purpose "<why>" -- --reporter=line -g "<title>"` · full suites `npm test`, `npm run e2e`, `--project=editor`, `npm run visual` · production build with budgets `npm run verify:prod`, then `node scripts/build-parity.mjs`
+- **Progress log:** `E:\Projects\Personal\atiya-progress.log`
+- **Branches and merges:** a short branch or worktree (an hour at most) · merge by fast-forwarding `main` · deploy watched with `node scripts/watch-push.mjs` · the agent may: merge to `main` and push, unless the owner has put a hold on it; never tag or publish a release · must never break: the live site, private pages' sealing, the owner's running dev server and Atiya Studio
+- **Reviews and escalation:** review every 30 minutes with `throughput-reviewer` · always escalate: deploying under a hold, releases, the live contact service (a real email), real GitHub accounts and remotes in tests, anything destructive, and any fact about the owner, his family or Chopper he hasn't given
+<!-- agent-orchestration:end -->
+
 ### Documentation site (the source of truth)
 
 - `documentation/` is a [Slate](./slate/README.md) host. The package is a pinned git submodule of `https://github.com/prabinpebam/slate.git` in `slate/`; the adapter skill is `.github/skills/slate/SKILL.md`.
@@ -317,10 +365,10 @@ Spec, navigation modes, plan and Definitions of Done: [documentation/desktop/](.
 
 ### Working modes and throughput
 
-Work is measured by **validated progress per hour**, not completeness per task (learned from the owner's focus-notes loop). The owner's time and attention are the constraint: never make him wait on checks a change doesn't need, and never make him micromanage basic quality.
+Work is measured by **validated progress per hour**, not completeness per task (learned from the owner's focus-notes loop). The owner's time and attention are the constraint: never make him wait on checks a change doesn't need, and never make him micromanage basic quality. This is the repository's setting of agent-orchestration (**Agent kits**): attended is its "work with me", unattended its "keep going unattended".
 
 - **Which mode:** attended while the owner has written in the last 30 minutes; unattended when he says he's away or hasn't written for 30 minutes.
-- **Attended** (he's testing and giving feedback): one fix at a time, about **15 minutes from report to a fix he can see**. Run only the fast checks for what changed (**5 minutes or less**): the unit tests it touches, and the one E2E file or group that covers it. Then merge to `main`, push, and say what to reopen. Never run a full suite, the editor project or `perf:bench` here. Queue new feedback rather than widening the running fix.
+- **Attended** (he's testing and giving feedback): one fix at a time, about **15 minutes from report to a fix he can see**. Run only the fast checks for what changed (**5 minutes or less**): the unit tests it touches, and the one E2E file or group that covers it. Then merge to `main`, push, and say what to reopen (under an owner's hold: stop at validated and ready, unpushed). Never run a full suite, the editor project or `perf:bench` here. Queue new feedback rather than widening the running fix.
 - **Unattended** (he's away): deeper work on the plan's critical path in **45-minute time-boxes**, each ending in a merge of what works. Run the full suites (tier 3) before merging. Leave a handoff summary: what's done with evidence, what's in progress, what's waiting on him, and what to try first.
 - **Atiya Studio's preview installer** (plan stage 9P): `node scripts/pack-engine.mjs --out <dir>`, `node apps/desktop/scripts/bundle-engine.mjs --engine <dir>/engine-<version>.tgz`, then `npm run dist` in `apps/desktop` (about 6 minutes; `scripts/check-dist.mjs` checks it before and after), and `install.spec.mjs` installs it into a temporary folder, makes a site on the fake GitHub and uninstalls (about 2 minutes; skipped without an installer). The engine goes in as one archive the app unpacks on first start: never ship it as loose files (the installer took over ten minutes). On GitHub, the "Studio preview installer" workflow builds it (by hand: an artifact; a `studio-v*` tag: a draft pre-release). Never tag or publish a release without the owner.
 - **Atiya Studio's checks, by what changed:**
@@ -332,7 +380,7 @@ Work is measured by **validated progress per hour**, not completeness per task (
 - **Never take his focus:** test and script launches of the app set `ATIYA_BACKGROUND=1` (`e2e/launch.mjs` does). Never restart his running app without asking; say "quit from the tray and reopen" instead.
 - **Merge exactly what was tested, and keep branches short:** an hour at most. Fast-forward `main`, push, then run `node scripts/watch-push.mjs`: it waits for **every** run the push started (the deploy, the parity check, anything else) and fails if any did. A push isn't done, and isn't reported done, until it passes. Watching only the deploy once let the parity check fail on five pushes in a row unseen (16 October 2026).
 - **Log every step:** one timestamped line in `E:\Projects\Personal\atiya-progress.log` (outside the repository), so the owner can watch.
-- **Challenge the approach** every 30 minutes of running work, with the throughput reviewer (`.github/agents/throughput-reviewer.agent.md`), and act on its top finding.
+- **Challenge the approach** every 30 minutes of running work, with the throughput reviewer (`.github/agents/throughput-reviewer.agent.md`, generated from agent-orchestration's), and act on its top finding.
 
 ### Validation: run what the change needs, not everything
 
