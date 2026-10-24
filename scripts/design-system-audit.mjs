@@ -9,6 +9,7 @@ import { readFileSync, readdirSync, statSync, existsSync } from 'node:fs';
 import { join, basename } from 'node:path';
 import postcss from 'postcss';
 import { copiedBlocks as copiedIn, sharedClassNames as sharedIn } from './lib/cssCopies.mjs';
+import { storyBaselineGaps } from './lib/storyBaselines.mjs';
 
 const ROOT = new URL('..', import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, '$1');
 const at = (...p) => join(ROOT, ...p);
@@ -47,7 +48,8 @@ const add = (name, value, target, ok, item) => measures.push({ name, value, targ
 const visualSpecs = walk(at('tests/e2e'), /visual.*\.spec\.ts$/);
 const baselines = walk(at('tests/e2e'), /\.png$/).filter((f) => /visual/.test(f));
 const stories = walk(at('src/site/stories'), /\.stories\.astro$/);
-add('Screenshot specs / baseline images', `${visualSpecs.length} / ${baselines.length}`, 'a visual project with baselines for every story', visualSpecs.length > 0 && baselines.length >= stories.length, 'DS2-01');
+const storyGaps = storyBaselineGaps(ROOT);
+add('Screenshot specs / baseline images / stories with an example missing or left over', `${visualSpecs.length} / ${baselines.length} / ${storyGaps.length}${storyGaps.length ? ` (${storyGaps.map((g) => g.story).join(', ')})` : ''}`, 'a visual project with baselines for every example of every story', visualSpecs.length > 0 && baselines.length >= stories.length && storyGaps.length === 0, 'DS2-01');
 
 // ---- game styles (WS2)
 // a rule outside a cascade layer (at any depth), in any game stylesheet; and the stylesheets shared by no one
