@@ -93,6 +93,10 @@ test.describe('editor: ways to explore', () => {
     expect(play.body).not.toMatch(/platform\/gate/);
     expect((await text(page, '/play/lighthouse/')).status).toBe(404);
 
+    // Save to remote lists the ways file while it differs (turned back on below, it's as it was)
+    await open(page, '/_edit/publish/');
+    await expect(page.locator('main')).toContainText('structures/ways.json');
+
     // back on, and offered first: the buildings are as they were
     const before = readFileSync(PLANET, 'utf8');
     await open(page, '/_edit/ways/');
@@ -105,10 +109,6 @@ test.describe('editor: ways to explore', () => {
     await expect(planetLink(page)).toBeVisible({ timeout: 120_000 });
     expect((await text(page, '/')).body).toContain('Explore the planet');
     expect((await text(page, '/play/')).body).toContain('id="game-container"');
-
-    // Save to remote lists the ways file
-    await open(page, '/_edit/publish/');
-    await expect(page.locator('main')).toContainText('structures/ways.json');
   });
 
   test('ways to explore: a site that has never had the planet gets its starting map when it is turned on', async ({ page }) => {

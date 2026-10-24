@@ -25,24 +25,21 @@ const saved = (page: Page) => expect(status(page)).toHaveText(/^Saved\b/, { time
 const outlineRows = (page: Page) => page.locator('[data-editor-outline] [data-row]');
 const frame = (page: Page) => page.frameLocator('[data-editor-frame]');
 
-/** A draft album of no pages, which a published page can't show yet. */
+/** A draft album of no pictures, which a published page can't show yet. */
 const writeDraftAlbum = () =>
   writeFileSync(
-    articleFile(DRAFT_ALBUM),
+    join(FIXTURE, 'content/albums', `${DRAFT_ALBUM}.json`),
     `${JSON.stringify(
       {
         id: DRAFT_ALBUM,
-        type: 'article',
-        kind: 'gallery',
+        type: 'album',
         slug: DRAFT_ALBUM,
         title: 'A draft of an album',
         summary: 'Made up for the album block test.',
         status: 'draft',
-        visibility: 'public',
+        createdAt: '2026-06-03',
         updatedAt: '2026-06-03',
-        locale: 'en',
-        body: [],
-        album: { items: [] },
+        items: [],
       },
       null,
       2,
@@ -111,18 +108,17 @@ test.describe('editor: albums: the album block', () => {
 
   test('the album block: an album a page shows is refused private or a draft, with the pages that show it', async ({ page }) => {
     const request = page.request;
+    const albumFile = join(FIXTURE, 'content/albums', `${ALBUM}.json`);
     // made private: refused, naming the page that shows it
-    const priv = await request.put(`/_edit/api/articles/${ALBUM}/access`, { headers: WRITE, data: { access: 'private' } });
+    const priv = await request.put(`/_edit/api/albums/${ALBUM}/access`, { headers: WRITE, data: { access: 'private' } });
     expect(priv.status()).toBe(422);
     expect(JSON.stringify(await priv.json())).toContain('Notes from the hills');
-    expect(readFileSync(articleFile(ALBUM), 'utf8')).toContain('"status": "published"');
+    expect(readFileSync(albumFile, 'utf8')).toContain('"status": "published"');
 
-    // back to a draft from its own editor (the album editor, which has the same Page tab): refused, said where the status is
-    await page.goto(`/_edit/articles/${ALBUM}/`);
-    await page.getByRole('tab', { name: 'Page', exact: true }).click();
-    await page.getByRole('combobox', { name: 'Status', exact: true }).click();
-    await page.getByRole('option', { name: /^Draft/ }).click();
-    await expect(page.locator('[data-editor-issue]').getByText(/can't go back to a draft: "Notes from the hills" is published and shows it/)).toBeVisible({ timeout: 15_000 });
-    expect(readJson(articleFile(ALBUM)).status).toBe('published');
+    // back to a draft: refused, saying which published page shows it
+    const draft = await request.put(`/_edit/api/albums/${ALBUM}`, { headers: WRITE, data: { album: { ...readJson(albumFile), status: 'draft' }, ifMatch: {} } });
+    expect(draft.status()).toBe(422);
+    expect(JSON.stringify(await draft.json())).toMatch(/can't go back to a draft: \\"Notes from the hills\\" is published and shows it/);
+    expect(readJson(albumFile).status).toBe('published');
   });
 });

@@ -46,7 +46,7 @@ test.describe('editor: the action center', () => {
     // the screens are the side navigation's, in its order, then the places within a screen (Contact, Visitor counts)
     await page.goto('/_edit/');
     const nav = await page.getByRole('navigation', { name: 'Edit mode' }).getByRole('link').allInnerTexts();
-    expect(index.screens.map((s) => s.label)).toEqual([...nav.map((t) => t.split('\n')[0].trim()), 'Contact', 'Visitor counts']);
+    expect(index.screens.map((s) => s.label)).toEqual([...nav.map((t) => t.split('\n')[0].trim()), 'Contact', 'Visitor counts', 'Add album']);
     expect(index.screens.find((s) => s.id === 'settings-counts')?.href).toBe('/_edit/settings/#settings-counts');
     expect(index.screens.find((s) => s.id === 'publish')?.href).toBe('/_edit/publish/');
     // the site's settings, as saved

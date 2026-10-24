@@ -7,7 +7,7 @@
  */
 import { expect, test, type Locator, type Page, type Response } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { AGREEMENT, readerOf, withAgreement, type Agreed } from '../../src/site/access/agreement';
 
@@ -20,7 +20,10 @@ const code = (id: string) => {
 const ALL = code('gfixall22');
 const ONE = code('gfixone22');
 const LINK = `/writing/privone222/#a=gfixlink2.${grants.find((g) => g.id === 'gfixlink2')!.secret.key}`;
-const title = (id: string) => (JSON.parse(readFileSync(join(FIX, 'articles', `${id}.json`), 'utf8')) as { title: string }).title;
+const title = (id: string) => {
+  const article = join(FIX, 'articles', `${id}.json`);
+  return (JSON.parse(readFileSync(existsSync(article) ? article : join(FIX, 'albums', `${id}.json`), 'utf8')) as { title: string }).title;
+};
 const TITLES = ['fx-private-alpha', 'fx-private-beta', 'fx-private-gamma', 'fx-private-delta', 'fx-private-one', 'fx-private-two', 'fx-private-album'].map((id) => [id, title(id)] as const);
 const SECTION = '/side-projects/';
 const ALPHA = '/side-projects/alphaaaaa2/';

@@ -67,8 +67,8 @@ test.describe('gallery: lightbox', () => {
     await expect.poll(() => new URL(page.url()).hash).toBe('');
     release();
     await expect(thumbs(dialog).first()).toHaveAccessibleName(/^Show 1: A hill path at dawn\./);
-    await expect(thumbs(dialog).nth(9)).toHaveAccessibleName(/^Show 10.*\(video\)$/);
-    await expect(thumbs(dialog).nth(3)).toHaveAccessibleName(/^Show 4.*\(animated\)$/);
+    await expect(thumbs(dialog).nth(11)).toHaveAccessibleName(/^Show 12.*\(video\)$/);
+    await expect(thumbs(dialog).nth(8)).toHaveAccessibleName(/^Show 9.*\(animated\)$/);
     await expect(counter(dialog)).toHaveText('2 of 21');
     await page.keyboard.press('ArrowRight');
     await expect(counter(dialog)).toHaveText('3 of 21');

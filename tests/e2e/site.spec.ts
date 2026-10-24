@@ -7,6 +7,7 @@ import { devices, expect, test, type Page } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 import { readFileSync } from 'node:fs';
 import { headingIds } from '../../src/site/content/load';
+import { NEW_TAB_NOTE } from '../../src/site/design/links';
 import { renderMarkdown } from '../../src/site/content/markdown';
 import type { Article, HubNode, SiteStructure } from '../../src/site/content/schema';
 
@@ -857,8 +858,14 @@ test.describe('site on a phone', () => {
           // the article minimap's rows are 24 px on touch (WCAG 2.5.8): an extra way to move, the page scrolls as usual
           return b.width > 0 && b.height > 0 && getComputedStyle(e).visibility !== 'hidden' && !inText(e) && !stretched(e) && !e.closest('[data-minimap]');
         })
-        .map((e) => ({ e, b: e.getBoundingClientRect() }))
-        .filter(({ b }) => b.height < 44 || b.width < 44)
+        .map((e) => {
+          // a control's touch area may reach past its edges through an absolute ::before
+          const r = e.getBoundingClientRect();
+          const t = getComputedStyle(e, '::before');
+          const touch = t.position === 'absolute' && t.content !== 'none' ? { width: parseFloat(t.width) || 0, height: parseFloat(t.height) || 0 } : { width: 0, height: 0 };
+          return { e, b: { width: Math.max(r.width, touch.width), height: Math.max(r.height, touch.height) } };
+        })
+        .filter(({ b }) => Math.round(b.height) < 44 || Math.round(b.width) < 44)
         .map(({ e, b }) => `${e.tagName} "${(e.getAttribute('aria-label') || e.textContent || '').trim().slice(0, 24)}" ${Math.round(b.width)}x${Math.round(b.height)}`);
     });
 
@@ -1205,7 +1212,7 @@ test.describe('content', () => {
   const SECTIONS = (STRUCTURE.home.children ?? []).filter((n): n is HubNode => n.kind === 'hub');
 
   test("the navigation is the site structure's: its entries on every page, in the header and the phone menu, the current one marked", async ({ page }) => {
-    const entries = (STRUCTURE.menus?.primary ?? []).map((e) => ('node' in e ? (e.label ?? SECTIONS.find((n) => n.id === e.node)?.navLabel ?? SECTIONS.find((n) => n.id === e.node)?.title) : e.label));
+    const entries = (STRUCTURE.menus?.primary ?? []).map((e) => ('node' in e ? (e.label ?? SECTIONS.find((n) => n.id === e.node)?.navLabel ?? SECTIONS.find((n) => n.id === e.node)?.title) : `${e.label}${'newTab' in e && e.newTab ? NEW_TAB_NOTE : ''}`));
     const nav = page.getByRole('navigation', { name: 'Sections' });
     for (const path of ['/', '/work/', ARTICLE]) {
       await page.goto(path);
@@ -1228,13 +1235,18 @@ test.describe('content', () => {
       await page.goto(`/${s.slug}/`);
       await expect(page.getByRole('heading', { level: 1 })).toHaveText(s.title);
       await expect(page.locator('main [data-view]')).toHaveAttribute('data-view', s.view ?? 'tiles');
-      // a draft isn't listed: only the published pages count
-      const published = (c: { item?: { id: string } }) => !c.item || ['published', 'stale'].includes((JSON.parse(readFileSync(new URL(`articles/${c.item.id}.json`, CONTENT), 'utf8')) as Article).status);
-      const pages = (s.children ?? []).filter((c) => published(c as { item?: { id: string } })).length;
+      // a draft isn't listed: only the published pages count (an album is drawn as its band, not a card)
+      const children = (s.children ?? []) as { item?: { type?: string; id: string } }[];
+      const published = (c: { item?: { type?: string; id: string } }) => !c.item || ['published', 'stale'].includes((JSON.parse(readFileSync(new URL(`articles/${c.item.id}.json`, CONTENT), 'utf8')) as Article).status);
+      const pages = children.filter((c) => c.item?.type !== 'album' && published(c)).length;
+      const albums = children.filter((c) => c.item?.type === 'album').length;
       if (pages) {
-        await expect(page.locator('main article.card')).toHaveCount(pages);
+        // a page's card (a section can show recommendations as cards too)
+        await expect(page.locator('main article[data-card]')).toHaveCount(pages);
         // a card shows its picture whole, never cropped (documentation/content/media.md §9)
-        for (const img of await page.locator('main article.card img').all()) await expect(img).toHaveCSS('object-fit', 'contain');
+        for (const img of await page.locator('main article[data-card] img').all()) await expect(img).toHaveCSS('object-fit', 'contain');
+      } else if (albums) {
+        await expect(page.getByText('Nothing here yet. This section is being written.')).toHaveCount(0);
       } else if (withPrivate.has(s.id)) {
         await expect(page.locator('[data-sign-in-line]').getByRole('heading', { level: 2 })).toHaveText('The work here is shared with invited readers');
         await expect(page.getByText('Nothing here yet. This section is being written.')).toHaveCount(0);
@@ -1244,8 +1256,14 @@ test.describe('content', () => {
     const home = (JSON.parse(readFileSync(new URL('structures/ways.json', CONTENT), 'utf8')) as { home?: { default?: string } }).home?.default ?? 'classic';
     await page.goto(home === 'classic' ? '/' : '/views/classic/');
     const list = page.getByRole('list', { name: 'Sections' });
-    await expect(list.getByRole('heading')).toHaveText(SECTIONS.map((s) => s.title));
-    await expect(list.getByText('Being written')).toHaveCount(SECTIONS.filter((s) => !(s.children ?? []).length).length);
+    // the sections, and the menu's outside links (Loushing) where the menu places them
+    const hub = (STRUCTURE.menus?.primary ?? []).map((e) => ('node' in e ? SECTIONS.find((n) => n.id === e.node)?.title : `${e.label}${'newTab' in e && e.newTab ? NEW_TAB_NOTE : ''}`));
+    await expect(list.getByRole('heading')).toHaveText(hub as string[]);
+    // a section with no open page that's published yet is being written (the test build adds the gallery
+    // fixture's published album to every albums section)
+    const live = (c: { item?: { type?: string; id: string } }) =>
+      !!c.item && ['published', 'stale'].includes((JSON.parse(readFileSync(new URL(`${c.item.type === 'album' ? 'albums' : 'articles'}/${c.item.id}.json`, CONTENT), 'utf8')) as { status: string }).status);
+    await expect(list.getByText('Being written')).toHaveCount(SECTIONS.filter((s) => s.view !== 'albums' && !((s.children ?? []) as { item?: { type?: string; id: string } }[]).some(live)).length);
     // Read the site goes down to them, below the header
     await page.getByRole('main').getByRole('link', { name: 'Read the site' }).click();
     await expect.poll(() => page.evaluate(() => Math.round(document.getElementById('sections')!.getBoundingClientRect().top))).toBeGreaterThanOrEqual(56);

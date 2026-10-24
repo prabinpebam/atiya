@@ -132,12 +132,7 @@ test.describe('landing & classic', () => {
     else await expect(page.locator(`main[data-home-view="${HOME}"]`)).toHaveCount(1);
     // the site's own small scripts (the theme switch, the modes) but nothing of the game's
     expect(scripts.filter((s) => /game-|three|fiber|react|zustand/i.test(s))).toEqual([]);
-    // painted key art (the hub's): sized (no layout shift), loaded, and the social card is advertised
-    if (HOME === 'classic') {
-      const poster = main.getByRole('img', { name: /tiny planet/ });
-      await expect(poster).toHaveAttribute('width', '1200');
-      await expect.poll(() => poster.evaluate((img: HTMLImageElement) => img.complete && img.naturalWidth > 0)).toBe(true);
-    }
+    // the social card is advertised (the home's opening is its highlights now, not the planet's poster)
     const og = await page.locator('meta[property="og:image"]').getAttribute('content');
     expect(og).toMatch(/\/og-image\.jpg$/);
     expect((await page.request.get('/og-image.jpg')).status()).toBe(200);

@@ -116,12 +116,12 @@ const { label, options, ...rest } = Astro.props;
     border-end-end-radius: inherit;
   }
 
-  /* a 40 px segment still takes a 44 px touch */
+  /* a 40 px segment, or a short word's, still takes a 44 px touch */
   .segment::before {
     content: '';
     position: absolute;
-    inset-block: calc((var(--c-control-height-sm) - var(--size-touch)) / 2);
-    inset-inline: 0;
+    inset-block: min(0%, calc((var(--size-touch) - 100%) / -2));
+    inset-inline: min(0%, calc((var(--size-touch) - 100%) / -2));
   }
 
   .glyph {
