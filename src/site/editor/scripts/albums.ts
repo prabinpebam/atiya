@@ -1,11 +1,11 @@
 /**
- * The Albums screen (documentation/gallery/spec.md §9.1): finding and filtering the cards as typed, New album
+ * The Albums screen (documentation/gallery/spec.md §9.1): finding and filtering the cards as typed, Add album
  * (an untitled draft made at once, then opened with its title selected), copying an album's address and deleting
  * one after asking, saying what it keeps.
  */
 import { announce, api, describeIssue, editorUrl, saveStatus, startTask } from './client';
 
-/** Wires the Albums screen's cards (`root`, the AlbumCards part); New album and the delete dialog are the page's. */
+/** Wires the Albums screen's cards (`root`, the AlbumCards part); Add album and the delete dialog are the page's. */
 export function initAlbums(root: HTMLElement, signal: AbortSignal) {
   const search = root.querySelector<HTMLInputElement>('[data-albums-search] input');
   const found = root.querySelector<HTMLElement>('[data-albums-found]');
@@ -82,7 +82,7 @@ export function initAlbums(root: HTMLElement, signal: AbortSignal) {
 
   document.querySelector('[data-albums-new]')?.addEventListener('click', () => newAlbum(), { signal });
 
-  // New album from the action center (gallery spec §9.10): the address asks for one; made once, never on a reload
+  // Add album from the action center (gallery spec §9.10): the address asks for one; made once, never on a reload
   const url = new URL(location.href);
   if (url.searchParams.get('new') === '1') {
     url.searchParams.delete('new');
@@ -91,7 +91,7 @@ export function initAlbums(root: HTMLElement, signal: AbortSignal) {
   }
 }
 
-/** New album: an untitled draft in the gallery, made at once and opened with its title selected (§9.1). */
+/** Add album: an untitled draft in the gallery, made at once and opened with its title selected (§9.1). */
 export async function newAlbum(body: { title?: string; section?: string } = {}) {
   const task = startTask('Making the album…', { el: document.querySelector('[data-albums-new]') });
   saveStatus.saving();
@@ -102,6 +102,6 @@ export async function newAlbum(body: { title?: string; section?: string } = {}) 
     return;
   }
   void task.done();
-  saveStatus.carry(r.data.note ? `New album. ${r.data.note}` : 'New album');
+  saveStatus.carry(r.data.note ? `Album added. ${r.data.note}` : 'Album added');
   location.href = editorUrl(`albums/${r.data.id}/?new=1`);
 }

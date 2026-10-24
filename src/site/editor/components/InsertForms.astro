@@ -156,7 +156,7 @@ const SUBMIT: Record<Props['kind'], string> = { quote: 'Add the quote', collecti
       <>
         <Text variant="ui" tone="muted">Another page's album, shown here as its band: its pictures up front, what it holds, and See all to its page. It shows the album as it's arranged there, so a change to the album shows here too.</Text>
         {albums.length === 0 ? (
-          <div data-insert-albums-none=""><Text variant="ui" tone="muted">The site has no albums yet: make one under Pages, New album.</Text></div>
+          <div data-insert-albums-none=""><Text variant="ui" tone="muted">The site has no albums yet: make one on the Albums screen, with Add album.</Text></div>
         ) : (
           <Fieldset legend="Album" data-insert-albums="">
             {albums.map((a) => (

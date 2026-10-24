@@ -1,7 +1,7 @@
 ---
 /**
  * The album editor's viewer (documentation/gallery/spec.md §9.5): one item large, between Previous and Next, with
- * its place among the items ("3 of 12"), the actions on it (Set as cover picture, Add to album, Open in the
+ * its place among the items ("3 of 12"), the actions on it (Set as cover, Add to album, Open in the
  * library, Remove from album) and, beside it, its words (the `info` slot: the page puts MediaInfo there). A
  * picture with a dark mode version can be seen in either; a video plays; a linked video shows its poster; a text
  * card shows its words. In a review of alt text (§9.5, §9.8) it goes through only the pictures that need it, with
@@ -51,7 +51,7 @@ const strip = item?.strip ?? [];
           <ActionBar gap="sm">
             {item.kind !== 'text' && item.kind !== 'missing' && (
               <Button variant="quiet" size="sm" icon="image" disabled={item.cover} data-viewer-act="cover">
-                {item.cover ? 'The cover picture' : 'Set as cover picture'}
+                {item.cover ? 'The cover picture' : 'Set as cover'}
               </Button>
             )}
             {media && (

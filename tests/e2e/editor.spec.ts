@@ -1409,7 +1409,7 @@ test.describe('editor', () => {
     await expect.poll(() => (blocks()[at] as { poster?: string }).poster).toBeTruthy();
     const chosen = (blocks()[at] as unknown as { poster: string }).poster;
     await expect(player).toHaveAttribute('poster', new RegExp(chosen.split('/').pop()!), { timeout: 20_000 });
-    await form.getByRole('button', { name: 'Use its own frame' }).click();
+    await form.getByRole('button', { name: 'Use own frame' }).click();
     await expect.poll(() => (blocks()[at] as { poster?: string }).poster).toBeUndefined();
 
     // in Media: a video card, its details (the player, its title) and where it's used

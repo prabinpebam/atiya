@@ -28,9 +28,9 @@ const { kind, value = '' } = Astro.props;
     <Form as="div" data-album-add="files">
       <FileField label="Pictures and videos" accept="image/*,video/*,.heic,.heif" multiple hint="Each goes into your library and into this album; you can also drop files anywhere on the album." data-album-upload="" />
       <ActionBar gap="sm">
-        <Button variant="secondary" icon="image" data-album-library="">From your library</Button>
-        <Button variant="secondary" icon="paragraph" data-album-text="">Text card</Button>
-        <Button variant="secondary" icon="video" data-album-link="">Video link</Button>
+        <Button variant="secondary" icon="image" data-album-library="">Add from library</Button>
+        <Button variant="secondary" icon="paragraph" data-album-text="">Add text card</Button>
+        <Button variant="secondary" icon="video" data-album-link="">Add video link</Button>
               </ActionBar>
     </Form>
   ) : kind === 'text' ? (

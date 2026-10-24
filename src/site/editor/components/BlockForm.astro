@@ -167,7 +167,7 @@ const TEXT = new Set(['text', 'heading', 'marker', 'subheading', 'quote']);
           <PictureField thumb={thumbOf(b.poster) ?? (b.media ? thumbOf(b.media) : undefined)} ratio="4/3" words={b.poster ? thumbOf(b.poster)?.alt || 'No alt text' : 'Its own frame, taken when it was uploaded'}>
             <Button variant="secondary" size="sm" icon="image" data-editor-pick={`body.${i}.poster`} data-pick-mode="single">{b.poster || !b.media ? 'Replace' : 'Choose a picture'}</Button>
             {b.poster && <Button variant="secondary" size="sm" icon="crop" data-editor-crop={`body.${i}.poster`}>Crop</Button>}
-            {b.poster && b.media && <Button variant="quiet" size="sm" icon="restore" data-editor-unset={`body.${i}.poster`}>Use its own frame</Button>}
+            {b.poster && b.media && <Button variant="quiet" size="sm" icon="restore" data-editor-unset={`body.${i}.poster`}>Use own frame</Button>}
           </PictureField>
         </Pane>
         <Pane name="caption" title="Caption and credit" titleId={id(i, 's-caption')}>

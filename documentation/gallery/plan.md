@@ -7,9 +7,9 @@ Throughout, every choice is automatic first and his to override ([spec §18](spe
 > **TL;DR.**
 > - **Status:** G1 to G10 built (22 October 2026). The album redesign specified (23 October 2026); A1 to A6 wait on the owner's sign-off of the spec.
 > - **A1: the album resource.** `content/albums/<id>.json` and its contract (V38 to V55 restated, V52 to V55 new), the structure's album item, the words and the fingerprint on the picture's sidecar, linked videos as library items, `albumOrder` and `albumsOrder`, the new `AlbumLayout`, the album block by ID, the fixtures rewritten as album files, and the kind `gallery` retired.
-> - **A2: the Albums screen and the album editor.** Every album as a grid of covers, New album, and inside one its words typed in place, its items in a grid to select, sort and drag, text cards, uploads anywhere in the background, the picker, Settings and Publish.
+> - **A2: the Albums screen and the album editor.** Every album as a grid of covers, Add album, and inside one its words typed in place, its items in a grid to select, sort and drag, text cards, uploads anywhere in the background, the picker, Settings and Publish.
 > - **A3: the viewer and the words.** An item opened large with `MediaInfo` beside it, actions on a selection, pasting a YouTube or Vimeo link, duplicates found by fingerprint, and the alt text review.
-> - **A4: the cover.** Set as cover picture, and Edit cover: the first build's arranger, in place on the album editor.
+> - **A4: the cover.** Set as cover, and Edit cover: the first build's arranger, in place on the album editor.
 > - **A5: the library.** The Media screen on `PhotoGrid` and `MediaInfo`, with Used in, the albums a picture is in, and the same words.
 > - **A6: private albums and the rest.** Private album files and their access, grants that name albums, the planet, telemetry and search for the resource, and the docs.
 
@@ -36,7 +36,7 @@ Throughout, every choice is automatic first and his to override ([spec §18](spe
 [Spec §9.1 to §9.4 and §9.7](spec.md#9-edit-mode):
 
 1. **The Albums screen** (`/_edit/albums/`, `AlbumsScreen`): every album as a card (its cover picture, title, count, span of dates and tags), in the gallery's order with drafts first; find and filter; each card's menu (Open, Open on the site, Copy its address, Delete, which keeps the pictures); Sort for the gallery's order, and dragging a card for Your order; the side navigation's Albums entry, in `SCREENS`.
-2. **New album** makes an untitled draft at once in the section whose view is Albums and opens it with its title selected; files dropped on the screen make an album from them, titled from their dates.
+2. **Add album** makes an untitled draft at once in the section whose view is Albums and opens it with its title selected; files dropped on the screen make an album from them, titled from their dates.
 3. **The album editor** (`/_edit/albums/<id>/`): `AlbumHeader` (the title and Add, Sort, Edit cover, Settings, Preview and Publish), `AlbumWords` (the title, short description and introduction typed in place, saved as typed, and the line of facts), the automatic cover drawn as its band, and `AlbumItems` on the kit's new `PhotoGrid`.
 4. **Selecting and ordering** (`PhotoGrid`): a click, Shift and Ctrl choose; the keys move the focus and the selection; a drag or Alt with an arrow moves; dragging switches the album to its own order, and Sort (Oldest first, Newest first) puts it back; Remove from album keeps the file in the library.
 5. **Adding:** files dropped anywhere on the editor upload in the background with their progress in the status line, each read at upload (date, focus, fingerprint, drawing or picture); Add from the library (the picker on `PhotoGrid`); a text card between items, which makes the order the owner's own (V53).
@@ -48,7 +48,7 @@ Throughout, every choice is automatic first and his to override ([spec §18](spe
 [Spec §9.4, §9.5 and §9.8](spec.md#95-the-viewer-and-the-words):
 
 1. **The viewer** (`AlbumViewer`): an item opened large, Previous and Next by keys, and the kit's new `MediaInfo` beside it: caption, description (rich text), alt text with Suggest, date taken and place, the item's download, a video's Play by itself and Loop, Make it standard, and the other albums and pages it's in. Every field is the picture's, saved to its sidecar.
-2. **The selection's actions:** Add to cover, Set as cover picture, Add to album, Set the date, Allow or stop downloads, Remove from album.
+2. **The selection's actions:** Add to cover, Set as cover, Add to album, Set the date, Allow or stop downloads, Remove from album.
 3. **Linked videos:** Add → YouTube or Vimeo link, and a pasted address anywhere on the editor, made a library item through `albumEmbed.ts`; one already in the library is reused.
 4. **Duplicates:** an upload whose fingerprint is in the library adds the picture already there, and says so (V55).
 5. **Alt text:** published albums need it (V54); the facts line counts what's missing, and Review steps through those pictures in the viewer, with suggestions where the owner's AI service is on.
@@ -57,7 +57,7 @@ Throughout, every choice is automatic first and his to override ([spec §18](spe
 
 [Spec §3.6 and §9.6](spec.md#96-the-cover):
 
-1. **Set as cover picture** on an item, in the viewer or for a one-item selection: it sets `cover.lead`, and the automatic cover leads with it.
+1. **Set as cover** on an item, in the viewer or for a one-item selection: it sets `cover.lead`, and the automatic cover leads with it.
 2. **Edit cover** (`AlbumCover`): the first build's arranger canvas, toolbar and keys in place on the album editor's band, its tray now the album's grid below; Use automatic cover and Done.
 3. **The phone's view** and Arrange for phones, each tile's focus, Play in the band and Hide on phones, as built in G6.
 
@@ -67,7 +67,7 @@ Throughout, every choice is automatic first and his to override ([spec §18](spe
 
 1. **The Media screen** on `PhotoGrid` and `MediaInfo`: the same selection, the same words and facts, Used in with the albums a picture is in, and Add to album for a selection.
 2. **The library's own views:** the timeline by month taken, the filters (Not in any album, In albums, Needs alt text, the kinds), Add link, Set the date and Set the place for a selection; deleting a picture says which albums it leaves first.
-3. **Other screens** ([§9.10](spec.md#910-the-other-screens)): Sections lists albums among a section's pages (tagged Album) with the gallery's order in its Settings; the article editor's Album block chooses from the site's albums; the action center finds albums and New album.
+3. **Other screens** ([§9.10](spec.md#910-the-other-screens)): Sections lists albums among a section's pages (tagged Album) with the gallery's order in its Settings; the article editor's Album block chooses from the site's albums; the action center finds albums and Add album.
 
 ### A6: private albums, the planet and the rest (U15)
 
@@ -124,13 +124,13 @@ Each phase is done when every row for it is true and evidenced. Rows 1 to 32 are
 | 34 | A1 | The site draws albums from their files: the Albums view in the gallery's order, the album page by `AlbumLayout` with text cards, cards and the social image from the cover picture, the album block by ID; rows 7 to 18 and 24 to 28 hold again | The E2E groups "gallery", "gallery: lightbox", "gallery: zoom", "gallery: without scripts", "protected content: a private album" and the planet's reading tests, on the fixtures as album files; `albumPage.test.ts`; the stories `AlbumBand` and `AlbumGrid` |
 | 35 | A1 | Every library item has a fingerprint; a linked video is a sidecar with its poster as the site's own picture; a video file's date is read from its `creation_time` | `content.test.ts` (V45, V55); `editorUpload.test.ts` (the fingerprint, a video's date); the one-off script's run on the library, with its count |
 | 36 | A1 | The fixtures are album files, their words on their pictures; nothing in `content/` or the fixtures has the kind `gallery`; the owner's build is unchanged | `content.test.ts`; `node scripts/build-parity.mjs` |
-| 37 | A2 | The Albums screen: its cards in the gallery's order, drafts first; New album makes a draft at once and opens it; files dropped on it make an album; find and filter; Delete asks and keeps the pictures, and is refused while a published page shows the album; Sort and dragging set the gallery's order | E2E "editor: albums" (rewritten for the screen); `editorAlbum.test.ts` (create, delete, the gallery's order); the story `AlbumsScreen` |
+| 37 | A2 | The Albums screen: its cards in the gallery's order, drafts first; Add album makes a draft at once and opens it; files dropped on it make an album; find and filter; Delete asks and keeps the pictures, and is refused while a published page shows the album; Sort and dragging set the gallery's order | E2E "editor: albums" (rewritten for the screen); `editorAlbum.test.ts` (create, delete, the gallery's order); the story `AlbumsScreen` |
 | 38 | A2 | The album editor: its words typed in place and saved as typed; items chosen by click, Shift, Ctrl and the keys, moved by drag and by keys, sorted, put in the owner's order by a drag and back by Sort; text cards; Remove from album keeps the file; every change shown at once, saved, undoable, and refused with its reason when it breaks a rule | E2E "editor: albums"; `editorAlbum.test.ts` (every operation, the orders, the histories); the stories `PhotoGrid`, `AlbumHeader`, `AlbumWords`, `AlbumItems` |
 | 39 | A2 | Files dropped anywhere on the editor upload in the background, each read at upload (date, focus, fingerprint, drawing or picture), with their progress in the status line; Add from the library adds what's chosen | E2E "editor: albums" (a batch of the upload fixtures, the picker); `editorServer.test.ts` (uploads into an album) |
 | 40 | A3 | The viewer saves each word to the picture's sidecar, and the same picture in another album and an article says the same; each field has its own undo; the selection's actions do what they say | E2E "editor: albums" (the viewer, a picture in two albums); `editorAlbum.test.ts` (the selection's actions); the stories `AlbumViewer` and `MediaInfo` |
 | 41 | A3 | A YouTube or Vimeo address, added or pasted, makes a linked video or reuses the one in the library; a file already in the library adds the picture there and says so | `editorAlbum.test.ts` and `editorServer.test.ts` (a stand-in provider; duplicates by fingerprint); E2E "editor: albums" (pasting a link) |
 | 42 | A3 | Publishing an album is refused while a picture in it has no alt text; the facts line counts them, Review steps through them; suggestions behave as row 29 | `content.test.ts` (V54); E2E "editor: albums" (Review); E2E "editor: suggested alt text" |
-| 43 | A4 | Set as cover picture leads the automatic cover; Edit cover arranges the band in place by drag and by keys alone, with rows 20 and 21's moves and refusals; the album's grid is its tray; Use automatic cover removes the arrangement | `editorArranger.test.ts`; E2E "editor: albums" (the cover, by drag, by keys, for phones); the story `AlbumCover` |
+| 43 | A4 | Set as cover leads the automatic cover; Edit cover arranges the band in place by drag and by keys alone, with rows 20 and 21's moves and refusals; the album's grid is its tray; Use automatic cover removes the arrangement | `editorArranger.test.ts`; E2E "editor: albums" (the cover, by drag, by keys, for phones); the story `AlbumCover` |
 | 44 | A5 | The Media screen: the timeline, the same grid and words, Used in with albums, Add to album, the new filters; deleting a picture names the albums it leaves, and is refused while an article uses it | E2E "editor: albums" and "editor: gallery uploads"; `editorAlbum.test.ts` |
 | 45 | A6 | A private album's file and its own media move folders in one transaction; a grant naming an album opens it; the leak check passes; it's never on the planet | E2E "protected content: a private album" and `editor-access.spec.ts`; `verify-sealed.mjs` on the test build; `content.test.ts` (V44, V52) |
 | 46 | A6 | An album page carries its canonical address, its title, its summary as its description and its cover picture as its social image; the planet's Amphitheater shows albums from their files; telemetry sends only what row 26 says | E2E "gallery" (the page's head), "planet" (reading), "protected content" (telemetry) |

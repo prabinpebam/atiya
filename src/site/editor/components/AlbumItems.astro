@@ -30,14 +30,14 @@ const { title, cells, days } = Astro.props;
 <div class="items" data-album-items>
   <div class="bar" role="toolbar" aria-label="Selected items" data-album-selbar hidden>
     <Text as="span" variant="label"><span role="status" data-album-selcount>0 selected</span></Text>
-    <span data-album-only="cover" hidden><Button size="sm" variant="secondary" icon="image" data-album-act="cover">Set as cover picture</Button></span>
+    <span data-album-only="cover" hidden><Button size="sm" variant="secondary" icon="image" data-album-act="cover">Set as cover</Button></span>
     <span data-album-only="text" hidden><Button size="sm" variant="secondary" icon="edit" data-album-act="text">Edit the words</Button></span>
     <Button size="sm" variant="secondary" icon="arrow-up" data-album-act="start">Move to start</Button>
     <Button size="sm" variant="secondary" icon="arrow-down" data-album-act="end">Move to end</Button>
     <Button size="sm" variant="secondary" icon="collection" data-album-act="add-to">Add to album</Button>
     <Button size="sm" variant="secondary" icon="calendar" data-album-act="date">Set the date</Button>
     <Button size="sm" variant="secondary" icon="location" data-album-act="place">Set the place</Button>
-    <Button size="sm" variant="secondary" icon="download" data-album-act="downloads">Downloads</Button>
+    <Button size="sm" variant="secondary" icon="download" data-album-act="downloads">Set downloads</Button>
     <Button size="sm" variant="secondary" icon="delete" data-album-act="remove">Remove from album</Button>
     <Button size="sm" variant="quiet" icon="close" data-album-act="clear">Clear selection</Button>
   </div>

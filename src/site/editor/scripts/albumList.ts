@@ -1,5 +1,5 @@
 /**
- * The albums list (documentation/gallery/spec.md §9.2): New album, and the gallery's albums moved by their
+ * The albums list (documentation/gallery/spec.md §9.2): Add album, and the gallery's albums moved by their
  * handles (a drag, or Alt with Up or Down on a handle or an album), saved at once as the owner's own order.
  */
 import { announce, api, describeIssue, saveStatus, startTask, swapRegions } from './client';

@@ -51,7 +51,7 @@ export function editScreens(features: { planet: boolean; managed: boolean }): Ed
 export const SCREEN_PLACES: EditScreen[] = [
   { id: 'settings-contact', label: 'Contact', path: 'settings/#settings-contact', group: 'Site', words: ['contact form', 'email me', 'web3forms', 'tally', 'google forms', 'booking', 'messages'], about: 'How visitors reach you: Email me, a form, or a booking page.', icon: 'mail' },
   { id: 'settings-counts', label: 'Visitor counts', path: 'settings/#settings-counts', group: 'Site', words: ['analytics', 'statistics', 'visits', 'traffic', 'goatcounter', 'umami', 'google analytics', 'clarity', 'cookies'], about: 'Whether and how visits to your site are counted.', icon: 'dashboard' },
-  { id: 'new-album', label: 'New album', path: 'albums/?new=1', group: 'Content', words: ['make an album', 'create album', 'add album', 'photo album', 'gallery'], about: 'Make an untitled album in the gallery, ready to fill.', icon: 'plus' },
+  { id: 'new-album', label: 'Add album', path: 'albums/?new=1', group: 'Content', words: ['make an album', 'create album', 'new album', 'photo album', 'gallery'], about: 'Make an untitled album in the gallery, ready to fill.', icon: 'plus' },
 ];
 
 /** How much of a page's body the index carries (§8.2). */

@@ -23,7 +23,7 @@ export const prerender = false;
 
 const VIEW_COOKIE = 'editor.albums.view';
 const askedView = Astro.url.searchParams.get('view');
-// the action center's New album (?new=1) is made by the tiles view's script
+// the action center's Add album (?new=1) is made by the tiles view's script
 const view = Astro.url.searchParams.get('new') === '1' ? 'tiles' : askedView === 'list' || askedView === 'tiles' ? askedView : Astro.cookies.get(VIEW_COOKIE)?.value === 'list' ? 'list' : 'tiles';
 if (askedView === view) Astro.cookies.set(VIEW_COOKIE, view, { path: '/', sameSite: 'strict', httpOnly: true, maxAge: 60 * 60 * 24 * 365 });
 
@@ -42,14 +42,14 @@ const tilesHref = withBase('/_edit/albums/?view=tiles');
   heading="Albums"
   intro={view === 'list'
     ? ALBUMS_LIST_INTRO
-    : 'Your photo albums: drafts first, then in the gallery’s order. New album makes an untitled one at once, ready to fill; its pictures stay in your library whatever happens to the album.'}
+    : 'Your photo albums: drafts first, then in the gallery’s order. Add album makes an untitled one at once, ready to fill; its pictures stay in your library whatever happens to the album.'}
 >
   <Fragment slot="tools">
     {
       view === 'tiles' ? (
         <>
           <Button variant="secondary" size="sm" icon="bulleted" href={listHref}>Show as list</Button>
-          <Button variant="primary" size="sm" icon="plus" data-albums-new="">New album</Button>
+          <Button variant="primary" size="sm" icon="plus" data-albums-new="">Add album</Button>
         </>
       ) : (
         <Button variant="secondary" size="sm" icon="views" href={tilesHref}>Show as tiles</Button>

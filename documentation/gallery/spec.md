@@ -8,7 +8,7 @@ The Gallery section becomes a place to look: a scroll of albums, each shown by a
 > - **The words belong to the picture:** its caption, description, alt text, date taken and place are kept with it, so a picture in two albums and an article says the same thing everywhere ([§3.4](#34-where-the-words-come-from)).
 > - **Sorted by date by default:** an album shows its items oldest first by the day they were taken, so pictures dropped in from a trip fall into place. Newest first is a setting; dragging one item makes it the owner's own order.
 > - **The Gallery section shows albums, not cards.** Its view, Albums, sets each album as a band: its title and counts, its cover in a bento grid, its short description and "See all 21", then a quiet break before the next. Albums come newest first, by their latest picture.
-> - **The cover** is the album's few pictures up front, in a bento grid of 12 columns of square cells, every tile whole cells from 2 to 12 each way. Until the owner arranges it, it's the album's first items in a preset that suits their number; Set as cover picture picks its lead, and Edit cover arranges it tile by tile. On a phone it's redrawn on 6 columns by a fixed rule, unless he arranges that too.
+> - **The cover** is the album's few pictures up front, in a bento grid of 12 columns of square cells, every tile whole cells from 2 to 12 each way. Until the owner arranges it, it's the album's first items in a preset that suits their number; Set as cover picks its lead, and Edit cover arranges it tile by tile. On a phone it's redrawn on 6 columns by a fixed rule, unless he arranges that too.
 > - **Edit mode gains an Albums screen and an album editor** shaped like a photo app's album: a grid of every album; inside one, the album as a reader sees it, a grid of its items to select, drag, open and describe, files dropped anywhere uploading in the background, and the cover arranged in place ([§9](#9-edit-mode)).
 > - **Automatic first, override anywhere.** The order, the cover, its phone layout, each picture's focus point and date, a linked video's poster and details, and alt text suggested by the owner's AI service are all worked out; he overrides any of them where he wants, and Back to automatic removes the override ([§18](#18-automatic-and-where-to-override-it)).
 > - **The album page** has the introduction, then every item in a justified grid (or, as Story, one after another with their words), each with its own address (`#item-<id>`). An album can also be shown inside any page, as an album block.
@@ -96,7 +96,7 @@ The request covers what a reader sees and what the owner curates. A complete fea
 
 | Product | What it does | What we take |
 |---|---|---|
-| Google Photos albums | An album is made in a moment and filled from the library or by uploading; its photos sort Oldest first, Newest first or Recently added, or into the owner's order by dragging; text can be added between photos; any photo can be made the album's cover; removing a photo from an album leaves it in the library ([Google Photos Help](https://support.google.com/photos/answer/6128849)) | Albums as their own thing; sorted by date by default, the owner's order on drag; text cards; Set as cover picture; remove is never delete |
+| Google Photos albums | An album is made in a moment and filled from the library or by uploading; its photos sort Oldest first, Newest first or Recently added, or into the owner's order by dragging; text can be added between photos; any photo can be made the album's cover; removing a photo from an album leaves it in the library ([Google Photos Help](https://support.google.com/photos/answer/6128849)) | Albums as their own thing; sorted by date by default, the owner's order on drag; text cards; Set as cover; remove is never delete |
 | Apple Photos albums | Albums sort in a custom order, oldest first or newest first; Make Key Photo sets the album's cover; deleting a photo from an album keeps it in the library ([iPhone User Guide](https://support.apple.com/guide/iphone/iph9463b0c24/ios)) | The same three orders; the cover chosen from inside the album; the library as the one home of a picture |
 | Both apps' editing | A grid to select from (a check on each picture, ranges, select all), a bar of actions for the selection, a viewer to describe one picture, its info beside it | Selection and a bar of actions; the viewer with an info panel to write in |
 | Flickr albums | An album has a cover, a title, a description and its count of photos and videos; the album page shows them all | The counts, the album's own words, the album page with everything |
@@ -267,13 +267,13 @@ The cover is the few items an album shows up front: in its band, in an album blo
 | The owner | Stored | The cover |
 |---|---|---|
 | Does nothing | Nothing | The album's first items in the order shown, in the preset that suits their number ([§6.4](#64-presets-and-the-default)) |
-| Presses **Set as cover picture** on an item | `cover.lead` | The same, with that item first, so it takes the lead tile; the rest still automatic |
+| Presses **Set as cover** on an item | `cover.lead` | The same, with that item first, so it takes the lead tile; the rest still automatic |
 | Arranges it in **Edit cover** | `cover.tiles` (and `cover.phone` if he arranges the phone's) | Exactly his tiles, until he chooses Use automatic cover |
 
 - **`cover.lead`** names an item; it's dropped when the cover is arranged, and the content check refuses it on a text card.
 - **`cover.tiles`** is the arranged cover: which items, where and how big, each tile as [§3.7](#37-tiles) says. An item with no tile is in the album but not in the cover.
 - **`cover.phone.tiles`**, rarely there, is the owner's own arrangement for phones; without it, the phone's is worked out from the tiles ([§6.3](#63-on-a-phone)).
-- **Set as cover picture on an arranged cover** puts the item in the lead tile (the largest, the first in reading order of equals): if it had a tile, the two swap; if it hadn't, it takes the lead's place and the old lead leaves the cover (it stays in the album).
+- **Set as cover on an arranged cover** puts the item in the lead tile (the largest, the first in reading order of equals): if it had a tile, the two swap; if it hadn't, it takes the lead's place and the old lead leaves the cover (it stays in the album).
 - **The cover picture** is the item in the lead tile. It's the album's picture on its cards, the planet's previews and social cards. A video or linked video gives its poster; a drawing can't be a social picture (V46), so the first raster picture in the cover stands in there.
 - **Text cards** never have a tile: the cover is pictures.
 
@@ -554,7 +554,7 @@ The automatic cover is worked out, not saved: adding items, sorting the album or
 ### 6.5 How a tile shows its item
 
 - **Fill** (the default for pictures, videos and linked videos): the tile is covered, cropped round the picture's focus point (its sidecar's `focus`, measured when it's uploaded and changed in the viewer, [§4](#4-media)). No crop file is made: the same master serves every tile shape.
-- **A tile's own focus.** When one tile's shape cuts the picture badly round its focus (a tall tile of a wide group photo), the owner drags the focus for that tile alone (`focus`, [§9.6](#96-the-cover)); the picture's own focus, used on every other page, is untouched. Use the picture's focus removes it. The phone's tile uses the same point.
+- **A tile's own focus.** When one tile's shape cuts the picture badly round its focus (a tall tile of a wide group photo), the owner drags the focus for that tile alone (`focus`, [§9.6](#96-the-cover)); the picture's own focus, used on every other page, is untouched. Use its focus removes it. The phone's tile uses the same point.
 - **Fit** (the default for drawings): the whole item, on its own background colour, taken from its edges (the picture's `bg`, as [media §9](../content/media.md#9-shapes-thumbnails-and-crops) does), so a fitted picture never sits on an unrelated colour.
 - **Sizes.** A tile asks for the widths a slot of its size needs: its share of the wide width on a wide screen and of the screen on a phone, from the site's `sizes()` helper, never a rem literal.
 
@@ -693,7 +693,7 @@ The page's one lightbox keeps its look (the smoke scrim, the stage, Previous and
 ### 8.3 Words: the caption and the info panel
 
 - **The caption** sits under the stage, as today. When the item has a description, a "More" button follows the caption and opens the info panel.
-- **The info panel** holds, in order: the caption, the description (rich text), the date taken and the place ("Taken 12 March 2026, Shillong"; each when known, the date hidden by the album's `dates: false`), the credit and licence, a video's length, a linked video's "Watch on YouTube" (or Vimeo) link, Download when it's allowed, then "From the album: Summer sketches" with "Open the album" (left out on the album page) and "Copy a link to this".
+- **The info panel** holds, in order: the caption, the description (rich text), the date taken and the place ("Taken 12 March 2026, Shillong"; each when known, the date hidden by the album's `dates: false`), the credit and licence, a video's length, a linked video's "Watch on YouTube" (or Vimeo) link, Download when it's allowed, then "From the album: Summer sketches" with "Open the album" (left out on the album page) and "Copy item link".
 - **Download** is offered only where the owner allows it: the album's **Allow downloads** (`download: true`), and for one item its own `download` (set in the viewer, or for a selection), which overrides the album's either way. It's never offered for a linked video (the provider's video isn't the owner's to hand out). The button names the file's kind and weight ("Download picture, 2.1 MB"), and the file is named `<album title's slug>-<item id>.<ext>` (from the title, never the address: a private album's is its secret token):
   - **a picture:** its largest published size, as WebP (3840 px when it's kept large);
   - **a drawing:** its cleaned SVG;
@@ -771,7 +771,7 @@ Albums are made and kept the way a photo app keeps them: a screen of every album
 `/_edit/albums/`, a screen of its own in edit mode's side navigation (an entry in `SCREENS`, found by the action center as "Albums", "Gallery" and "Photos").
 
 - **A grid of album cards,** in the gallery's order ([§5](#5-the-albums-view)), drafts first: each its cover picture, its title, its count ("21 items"), its span of dates, and its tags (Draft, Private, and its section when it isn't the gallery's). Pressing a card opens its album.
-- **New album** creates an untitled draft at once, in the section whose view is Albums (with none, in the first section, saying so), and opens it with its title selected to type over. There's no form to fill first: as in a photo app, the album exists, then it's filled.
+- **Add album** creates an untitled draft at once, in the section whose view is Albums (with none, in the first section, saying so), and opens it with its title selected to type over. There's no form to fill first: as in a photo app, the album exists, then it's filled.
 - **Drop files on the screen** and a new album is made from them, titled from the span of their dates ("March 2026") for the owner to rename, and they upload into it ([§9.4](#94-adding)).
 - **Find and filter:** a search by title, and filters for Drafts, Private and a section.
 - **Each card's menu:** Open, Open on the site (published only), Copy its address, and Delete. Delete asks first and says what it keeps: "Delete Summer sketches? Its 21 pictures stay in your library." It removes the album's file and its node, never a picture ([§9.9](#99-the-library)); it's refused, with the pages named, while a published page shows it in an album block (V51).
@@ -785,7 +785,7 @@ Albums are made and kept the way a photo app keeps them: a screen of every album
 <figure class="slate-figure" data-diagram="gallery-editor">
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 700" role="img" aria-labelledby="ga-editor__title ga-editor__desc" preserveAspectRatio="xMidYMid meet" data-slate-svg-motion="viewport" data-slate-safe-margin="24">
 <title id="ga-editor__title">The album editor</title>
-<desc id="ga-editor__desc">The album editor, from top to bottom. The header holds the album's title and its actions: Add, Sort, Edit cover, Settings, Preview and Publish. Below it, the album's title, short description and introduction are typed in place, with a line of facts: the count, the span of dates, and how many pictures need alt text, with Review. Then the cover as its band will look, marked Automatic, with Set as cover picture and Edit cover as the ways to change it. A selection bar shows while items are selected, with what they can do. Below it, every item is in a grid of thumbnails in the order shown, some selected, with a text card across the grid between two rows. Beside the grid, the viewer shows one item large with its words to edit: caption, description, alt text with Suggest, date taken and place, downloads, and the other albums it's in.</desc>
+<desc id="ga-editor__desc">The album editor, from top to bottom. The header holds the album's title and its actions: Add, Sort, Edit cover, Settings, Preview and Publish. Below it, the album's title, short description and introduction are typed in place, with a line of facts: the count, the span of dates, and how many pictures need alt text, with Review. Then the cover as its band will look, marked Automatic, with Set as cover and Edit cover as the ways to change it. A selection bar shows while items are selected, with what they can do. Below it, every item is in a grid of thumbnails in the order shown, some selected, with a text card across the grid between two rows. Beside the grid, the viewer shows one item large with its words to edit: caption, description, alt text with Suggest, date taken and place, downloads, and the other albums it's in.</desc>
 <g id="ga-editor__frame" data-slate-svg-step="1" data-slate-svg-effect="fade-rise">
 <rect id="ga-editor__body-1" x="40" y="40" width="920" height="620" rx="16" fill="var(--color-neutral-bg-1)" stroke="var(--color-neutral-stroke-1)" stroke-width="1.5" />
 <rect id="ga-editor__body-2" x="56" y="56" width="888" height="44" rx="10" fill="var(--color-neutral-bg-1)" stroke="var(--color-neutral-stroke-2)" stroke-width="1.5" />
@@ -808,13 +808,13 @@ Albums are made and kept the way a photo app keeps them: a screen of every album
 <rect id="ga-editor__body-7" x="472" y="248" width="124" height="44" rx="8" fill="var(--color-neutral-bg-1)" stroke="var(--color-neutral-stroke-1)" stroke-width="1.5" />
 <rect id="ga-editor__body-8" x="340" y="300" width="124" height="44" rx="8" fill="var(--color-neutral-bg-1)" stroke="var(--color-neutral-stroke-1)" stroke-width="1.5" />
 <rect id="ga-editor__body-9" x="472" y="300" width="124" height="44" rx="8" fill="var(--color-neutral-bg-1)" stroke="var(--color-neutral-stroke-1)" stroke-width="1.5" />
-<text x="620" y="280" text-anchor="start" font-family="Segoe UI, system-ui, -apple-system, sans-serif" fill="var(--color-neutral-fg-2)" font-size="13" data-slate-fit-target="ga-editor__body-4" data-slate-fit-padding="16">Set as cover picture on any item,</text>
+<text x="620" y="280" text-anchor="start" font-family="Segoe UI, system-ui, -apple-system, sans-serif" fill="var(--color-neutral-fg-2)" font-size="13" data-slate-fit-target="ga-editor__body-4" data-slate-fit-padding="16">Set as cover on any item,</text>
 <text x="620" y="302" text-anchor="start" font-family="Segoe UI, system-ui, -apple-system, sans-serif" fill="var(--color-neutral-fg-2)" font-size="13" data-slate-fit-target="ga-editor__body-4" data-slate-fit-padding="16">or Edit cover to arrange it</text>
 </g>
 <g id="ga-editor__selection" data-slate-svg-step="4" data-slate-svg-effect="fade-rise">
 <rect id="ga-editor__body-10" x="56" y="370" width="888" height="40" rx="10" fill="var(--color-neutral-bg-1)" stroke="var(--color-neutral-stroke-2)" stroke-width="1.5" />
 <text x="72" y="396" text-anchor="start" font-family="Segoe UI, system-ui, -apple-system, sans-serif" fill="var(--color-neutral-fg-1)" font-size="15" font-weight="600" data-slate-fit-target="ga-editor__body-10" data-slate-fit-padding="16">4 selected</text>
-<text x="220" y="396" text-anchor="start" font-family="Segoe UI, system-ui, -apple-system, sans-serif" fill="var(--color-neutral-fg-2)" font-size="13" data-slate-fit-target="ga-editor__body-10" data-slate-fit-padding="16">Add to cover · Set as cover picture · Add to album · Set the date · Remove from album</text>
+<text x="220" y="396" text-anchor="start" font-family="Segoe UI, system-ui, -apple-system, sans-serif" fill="var(--color-neutral-fg-2)" font-size="13" data-slate-fit-target="ga-editor__body-10" data-slate-fit-padding="16">Add to cover · Set as cover · Add to album · Set the date · Remove from album</text>
 </g>
 <g id="ga-editor__grid" data-slate-svg-step="5" data-slate-svg-effect="fade-rise">
 <rect id="ga-editor__body-11" x="56" y="422" width="600" height="222" rx="14" fill="var(--color-neutral-bg-2)" stroke="var(--color-neutral-stroke-2)" stroke-width="1.5" />
@@ -885,7 +885,7 @@ The grid works as a photo app's does:
 - **Opening:** with nothing selected, pressing a thumbnail (or Enter on it) opens the viewer at it ([§9.5](#95-the-viewer-and-the-words)).
 - **The selection bar,** above the grid while anything is selected, says how many ("4 selected") and holds what they can do:
   - **Add to cover** and **Remove from cover** (a tile placed where it fits first, or taken out; [§9.6](#96-the-cover));
-  - **Set as cover picture**, with one item selected;
+  - **Set as cover**, with one item selected;
   - **Add to album**, another album or a new one (the pictures stay in this one too);
   - **Set the date** and **Set the place**, for every selected picture at once;
   - **Downloads**: Follow the album, Allow or Don't allow;
@@ -902,7 +902,7 @@ Adding is fast and never asks a question it can answer itself. Words come after,
   - **Duplicates:** a file whose fingerprint matches a picture already in the library isn't uploaded again: that picture is added instead; one already in this album is skipped. The status line says so once ("3 were in your library: added from there. 1 was already here.").
   - **A refused file** (a format the site can't keep, a video over 100 MB) leaves its thumbnail with the reason and what to do, and Dismiss; the others carry on.
   - **An animated PNG** is kept as a still, and its thumbnail says so, with the way to keep it moving ([§4](#4-media)).
-- **Add → From your library** opens the library picker full screen: the library's timeline grouped by month taken, with the same selection as the album's grid, a search, and the filters of the Media screen (Not in any album first among them). Pictures already in the album are marked and can't be added twice. **Add 12** adds them, in their places.
+- **Add → Add from library** opens the library picker full screen: the library's timeline grouped by month taken, with the same selection as the album's grid, a search, and the filters of the Media screen (Not in any album first among them). Pictures already in the album are marked and can't be added twice. **Add 12** adds them, in their places.
 - **Add → YouTube or Vimeo link,** or pasting such an address anywhere on the editor: edit mode asks the provider (oEmbed, through the dev server) for its title, shape, length (Vimeo) and thumbnail, makes a linked video in the library with that thumbnail kept as its poster, the site's own picture ([§4.2](#42-videos-and-linked-videos)), and adds it. Pasting the address is all it needs. An address the library already has adds that one. Tests never reach the providers: they use a stand-in fetch.
 - **Add → Text** adds a text card after the focused item (or at the end), switching a sorted album to Your order, and opens it to type.
 - **Upload into the album's folder:** new files go to `content/media/albums/<id>/` (a private album's to `private-pages/media/albums/<id>/`). They're library items like any other, and the folder is only where they were made: they can be used anywhere, and they stay when the album is deleted.
@@ -921,7 +921,7 @@ Pressing an item opens the **viewer**: the item large, in the lightbox's look, w
   - **Downloads:** Follow the album, Allow or Don't allow (this album's);
   - **Where it's used:** "Also in Monsoon walks and Project notes", each a link. A picture's words are the picture's, so changing them here changes them there ([§3.4](#34-where-the-words-come-from));
   - its credit and licence, folded under **More**.
-- **The item's actions,** in the viewer's top bar: Set as cover picture, Add to cover or Remove from cover, Add to album, Open in the library, Remove from album.
+- **The item's actions,** in the viewer's top bar: Set as cover, Add to cover or Remove from cover, Add to album, Open in the library, Remove from album.
 - **Reviewing alt text:** "Review" (from the facts line or Publish) opens the viewer on only the pictures that need alt text, with the field focused. A suggestion is in the field marked **Suggested**; **Accept** (or Enter) saves it and moves to the next, and typing makes it the owner's. **Accept all 7 suggestions** is offered once every remaining picture has one, after he's seen them in the strip below the stage. The review ends by itself when none are left.
 - **A text card** opens in the viewer as its words, in a `RichField`, with Delete.
 
@@ -929,7 +929,7 @@ Pressing an item opens the **viewer**: the item large, in the lightbox's look, w
 
 The cover band at the top of the editor is the cover as readers will see it. It can be changed three ways, from the least work to the most:
 - **Do nothing:** it's automatic, and follows the album.
-- **Set as cover picture** on any item (the selection bar, the viewer, a thumbnail's menu) makes it the cover's lead ([§3.6](#36-the-cover)).
+- **Set as cover** on any item (the selection bar, the viewer, a thumbnail's menu) makes it the cover's lead ([§3.6](#36-the-cover)).
 - **Edit cover** arranges it tile by tile, in place. The band becomes the arranger, and the items grid below becomes its tray.
 
 <figure class="slate-figure" data-diagram="gallery-arranger">
@@ -1029,7 +1029,7 @@ The cover band at the top of the editor is the cover as readers will see it. It 
 - **Phone** shows the phone's band, worked out by the rule ([§6.3](#63-on-a-phone)) and read only, with **Arrange for phones**, which copies it into an arrangement the owner can change with the same moves, handles and keys on 6 columns. Once arranged, the view says so, notes tiles added since, and offers **Back to automatic**, which removes it.
 - **Per tile,** in the tile bar:
   - how it shows its item: By kind (the default: Fill, or Fit for a drawing), Fill or Fit;
-  - for a filled tile, **Its own focus here:** dragging the point on the tile sets the tile's `focus`; **Use the picture's focus** removes it;
+  - for a filled tile, **Its own focus here:** dragging the point on the tile sets the tile's `focus`; **Use its focus** removes it;
   - for a video file or an animated picture at most 10 MB, **Play in the band** ([§4.3](#43-motion)), refused with the reason for a third tile;
   - **Hide on phones** (`onPhones: false`), refused for the cover's last tile on phones;
   - Remove from cover.
@@ -1085,7 +1085,7 @@ The Media screen becomes the library every album is made from, as a photo app's 
 | The article editor | Album in the block inserter, chosen from the site's albums ([§7.2](#72-an-album-inside-another-page)); a figure can use any library picture, an album's included |
 | AI | The switch "Suggest alt text for new pictures" ([§9.8](#98-suggested-alt-text)) |
 | Access | A grant's scope can name an album, as it names a page; a section's grant covers its albums |
-| The action center | Finds albums by title and opens the album editor; finds "New album" |
+| The action center | Finds albums by title and opens the album editor; finds "Add album" |
 | Save to remote | Albums and their files saved with the rest, private first, as pages are |
 
 ## 10. Accessibility
@@ -1181,7 +1181,7 @@ A private album is shared the way a private page is ([access spec §2.1](../acce
   - `c.lightbox`: the info panel's width, beside its existing thumbnail size;
   - `c.editor-photo-grid` (owned by `PhotoGrid`): the thumbnail's size, the check circle, the selection's outline, the drop marker;
   - `c.editor-arranger` (owned by `AlbumCover`): the grid's line, the hole's hatching, the chosen tile's outline and the drop outline.
-- **Icons:** the Play badge reuses the video block's; Animated, Info, Copy link, Pause, Zoom in, Zoom out and Download as built; new ones for the check circle, Cover, Set as cover picture, Text and Linked video, imported one at a time into the icon set.
+- **Icons:** the Play badge reuses the video block's; Animated, Info, Copy link, Pause, Zoom in, Zoom out and Download as built; new ones for the check circle, Cover, Set as cover, Text and Linked video, imported one at a time into the icon set.
 - **Stories:** `AlbumBand` (still and playing), `AlbumGrid` (with captions, with text cards, and as a Story), the Lightbox's album states, the album block, and the editor's `PhotoGrid`, `MediaInfo` and album parts each get their stories, so they appear in the design library, the parts library and their screenshots.
 
 ## 16. Rules
@@ -1235,13 +1235,13 @@ The content check holds these for every site, continuing the numbering of the [s
 | D-G20 | **Providers are one list in code,** YouTube and Vimeo for now | Three readers knew them apart; one list makes the next provider one entry, and a file covers any other video today |
 | D-G21 | **An album can be shown in another page** as a block, as arranged, its words never copied | A project's article can carry its pictures without a second copy to keep up |
 | D-G22 | **Alt text is suggested** by the owner's own AI service and saved only when he accepts it | Writing alt text for dozens of pictures is the upkeep most likely to be skipped; a suggestion he reviews keeps every picture described without taking the decision from him |
-| D-G23 | **No "cover first" button:** the automatic cover follows the album's order until he sets a lead or arranges it | The cover and the album keep their own orders (D-G4); Set as cover picture and Use automatic cover cover what such a button would |
+| D-G23 | **No "cover first" button:** the automatic cover follows the album's order until he sets a lead or arranges it | The cover and the album keep their own orders (D-G4); Set as cover and Use automatic cover cover what such a button would |
 | D-G24 | **A picture's words are the picture's,** kept in its sidecar and shown wherever it's used; an album has no caption of its own for an item | As in a photo app: written once, a picture's words follow it. Per-album words would make the owner describe the same picture twice and keep both. An article figure keeps its own caption, since a figure's caption is part of the article's prose |
 | D-G25 | **Linked videos are library items,** with their own sidecar and a poster kept as the site's own picture | They then work like any picture: in several albums, chosen in the picker, described once; an album item never carries a provider's address |
 | D-G26 | **Albums are sorted by date taken, oldest first, by default;** dragging switches to the owner's own order, which Sort can undo | How Google Photos and Apple Photos keep albums: no upkeep as pictures are added, and full control the moment he wants it |
 | D-G27 | **Text cards** put words between pictures, and need the owner's own order | Google Photos' text in albums; it tells a story through a set of pictures without making the album a page |
 | D-G28 | **Upload first, describe after:** adding never asks a question, and alt text is needed only to publish | Adding 40 pictures should take one drop; the words are better written looking at each picture, and the review with suggestions makes it quick |
-| D-G29 | **The cover** replaces "up front", with Set as cover picture as the smallest override | Photo apps' word and gesture; most albums need at most one choice, and arranging the whole band stays one step further |
+| D-G29 | **The cover** replaces "up front", with Set as cover as the smallest override | Photo apps' word and gesture; most albums need at most one choice, and arranging the whole band stays one step further |
 | D-G30 | **The gallery lists albums newest first** by their latest date taken (else when they were made), with the owner's own order one drag away | A gallery that stays current by itself as albums are added; the section's `albumOrder` keeps his order where he sets it |
 | D-G31 | **Removing never deletes, deleting an album never deletes its pictures,** and deleting a picture is done in the library, saying which albums lose it | What Google Photos and Apple Photos do, so nothing is lost by tidying an album; git and Save to remote stand in for a trash |
 | D-G32 | **Duplicates are found by the file's fingerprint** and added from the library instead of uploaded again | Dropping a folder twice, or a picture already used elsewhere, mustn't make copies to describe twice |
@@ -1254,12 +1254,12 @@ Every choice in an album has an answer worked out from its content, so an album 
 | What | Automatically | Override, and where | Stored | Back to automatic |
 |---|---|---|---|---|
 | The album's order | By date taken, oldest first ([§3.3](#33-order)) | Sort: Newest first; or dragging, which makes it Your order | the album's `order` (and `items`' order) | Sort: Oldest first |
-| The cover picture | The album's first item in its order | Set as cover picture, on any item | `cover.lead` | Use automatic cover |
+| The cover picture | The album's first item in its order | Set as cover, on any item | `cover.lead` | Use automatic cover |
 | Which items are in the cover, and how they're arranged | The album's first items in the preset that suits their number, its lead first ([§6.4](#64-presets-and-the-default)) | Edit cover ([§9.6](#96-the-cover)) | `cover.tiles` | Use automatic cover |
 | The phone's band | Worked out from the wide band by the rule ([§6.3](#63-on-a-phone)) | Arrange for phones, in Edit cover's Phone view | `cover.phone.tiles` | Back to automatic |
 | A tile on phones | Shown | Hide on phones, in the tile bar | the tile's `onPhones` | Show on phones |
 | How a tile shows its item | Fill for pictures, videos and linked videos; Fit for drawings | Fill or Fit, in the tile bar | the tile's `display` | By kind |
-| Where a picture is cropped | Its focus point, measured when it's uploaded ([§4](#4-media)) | Dragging the point in the viewer (every use), or on one tile (that tile only) | the sidecar's `focus`; the tile's `focus` | Find the focus (the picture); Use the picture's focus (the tile) |
+| Where a picture is cropped | Its focus point, measured when it's uploaded ([§4](#4-media)) | Dragging the point in the viewer (every use), or on one tile (that tile only) | the sidecar's `focus`; the tile's `focus` | Find the focus (the picture); Use its focus (the tile) |
 | A tile that plays in the band | Still | Play in the band, in the tile bar, within its limits ([§4.3](#43-motion)) | the tile's `play` | Turning it off |
 | The album's short description | The first sentence of its introduction | Typing one, under the title | the album's `summary` | Clearing it |
 | The date taken | Read from the file at upload | Changing or clearing it, in the viewer; Set the date, for a selection | the sidecar's `taken` | Clearing it hides it |
@@ -1272,7 +1272,7 @@ Every choice in an album has an answer worked out from its content, so an album 
 | Downloads | None | Allow downloads, for the album; Allow or Don't allow, for an item | the album's and the item's `download` | Follow the album; turning it off |
 | A linked video's title, shape, length and poster | From the provider when the address is pasted; the poster its thumbnail, kept as the site's own picture | Changing any of them, in the viewer | the linked video's sidecar | Pasting the address again |
 | Alt text | Suggested by the owner's AI service when he has one ([§9.8](#98-suggested-alt-text)) | Accepting, editing or writing it | the sidecar's `alt` | None: alt text is never removed automatically |
-| The album's card and social picture | The cover picture ([§3.6](#36-the-cover)) | Set as cover picture | `cover.lead` or the lead tile | Use automatic cover |
+| The album's card and social picture | The cover picture ([§3.6](#36-the-cover)) | Set as cover | `cover.lead` or the lead tile | Use automatic cover |
 | The order of albums in the gallery | Newest first, by each album's latest date taken, else when it was made ([§5](#5-the-albums-view)) | Sort on the Albums screen; dragging an album | the section's `albumOrder` (and the structure's order) | Sort: Newest first |
 | The album's section | The section whose view is Albums | Section, in Settings | the album's node | None |
 | The counts | Worked out from the items | None | Nothing | Nothing |
@@ -1367,12 +1367,12 @@ Built 23 and 24 October 2026, waiting on the owner's review of the whole experie
 
 - **The contract (A1).** An album is `content/albums/<id>.json` (a private one `private-pages/albums/<id>.json`), placed by `{type: "album", id}`, in `src/site/content/schema.ts`; the rules V38 to V55, `albumOrder`, `albumsOrder` and the cover's default with its lead are pure in `src/site/content/album.ts`. The site draws an album with `AlbumLayout`; `IndexLayout`'s albums view, the album block, cards, the head and the planet's frame read the album files. `ArticleLayout` lost its album branch. Words are read from the pictures' sidecars.
 - **The library (A1, A3).** Every upload gets a fingerprint, and a file already in the library is added from there and said so (V55). `scripts/fingerprint-library.mjs` added fingerprints to the existing library; two byte-identical pictures were left for the owner. A video file's date is read from the file. A YouTube or Vimeo address becomes a linked video, a library item with its own poster (`server/albumEmbed.ts`); one already in the library is reused. `server/libraryIndex.ts` answers what uses an item, and finds an item by fingerprint or address.
-- **The Albums screen and the album editor (A2).** `/_edit/albums/` (`AlbumCards`) and `/_edit/albums/<id>/`: the words typed in place (`AlbumWords`), the cover drawn as its band, the items on the kit's `PhotoGrid`. The grid groups items by day while the order is by date, and days flow side by side as in Google Photos; the arrow keys move by the cells' positions. New album makes an untitled draft at once, with no dialog. Every change saves through the store with undo. A long title in the top bar is kept to one line and cut with an ellipsis (the recipe `data-title-line`, the token `c.editor.title-min`).
+- **The Albums screen and the album editor (A2).** `/_edit/albums/` (`AlbumCards`) and `/_edit/albums/<id>/`: the words typed in place (`AlbumWords`), the cover drawn as its band, the items on the kit's `PhotoGrid`. The grid groups items by day while the order is by date, and days flow side by side as in Google Photos; the arrow keys move by the cells' positions. Add album makes an untitled draft at once, with no dialog. Every change saves through the store with undo. A long title in the top bar is kept to one line and cut with an ellipsis (the recipe `data-title-line`, the token `c.editor.title-min`).
 - **The viewer and the words (A3).** `AlbumViewer` (`?item=` in the address) and `MediaInfo` beside it: every field is the picture's, saved to its sidecar (`PUT media-words`), with Also in. The selection's actions are `AlbumBulk`: Add to album, Set the date, Set the place, downloads. Review alt text (`?review=1`) steps through the pictures without it.
-- **The cover (A4).** Set as cover picture sets the lead; Edit cover (`AlbumCoverEditor`, its rules in `model/cover.ts`) arranges the band by drag and by keys, for the phone too, and Use automatic cover removes the arrangement. At rest the editor shows a compact preview (`c.editor-album-cover-preview`).
-- **The library screen (A5).** Media is the library on `PhotoGrid` and `MediaInfo` (`MediaLibrary`, `server/mediaLibrary.ts`, `model/library.ts`): the timeline by month taken, the Show filter (Not in any album, In albums, Needs alt text, the kinds), Used in, Add link, and a selection's Add to album, Set the date, Set the place and Delete. Delete names the albums the pictures leave, and is refused while an article uses one. Sections lists a section's albums tagged Album, with the gallery's order in its Settings; the action center finds albums and New album. The selection is shared by the album editor and the library (`scripts/photoSelection.ts`).
+- **The cover (A4).** Set as cover sets the lead; Edit cover (`AlbumCoverEditor`, its rules in `model/cover.ts`) arranges the band by drag and by keys, for the phone too, and Use automatic cover removes the arrangement. At rest the editor shows a compact preview (`c.editor-album-cover-preview`).
+- **The library screen (A5).** Media is the library on `PhotoGrid` and `MediaInfo` (`MediaLibrary`, `server/mediaLibrary.ts`, `model/library.ts`): the timeline by month taken, the Show filter (Not in any album, In albums, Needs alt text, the kinds), Used in, Add link, and a selection's Add to album, Set the date, Set the place and Delete. Delete names the albums the pictures leave, and is refused while an article uses one. Sections lists a section's albums tagged Album, with the gallery's order in its Settings; the action center finds albums and Add album. The selection is shared by the album editor and the library (`scripts/photoSelection.ts`).
 - **Private albums (A6).** Settings' "Who can see it" moves the album file and its own folder between `content/` and `private-pages/` in one store transaction (`server/access.ts`, the code behind `setPageAccess`). A private picture also used elsewhere stops it, naming the page (V52); one used nowhere else is moved into the album's folder after asking. A grant's scope lists private albums. An open album's page carries its canonical address. The first build's leftovers are gone, and `content.test.ts` searches `src/` for them (DoD row 49).
-- **Two columns and the gallery's setup (24 October 2026, the owner's review).** The album editor opens in two columns: `AlbumList` (the gallery's entry, New album, Show as tiles, the gallery's albums with a drag handle each, then "Not in the gallery") beside the album, in a `SplitView`. The Albums screen switches between tiles and that list (`?view=list|tiles`, remembered in the cookie `editor.albums.view`; `?new=1` always shows tiles); the list's first entry opens `GallerySetup` (title, description, order of albums, and the section when there's more than one gallery). Dragging an album, or Alt with an arrow key, saves the gallery's order as Your order (`PUT gallery/<section>/order`); the setup saves with `PUT gallery/<section>`. The rules are pure in `src/site/editor/model/gallery.ts`, the writes in `server/gallery.ts`. The album editor's Preview in the gallery opens a dialog drawing the album's `AlbumBand` from what's saved (the region `album-preview`, drawn only when asked).
+- **Two columns and the gallery's setup (24 October 2026, the owner's review).** The album editor opens in two columns: `AlbumList` (the gallery's entry, Add album, Show as tiles, the gallery's albums with a drag handle each, then "Not in the gallery") beside the album, in a `SplitView`. The Albums screen switches between tiles and that list (`?view=list|tiles`, remembered in the cookie `editor.albums.view`; `?new=1` always shows tiles); the list's first entry opens `GallerySetup` (title, description, order of albums, and the section when there's more than one gallery). Dragging an album, or Alt with an arrow key, saves the gallery's order as Your order (`PUT gallery/<section>/order`); the setup saves with `PUT gallery/<section>`. The rules are pure in `src/site/editor/model/gallery.ts`, the writes in `server/gallery.ts`. The album editor's Preview in the gallery opens a dialog drawing the album's `AlbumBand` from what's saved (the region `album-preview`, drawn only when asked).
 - **Cover backgrounds and corners (25 October 2026, the owner's review).** Edit cover's toolbar is one row (the part's own `data-cover-toolbar`, not an `ActionBar`, which wraps). The chosen tile's bar has a Background row (`scripts/coverBackground.ts`): Auto, up to five colours extracted from the picture (`extractColors`), a `ColorField` and the browser's `EyeDropper`, hidden where there's none; `setBackground` in `model/cover.ts` writes the tile's `bg`, which `AlbumBand` draws behind the picture. The gallery's setup has a Rounded corners switch, saved as the section's `albumCorners: "square"` when off; `albumSquare` (the repository) makes every band of that section's albums square.
 - **A simpler canvas (25 October 2026, the owner's review).** A tile is the `bare` `TileButton`: just its picture, edge to edge, with the band's gap and the gallery's corners (`data-square`); chosen, a ring inside its edge. The resize handles are invisible hit zones with their cursors. Preview (`data-cover-preview`) hides the arranger's chrome and makes the canvas inert.
 - **The tile bar's groups (25 October 2026, the owner's review).** Related buttons are joined in the new `ButtonGroup` fundamental (Wide and Phone; Move; Width; Height; By kind, Fill or Fit; Auto) rather than separate pills. The bar is a header (the tile's name, its place, Remove from cover) over a two-column form of labelled rows. A swatch is the colour itself, edge to edge (a `bare` `TileButton` in a cell of that colour, ringed when chosen), and the picker and eyedropper sit apart from the picture's colours.
@@ -1402,7 +1402,7 @@ The first build (G1 to G10, [§20](#20-as-built)) made an album a page of kind `
 | An item's `caption`, `description`, `place` and `taken` overrides | Retired: the words are the picture's (D-G24) |
 | `showcase` and Use the default | Renamed: `cover`, Use automatic cover |
 | The article editor's Items and Up front views, `AlbumItems`, `AlbumItemDetails`, `AlbumArranger`, `AlbumSettings` as built | Replaced by the Albums screen and the album editor ([§9](#9-edit-mode)); the arranger's canvas moves into Edit cover |
-| New article → Album, and Pages' Album filter | Retired: New album on the Albums screen |
+| New article → Album, and Pages' Album filter | Retired: Add album on the Albums screen |
 | The album block naming a page | Names an album ID |
 | `ArticleLayout`'s album branch | Retired: `AlbumLayout` |
 

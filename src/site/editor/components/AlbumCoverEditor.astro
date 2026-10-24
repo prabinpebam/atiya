@@ -83,7 +83,7 @@ const SHOW: ButtonGroupOption[] = [
       <Button variant="quiet" size="sm" icon="restore" data-cover-phone-back="">Back to automatic</Button>
     </span>
     <span data-cover-when="wide">
-      <Button variant="quiet" size="sm" icon="restore" data-cover-automatic="">Auto</Button>
+      <Button variant="quiet" size="sm" icon="restore" data-cover-automatic="">Use automatic</Button>
     </span>
     <span class="ce-end">
       <IconButton label="Cancel" icon="close" size="sm" shape="square" variant="quiet" data-cover-cancel="" />
@@ -118,7 +118,7 @@ const SHOW: ButtonGroupOption[] = [
           <Text as="span" variant="label">Show it</Text>
           <div class="ce-controls">
             <ButtonGroup label="Show it" options={SHOW} />
-            <Button variant="quiet" size="sm" icon="focus" data-cover-focus-reset="">Use the picture’s focus</Button>
+            <Button variant="quiet" size="sm" icon="focus" data-cover-focus-reset="">Use its focus</Button>
           </div>
         </div>
         <div class="ce-row" data-cover-when="wide">
@@ -182,7 +182,7 @@ const SHOW: ButtonGroupOption[] = [
 <style>
   .ce-toolbar {
     display: flex;
-    flex-wrap: nowrap;
+    flex-wrap: wrap;
     align-items: center;
     gap: var(--space-2);
     min-inline-size: 0;

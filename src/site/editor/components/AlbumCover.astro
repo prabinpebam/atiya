@@ -72,7 +72,7 @@ const json = JSON.stringify(items).replace(/</g, '\\u003c');
     }
     <div class="cover-side">
       <Text variant="small" tone="muted">
-        {arranged ? 'Arranged by hand. Edit cover to move, resize or swap its tiles, or to go back to the automatic cover.' : 'Worked out from the cover picture and the album’s first items. Select a picture and choose Set as cover picture, or Edit cover to arrange it yourself.'}
+        {arranged ? 'Arranged by hand. Edit cover to move, resize or swap its tiles, or to go back to the automatic cover.' : 'Worked out from the cover picture and the album’s first items. Select a picture and choose Set as cover, or Edit cover to arrange it yourself.'}
       </Text>
       <Button variant="secondary" size="sm" icon="crop" disabled={!items.length} data-album-cover-edit="">Edit cover</Button>
     </div>

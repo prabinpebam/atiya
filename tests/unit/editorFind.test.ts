@@ -9,7 +9,7 @@ import type { Article, SiteSettings } from '../../src/site/content/schema';
 describe('the action center: edit mode', () => {
   it("lists edit mode's screens as the side navigation does: the Planet while it's on, Tests and the parts library on a source checkout", () => {
     const all = editScreens({ planet: true, managed: false }).map((s) => s.id);
-    expect(all).toEqual(['dashboard', 'articles', 'sections', 'navigation', 'planet', 'media', 'albums', 'recommendations', 'settings', 'theme', 'ways', 'access', 'ai', 'publish', 'tests', 'library']);
+    expect(all).toEqual(['dashboard', 'articles', 'sections', 'navigation', 'planet', 'media', 'albums', 'recommendations', 'highlights', 'settings', 'theme', 'ways', 'access', 'ai', 'publish', 'tests', 'library']);
     const managed = editScreens({ planet: false, managed: true }).map((s) => s.id);
     expect(managed).not.toContain('planet');
     expect(managed).not.toContain('tests');

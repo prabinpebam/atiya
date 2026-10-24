@@ -1,7 +1,7 @@
 ---
 /**
  * The albums list of edit mode's two columns (documentation/gallery/spec.md §9.1, §9.2): the gallery first (its
- * setup: title, description, the order of its albums), New album and the switch to tiles, then the gallery's
+ * setup: title, description, the order of its albums), Add album and the switch to tiles, then the gallery's
  * albums in its order, each with its cover, its title and what it holds, and a handle that moves it (the owner's
  * own order from then on); the albums in another section, or in none, after them. Shown beside an album being
  * edited and beside the gallery's setup.
@@ -49,7 +49,7 @@ const { gallery, albums, elsewhere, current, setupHref, tilesHref } = Astro.prop
     </Fragment>
     <div slot="add" class="tools">
       <span class="new">
-        <Button variant="primary" icon="plus" block data-album-list-new="">New album</Button>
+        <Button variant="primary" icon="plus" block data-album-list-new="">Add album</Button>
       </span>
       <IconButton label="Show as tiles" icon="views" variant="secondary" href={tilesHref} />
     </div>
@@ -72,7 +72,7 @@ const { gallery, albums, elsewhere, current, setupHref, tilesHref } = Astro.prop
         ) : (
           <p class="no-albums">
             <Text as="span" variant="small" tone="muted">
-              No albums in the gallery yet. New album makes one, ready to fill.
+              No albums in the gallery yet. Add album makes one, ready to fill.
             </Text>
           </p>
         )
@@ -112,7 +112,7 @@ const { gallery, albums, elsewhere, current, setupHref, tilesHref } = Astro.prop
     min-inline-size: 0;
   }
 
-  /* New album beside Show as tiles, in the list's add row */
+  /* Add album beside Show as tiles, in the list's add row */
   .tools {
     display: grid;
     grid-template-columns: minmax(0, 1fr) auto;
