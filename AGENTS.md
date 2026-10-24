@@ -213,6 +213,13 @@ The owner's three kits, each a pinned git submodule (`main`) used through thin d
 | [agentic-craft](https://github.com/prabinpebam/agentic-craft) (`agentic-craft/`) | What is worth building and what success means | The `craft` skill and its seven others; the `grounding-critic` and `design-system-auditor` agents |
 | [agent-orchestration](https://github.com/prabinpebam/agent-orchestration) (`agent-orchestration/`) | How work is carried out, checked and adapted | The `orchestrate` skill and its four others; the `throughput-reviewer` agent |
 
+**Use them without being asked:** the owner never has to name a kit. Load the kit's skill yourself when its moment comes:
+- **Any multi-step task:** `orchestrate` first (the mode in one line, the bounds, then the loop). A one-step answer or a lookup doesn't need it.
+- **A new feature, a new page or section, or a change of intent:** `craft` (it routes to `ground`, `assumptions`, `definition-of-done`); before showing a spec or plan, a `grounding-critic` review.
+- **Any change to how the site, edit mode or the game looks:** `design-system` with this repository's design system documents, then a `design-system-auditor` review before showing it; words a person reads: `ui-copy`; anything a person waits on: `perceived-performance`; a claim that something is faster: `performance`.
+- **Choosing checks, merging or saying something is ready:** `stage-validation` with **Validation** below. **About every 30 minutes of running work, or when progress stalls:** `progress-review`, with the `throughput-reviewer` agent. **A status report, a handoff or delegating:** `coordinate`.
+- **Writing or changing anything in `documentation/`:** `slate`.
+
 Where they meet: a spec and its Definitions of Done are Slate pages in `documentation/`, reasoned with Craft (promise, user-can statements, assumptions, evidence) and carried out with Orchestration (mode, increments, checks, log), with this file's Validation tiers choosing the checks.
 
 **Which instruction wins** (highest first):
