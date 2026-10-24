@@ -13,6 +13,7 @@
 | Icons | Font Awesome Free (solid), imported by name | Only the icons that are used end up in the bundle |
 | Tests | Vitest (unit), Playwright + axe (E2E, accessibility) | Pure logic is unit-tested; the E2E tests drive `window.__game` in test builds |
 | Docs | Slate (pinned upstream git submodule in `slate/`), host folder `documentation/` | Static, offline, Markdown or HTML pages; this site |
+| Agent kits | [agentic-craft](https://github.com/prabinpebam/agentic-craft) and [agent-orchestration](https://github.com/prabinpebam/agent-orchestration), pinned git submodules beside Slate | Product reasoning and how agents carry out work, used through generated skills and agents in `.github/`; never read by a build |
 
 The reasons behind the stack are in [the tech-stack research](../poc-3d-navigation/research/tech-stack.md) and [the POC spec](../poc-3d-navigation/spec.md) §5.
 
@@ -96,3 +97,4 @@ The full rules and triggers are in AGENTS.md ("Validation").
 - After a Slate update, run `node slate/scripts/runtime-host.mjs sync --repo . --host documentation`, then `check`.
 - Slate is governed in [its own repository](https://github.com/prabinpebam/slate). This site pins an upstream commit rather than maintaining a copied package. On a fresh checkout, run `git submodule update --init slate`. To fetch upstream `main` and refresh the viewer, run `pwsh -File scripts/update-slate.ps1`, review the resulting changes, and commit the submodule pointer together with the generated runtime. Deployment fetches the pinned commit, never a moving latest version.
 - This site is the source of truth. A spec that changes while building is updated here, in the same change as the code.
+- Agents write specs and Definitions of Done with agentic-craft and carry the work out with agent-orchestration; [AGENTS.md](https://github.com/prabinpebam/atiya/blob/main/AGENTS.md) ("Agent kits") says which instruction wins. Fresh checkouts run `git submodule update --init slate agentic-craft agent-orchestration`; `pwsh -File scripts/update-agent-kits.ps1` moves both kits to upstream `main` and regenerates their skills and agents.

@@ -6,3 +6,11 @@
 	path = slate
 	url = https://github.com/prabinpebam/slate.git
 	branch = main
+[submodule "agent-orchestration"]
+	path = agent-orchestration
+	url = https://github.com/prabinpebam/agent-orchestration.git
+	branch = main
+[submodule "agentic-craft"]
+	path = agentic-craft
+	url = https://github.com/prabinpebam/agentic-craft.git
+	branch = main
