@@ -14,7 +14,7 @@ const many = (n: number) => `${n} ${n === 1 ? 'item' : 'items'}`;
 
 export function initLibraryScreen(root: HTMLElement, signal: AbortSignal) {
   const bar = root.querySelector<HTMLElement>('[data-library-selbar]');
-  const count = root.querySelector<HTMLElement>('[data-library-count]');
+  const count = bar?.querySelector<HTMLElement>('[data-selection-count]');
   const uses = (): Uses => {
     try {
       return JSON.parse(root.querySelector('[data-library-uses]')?.textContent ?? '{}');

@@ -42,4 +42,17 @@ test.describe('editor: albums: list and details', () => {
     await expect(page.locator('#album-words-title')).toHaveText('Harbour walks');
     await expect(page.locator('[data-title-line][data-album-heading]')).toHaveText('Harbour walks');
   });
+
+  test('choosing items shows the selection bar with its count, and Clear selection hides it', async ({ page }) => {
+    await page.goto('/_edit/albums/fixture-album/');
+    const bar = page.getByRole('group', { name: 'Selected items' });
+    await expect(bar).toBeHidden();
+    const items = page.locator('[data-album-items] li[data-item]');
+    await items.nth(0).click({ modifiers: ['Control'] });
+    await items.nth(1).click({ modifiers: ['Control'] });
+    await expect(bar).toBeVisible();
+    await expect(bar.getByRole('status')).toHaveText('2 selected');
+    await bar.getByRole('button', { name: 'Clear selection' }).click();
+    await expect(bar).toBeHidden();
+  });
 });

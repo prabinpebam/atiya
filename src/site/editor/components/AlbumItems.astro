@@ -12,8 +12,8 @@
  * @key Delete: removes the selection from the album (it stays in the library)
  */
 import Button from '../../components/fundamentals/Button.astro';
-import Text from '../../components/fundamentals/Text.astro';
 import PhotoGrid, { type PhotoCell } from '../kit/PhotoGrid.astro';
+import SelectionBar from '../kit/SelectionBar.astro';
 
 interface Props {
   /** The album's title, to name the grid. */
@@ -28,8 +28,7 @@ const { title, cells, days } = Astro.props;
 ---
 
 <div class="items" data-album-items>
-  <div class="bar" role="toolbar" aria-label="Selected items" data-album-selbar hidden>
-    <Text as="span" variant="label"><span role="status" data-album-selcount>0 selected</span></Text>
+  <SelectionBar data-album-selbar="">
     <span data-album-only="cover" hidden><Button size="sm" variant="secondary" icon="image" data-album-act="cover">Set as cover</Button></span>
     <span data-album-only="text" hidden><Button size="sm" variant="secondary" icon="edit" data-album-act="text">Edit the words</Button></span>
     <Button size="sm" variant="secondary" icon="arrow-up" data-album-act="start">Move to start</Button>
@@ -40,7 +39,7 @@ const { title, cells, days } = Astro.props;
     <Button size="sm" variant="secondary" icon="download" data-album-act="downloads">Set downloads</Button>
     <Button size="sm" variant="secondary" icon="delete" data-album-act="remove">Remove from album</Button>
     <Button size="sm" variant="quiet" icon="close" data-album-act="clear">Clear selection</Button>
-  </div>
+  </SelectionBar>
   <div data-region="album-grid">
     <PhotoGrid label={`Items in ${title}`} cells={cells} days={days} />
   </div>
@@ -57,24 +56,5 @@ const { title, cells, days } = Astro.props;
   .items {
     display: grid;
     gap: var(--space-3);
-  }
-
-  .bar {
-    position: sticky;
-    inset-block-start: 0;
-    z-index: var(--layer-raised);
-    display: flex;
-    flex-wrap: wrap;
-    gap: var(--space-2);
-    align-items: center;
-    padding: var(--space-2) var(--space-3);
-    border: var(--border-hairline) solid var(--color-border);
-    border-radius: var(--radius-md);
-    background: var(--color-bg-raised);
-  }
-
-  /* hidden, it keeps its room: showing it never moves the grid under a double-click */
-  .bar[hidden] {
-    visibility: hidden;
   }
 </style>

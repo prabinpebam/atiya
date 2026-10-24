@@ -1,0 +1,51 @@
+---
+/**
+ * The bar over a grid of things chosen together (an album's items, the library): how many are chosen, then what
+ * can be done to them all, the screen's own actions ending with Clear selection. Hidden until something is
+ * chosen, it keeps its room, so showing it never moves the grid under a double-click; it stays at the top while
+ * the grid scrolls.
+ * @tier kit
+ * @a11y A group named by its label (its buttons are Tab stops, so not a toolbar); the count is a polite status.
+ * @key Tab moves through its buttons.
+ */
+import Text from '../../components/fundamentals/Text.astro';
+
+interface Props {
+  /** Its accessible name. */
+  label?: string;
+  /** Shown from the start (a story); a screen's script shows it once something is chosen. */
+  shown?: boolean;
+  /** How many are chosen, in words ("3 selected"); the script keeps it up to date in `[data-selection-count]`. */
+  count?: string;
+  /** Data attributes pass through to the bar (the screen's hooks). */
+  [data: `data-${string}`]: string | undefined;
+}
+
+const { label = 'Selected items', shown = false, count = '0 selected', ...rest } = Astro.props;
+---
+
+<div class="selection-bar" role="group" aria-label={label} hidden={!shown} {...rest}>
+  <Text as="span" variant="label"><span role="status" data-selection-count>{count}</span></Text>
+  <slot />
+</div>
+
+<style>
+  .selection-bar {
+    position: sticky;
+    inset-block-start: 0;
+    z-index: var(--layer-raised);
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-2) var(--space-3);
+    padding: var(--space-2) var(--space-3);
+    border-radius: var(--radius-lg);
+    background: var(--color-bg-raised);
+    box-shadow: var(--shadow-sm);
+  }
+
+  /* hidden, it keeps its room: showing it never moves the grid under a double-click */
+  .selection-bar[hidden] {
+    visibility: hidden;
+  }
+</style>

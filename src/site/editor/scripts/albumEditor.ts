@@ -147,7 +147,7 @@ export function initAlbumEditor(root: HTMLElement, signal: AbortSignal) {
     if (g) g.toggleAttribute('data-selecting', picked.length > 0);
     const bar = root.querySelector<HTMLElement>('[data-album-selbar]');
     if (bar) bar.hidden = !picked.length;
-    const count = root.querySelector('[data-album-selcount]');
+    const count = bar?.querySelector('[data-selection-count]');
     if (count) count.textContent = `${picked.length} selected`;
     const one = picked.length === 1 ? doc.items.find((i) => i.id === picked[0]) : undefined;
     setHidden('[data-album-only="cover"]', !one || 'text' in one);

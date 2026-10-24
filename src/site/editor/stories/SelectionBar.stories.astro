@@ -1,0 +1,22 @@
+---
+import Example from '../../library/Example.astro';
+import SelectionBar from '../kit/SelectionBar.astro';
+import Button from '../../components/fundamentals/Button.astro';
+---
+
+<Example title="Three chosen" description="How many are chosen, what can be done to them all, then Clear selection." layout="block">
+  <SelectionBar shown count="3 selected">
+    <Button size="sm" variant="secondary" icon="collection">Add to album</Button>
+    <Button size="sm" variant="secondary" icon="calendar">Set the date</Button>
+    <Button size="sm" variant="secondary" icon="delete">Remove from album</Button>
+    <Button size="sm" variant="quiet" icon="close">Clear selection</Button>
+  </SelectionBar>
+</Example>
+
+<Example title="One chosen" description="Actions that need exactly one item join the bar." layout="block">
+  <SelectionBar shown count="1 selected">
+    <Button size="sm" variant="secondary" icon="image">Set as cover</Button>
+    <Button size="sm" variant="secondary" icon="collection">Add to album</Button>
+    <Button size="sm" variant="quiet" icon="close">Clear selection</Button>
+  </SelectionBar>
+</Example>

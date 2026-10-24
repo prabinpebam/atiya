@@ -20,6 +20,7 @@ import Text from '../../components/fundamentals/Text.astro';
 import TextField from '../../components/fundamentals/TextField.astro';
 import Dialog from '../../components/compounds/Dialog.astro';
 import PhotoGrid, { type PhotoCell } from '../kit/PhotoGrid.astro';
+import SelectionBar from '../kit/SelectionBar.astro';
 import StatusNote from '../kit/StatusNote.astro';
 import { LIBRARY_FILTERS, type LibraryFilter } from '../model/library';
 import { stableId } from '../../design/stableId';
@@ -46,14 +47,13 @@ const shown = `${cells.length} ${cells.length === 1 ? 'item' : 'items'}${filter 
     <Select label="Show" size="sm" options={[...LIBRARY_FILTERS]} value={filter} data-library-filter="" />
     <Button variant="secondary" size="sm" icon="link" data-dialog-open={ids.link}>Add link</Button>
   </div>
-  <div class="selbar" role="toolbar" aria-label="Selected items" data-library-selbar hidden>
-    <Text as="span" variant="label"><span role="status" data-library-count>0 selected</span></Text>
+  <SelectionBar data-library-selbar="">
     <Button size="sm" variant="secondary" icon="collection" data-library-act="album">Add to album</Button>
     <Button size="sm" variant="secondary" icon="calendar" data-library-act="date">Set the date</Button>
     <Button size="sm" variant="secondary" icon="location" data-library-act="place">Set the place</Button>
     <Button size="sm" variant="secondary" icon="delete" data-library-act="delete">Delete</Button>
     <Button size="sm" variant="quiet" icon="close" data-library-act="clear">Clear selection</Button>
-  </div>
+  </SelectionBar>
   <div class="timeline" data-region="media-grid" data-library-selected={selected ?? ''}>
     <script is:inline type="application/json" data-library-uses set:html={JSON.stringify(uses).replace(/</g, '\\u003c')} />
     <Text variant="small" tone="muted">{shown}</Text>
@@ -97,25 +97,6 @@ const shown = `${cells.length} ${cells.length === 1 ? 'item' : 'items'}${filter 
     gap: var(--space-3);
     align-items: end;
     justify-content: space-between;
-  }
-
-  .selbar {
-    position: sticky;
-    inset-block-start: 0;
-    z-index: var(--layer-raised);
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: var(--space-2) var(--space-3);
-    padding: var(--space-2);
-    border-radius: var(--radius-lg);
-    background: var(--color-bg-raised);
-    box-shadow: var(--shadow-sm);
-  }
-
-  /* hidden, it keeps its room: showing it never moves the grid under a double-click */
-  .selbar[hidden] {
-    visibility: hidden;
   }
 
   .timeline {

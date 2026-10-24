@@ -883,7 +883,7 @@ A sheet over the editor, each setting showing its default until it's changed; se
 The grid works as a photo app's does:
 - **Selecting:** a check circle shows on a thumbnail under the pointer or the focus; pressing it selects the item. While anything is selected, pressing any thumbnail adds or removes it, Shift and a press selects the range to it, Ctrl or Cmd and A selects every item, and Escape clears the selection. With the keyboard, the arrow keys move the focus through the grid, Space selects or deselects, and Shift with the arrows extends the selection.
 - **Opening:** with nothing selected, pressing a thumbnail (or Enter on it) opens the viewer at it ([§9.5](#95-the-viewer-and-the-words)).
-- **The selection bar,** above the grid while anything is selected, says how many ("4 selected") and holds what they can do:
+- **The selection bar,** above the grid while anything is selected, says how many ("4 selected") and holds what they can do (the kit's `SelectionBar`, shared with the Media library: a group named Selected items, its count a polite status, keeping its room while hidden so the grid never moves):
   - **Add to cover** and **Remove from cover** (a tile placed where it fits first, or taken out; [§9.6](#96-the-cover));
   - **Set as cover**, with one item selected;
   - **Add to album**, another album or a new one (the pictures stay in this one too);
