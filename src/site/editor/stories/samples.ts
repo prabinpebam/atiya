@@ -36,17 +36,17 @@ export const HIGHLIGHTS: Highlights = {
 
 /** Public text-only picker choices, including GitHub without a saved snapshot. */
 export const HIGHLIGHT_CHOICES: HighlightChoice[] = [
-  { key: 'custom:github', title: 'Custom: A year on GitHub', reason: 'Add a public GitHub snapshot first.', item: { id: 'choice-github', type: 'custom', custom: 'github' } },
+  { key: 'custom:github', title: 'Chart: A year on GitHub', reason: 'Add a public GitHub snapshot first.', item: { id: 'choice-github', type: 'custom', custom: 'github' } },
   { key: 'article:a-walk-round-the-pond', title: 'Page: A walk round the pond', item: HIGHLIGHTS.items[0] },
   { key: 'album:by-the-pond', title: 'Album: By the pond', reason: 'Publish it to show it.', item: HIGHLIGHTS.items[1] },
-  { key: 'image:samples/pond', title: 'Image: The pond', item: HIGHLIGHTS.items[2] },
+  { key: 'image:samples/pond', title: 'Picture: The pond', item: HIGHLIGHTS.items[2] },
 ];
 
 /** One waiting slide beside two ready sources. */
 export const HIGHLIGHT_DETAILS: Record<string, HighlightDetail> = {
   'pond-page': { title: 'Page: A walk round the pond', name: 'A walk round the pond' },
   'pond-album': { title: 'Album: By the pond', name: 'By the pond', reason: 'Publish it to show it.' },
-  'pond-picture': { title: 'Image: The pond', name: 'The pond' },
+  'pond-picture': { title: 'Picture: The pond', name: 'The pond' },
 };
 
 const pond = sample('pond');

@@ -3,7 +3,7 @@
  * A home highlight backed by a page, album or library picture. The picture keeps its source's alt,
  * dark version and focus. Page and album titles link to the source; a lone picture opens the lightbox.
  * @tier compound
- * @a11y A named article or figure; one descriptive source link, or a full-picture link with its image alt.
+ * @a11y An article named by its title (its heading, or the picture's caption); one descriptive source link, or a full-picture link with its image alt.
  */
 import Heading from '../fundamentals/Heading.astro';
 import Text from '../fundamentals/Text.astro';
@@ -11,6 +11,7 @@ import Image from '../fundamentals/Image.astro';
 import Caption from '../fundamentals/Caption.astro';
 import { PICTURE_SPECS, type PictureSource } from '../../design/pictures';
 import { sizes } from '../../design/responsive';
+import { stableId } from '../../design/stableId';
 
 interface Props {
   /** Current source title, or the single picture's caption. */
@@ -28,8 +29,9 @@ interface Props {
 }
 const { title, text, href, picture: p, settings, priority = false } = Astro.props;
 const Frame = href ? 'div' : 'a';
+const titleId = `highlight-${stableId(Astro, 'HighlightCard')}`;
 ---
-<article class="highlight" data-highlight-card>
+<article class="highlight" aria-labelledby={href ? titleId : undefined} aria-label={href ? undefined : title} data-highlight-card>
   <figure class="picture">
     <Frame href={href ? undefined : p.full} aria-label={!href && !p.alt ? p.caption || 'Open full picture' : undefined} data-lightbox={href ? undefined : 'home-highlights'} data-caption={p.caption} data-alt={p.alt} data-thumb={p.thumb} data-full-dark={p.dark?.full} data-thumb-dark={p.dark?.thumb}>
       <Image src={p.src} srcset={p.srcset} sizes={sizes(['wide', '92vw'], 'wide')} alt={p.alt}
@@ -39,7 +41,7 @@ const Frame = href ? 'div' : 'a';
     </Frame>
     {!href && p.caption && <Caption>{p.caption}</Caption>}
   </figure>
-  {href && <div class="words"><Heading level={2} size="h3"><a href={href}>{title}</a></Heading>{text && <Text variant="lead" narrow>{text}</Text>}</div>}
+  {href && <div class="words"><Heading level={2} size="h3"><a id={titleId} href={href}>{title}</a></Heading>{text && <Text variant="lead" narrow>{text}</Text>}</div>}
 </article>
 <style>
   .highlight { display: grid; gap: var(--space-6); align-content: start; min-inline-size: 0; }

@@ -5,7 +5,7 @@ import { randomUUID } from 'node:crypto';
 import { dirname, join } from 'node:path';
 import sharp from 'sharp';
 import { loadContent } from '../../src/site/content/load';
-import { addHighlight, chosenSlide, excerptHighlight, freeChoices, highlightsView, highlightSource, HIGHLIGHT_MAX, HIGHLIGHT_REGIONS, moveHighlight, removeHighlight, settingsLine, slideIcon, slideLine, type Highlights, type HighlightItem } from '../../src/site/editor/model/highlights';
+import { addHighlight, chosenSlide, excerptHighlight, freeChoices, highlightsView, highlightSource, HIGHLIGHT_MAX, HIGHLIGHT_REGIONS, moveHighlight, removeHighlight, settingsLine, SLIDE_KIND, slideIcon, slideLine, type Highlights, type HighlightItem } from '../../src/site/editor/model/highlights';
 import { liveRegions } from '../../src/site/editor/model/live';
 import { regionsAsked, regionsHeader, wants } from '../../src/site/editor/model/regions';
 import { references } from '../../src/site/editor/model/references';
@@ -112,6 +112,9 @@ describe('home highlights curation', () => {
     index.highlights = { ...base(), enabled: false, items: mixed };
     view = highlightsView(index);
     expect(view.details.page.title).toBe('Page: A public page');
+    // the picker, the list and the details name a kind with the same word (SLIDE_KIND)
+    for (const c of view.choices) expect(c.title.startsWith(`${SLIDE_KIND[c.item.type].label}: `)).toBe(true);
+    expect(view.choices.find((c) => c.key === 'custom:github')?.title).toMatch(/^Chart: /);
     expect(view.details.page.name).toBe('A public page');
     expect(view.details.page.reason).toMatch(/Publish/i);
     expect(view.details.github.reason).toMatch(/snapshot/i);

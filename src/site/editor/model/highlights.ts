@@ -76,14 +76,13 @@ export function highlightsView(index: ContentIndex): { highlights: Highlights; c
     const id = `choice-${items.length}`;
     items.push(c.type === 'article' ? { id, type: 'article', article: c.ref } : c.type === 'album' ? { id, type: 'album', album: c.ref } : { id, type: 'image', media: c.ref });
   }
-  const kind = { custom: 'Custom', article: 'Page', album: 'Album', image: 'Image' };
   const choices = items.map((item) => {
     const state = highlightState(index, item);
-    return { key: highlightSource(item), title: `${kind[item.type]}: ${state.title}`, reason: state.reason, item };
+    return { key: highlightSource(item), title: `${SLIDE_KIND[item.type].label}: ${state.title}`, reason: state.reason, item };
   });
   const details = Object.fromEntries(highlights.items.map((item) => {
     const state = highlightState(index, item);
-    return [item.id, { title: `${kind[item.type]}: ${state.title}`, name: state.title, reason: state.reason }];
+    return [item.id, { title: `${SLIDE_KIND[item.type].label}: ${state.title}`, name: state.title, reason: state.reason }];
   }));
   return { highlights, choices, details };
 }
@@ -97,9 +96,9 @@ export function chosenSlide(items: readonly { id: string }[], asked: string | nu
   return items.find((i) => i.id === asked)?.id ?? items[0]?.id ?? 'new';
 }
 
-/** Each kind's word and list mark. */
+/** Each kind's word and list mark, for the list, the details and the picker alike (custom slides are charts: GitHub's is the one so far). */
 export const SLIDE_KIND: Record<HighlightItem['type'], { label: string; icon: 'code' | 'article' | 'gallery' | 'image' }> = {
-  custom: { label: 'Custom', icon: 'code' },
+  custom: { label: 'Chart', icon: 'code' },
   article: { label: 'Page', icon: 'article' },
   album: { label: 'Album', icon: 'gallery' },
   image: { label: 'Picture', icon: 'image' },

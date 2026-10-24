@@ -15,7 +15,7 @@ The existing GitHub calendar becomes a reusable contribution chart without a sec
 | Album | An existing public album ID | Its current title, summary and cover picture/poster | Open the album |
 | Image | An existing public image media ID | The picture, its sidecar alt and caption | Open the full picture in the page's lightbox |
 
-Custom means an engine-owned renderer from a trusted catalogue, with GitHub the first entry. It does **not** mean pasted HTML, JavaScript, a URL to executable content or a private-data widget. A later custom kind must add its typed contract, renderer, editor choice and tests.
+Custom means an engine-owned renderer from a trusted catalogue, with GitHub the first entry. It does **not** mean pasted HTML, JavaScript, a URL to executable content or a private-data widget. A later custom kind must add its typed contract, renderer, editor choice and tests. Edit mode names a custom slide a **Chart**, with the same word in the picker, the list and the details (`SLIDE_KIND`).
 
 ## 2. Owner configuration
 
