@@ -162,7 +162,7 @@ The landing stops being a separate step and becomes the home hub's page, as the 
   - "Explore the planet" goes to `/play/`;
   - "Read the site" goes down to the sections (`#sections`).
   The one the visitor chose last time is the primary button (as today, `site.mode`).
-- **The words** are content: the title and the standfirst are the home hub's `title` and `summary`. The buttons and the note under them are interface words, and stay in code.
+- **The words** are content: the title and the standfirst are the home hub's `title` and `summary`. The summary's first line is the introduction; any following lines are small, muted supporting notes below the actions, so a temporary construction notice does not compete with the featured content. The buttons and the planet's explanatory note are interface words, and stay in code.
 - **Below the opening** comes the list of sections, as a contents page (`ContentsList`): each with its title, its summary, and "Being written" while it's empty.
 - **The classic site's addresses redirect:**
   - `/classic/` goes to `/#sections`;

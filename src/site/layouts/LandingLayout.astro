@@ -20,7 +20,7 @@ interface Props {
   title: string;
   /** The search and social-card summary. */
   description?: string;
-  /** The opening: the name, the standfirst, the picture. */
+  /** The opening: the name, the standfirst, the picture. Summary lines after the first are quieter supporting notes. */
   hero: { title: string; standfirst?: string; kicker?: string; picture?: HeroPicture; layout?: 'split' | 'stacked' | 'type' };
   /** The site’s navigation, for the header. */
   nav?: NavItem[];
@@ -39,6 +39,7 @@ interface Props {
 }
 
 const { title, description, hero, nav, footer, afterId, canonical, home, highlights = false, showHighlights = false } = Astro.props;
+const [standfirst, ...notes] = hero.standfirst?.split(/\n+/).map((line) => line.trim()).filter(Boolean) ?? [];
 ---
 
 <PageShell title={title} description={description} canonical={canonical} home={home} preload={hero.standfirst ? ['display', 'display-italic', 'ui'] : ['display', 'ui']}>
@@ -48,12 +49,16 @@ const { title, description, hero, nav, footer, afterId, canonical, home, highlig
       {highlights ? <section class="highlight-opening">
         <Heading level={1} size="display">{hero.title}</Heading>
         <div class="introduction">
-          {hero.standfirst && <Text variant="standfirst" narrow>{hero.standfirst}</Text>}
+          {standfirst && <Text variant="standfirst" narrow>{standfirst}</Text>}
           <div class="actions"><slot /></div>
+          {notes.map((note) => <Text variant="small" tone="muted" narrow>{note}</Text>)}
         </div>
-      </section> : <Hero {...hero}>
+      </section> : <Hero {...hero} standfirst={standfirst}>
         <slot />
-        {Astro.slots.has('note') && <slot name="note" slot="note" />}
+        {(notes.length > 0 || Astro.slots.has('note')) && <Fragment slot="note">
+          {notes.map((note) => <Text variant="small" tone="muted" narrow>{note}</Text>)}
+          {Astro.slots.has('note') && <slot name="note" />}
+        </Fragment>}
       </Hero>}
     </slot>
     {highlights && showHighlights && <div class="highlights"><slot name="highlights" /></div>}

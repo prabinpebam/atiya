@@ -1,5 +1,9 @@
 import { expect, test } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
+import { readFileSync } from 'node:fs';
+
+const homeSummary: string = JSON.parse(readFileSync(new URL('../../content/structures/site.json', import.meta.url), 'utf8')).home.summary;
+const [introduction, ...supportingNotes] = homeSummary.split(/\n+/).map((line) => line.trim()).filter(Boolean);
 
 test.describe('home highlights', () => {
   test('a single configured GitHub slide has no fake controls and retains the home introduction', async ({ page }) => {
@@ -12,6 +16,26 @@ test.describe('home highlights', () => {
     await expect(page.getByRole('link', { name: 'Read the site', exact: true })).toHaveCount(1);
     await expect(page.locator('[data-contributions]')).toHaveAttribute('data-embedded', '');
     await expect(page.locator('main img[src*="/poster/landing-"]')).toHaveCount(0);
+  });
+
+  test('keeps the home notice small and muted below the introduction and actions', async ({ page }) => {
+    await page.goto('/');
+    const intro = page.getByText(introduction, { exact: true });
+    await expect(intro).toHaveAttribute('data-variant', 'standfirst');
+    expect(supportingNotes.length).toBeGreaterThan(0);
+    for (const note of supportingNotes) {
+      const subtext = page.getByText(note, { exact: true });
+      await expect(subtext).toHaveAttribute('data-variant', 'small');
+      await expect(subtext).toHaveAttribute('data-tone', 'muted');
+      for (const width of [360, 1280]) {
+        await page.setViewportSize({ width, height: 800 });
+        const subtextSize = await subtext.evaluate((element) => parseFloat(getComputedStyle(element).fontSize));
+        const introSize = await intro.evaluate((element) => parseFloat(getComputedStyle(element).fontSize));
+        expect(subtextSize).toBeGreaterThanOrEqual(14);
+        expect(subtextSize).toBeLessThan(introSize);
+        expect((await subtext.boundingBox())!.y).toBeGreaterThan((await page.getByRole('link', { name: 'Read the site', exact: true }).boundingBox())!.y);
+      }
+    }
   });
 
   test('mixed content shares article chrome, preserves inner keys, moves by track keys and excludes offscreen focus', async ({ page }) => {
