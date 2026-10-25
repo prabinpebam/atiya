@@ -4,11 +4,12 @@
  * slides: muted by themselves while in view when set to autoplay) with previous and next buttons and
  * a counter (which can be left out), and dots or a filmstrip of thumbnails to pick a slide. The
  * filmstrip scrolls sideways in one row, or wraps onto more rows. It never moves unless the reader asks.
- * With peek, the neighbouring slides show a little smaller, and the carousel fades out beside the slide
- * being shown: whole to its neighbours' near edges, then to nothing across a slide's width. The fade is the
- * carousel's own and stays put, so the slides move under it. Where the page has room beside the carousel
+ * With peek, the neighbouring slides show a little smaller across a wide gap, and the carousel fades and
+ * blurs them beside the slide being shown: four fifths there at a neighbour's near edge with no blur, a
+ * tenth there at its far end under the most blur. The fade and the blur are the
+ * carousel's own and stay put, so the slides move under them. Where the page has room beside the carousel
  * it reaches out into it (up to the page's main region, or a box marked data-bleed-bounds); where it has
- * less, the fade ends at the edge, so nothing is cut off.
+ * less, the fade and blur end at the edge, so nothing is cut off.
  * @tier compound
  * @a11y Follows the APG carousel pattern without rotation; every slide is a named group.
  * @a11y The previous and next buttons stop at the ends instead of wrapping.
@@ -182,6 +183,9 @@ const shape = `--slide-shape: ${tallest.width} / ${tallest.height}`;
         })
       }
     </div>
+    {peek && total > 1 && ['start', 'end'].map((edge) => (
+      <div class="haze" data-edge={edge} aria-hidden="true">{[1, 2, 3, 4, 5, 6].map(() => <span />)}</div>
+    ))}
   </div>
   {
     arrows && total > 1 ? (
@@ -222,7 +226,7 @@ const shape = `--slide-shape: ${tallest.width} / ${tallest.height}`;
 <style>
   /* it sizes its insides by its own width (a container), not the screen's */
   .carousel {
-    --slide-gap: var(--space-4);
+    --slide-gap: var(--c-carousel-gap);
     container-type: inline-size;
     display: grid;
     gap: var(--space-4);
@@ -276,26 +280,62 @@ const shape = `--slide-shape: ${tallest.width} / ${tallest.height}`;
   }
 
   /* peek: the track reaches out by --bleed-start / --bleed-end (the room beside the carousel, from the
-     script) and keeps --inset of each neighbour in view where there's none; the slide being shown keeps
-     the carousel's width. Before the script runs: a plain sliver of each neighbour. */
+     script) and keeps --inset (a neighbour's least and the gap) in view where there's none; the slide
+     being shown keeps the carousel's width. Before the script runs: a plain sliver of each neighbour. */
   .carousel[data-peek] .viewport {
-    --inset-now: var(--inset, var(--c-carousel-peek-min));
+    --slide-gap: var(--c-carousel-peek-gap);
+    --inset-now: var(--inset, calc(var(--c-carousel-peek-min) + var(--slide-gap)));
     /* where each neighbour's near edge rests, from the viewport's sides, and the width of the slide shown */
     --near-start: calc(var(--bleed-start, 0px) + var(--inset-now) - var(--slide-gap));
     --near-end: calc(var(--bleed-end, 0px) + var(--inset-now) - var(--slide-gap));
     --shown: calc(100% - var(--bleed-start, 0px) - var(--bleed-end, 0px) - 2 * var(--inset-now));
+    /* where each neighbour's far end rests (or the viewport's edge, where the page has less room) */
+    --far-start: max(0px, calc(var(--near-start) - var(--shown)));
+    --far-end: max(0px, calc(var(--near-end) - var(--shown)));
+    /* a mask reads only alpha: how much of a neighbour shows at its near edge and at its far end */
+    --show-near: color-mix(in srgb, currentColor calc(var(--c-carousel-peek-near) * 100%), transparent);
+    --show-far: color-mix(in srgb, currentColor calc(var(--c-carousel-peek-far) * 100%), transparent);
+    position: relative;
     margin-inline: calc(var(--bleed-start, 0px) * -1) calc(var(--bleed-end, 0px) * -1);
-    /* the fade belongs to the carousel, not the slides: it stays put while they move under it. Whole from
-       the slide shown to its neighbours' near edges, then to nothing across a slide's width beyond them, or
-       by the viewport's edge where the page has less room, so nothing is cut off */
+    /* the fade belongs to the carousel, not the slides: it stays put while they move under it. Whole on
+       the slide shown, eased across the gap to peek-near at each neighbour's near edge, then to peek-far at
+       its far end; past that (the slide after it), to nothing across the gap */
     mask-image: linear-gradient(
       to right,
-      transparent max(0px, calc(var(--near-start) - var(--shown))),
-      currentColor var(--near-start),
-      currentColor calc(100% - var(--near-end)),
-      transparent min(100%, calc(100% - var(--near-end) + var(--shown)))
+      transparent calc(var(--far-start) - var(--slide-gap)),
+      var(--show-far) var(--far-start),
+      var(--show-near) var(--near-start),
+      currentColor calc(var(--near-start) + var(--slide-gap)),
+      currentColor calc(100% - var(--near-end) - var(--slide-gap)),
+      var(--show-near) calc(100% - var(--near-end)),
+      var(--show-far) calc(100% - var(--far-end)),
+      transparent calc(100% - var(--far-end) + var(--slide-gap))
     );
   }
+
+  /* the blur over each neighbour, the carousel's too: none at its near edge, growing to peek-blur at its far
+     end. A blur can't vary across one element, so six layers each blur what's under them, twice as much as
+     the last, over overlapping bands (a progressive blur); they never take a click */
+  .haze { display: none; }
+
+  .carousel[data-peek] .haze { display: block; position: absolute; inset-block: 0; inline-size: max(0px, min(var(--near-start), var(--shown))); pointer-events: none; }
+
+  .carousel[data-peek] .haze[data-edge='start'] { --toward: to left; inset-inline-start: var(--far-start); }
+  .carousel[data-peek] .haze[data-edge='end'] { --toward: to right; inset-inline-end: var(--far-end); inline-size: max(0px, min(var(--near-end), var(--shown))); }
+
+  .haze > span {
+    position: absolute;
+    inset: 0;
+    backdrop-filter: blur(calc(var(--c-carousel-peek-blur) / var(--part)));
+    mask-image: linear-gradient(var(--toward), transparent var(--from), currentColor calc(var(--from) + 100% / 6), currentColor calc(var(--from) + 200% / 6), transparent calc(var(--from) + 300% / 6));
+  }
+
+  .haze > span:nth-child(1) { --part: 32; --from: 0%; }
+  .haze > span:nth-child(2) { --part: 16; --from: calc(100% / 6); }
+  .haze > span:nth-child(3) { --part: 8; --from: calc(200% / 6); }
+  .haze > span:nth-child(4) { --part: 4; --from: calc(300% / 6); }
+  .haze > span:nth-child(5) { --part: 2; --from: calc(400% / 6); }
+  .haze > span:nth-child(6) { --part: 1; --from: calc(500% / 6); mask-image: linear-gradient(var(--toward), transparent var(--from), currentColor); }
 
   .carousel[data-peek] .track {
     padding-inline: calc(var(--bleed-start, 0px) + var(--inset-now)) calc(var(--bleed-end, 0px) + var(--inset-now));
@@ -433,8 +473,11 @@ const shape = `--slide-shape: ${tallest.width} / ${tallest.height}`;
   @container (width < 36.45rem) {
     .carousel[data-peek] .viewport {
       --inset: 0px;
+      --slide-gap: var(--c-carousel-gap);
       mask-image: none;
     }
+
+    .carousel[data-peek] .haze { display: none; }
   }
 
   @media (prefers-reduced-motion: reduce) {

@@ -374,6 +374,11 @@
   --c-carousel-thumb-on: var(--color-accent);
   --c-carousel-thumb-rest: 0.7;
   --c-carousel-peek-scale: 0.88;
+  --c-carousel-gap: var(--space-8);
+  --c-carousel-peek-gap: var(--space-16);
+  --c-carousel-peek-near: 0.8;
+  --c-carousel-peek-far: 0.1;
+  --c-carousel-peek-blur: 40px;
   --c-carousel-peek-min: 2rem;
   --c-carousel-slide-min: 300px;
   --c-carousel-slide-max: 80;

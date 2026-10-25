@@ -113,7 +113,8 @@ export function setupCarousel(root: HTMLElement, signal: AbortSignal, tokens: Ca
       const gap = parseFloat(getComputedStyle(track).columnGap) || 0;
       const narrow = narrowerThan(root.clientWidth, getComputedStyle(root).getPropertyValue(tokens.narrow), remPx());
       const { start, end } = bleed(r, box, document.documentElement.clientWidth, r.width + gap, narrow);
-      const inset = peekInset(token(tokens.peekMin), start, end, narrow);
+      // a neighbour's least shows past the gap
+      const inset = peekInset(token(tokens.peekMin) + gap, start, end, narrow);
       root.style.setProperty('--bleed-start', `${start}px`);
       root.style.setProperty('--bleed-end', `${end}px`);
       root.style.setProperty('--inset', `${inset}px`);

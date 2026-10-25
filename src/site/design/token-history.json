@@ -44,7 +44,12 @@
     "c.button.radius": {"v":"var(--radius-pill)"},
     "c.button.secondary-border": {"v":"var(--color-text)"},
     "c.button.secondary-text": {"v":"var(--color-text)"},
+    "c.carousel.gap": {"v":"var(--space-8)"},
+    "c.carousel.peek-blur": {"v":"40px"},
+    "c.carousel.peek-far": {"v":"0.1"},
+    "c.carousel.peek-gap": {"v":"var(--space-16)"},
     "c.carousel.peek-min": {"v":"2rem"},
+    "c.carousel.peek-near": {"v":"0.8"},
     "c.carousel.peek-scale": {"v":"0.88"},
     "c.carousel.query-narrow": {"v":"36.45rem"},
     "c.carousel.slide-max": {"v":"80"},
@@ -484,6 +489,41 @@
     "weight.semibold": {"v":"600"}
   },
   "entries": [
+    {
+      "date": "2026-10-25",
+      "changes": {
+        "c.carousel.gap": [
+          null,
+          {
+            "v": "var(--space-8)"
+          }
+        ],
+        "c.carousel.peek-blur": [
+          null,
+          {
+            "v": "40px"
+          }
+        ],
+        "c.carousel.peek-far": [
+          null,
+          {
+            "v": "0.1"
+          }
+        ],
+        "c.carousel.peek-gap": [
+          null,
+          {
+            "v": "var(--space-16)"
+          }
+        ],
+        "c.carousel.peek-near": [
+          null,
+          {
+            "v": "0.8"
+          }
+        ]
+      }
+    },
     {
       "date": "2026-10-24",
       "changes": {
