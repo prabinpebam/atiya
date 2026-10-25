@@ -1,7 +1,7 @@
 {
   "style": "ink-sketch",
   "article": "good-design-isnt-a-list-of-principles",
-  "theme": "The mixing desk: good design is a sound engineer setting every slider for what this song, this room and this listener need, never pushing them all to the top. Taken from the essay's own line, \"The parameters of design aren't sliders we should push to their maximum values.\"",
+  "theme": "The mixing desk: good design is a sound engineer setting every slider for what this song, this room and this listener need, never pushing them all to the top. Taken from the essay's own line, \"The qualities of good design aren't universal targets to maximize. They're parameters to optimize against intent.\"",
   "castAnchor": "the-mixing-desk",
   "cast": "THE MIXER, the recurring hero: a small, round, fuzzy creature with huge, slightly mismatched round eyes, enormous padded headphones clamped over a single sprouting tuft of hair, a pencil behind one ear and a striped scarf; stands on a little wooden stool to reach the controls; attentive, thoughtful and gently amused. THE MIXING DESK: a big, old-fashioned analogue mixing desk with a row of tall vertical sliders, each with a chunky knob, a few dials and two small speakers. THE RULEBOOK KEEPERS (only where the subject asks for them): tall, lanky, earnest creatures with long necks, small round spectacles and neat bow ties, each carrying a heavy stone tablet carved with a numbered list of ten lines; solemn and very sure of themselves. THE LISTENERS: whoever the work is for, quirky soft creatures in the same style (a sleepy baby in a cot, a dancer, a patient in a hospital gown, a child with a toy), drawn only where the subject names them.",
   "images": [
@@ -17,7 +17,7 @@
       "use": "figure",
       "format": "figure",
       "width": "popout",
-      "after": "The people behind them weren't simply theorists.",
+      "after": "These principles have real value.",
       "subject": "Two tall Rulebook Keepers stand side by side, proudly holding up two big stone tablets, each carved with ten numbered lines, like a museum unveiling; a little spotlight beam falls on them and a few sparkles. The Mixer, small, on his stool with his headphones round his neck, gazes up at the tablets with huge eyes full of genuine admiration, pencil in hand, copying the lines into a tiny notebook. Behind him, his mixing desk waits with its sliders untouched.",
       "alt": "Two tall creatures in bow ties proudly hold up stone tablets of ten numbered lines, while a small fuzzy creature in headphones gazes up in admiration, copying them into a notebook."
     },
@@ -26,25 +26,16 @@
       "use": "figure",
       "format": "figure",
       "width": "popout",
-      "after": "Both are desirable qualities in design.",
+      "after": "Both are valuable design considerations.",
       "subject": "Two quirky creatures play tug of war over a single slider on the mixing desk: one is perfectly neat and symmetrical, in a buttoned uniform with a ruler and identical boots, hauling the slider's knob up with a rope; the other is a patchwork, mismatched creature in odd socks and a different hat on each ear, hauling the same knob down with another rope. Both strain, feet braced, sweat drops flying. The Mixer stands between them on his stool with his headphones on, chin in hand, looking at a small listener instead of at them.",
       "alt": "A neat, uniformed creature and a patchwork creature in odd socks play tug of war over one slider on a mixing desk, while a fuzzy creature in headphones looks past them at a small listener."
-    },
-    {
-      "name": "everything-at-max",
-      "use": "figure",
-      "format": "comic",
-      "width": "wide",
-      "after": "The parameters of design aren't sliders",
-      "subject": "PANEL 1: a Rulebook Keeper, consulting his stone tablet, briskly shoves every slider on the mixing desk all the way to the top with one long sweep of his arm, looking very pleased. PANEL 2: the speakers bulge and shake, music notes and lightning bolts burst out, and a small crowd of listeners are blown backwards, their fur flattened and hats flying. PANEL 3: in the silence afterwards, the speakers smoke gently, the Keeper's spectacles are cracked and his bow tie spins; the Mixer, arriving with his headphones, quietly pulls a few sliders back down while a listener peeks out from behind a chair.",
-      "alt": "A three-panel comic: a tall creature pushes every slider on a mixing desk to the top, the speakers blast the listeners backwards, and a creature in headphones quietly pulls the sliders back down."
     },
     {
       "name": "four-rooms",
       "use": "figure",
       "format": "strip",
       "width": "wide",
-      "after": "A medical interface, a creative tool",
+      "after": "The principles haven't changed.",
       "subject": "Four scenes side by side in one long strip, each with the same small mixing desk set differently, and the Mixer at it. FIRST: a hospital room, a patient creature in a gown listening calmly, the sliders low and even. SECOND: a painter's studio, a messy artist creature splashing paint, the sliders jagged and high. THIRD: a nursery full of toys, a child creature bouncing a ball, a few sliders up and the rest down. FOURTH: a factory control room with big pipes and gauges, a serious operator creature in a hard hat, every slider locked in a neat straight line. The desks' sliders are clearly different in each scene.",
       "alt": "A long strip of four rooms, a hospital, a painter's studio, a nursery and a factory control room, each with the same small mixing desk and its sliders set differently."
     },
@@ -58,29 +49,38 @@
       "alt": "A blindfolded tall creature rolls giant dice across a mixing desk, knocking the sliders to random heights, while a creature in headphones peeks through his fingers."
     },
     {
-      "name": "error-prevention",
-      "use": "figure",
-      "format": "figure",
-      "width": "wide",
-      "after": "Neither principle should be applied blindly.",
-      "subject": "Two scenes side by side, divided by a loose ink line. LEFT: an operating theatre where everything is padded, railed and labelled; a surgeon creature in a mask works carefully inside a frame of guard rails, with foam on every corner, and the calm patient gives a thumbs up. RIGHT: a joyful art studio where a painter creature flings paint everywhere, splashes and drips flying off the canvas onto the walls, the floor and the Mixer, who laughs as he gets splattered. Both sides look equally happy.",
-      "alt": "On one side a surgeon works inside guard rails and padding in a calm operating theatre; on the other a painter flings paint around a studio, splattering a laughing creature in headphones."
-    },
-    {
       "name": "the-checklist",
       "use": "figure",
       "format": "figure",
       "width": "popout",
-      "after": "A checklist can tell you what to look for.",
+      "after": "A beautiful interface that doesn't help people",
       "subject": "A proud young student creature with a long checklist on a clipboard ticks off three big boxes with a flourish, beaming. Behind him stands the chair he has built: beautifully simple, perfectly symmetrical and very unusual, but upside down and with a seat no one could sit on. A tired listener creature with a cup of tea looks at it, baffled, still standing. The Mixer, at the side with his headphones round his neck, gently taps the student's shoulder and points at the tired listener.",
       "alt": "A proud student ticks boxes on a long checklist in front of a chair he built upside down, while a tired creature with tea can't sit on it and a creature in headphones points at her."
+    },
+    {
+      "name": "everything-at-max",
+      "use": "figure",
+      "format": "comic",
+      "width": "wide",
+      "after": "**The qualities of good design aren't universal targets",
+      "subject": "PANEL 1: a Rulebook Keeper, consulting his stone tablet, briskly shoves every slider on the mixing desk all the way to the top with one long sweep of his arm, looking very pleased. PANEL 2: the speakers bulge and shake, music notes and lightning bolts burst out, and a small crowd of listeners are blown backwards, their fur flattened and hats flying. PANEL 3: in the silence afterwards, the speakers smoke gently, the Keeper's spectacles are cracked and his bow tie spins; the Mixer, arriving with his headphones, quietly pulls a few sliders back down while a listener peeks out from behind a chair.",
+      "alt": "A three-panel comic: a tall creature pushes every slider on a mixing desk to the top, the speakers blast the listeners backwards, and a creature in headphones quietly pulls the sliders back down."
+    },
+    {
+      "name": "error-prevention",
+      "use": "figure",
+      "format": "figure",
+      "width": "wide",
+      "after": "But what happens when two heuristics conflict?",
+      "subject": "Two scenes side by side, divided by a loose ink line. LEFT: an operating theatre where everything is padded, railed and labelled; a surgeon creature in a mask works carefully inside a frame of guard rails, with foam on every corner, and the calm patient gives a thumbs up. RIGHT: a joyful art studio where a painter creature flings paint everywhere, splashes and drips flying off the canvas onto the walls, the floor and the Mixer, who laughs as he gets splattered. Both sides look equally happy.",
+      "alt": "On one side a surgeon works inside guard rails and padding in a calm operating theatre; on the other a painter flings paint around a studio, splattering a laughing creature in headphones."
     },
     {
       "name": "learning-to-listen",
       "use": "figure",
       "format": "figure",
       "width": "popout",
-      "after": "Perhaps we should teach them how to reason their way to it.",
+      "after": "**Perhaps we should stop teaching designers",
       "subject": "Late at night in a cosy little room, the Mixer and a tiny apprentice creature share one pair of enormous headphones, an ear each, both leaning towards a cot where a baby creature is nearly asleep. The apprentice's small hand rests on one slider of a small mixing desk, and the Mixer's hand rests gently over it, lowering it together. Two stone tablets have been put to good use: one props the door open, the other is a step for the apprentice to stand on. A small lamp glows.",
       "alt": "A fuzzy creature and a tiny apprentice share one pair of headphones, lowering a slider together beside a sleepy baby's cot, while a stone tablet props the door open."
     },
