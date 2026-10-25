@@ -25,6 +25,13 @@
       "label": "Community"
     },
     {
+      "id": "craft",
+      "label": "Craft",
+      "synonyms": [
+        "craftsmanship"
+      ]
+    },
+    {
       "id": "curiosity",
       "label": "Curiosity"
     },
@@ -34,6 +41,10 @@
       "synonyms": [
         "design systems"
       ]
+    },
+    {
+      "id": "design-tools",
+      "label": "Design tools"
     },
     {
       "id": "designup",
@@ -83,6 +94,13 @@
       "label": "Photography"
     },
     {
+      "id": "presentations",
+      "label": "Presentations",
+      "synonyms": [
+        "slides"
+      ]
+    },
+    {
       "id": "privacy",
       "label": "Privacy"
     },
@@ -103,6 +121,13 @@
     {
       "id": "static-site",
       "label": "Static site"
+    },
+    {
+      "id": "storytelling",
+      "label": "Storytelling",
+      "synonyms": [
+        "stories"
+      ]
     },
     {
       "id": "tools",

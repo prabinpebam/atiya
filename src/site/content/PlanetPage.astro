@@ -13,7 +13,7 @@ import AlbumLayout from '../layouts/AlbumLayout.astro';
 import IndexLayout from '../layouts/IndexLayout.astro';
 import Contact from './Contact.astro';
 import Blocks from './Blocks.astro';
-import { getOpenRoutes, getPlanet, getRecommendations, getRoutes, getSite, placeAlbums, placePages, placeSection } from './repository';
+import { getOpenRoutes, getPlanet, getRecommendations, getRoutes, getSite, placeAlbums, placePages, placeSection, tagsOf } from './repository';
 import { recommendationBand } from './recommendations';
 import { withPhotos } from './recommendationsBand';
 import { albumCardOf, albumMeasureOf, albumOf, albumOpening, cardPicture, measureOf, openingOf, relatedOf } from './opening';
@@ -74,12 +74,12 @@ const frame: PlanetFrame = current
   : { place: { id: place.id, title: place.title }, siteHref: withBase(sectionPath ?? '/#sections'), map, canonical: sectionPath ?? '/' };
 const topic = { label: place.title, href: listHref };
 const article = current?.article;
-const header = article && (await openingOf(article, topic));
+const header = article && (await openingOf(article, topic, false));
 // an album, read in its building as on the site (gallery spec §13)
 const album = current?.album;
 const albumView = album && (await albumOf(album.id));
 // what to read next, from this building's articles (a page read on the planet stays in its building: §6.4)
-const related = article && (await relatedOf(article, place.id, pages.flatMap((p) => (p.article ? [{ article: p.article, href: pageHref(p.id), section: place.id }] : []))));
+const related = article && (await relatedOf(article, place.id, pages.flatMap((p) => (p.article ? [{ article: p.article, href: pageHref(p.id), section: place.id }] : [])), false));
 const link = (k: number) => (pages[k] ? { href: pageHref(pages[k].id), title: pages[k].title } : undefined);
 const stories = current
   ? []
@@ -87,7 +87,7 @@ const stories = current
       pages.map(async ({ id, route: r, article: a, album: al }) =>
         al
           ? { node: r.node.id, href: pageHref(id), title: al.title, dek: al.summary, meta: albumMeasureOf(al), picture: await albumCardOf(al) }
-          : { node: r.node.id, href: pageHref(id), title: a!.title, dek: a!.summary, meta: measureOf(a!), picture: await cardPicture(a!) },
+          : { node: r.node.id, href: pageHref(id), title: a!.title, dek: a!.summary, meta: measureOf(a!), topics: tagsOf(a!, sectionNode?.title, false), picture: await cardPicture(a!) },
       ),
     );
 // a section in the Albums view shows its albums as bands here too, each opening in this building (gallery spec §13)

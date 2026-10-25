@@ -7,7 +7,7 @@ import { withBase } from '../design/meta';
 const plaza = sample('plaza');
 ---
 
-<Example title="The opening spread" layout="block" bleed description="Topic, title, standfirst, byline, and the lead picture running wide.">
+<Example title="The opening spread" layout="block" bleed description="Its section, title, standfirst, byline, what it's about (each topic a link to its page), and the lead picture running wide.">
   <ArticleHeader
     level={2}
     title="Building a planet you can walk around"
@@ -16,6 +16,7 @@ const plaza = sample('plaza');
     author={{ name: 'Prabin Pebam', avatar: withBase('/avatars/npc/prabin.webp') }}
     date="2026-09-29"
     readingTime="12 min read"
+    topics={[{ label: 'Craft', href: withBase('/topics/craft/') }, { label: 'Side project', href: withBase('/topics/side-project/') }, { label: 'Motion design' }]}
     picture={{ ...plaza, caption: plaza.caption, credit: 'Concept art' }}
   />
 </Example>

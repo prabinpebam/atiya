@@ -9,6 +9,7 @@ const bridge = sample('bridge');
 const pond = sample('pond');
 const waterfall = sample('waterfall');
 const portrait = PORTRAIT_SAMPLES[0];
+const tag = (label: string) => ({ label, href: `#topic-${label.toLowerCase().replace(/ /g, '-')}` });
 ---
 
 <Example title="Feature" layout="block" description="The lead story: the picture beside the words.">
@@ -19,21 +20,22 @@ const portrait = PORTRAIT_SAMPLES[0];
     dek="How a portfolio became a small 3D world, and why the classic site stayed one tap away."
     topic="Case study"
     meta="12 min read"
+    topics={[tag('Leadership'), tag('Craft'), tag('Side project')]}
     picture={workshop}
   />
 </Example>
 
-<Example title="Standard" layout="block" description="A grid of them makes an index. The whole card is one link, on its title.">
+<Example title="Standard" layout="block" description="A grid of them makes an index. The whole card is one link, on its title; its section says where it sits above it, and the line under the summary says how long it takes and what it's about (each topic a link to its page).">
   <div class="demo-cards">
-    <StoryCard variant="standard" href={withBase('/side-projects/')} title="Painting with generated textures" dek="A frozen style set keeps every surface in one hand." topic="Craft" meta="6 min read" picture={bridge} headingLevel={3} />
-    <StoryCard href={withBase('/writing/')} title="A pond that reads as one body of water" dek="One level, one shader, and a lobed shore." topic="Engineering" meta="4 min read" picture={pond} headingLevel={3} />
+    <StoryCard variant="standard" href={withBase('/side-projects/')} title="Painting with generated textures" dek="A frozen style set keeps every surface in one hand." topic="Craft" meta="6 min read" topics={[tag('AI'), tag('Making')]} picture={bridge} headingLevel={3} />
+    <StoryCard href={withBase('/writing/')} title="A pond that reads as one body of water" dek="One level, one shader, and a lobed shore." topic="Engineering" meta="4 min read" topics={[tag('Motion design')]} picture={pond} headingLevel={3} />
     <StoryCard href={withBase('/leadership/')} title="Wind that everything shares" dek="Grass, trees and flags sway to the same gusts." topic="Craft" meta="5 min read" picture={waterfall} headingLevel={3} />
   </div>
 </Example>
 
 <Example title="Row" layout="block" description="A line of a section's list view: the words first, a small picture at the end of the row.">
   <div class="demo-rows">
-    <StoryCard variant="row" href={withBase('/writing/')} title="Painting with generated textures" dek="A frozen style set keeps every surface in one hand." meta="6 min read" picture={bridge} headingLevel={3} />
+    <StoryCard variant="row" href={withBase('/writing/')} title="Painting with generated textures" dek="A frozen style set keeps every surface in one hand." meta="6 min read" topics={[tag('AI'), tag('Craft')]} picture={bridge} headingLevel={3} />
     <StoryCard variant="row" href={withBase('/writing/')} title="A pond that reads as one body of water" dek="One level, one shader, and a lobed shore." meta="4 min read" picture={pond} headingLevel={3} />
   </div>
 </Example>

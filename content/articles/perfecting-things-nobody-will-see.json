@@ -10,6 +10,10 @@
   "publishedAt": "2026-10-21",
   "updatedAt": "2026-10-21",
   "locale": "en",
+  "topics": [
+    "craft",
+    "ai"
+  ],
   "hero": {
     "media": "articles/perfecting-things-nobody-will-see/the-inside",
     "display": "fit",

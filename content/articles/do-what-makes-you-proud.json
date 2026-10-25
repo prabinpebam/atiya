@@ -10,6 +10,10 @@
   "publishedAt": "2026-09-29",
   "updatedAt": "2026-10-06",
   "locale": "en",
+  "topics": [
+    "leadership",
+    "craft"
+  ],
   "hero": {
     "media": "articles/do-what-makes-you-proud/mark-sculpted-clay",
     "showCaption": false

@@ -9,6 +9,7 @@ How the site is organised into sections and pages, how its top navigation is set
 > - **The planet shows the site's sections.** Its seven buildings are fixed by the game, and each shows one section of the site: that section's published open pages, in its order and its view, so the planet and the site always match. A building keeps its own name and card words; moving a page between sections moves it between buildings (§5, D12).
 > - **Reading on the planet uses the site's own pages.** Opening a building shows its list, and each of its pages, rendered by the same Astro layouts in a planet frame, over the game behind a white smoke in light mode and a black one in dark. You can move freely through that building's pages, but the only way to another building's is to walk there (§6).
 > - **Edit mode controls it all:** sections and their views, a Navigation screen, and a Planet screen for each building's words and the section it shows. Pages move in Sections, and the planet follows (§7).
+> - **Every listed page says why to read it:** its section, its reading time and its topics, on the home's highlights first, and every topic has a page to browse by (§3.8).
 
 <details>
 <summary>What was asked, and where it's answered</summary>
@@ -31,6 +32,9 @@ How the site is organised into sections and pages, how its top navigation is set
 | U14 | In a building you can move through every page of its section | §6.3 | S5 |
 | U15 | The only way to open another section in game mode is to walk to its building, on purpose, so that finding a section is part of the play | §6.4 | S5 |
 | U16 | Spec and plan in detail, critique and improve them, then implement one thing at a time | This page, the [plan](plan.md), §10 | All |
+| U17 | A visitor sees how long a page takes to read before opening it, on the home's highlights first and then everywhere a page is listed | §3.8 | S8 |
+| U18 | A visitor sees what a page is about: its section and its topics (Leadership, Craft, Storytelling…), laid out so the words lead and the facts are easy to scan | §3.8 | S8 |
+| U19 | A visitor can browse the site by topic | §3.8 | S8 |
 
 </details>
 
@@ -207,6 +211,17 @@ Every story (a page of kind `note`, `talk` or `gallery`) ends, after Previous an
 - **On the planet** (§6.3), the suggestions come only from the same building, so every card opens in the frame; their addresses are the frame's (`/play/<building>/<page>/`).
 - **Back to top** (`BackToTop`) scrolls to the top (at once under reduced motion) and moves the focus to the page's main region, so the next Tab starts from the top.
 - **Made of the design system:** `RelatedStories` (a compound: its own cards from Heading, Text, Image and Tag, since a compound can't use `StoryCard`) and `BackToTop` (a fundamental), placed by `ArticleLayout` from its `related` prop; `relatedOf` in `opening.ts` builds the cards for the site (`Page.astro`) and the planet (`PlanetPage.astro`).
+
+### 3.8 Reading time and topics: why read it (U17 to U19)
+
+A listed page has to say enough to earn the click: what it is, how long it takes and what it's about. The home's highlights come first (the owner's priority); the section lists, the opening and Keep exploring use the same facts.
+
+- **The facts:** a page's section (its place, said once), its reading time (`readingTime`, the measure already on its opening; an album says how many pictures) and its topics. A topic is an ID from the page's own `topics`, labelled by the site's vocabulary (`content/topics.json`, shared with the home views' curation), or, for a topic the vocabulary doesn't name, by its ID in words. Nothing is inferred: a page with no topics shows none.
+- **Which tags** (`topicTags` in `src/site/content/topics.ts`, pure and unit-tested): the page's first three topics in its own order (`TOPIC_TAGS_SHOWN`), leaving out a topic that only repeats the section the card already names (compared loosely, synonyms included: a Leadership page in Leadership doesn't say Leadership twice). A tag links to its topic's page; on the planet, where a page can't leave its building (§6.4), it doesn't.
+- **The home's highlight slide** (`HighlightCard`): the words lead (the section as an accent label, the title, the lead), then the facts: the reading time with its icon, then a **Topics** label over the tags. On a slide at least `c.highlight-card.query-split` wide (a container query: the slide's width, never the screen's), the facts sit in their own column (`c.highlight-card.facts`) beside the words, behind a hairline; narrower, they follow the words.
+- **Cards and openings:** `StoryCard` (every section view) shows the reading time, then the tags, under its dek; `ArticleHeader` shows the tags under the byline; `RelatedStories` shows them on each card. A row of tags is the `data-tag-list` recipe.
+- **Browsing by topic:** `/topics/` lists every topic at least one open, published page is about, the most pages first, each with a few of its titles and its count; `/topics/<id>/` lists that topic's pages as tiles, newest first, each with its section and reading time. `topics` is a reserved slug (`RESERVED` in `routes.ts`, beside `views`). There are no topic pages while no page has a topic, and a private page or a draft never counts or shows (V25).
+- **Not yet:** edit mode has no Topics field in a page's settings; topics are set in the page's file until it does.
 
 ## 4. The top navigation (U2, U4, U5)
 
@@ -524,6 +539,7 @@ New or changed rules, checked by the content loader. So the build, the unit test
 | D10 | Exactly three levels (V22) | The owner's model; a top-level page reaches the top through the navigation |
 | D11 | Moving a page, published or not, just moves it: the old address goes, with no redirect | The owner's call: a personal site under construction, where keeping edit mode simple matters more than old links |
 | D12 | A building shows a section of the site (its pages, order and view), instead of keeping its own list of pages; this replaces §5's first "parallel universe" mapping | The owner asked for the planet's sections to be at parity with the classic site's: two lists drifted (a page in a section but not its building, a different order, a different view), and one source can't |
+| D13 | Topics are the pages' own `topics` and the one shared vocabulary (`content/topics.json`), never a second list of tags | The home views already curate by them: one set of words keeps the tags, the topic pages and a strength's evidence in step (tagging a page about leadership also makes it evidence for that strength) |
 
 ## 10. Critique and v2
 
@@ -549,6 +565,7 @@ A review of v1 against the code found fifteen problems. This is what each change
 
 ## 11. As built
 
+- **S8, reading time and topics (25 October 2026):** §3.8 as written. `topics.ts` (`topicTags`, `topicPages`, `topicLabel`) and the repository's `getTopics`, `getTopicPages` and `tagsOf`; `HighlightCard`'s `section`, `meta`, `metaIcon` and `topics`, with the `c.highlight-card` tokens; `topics` on `StoryCard`, `ArticleHeader` and `RelatedStories`; the `data-tag-list` recipe in `base.css`; the routes in `src/pages/topics/[...topic].astro`. The content: craft, storytelling, presentations and design tools added to the vocabulary, and four notes tagged (proposals for the owner's review). Evidence: unit `topics.test.ts`, `siteDesignSystem.test.ts`; the visual baselines of HighlightCard, StoryCard, ArticleHeader, the home and the Cover view (whose Design leadership evidence grew from four pages to six with the new tags, D13).
 - **Frosted reading and shared themes (13 October 2026):** section and article overlays blur the paused planet behind their themed smoke. PlaceBar and Menu offer Match system, Light and Dark, sharing `site.theme` with the site. Every game surface (HUD, dialogs, slots, panels and tooltips) follows the same choice without changing the 3D scene. The parent/frame protocol synchronizes choices even without storage, retains them across page swaps, and follows other tabs and OS changes (§6.2, §6.9). Evidence: unit `gameTheme.test.ts` and `designSystem.test.ts`; E2E "reading theme" and the existing reading-navigation and dark-smoke tests.
 
 Filled in as each phase lands.

@@ -28,6 +28,8 @@ export interface RelatedStory {
   dek?: string;
   /** How long it takes to read. */
   meta?: string;
+  /** What it's about, as tags after the meta (linked to their topic's pages on the site). */
+  topics?: { label: string; href?: string }[];
   /** Its card picture in a 3:2 frame (shown whole unless display says otherwise), and its dark mode version. */
   picture?: CardPicture;
 }
@@ -66,6 +68,7 @@ const { current, stories, heading = 'Keep exploring', shown = RELATED_SHOWN } = 
                 {s.dek && <Text variant="small" tone="muted">{s.dek}</Text>}
                 <span class="meta">
                   {s.meta && <Text as="span" variant="meta">{s.meta}</Text>}
+                  {s.topics?.map((t) => <Tag size="sm" href={t.href}>{t.label}</Tag>)}
                   <span class="read" data-related-read hidden>
                     <Tag size="sm">Read</Tag>
                   </span>

@@ -2,7 +2,7 @@
 /**
  * An article's opening spread: its topic (with a Private tag on a private page, and a Draft tag on a dev
  * server's preview of one not published yet), the title set large, the standfirst in soft italic, the
- * byline with the date and reading time, and the lead picture, wide, with its caption. A page about a
+ * byline with the date and reading time, the tags of what it's about, and the lead picture, wide, with its caption. A page about a
  * person (a résumé, About) can show their portrait beside the title. An album (AlbumLayout) opens with it too:
  * its counts as the measure and the span of its dates instead of the date.
  * @tier compound
@@ -32,6 +32,8 @@ interface Props {
   dates?: string;
   /** Its measure: "6 min read", or "12 pictures" for an album. */
   readingTime?: string;
+  /** What it's about (at most three), as tags under the byline; a tag with an address goes to its topic's page. */
+  topics?: { label: string; href?: string }[];
   /** The lead picture, with its caption and credit, in a 21:9 frame (filling it, cropped around its focus point "50% 30%", unless display says otherwise), and its dark mode version if it has one. */
   picture?: { src: string; srcset?: string; alt: string; width: number; height: number; focus?: string; caption?: string; credit?: string; display?: 'fill' | 'fit' | 'actual' | 'tile'; bg?: string; background?: boolean; rounded?: boolean; shadow?: boolean; dark?: PictureSource };
   /** How wide the lead picture runs: wide, or full bleed. */
@@ -46,7 +48,7 @@ interface Props {
   draft?: boolean;
 }
 
-const { title, standfirst, topic, author, date, dates, readingTime, picture, pictureWidth = 'wide', portrait, level = 1, isPrivate = false, draft = false } = Astro.props;
+const { title, standfirst, topic, author, date, dates, readingTime, topics = [], picture, pictureWidth = 'wide', portrait, level = 1, isPrivate = false, draft = false } = Astro.props;
 const shown = date ? new Date(`${date}T12:00:00Z`).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' }) : null;
 ---
 
@@ -87,6 +89,17 @@ const shown = date ? new Date(`${date}T12:00:00Z`).toLocaleDateString('en-GB', {
               )}
             </p>
           </div>
+        )
+      }
+      {
+        topics.length > 0 && (
+          <ul data-tag-list aria-label="Topics">
+            {topics.map((t) => (
+              <li>
+                <Tag size="sm" href={t.href}>{t.label}</Tag>
+              </li>
+            ))}
+          </ul>
         )
       }
     </div>

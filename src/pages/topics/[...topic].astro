@@ -1,0 +1,58 @@
+---
+/**
+ * Browsing by topic (documentation/sections/spec.md §3.8): `/topics/` lists every topic an open, published page
+ * is about, most pages first, and `/topics/<id>/` lists its pages, newest first, each with its section above
+ * its title. Neither exists while no page has a topic, and neither ever names a private page or a draft (V56).
+ */
+import IndexLayout from '../../site/layouts/IndexLayout.astro';
+import { getArticle, getOpenRoutes, getPlanet, getRoutes, getSite, getStructure, getTopicPages, tagsOf } from '../../site/content/repository';
+import { cardPicture, measureOf } from '../../site/content/opening';
+import { exploreAction, footerLinks, siteNav } from '../../site/content/navigation';
+import { withBase } from '../../site/design/meta';
+import { TOPICS_PATH, type TopicPage } from '../../site/content/topics';
+
+export function getStaticPaths() {
+  const topics = getTopicPages();
+  if (topics.length === 0) return [];
+  return [{ params: { topic: undefined }, props: { id: undefined } }, ...topics.map((t) => ({ params: { topic: t.id }, props: { id: t.id } }))];
+}
+
+const { id } = Astro.props as { id?: string };
+const site = getSite();
+const topics = getTopicPages();
+const topic = id ? topics.find((t) => t.id === id) : undefined;
+const nav = siteNav(getStructure(), getRoutes(), undefined);
+const footer = footerLinks(site, getRoutes());
+const action = exploreAction(undefined, getPlanet());
+const pagesOf = (n: number) => (n === 1 ? '1 page' : `${n} pages`);
+
+// each page where it's read: its address and its section (open and published only: getTopicPages lists no other)
+const routeOf = new Map(getOpenRoutes().flatMap((r) => (r.node.kind === 'item' && r.node.item.type === 'article' ? [[r.node.item.id, r] as const] : [])));
+const titlesOf = (t: TopicPage) => t.pages.map((p) => getArticle(p)?.title).filter((s): s is string => !!s);
+
+const stories = topic
+  ? await Promise.all(
+      topic.pages.flatMap((pageId) => {
+        const a = getArticle(pageId);
+        const r = routeOf.get(pageId);
+        if (!a || !r) return [];
+        const section = r.ancestors.at(-1)?.label;
+        // what else it's about: never this topic again, nor its section, said above its title
+        const tags = tagsOf(a, [topic.label, ...(section ? [section] : [])]);
+        return [cardPicture(a).then((picture) => ({ node: r.node.id, href: withBase(r.path), title: a.title, dek: a.summary, topic: section, meta: measureOf(a), ...(tags.length ? { topics: tags } : {}), picture }))];
+      }),
+    )
+  : topics.map((t) => {
+      const titles = titlesOf(t);
+      return { node: t.id, href: withBase(t.path), title: t.label, dek: titles.slice(0, 3).join(' · ') + (titles.length > 3 ? ' …' : ''), meta: pagesOf(t.pages.length) };
+    });
+
+const home = getRoutes().find((r) => r.path === '/')?.title ?? site.name;
+const heading = topic ? topic.label : 'Topics';
+const standfirst = topic ? `${pagesOf(topic.pages.length)} about ${topic.label}.` : 'Every page, by what it’s about.';
+const crumbs = topic
+  ? { trail: [{ label: home, href: withBase('/') }, { label: 'Topics', href: withBase(TOPICS_PATH) }], current: topic.label }
+  : { trail: [{ label: home, href: withBase('/') }], current: 'Topics' };
+---
+
+<IndexLayout title={`${heading} — ${site.name}`} description={standfirst} heading={heading} standfirst={standfirst} nav={nav} footer={footer} action={action} crumbs={crumbs} stories={stories} view={topic ? 'tiles' : 'list'} />

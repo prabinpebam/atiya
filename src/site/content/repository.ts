@@ -21,6 +21,7 @@ import { curate, type HomePicks } from '../home/curate';
 import { countsOf, effectiveViews, health, type HealthItem } from '../home/health';
 import { viewSettings } from '../home/catalogue';
 import type { ViewId } from '../home/ids';
+import { topicPages, topicTags, type TopicPage, type TopicTag } from './topics';
 
 let cached: { generation: number; index: ContentIndex } | undefined;
 
@@ -160,6 +161,34 @@ export const getPerson = (id: string) => content().people.get(id);
 export const getRoutes = (): Route[] => content().routes.filter((r) => r.published);
 /** The routes anyone may be shown a link to: everything built but private pages (V25, V32). */
 export const getOpenRoutes = (): Route[] => getRoutes().filter((r) => r.access === 'open');
+/** The site's topic vocabulary (content/topics.json), or null. */
+export const getTopics = () => content().topics;
+const topicPagesOf = new WeakMap<ContentIndex, TopicPage[]>();
+/**
+ * Every topic an open, published page is about, with its pages (sections spec §3.8, V56): what `/topics/`
+ * lists. Never a private page or a draft.
+ */
+export function getTopicPages(): TopicPage[] {
+  const index = content();
+  const known = topicPagesOf.get(index);
+  if (known) return known;
+  const pages = getOpenRoutes().flatMap((r) => {
+    if (r.node.kind !== 'item' || r.node.item.type !== 'article') return [];
+    const a = getArticle(r.node.item.id);
+    return a ? [{ id: a.id, topics: a.topics, publishedAt: a.publishedAt }] : [];
+  });
+  const found = topicPages(getTopics(), pages);
+  topicPagesOf.set(index, found);
+  return found;
+}
+/**
+ * A page's topic tags (at most TOPIC_TAGS_SHOWN), leaving out what the place it's shown already says (`omit`: its
+ * section's name, a topic page's own topic), each linked to its
+ * topic's page unless `linked` is false (the planet, where a page stays in its building).
+ */
+export function tagsOf(article: Pick<Article, 'topics'>, omit: string | string[] | undefined, linked = true): TopicTag[] {
+  return topicTags(article.topics, getTopics(), getTopicPages(), { omit: [omit ?? []].flat(), href: linked ? withBase : undefined });
+}
 /** A page's access: open or private (documentation/access/spec.md §2). */
 export const getAccess = (articleId: string) => content().access.get(articleId) ?? 'open';
 /** The grants (private-pages/access.json), the overlay and the message offered with a new grant. */

@@ -5,7 +5,7 @@
  * its items and gives the span of their dates. The site's Page and the planet's frame both open a page with it,
  * so a page reads the same in both (§6.1).
  */
-import { albumLookup, canonicalPath, captionHrefs, documentHref, getAlbum, getPerson, getSite } from './repository';
+import { albumLookup, canonicalPath, captionHrefs, documentHref, getAlbum, getPerson, getSite, tagsOf } from './repository';
 import { embedPoster, picture, video } from './pictures';
 import { coverPicture } from './album';
 import { albumCells, albumDateWords, albumMeasure, itemFragment } from './albumPage';
@@ -48,6 +48,8 @@ export interface Opening {
   author?: { name: string; avatar?: string; avatarDark?: string };
   date?: string;
   readingTime?: string;
+  /** What it's about: its topic tags (topics.ts), linked to their pages on the site. */
+  topics?: { label: string; href?: string }[];
   /** An album's span of dates in words, in place of the date (gallery spec §7). */
   dates?: string;
   picture?: { src: string; srcset?: string; alt: string; width: number; height: number; caption?: string; credit?: string; display?: PictureDisplay; bg?: string; background?: boolean; rounded?: boolean; shadow?: boolean; dark?: PictureSource };
@@ -63,7 +65,7 @@ export const storyKind = (a: Pick<Article, 'kind'>) => a.kind === 'note' || a.ki
  * stories in `pool` (on the site, every published one; on the planet, the building's), ranked (related.ts)
  * and made into cards, best first. The reader's browser picks the ones it hasn't read yet.
  */
-export async function relatedOf(article: Article, section: string | undefined, pool: { article: Article; href: string; section?: string }[]) {
+export async function relatedOf(article: Article, section: string | undefined, pool: { article: Article; href: string; section?: string }[], linked = true) {
   const ranked = rankRelated(
     { id: article.id, kind: article.kind, topics: article.topics, section, publishedAt: article.publishedAt, related: article.related?.map((r) => r.id) },
     pool.map((p) => ({ id: p.article.id, kind: p.article.kind, topics: p.article.topics, section: p.section, publishedAt: p.article.publishedAt })),
@@ -72,14 +74,18 @@ export async function relatedOf(article: Article, section: string | undefined, p
     ranked.map(async (id) => {
       const p = pool.find((x) => x.article.id === id)!;
       const picture = await cardPicture(p.article);
-      return { id, href: p.href, title: p.article.title, dek: p.article.summary, meta: measureOf(p.article), ...(picture ? { picture } : {}) };
+      const topics = tagsOf(p.article, undefined, linked);
+      return { id, href: p.href, title: p.article.title, dek: p.article.summary, meta: measureOf(p.article), ...(topics.length ? { topics } : {}), ...(picture ? { picture } : {}) };
     }),
   );
   return { current: article.id, stories };
 }
 
-/** @param topic where the page sits: its section on the site, or its building on the planet */
-export async function openingOf(article: Article, topic?: { label: string; href: string }): Promise<Opening> {
+/**
+ * @param topic where the page sits: its section on the site, or its building on the planet
+ * @param linked whether its topic tags link to their pages (not on the planet, where a page stays in its building)
+ */
+export async function openingOf(article: Article, topic?: { label: string; href: string }, linked = true): Promise<Opening> {
   const owner = getPerson(getSite().owner)!;
   const hero = article.hero && (await picture(article.hero.media, 'wide'));
   const avatar = owner.avatar ? await picture(owner.avatar, 'card') : undefined;
@@ -94,6 +100,7 @@ export async function openingOf(article: Article, topic?: { label: string; href:
     author: story ? { name: owner.name, avatar: avatar?.thumb, ...(avatar?.dark ? { avatarDark: avatar.dark.thumb } : {}) } : undefined,
     date: story ? article.publishedAt : undefined,
     readingTime: measureOf(article),
+    topics: story ? tagsOf(article, topic?.label, linked) : undefined,
     picture: lead ? { ...lead, display: article.hero?.display ?? 'fill', background: !!article.hero?.background, rounded: article.hero?.rounded !== false, shadow: !!article.hero?.shadow, dark: darkOf(lead) } : undefined,
     ...(portrait ? { portrait: { src: portrait.src, srcset: portrait.srcset, alt: portrait.alt, width: portrait.width, height: portrait.height, focus: portrait.focus, dark: darkOf(portrait) } } : {}),
   };

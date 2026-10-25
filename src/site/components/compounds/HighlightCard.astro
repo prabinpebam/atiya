@@ -1,7 +1,9 @@
 ---
 /**
  * A home highlight backed by a page, album or library picture. The picture keeps its source's alt,
- * dark version and focus. Page and album titles link to the source; a lone picture opens the lightbox.
+ * dark version and focus. Page and album titles link to the source; a lone picture opens the lightbox. A page or an
+ * album says where it sits above its title; its facts (its reading time or counts, and a page's topics) follow its words,
+ * or, on a wide slide, stand in their own column beside them.
  * @tier compound
  * @a11y An article named by its title (its heading, or the picture's caption); one descriptive source link, or a full-picture link with its image alt.
  */
@@ -9,9 +11,12 @@ import Heading from '../fundamentals/Heading.astro';
 import Text from '../fundamentals/Text.astro';
 import Image from '../fundamentals/Image.astro';
 import Caption from '../fundamentals/Caption.astro';
+import Tag from '../fundamentals/Tag.astro';
+import Icon from '../fundamentals/Icon.astro';
 import { PICTURE_SPECS, type PictureSource } from '../../design/pictures';
 import { sizes } from '../../design/responsive';
 import { stableId } from '../../design/stableId';
+import type { IconName } from '../../design/icons';
 
 interface Props {
   /** Current source title, or the single picture's caption. */
@@ -24,10 +29,18 @@ interface Props {
   picture: PictureSource & { alt: string; full: string; thumb: string; caption?: string; focus?: string; drawing?: boolean; dark?: PictureSource & { full?: string; thumb?: string } };
   /** Shared article carousel picture presentation. */
   settings: { display?: 'fill' | 'fit' | 'actual' | 'tile'; background?: boolean; rounded?: boolean; shadow?: boolean };
+  /** Where the page or album sits: its section, said above the title. */
+  section?: string;
+  /** Its measure ("6 min read", "18 pictures"): the first of its facts. */
+  meta?: string;
+  /** The measure's icon: clock for a reading time, gallery for an album's counts. */
+  metaIcon?: IconName;
+  /** What it's about (at most three), as tags under its measure; a tag with an address goes to its topic's page. */
+  topics?: { label: string; href?: string }[];
   /** Loads the first slide picture without waiting for lazy visibility. */
   priority?: boolean;
 }
-const { title, text, href, picture: p, settings, priority = false } = Astro.props;
+const { title, text, href, picture: p, settings, section, meta, metaIcon = 'clock', topics = [], priority = false } = Astro.props;
 const Frame = href ? 'div' : 'a';
 const titleId = `highlight-${stableId(Astro, 'HighlightCard')}`;
 ---
@@ -41,11 +54,43 @@ const titleId = `highlight-${stableId(Astro, 'HighlightCard')}`;
     </Frame>
     {!href && p.caption && <Caption>{p.caption}</Caption>}
   </figure>
-  {href && <div class="words"><Heading level={2} size="h3"><a id={titleId} href={href}>{title}</a></Heading>{text && <Text variant="lead" narrow>{text}</Text>}</div>}
-</article>
+  {href && (
+    <div class="words">
+      <div class="story">
+        {section && <Text variant="label" tone="accent">{section}</Text>}
+        <Heading level={2} size="h3"><a id={titleId} href={href}>{title}</a></Heading>
+        {text && <Text variant="lead" narrow>{text}</Text>}
+      </div>
+      {(meta || topics.length > 0) && (
+        <div class="facts">
+          {meta && <p class="fact"><Icon name={metaIcon} /><Text as="span" variant="ui">{meta}</Text></p>}
+          {topics.length > 0 && (
+            <div class="topics">
+              <Text as="span" variant="label">Topics</Text>
+              <ul data-tag-list>
+                {topics.map((t) => <li><Tag size="sm" href={t.href}>{t.label}</Tag></li>)}
+              </ul>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  )}</article>
 <style>
-  .highlight { display: grid; gap: var(--space-6); align-content: start; min-inline-size: 0; }
+  /* it lays its words out by its own width (a container): its slide's, never the screen's */
+  .highlight { container-type: inline-size; display: grid; gap: var(--space-6); align-content: start; min-inline-size: 0; }
   .picture { display: grid; gap: var(--space-3); margin: 0; }
   .picture a { display: block; color: var(--color-text); }
-  .words { display: grid; gap: var(--space-3); padding-block-end: var(--space-4); }
+  .words { display: grid; gap: var(--space-5); padding-block-end: var(--space-4); }
+  .story { display: grid; gap: var(--space-3); align-content: start; }
+  .facts { display: flex; flex-wrap: wrap; align-items: end; gap: var(--space-3) var(--space-6); }
+  .fact { display: flex; align-items: center; gap: var(--space-2); margin: 0; }
+  /* the label over its tags, in the column and in the row alike */
+  .topics { display: grid; justify-items: start; gap: var(--space-2); }
+
+  /* at least c.highlight-card.query-split wide: the facts in their own column, under a hairline's edge */
+  @container (width >= 40rem) {
+    .words { grid-template-columns: minmax(0, auto) var(--c-highlight-card-facts); justify-content: start; gap: var(--space-10); }
+    .facts { display: grid; align-content: start; gap: var(--space-5); padding-block: var(--space-1); padding-inline-start: var(--space-6); border-inline-start: var(--border-hairline) solid var(--color-border); }
+  }
 </style>

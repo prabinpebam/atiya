@@ -149,6 +149,8 @@
     "c.header.height-compact": {"v":"var(--size-chrome-block-compact)"},
     "c.header.more-item-radius": {"v":"var(--radius-md)"},
     "c.header.more-radius": {"v":"var(--radius-lg)"},
+    "c.highlight-card.facts": {"v":"16rem"},
+    "c.highlight-card.query-split": {"v":"40rem"},
     "c.icon.baseline-shift": {"v":"-0.15em"},
     "c.icon.secondary": {"v":"var(--color-icon-secondary)"},
     "c.icon.secondary-opacity": {"v":"1"},
@@ -527,6 +529,18 @@
           null,
           {
             "v": "0.8"
+          }
+        ],
+        "c.highlight-card.facts": [
+          null,
+          {
+            "v": "16rem"
+          }
+        ],
+        "c.highlight-card.query-split": [
+          null,
+          {
+            "v": "40rem"
           }
         ]
       }

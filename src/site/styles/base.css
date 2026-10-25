@@ -421,6 +421,16 @@ button[data-card-link] {
   rotate: 180deg;
 }
 
+/* a row of tags (data-tag-list, on the ul: a page's topics, the home's facts): wrapping, no bullets */
+[data-tag-list] {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
 ::selection {
   background: var(--color-mark);
   color: var(--color-text);

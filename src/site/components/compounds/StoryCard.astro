@@ -26,10 +26,12 @@ interface Props {
   title: string;
   /** One line: the outcome, the tension, the point. */
   dek?: string;
-  /** The topic (a practice area). */
+  /** Where it sits, said above the title (its section, on a list that mixes sections: a topic's page, the home page). */
   topic?: string;
-  /** When, or how long it takes to read. */
+  /** When, or how long it takes to read: first in the line under the summary. */
   meta?: string;
+  /** What it's about (at most three), as tags after the meta; a tag with an address goes to its topic's page. */
+  topics?: { label: string; href?: string }[];
   /** The story’s picture in a 3:2 frame, shown whole unless display says otherwise (fill, actual size, tile), and its dark mode version if it has one; a row frames it square, filled by its square version when it has one. */
   picture?: CardPicture;
   /** standard: picture above; feature: picture beside, larger type; row: words first, a small picture at the end (a list); compact: no picture. */
@@ -42,7 +44,7 @@ interface Props {
   columns?: 2 | 3;
 }
 
-const { href, title, dek, topic, meta, picture, variant = picture ? 'standard' : 'compact', headingLevel = 2, shared, columns = 3 } = Astro.props;
+const { href, title, dek, topic, meta, topics = [], picture, variant = picture ? 'standard' : 'compact', headingLevel = 2, shared, columns = 3 } = Astro.props;
 // a list's row frames its picture square: the page's own square picture fills it; without one, its card picture shows as it asks
 const row = variant === 'row';
 const shown = row && picture?.square ? { ...picture.square, display: 'fill' as const } : picture;
@@ -85,12 +87,27 @@ const pictureSizes =
       {(topic || shared) && (
         <p class="topic">
           {shared && <Tag size="sm" tone="highlight" icon="key">{shared === 'private' ? 'Private' : 'Shared with you'}</Tag>}
-          {topic && <Tag size="sm">{topic}</Tag>}
+          {topic && <Text as="span" variant="label" tone="accent">{topic}</Text>}
         </p>
       )}
       <Heading level={headingLevel} size={variant === 'feature' ? 'h2' : 'h3'}><a class="title" href={href} data-card-link>{title}</a></Heading>
       {dek && <Text variant={variant === 'feature' ? 'lead' : 'body'} tone="muted">{dek}</Text>}
-      {meta && <Text variant="meta">{meta}</Text>}
+      {
+        (meta || topics.length > 0) && (
+          <div class="facts">
+            {meta && <Text variant="meta">{meta}</Text>}
+            {topics.length > 0 && (
+              <ul data-tag-list aria-label="Topics">
+                {topics.map((t) => (
+                  <li>
+                    <Tag size="sm" href={t.href}>{t.label}</Tag>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        )
+      }
     </div>
   </div>
 </article>
@@ -173,7 +190,17 @@ const pictureSizes =
   .topic {
     display: flex;
     flex-wrap: wrap;
-    gap: var(--space-2);
+    align-items: center;
+    gap: var(--space-2) var(--space-3);
+  }
+
+  /* how long, then what it's about: one line that wraps; the tags sit above the card's link (they come after it) */
+  .facts {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-2) var(--space-4);
+    padding-block-start: var(--space-1);
   }
 
   .title:focus-visible::after {

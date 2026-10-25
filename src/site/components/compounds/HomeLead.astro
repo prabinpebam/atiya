@@ -52,7 +52,7 @@ const note = Astro.slots.has('note') ? (await Astro.slots.render('note')).trim()
       <div class="about">
         {positioning && <Text variant="standfirst">{positioning}</Text>}
         {facts.length > 0 && (
-          <ul class="facts">
+          <ul data-tag-list>
             {facts.map((f) => (
               <li>
                 <Tag>{f}</Tag>
@@ -112,15 +112,6 @@ const note = Astro.slots.has('note') ? (await Astro.slots.render('note')).trim()
 
   .about {
     gap: var(--space-4);
-  }
-
-  .facts {
-    display: flex;
-    flex-wrap: wrap;
-    gap: var(--space-2);
-    margin: 0;
-    padding: 0;
-    list-style: none;
   }
 
   /* the actions, and a quiet way in after them on the same row */

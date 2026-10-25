@@ -3,7 +3,8 @@
 import Carousel, { type CarouselItem } from '../components/compounds/Carousel.astro';
 import ContributionHero from '../components/compounds/ContributionHero.astro';
 import HighlightCard from '../components/compounds/HighlightCard.astro';
-import { content } from './repository';
+import { content, getPlacement, tagsOf } from './repository';
+import { albumMeasureOf, measureOf } from './opening';
 import { CUSTOM_SLIDES, defaultHighlights, visibleHighlights, type HighlightItem } from './highlights';
 import type { Picture } from './pictures';
 import { slidePicture } from './highlightPictures';
@@ -13,10 +14,22 @@ import { PICTURE_SPECS } from '../design/pictures';
 
 const index = content();
 const settings = defaultHighlights(index);
-interface Slide { item: HighlightItem; title: string; text?: string; href?: string; picture?: Picture }
+interface Slide { item: HighlightItem; title: string; text?: string; href?: string; picture?: Picture; section?: string; meta?: string; topics?: { label: string; href?: string }[] }
+// where a page or an album sits (its section), its measure and, for a page, what it's about
+const about = (item: HighlightItem): Pick<Slide, 'section' | 'meta' | 'topics'> => {
+  if (item.type !== 'article' && item.type !== 'album') return {};
+  const route = getPlacement(item.type, item.type === 'article' ? item.article : item.album);
+  const section = route && route.ancestors.length > 1 ? route.ancestors.at(-1)?.label : undefined;
+  if (item.type === 'album') {
+    const album = index.albums.get(item.album);
+    return { section, meta: album && albumMeasureOf(album) };
+  }
+  const article = index.articles.get(item.article);
+  return article ? { section, meta: measureOf(article), topics: tagsOf(article, section) } : { section };
+};
 const slides: Slide[] = await Promise.all(visibleHighlights(index).map(async ({ item, state }): Promise<Slide> => {
   const p = state.media ? await slidePicture(index, state.media) : undefined;
-  return { item, title: state.title, text: state.text, href: state.href ? withBase(state.href) : undefined, picture: p };
+  return { item, title: state.title, text: state.text, href: state.href ? withBase(state.href) : undefined, picture: p, ...about(item) };
 }));
 // a custom slide has no picture: its frame is the wide shape's, its thumbnail a label
 const [width, height] = PICTURE_SPECS.wide.ratio.split('/').map(Number);
@@ -28,6 +41,6 @@ const items: CarouselItem[] = slides.map((s) => s.picture ? { ...s.picture, capt
     const slide = slides[n];
     return slide.item.type === 'custom' && index.github
       ? <ContributionHero data={{ ...index.github, stats: contributionStats(index.github) }} embedded />
-      : slide.picture && <HighlightCard title={slide.title} text={slide.text} href={slide.href} picture={slide.picture} settings={settings} priority={n === 0} />;
+      : slide.picture && <HighlightCard title={slide.title} text={slide.text} href={slide.href} picture={slide.picture} settings={settings} section={slide.section} meta={slide.meta} metaIcon={slide.item.type === 'album' ? 'gallery' : 'clock'} topics={slide.topics} priority={n === 0} />;
   }}
 </Carousel>}

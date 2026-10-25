@@ -217,6 +217,15 @@ The owner asked for the two screens to be one pattern, for published pages to mo
 - unit: a published page moves freely and no redirect is written; a stale redirect is a warning; `placeAll` and `putAllIn` (order, nodes, a place among the pages that stay);
 - E2E "editor": the Sections screen (a new section opened and moved; a published page dragged onto another section, its old address a 404; Move; the keys; a drag within the list; Find and Show; a selection moved with Move selected and by dragging), the Planet screen, and axe on both.
 
+### S8: why read it, reading time and topics (U17 to U19)
+
+The owner asked for listed pages to say enough to earn the click, on the home's highlights first ([spec §3.8](spec.md#38-reading-time-and-topics-why-read-it-u17-to-u19)).
+1. **The rules:** `topics.ts` (pure) and the repository's `getTopics`, `getTopicPages` and `tagsOf`; `topics` reserved.
+2. **The highlight slide:** the words, then the facts (reading time, the Topics label and its tags), in their own column on a wide slide.
+3. **Cards and openings:** the tags on StoryCard, ArticleHeader and RelatedStories, through the `data-tag-list` recipe.
+4. **Browsing:** `/topics/` and `/topics/<id>/`.
+5. **Next:** a Topics field in a page's settings in edit mode.
+
 ## 2. Definition of Done
 
 **Frosted reading and themes (13 October 2026):** section and article overlays have an 8 px token-driven backdrop blur and the existing readable smoke. The place bar and game Menu share Match system, Light and Dark; all game surfaces follow. Evidence is the "reading theme" E2E (section/article navigation, both schemes, live system changes, other tabs, focused-select keys, menu and backpack), the existing reading-navigation/dark-smoke E2E, and the game-theme and design-system units ([spec §6.2](spec.md#62-the-planet-frame)).
@@ -247,6 +256,10 @@ Each phase is done when every row for it is true and evidenced. **All rows were 
 | 18 | All | The spec's "As built" and the related docs match the build: the content model, structures, edit mode, the game UI design system and AGENTS.md | The docs changes in each phase's commit |
 | 19 | S7 | Sections and Planet are the same two columns (the list of sections; the chosen one's Pages and Settings tabs); pages move by drag (within the list or onto a section), keys or Move, one or a selection at a time, and a section of many pages stays usable (Find, Show, the selection) | E2E "editor": "sections: the sections beside the chosen one's pages and settings…", "planet: pages put in buildings…"; screenshots with 21 pages in a section, in light, dark and on a phone |
 | 20 | S7 | A published page moves, is renamed or unpublished like a draft, and nothing is redirected | `editorServer.test.ts`: "a published page moves freely"; `content.test.ts` (V19 warnings); E2E "editor": the old address is a 404 and `redirects.json` is unchanged |
+| 21 | S8 | The home's highlight slide shows a page's section, reading time and topics (an album's picture count), the words leading and the facts in their own column on a wide slide | Visual baselines `highlight-card-*` and `page-home-*` in light and dark at 360, 768 and 1280 |
+| 22 | S8 | A card and an opening show at most three topic tags, in the page's order, never repeating its section, linked to their topic's page on the site and unlinked on the planet | `topics.test.ts`; visual baselines `story-card-*` and `article-header-*` |
+| 23 | S8 | `/topics/` and each `/topics/<id>/` list only open, published pages, and nothing is listed while no page has a topic | `topics.test.ts` ("never makes a page for a topic no page has"); `getTopicPages` passes only open, published pages; `verify:prod` (the leak check over the new routes) |
+| 24 | S8 | A page's topics can be set in edit mode | Not yet: set in the page's file (spec §3.8) |
 
 ## 3. Validation per phase
 
@@ -261,6 +274,7 @@ Following the tiers in [AGENTS.md](https://github.com/prabinpebam/atiya/blob/mai
 | S5 | Unit, E2E "planet" and "capability gate", `verify:prod`, and a build at `/atiya` |
 | S6 | Unit (editor model), and E2E "editor" |
 | S7 | Unit (all), `astro check`, and E2E "editor" |
+| S8 | Unit (`topics`, content, design system), `astro check`, the visual baselines of the changed stories and home pages, and `verify:prod` (new routes) |
 | End | The full `npm test`, `npm run check`, `npm run verify:prod`, and every E2E group this work touched |
 
 ## 4. Risks

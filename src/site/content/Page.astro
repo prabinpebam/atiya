@@ -11,7 +11,7 @@ import AlbumLayout from '../layouts/AlbumLayout.astro';
 import IndexLayout from '../layouts/IndexLayout.astro';
 import Contact from './Contact.astro';
 import Blocks from './Blocks.astro';
-import { getAlbum, getArticle, getOpenRoutes, getPlanet, getRecommendations, getRoutes, getSite, getStructure, sectionAlbums } from './repository';
+import { getAlbum, getArticle, getOpenRoutes, getPlanet, getRecommendations, getRoutes, getSite, getStructure, sectionAlbums, tagsOf } from './repository';
 import { recommendationBand } from './recommendations';
 import { withPhotos } from './recommendationsBand';
 import { albumCardOf, albumMeasureOf, albumOf, albumOpening, albumSocialOf, cardPicture, measureOf, openingOf, relatedOf } from './opening';
@@ -99,7 +99,9 @@ const story = async (r: Route) => {
     return { node: r.node.id, href: withBase(r.path), title: al.title, dek: al.summary, meta: albumMeasureOf(al), picture: await albumCardOf(al) };
   }
   const a = getArticle(id)!;
-  return { node: r.node.id, href: withBase(r.path), title: a.title, dek: a.summary, meta: measureOf(a), picture: await cardPicture(a) };
+  // what it's about, leaving out the section the card is listed in
+  const topics = tagsOf(a, r.ancestors.at(-1)?.label);
+  return { node: r.node.id, href: withBase(r.path), title: a.title, dek: a.summary, meta: measureOf(a), ...(topics.length ? { topics } : {}), picture: await cardPicture(a) };
 };
 const placed = node?.kind === 'hub' ? getRoutes().filter((r) => r.parent === node && r.node.kind === 'item' && (r.node.item.type === 'article' || r.node.item.type === 'album')) : [];
 // the Albums view orders its albums by the section's albumOrder (spec §5): they take the albums' places, in that order

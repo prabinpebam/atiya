@@ -10,6 +10,10 @@
   "publishedAt": "2026-10-01",
   "updatedAt": "2026-10-01",
   "locale": "en",
+  "topics": [
+    "ai",
+    "leadership"
+  ],
   "hero": {
     "media": "articles/the-best-learning-loop-will-win/the-two-gardens",
     "display": "fit",

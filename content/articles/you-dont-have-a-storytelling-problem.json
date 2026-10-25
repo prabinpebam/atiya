@@ -10,6 +10,11 @@
   "publishedAt": "2026-10-18",
   "updatedAt": "2026-10-25",
   "locale": "en",
+  "topics": [
+    "storytelling",
+    "craft",
+    "leadership"
+  ],
   "hero": {
     "media": "articles/you-dont-have-a-storytelling-problem/the-storyteller",
     "display": "fit",
