@@ -83,6 +83,12 @@ const titleId = `highlight-${stableId(Astro, 'HighlightCard')}`;
   .picture a { display: block; color: var(--color-text); }
   .words { display: grid; gap: var(--space-5); padding-block-end: var(--space-4); }
   .story { display: grid; gap: var(--space-3); align-content: start; }
+  /* a heading is never underlined: its link says so by its colour when it's pointed at or pressed */
+  .story a { color: var(--color-text); text-decoration: none; }
+  @media (hover: hover) {
+    .story a:hover { color: var(--color-accent-hover); }
+  }
+  .story a:active { color: var(--color-accent-hover); }
   .facts { display: flex; flex-wrap: wrap; align-items: end; gap: var(--space-3) var(--space-6); }
   .fact { display: flex; align-items: center; gap: var(--space-2); margin: 0; }
   /* the label over its tags, in the column and in the row alike */
