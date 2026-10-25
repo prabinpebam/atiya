@@ -8,7 +8,7 @@
   "status": "published",
   "visibility": "public",
   "publishedAt": "2026-10-18",
-  "updatedAt": "2026-10-18",
+  "updatedAt": "2026-10-25",
   "locale": "en",
   "hero": {
     "media": "articles/you-dont-have-a-storytelling-problem/the-storyteller",
@@ -68,6 +68,11 @@
       "variant": "pull",
       "text": "The goal isn't just to get everyone to agree with the final proposal. It's to help them understand why we arrived there.",
       "key": "6f9ncq"
+    },
+    {
+      "type": "text",
+      "markdown": "It's okay if they disagree with the final proposal as that would be a true disagreement on merit and not because of lack of comprehension.",
+      "key": "zzczzw"
     },
     {
       "type": "figure",
