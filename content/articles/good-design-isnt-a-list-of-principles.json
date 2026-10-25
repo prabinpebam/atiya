@@ -42,7 +42,8 @@
       "display": "fit",
       "background": false,
       "rounded": false,
-      "showCaption": false
+      "showCaption": false,
+      "key": "qgobhq"
     },
     {
       "type": "text",
@@ -103,7 +104,8 @@
       "display": "fit",
       "background": false,
       "rounded": false,
-      "showCaption": false
+      "showCaption": false,
+      "key": "j5o8dn"
     },
     {
       "type": "text",
@@ -143,7 +145,8 @@
       "display": "fit",
       "background": false,
       "rounded": false,
-      "showCaption": false
+      "showCaption": false,
+      "key": "woys8a"
     },
     {
       "type": "text",
@@ -154,6 +157,10 @@
       "type": "text",
       "markdown": "We need to reason from intent.",
       "key": "l9t5fx"
+    },
+    {
+      "type": "divider",
+      "key": "1moq73"
     },
     {
       "type": "heading",
@@ -229,8 +236,9 @@
       "key": "cg1ihr"
     },
     {
-      "type": "text",
-      "markdown": "**If intent was not built into your decision, you are just rolling the dice.**",
+      "type": "quote",
+      "variant": "pull",
+      "text": "If intent was not built into your decision, you are just rolling the dice.",
       "key": "rbcwgp"
     },
     {
@@ -241,7 +249,8 @@
       "display": "fit",
       "background": false,
       "rounded": false,
-      "showCaption": false
+      "showCaption": false,
+      "key": "48pf5q"
     },
     {
       "type": "text",
@@ -307,7 +316,8 @@
       "display": "fit",
       "background": false,
       "rounded": false,
-      "showCaption": false
+      "showCaption": false,
+      "key": "k3brb9"
     },
     {
       "type": "text",
@@ -391,8 +401,9 @@
       "key": "o5whtf"
     },
     {
-      "type": "text",
-      "markdown": "**The qualities of good design aren't universal targets to maximize. They're parameters to optimize against intent.**",
+      "type": "quote",
+      "variant": "block",
+      "text": "The qualities of good design aren't universal targets to maximize. They're parameters to optimize against intent.",
       "key": "by0xyt"
     },
     {
@@ -403,7 +414,8 @@
       "display": "fit",
       "background": false,
       "rounded": false,
-      "showCaption": false
+      "showCaption": false,
+      "key": "amj8cn"
     },
     {
       "type": "text",
@@ -452,8 +464,9 @@
       "key": "jt5ig6"
     },
     {
-      "type": "text",
-      "markdown": "**Describing the qualities of good design is not the same as explaining how to make good design decisions.**",
+      "type": "quote",
+      "variant": "block",
+      "text": "Describing the qualities of good design is not the same as explaining how to make good design decisions.",
       "key": "ln46dd"
     },
     {
@@ -510,7 +523,8 @@
       "display": "fit",
       "background": false,
       "rounded": false,
-      "showCaption": false
+      "showCaption": false,
+      "key": "q5lkbm"
     },
     {
       "type": "text",
@@ -621,7 +635,8 @@
       "display": "fit",
       "background": false,
       "rounded": false,
-      "showCaption": false
+      "showCaption": false,
+      "key": "50wreq"
     }
   ],
   "hero": {
