@@ -3,7 +3,8 @@
  * or filmstrip, keys and counter, and a peek's room and shading. Carousel.astro's script runs it on each
  * carousel through `each`; the rules it applies are pure in `media.ts` and `units.ts`, and unit-tested.
  */
-import { arrowStep, bleed, clampIndex, counter, narrowerThan, nearest, peekInset, peekOf, reveal } from './media';
+import { drawHaze } from './haze';
+import { arrowStep, bleed, clampIndex, counter, hazeOf, hazePlan, narrowerThan, nearest, peekInset, peekOf, reveal } from './media';
 import { cssNumber } from './units';
 
 /** The names of the component's tokens the script reads (the component owns them, so it names them). */
@@ -12,6 +13,10 @@ export interface CarouselTokens {
   peekMin: string;
   /** Its container query's size: narrower than this, no peek (one slide at a time). */
   narrow: string;
+  /** The blur at a neighbour's near edge. */
+  blurNear: string;
+  /** The blur at a neighbour's far end (the most). */
+  blur: string;
 }
 
 export function setupCarousel(root: HTMLElement, signal: AbortSignal, tokens: CarouselTokens): void {
@@ -118,6 +123,19 @@ export function setupCarousel(root: HTMLElement, signal: AbortSignal, tokens: Ca
       root.style.setProperty('--bleed-start', `${start}px`);
       root.style.setProperty('--bleed-end', `${end}px`);
       root.style.setProperty('--inset', `${inset}px`);
+      haze(r.width, start, end, inset, gap);
+    };
+    // the blur over each neighbour: an SVG filter on the track, drawn again only when its place changes
+    const lens = root.querySelector<SVGFilterElement>('[data-carousel-haze]');
+    let drawn = '';
+    const haze = (width: number, start: number, end: number, inset: number, gap: number) => {
+      if (!lens) return;
+      const plan = hazePlan(hazeOf(width, start, end, inset, gap), token(tokens.blurNear), token(tokens.blur), gap, track.offsetHeight);
+      const key = JSON.stringify(plan);
+      if (key === drawn) return;
+      drawn = key;
+      if (drawHaze(lens, plan)) root.style.setProperty('--haze', `url(#${lens.id})`);
+      else root.style.removeProperty('--haze');
     };
     // how far each slide is from the middle: 0 there, 1 a whole slide away (a neighbour)
     const shade = () => {

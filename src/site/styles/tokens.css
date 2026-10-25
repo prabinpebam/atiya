@@ -378,7 +378,8 @@
   --c-carousel-peek-gap: var(--space-16);
   --c-carousel-peek-near: 0.8;
   --c-carousel-peek-far: 0.1;
-  --c-carousel-peek-blur: 40px;
+  --c-carousel-peek-blur-near: 4px;
+  --c-carousel-peek-blur: 20px;
   --c-carousel-peek-min: 2rem;
   --c-carousel-slide-min: 300px;
   --c-carousel-slide-max: 80;

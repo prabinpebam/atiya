@@ -45,7 +45,8 @@
     "c.button.secondary-border": {"v":"var(--color-text)"},
     "c.button.secondary-text": {"v":"var(--color-text)"},
     "c.carousel.gap": {"v":"var(--space-8)"},
-    "c.carousel.peek-blur": {"v":"40px"},
+    "c.carousel.peek-blur": {"v":"20px"},
+    "c.carousel.peek-blur-near": {"v":"4px"},
     "c.carousel.peek-far": {"v":"0.1"},
     "c.carousel.peek-gap": {"v":"var(--space-16)"},
     "c.carousel.peek-min": {"v":"2rem"},
@@ -501,7 +502,13 @@
         "c.carousel.peek-blur": [
           null,
           {
-            "v": "40px"
+            "v": "20px"
+          }
+        ],
+        "c.carousel.peek-blur-near": [
+          null,
+          {
+            "v": "4px"
           }
         ],
         "c.carousel.peek-far": [
