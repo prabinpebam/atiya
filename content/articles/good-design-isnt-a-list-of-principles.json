@@ -1,0 +1,713 @@
+{
+  "id": "good-design-isnt-a-list-of-principles",
+  "type": "article",
+  "kind": "note",
+  "slug": "good-design-isnt-a-list-of-principles",
+  "title": "Good design isn't a list of principles",
+  "summary": "We have lists of principles for good design. We teach them and use them to evaluate our work. But do they explain how to make good design decisions? Or have we mistaken the wisdom of great designers for the foundation of their craft?",
+  "status": "draft",
+  "visibility": "public",
+  "updatedAt": "2026-10-25",
+  "locale": "en",
+  "topics": [
+    "craft"
+  ],
+  "body": [
+    {
+      "type": "heading",
+      "level": 2,
+      "text": "The lists that taught us to design",
+      "key": "rokry6"
+    },
+    {
+      "type": "text",
+      "markdown": "Dieter Rams gave us ten principles for good design.",
+      "key": "nurdoa"
+    },
+    {
+      "type": "text",
+      "markdown": "Good design is innovative. It makes a product useful. It is aesthetic, understandable, unobtrusive, honest, long-lasting, thorough down to the last detail, environmentally friendly, and as little design as possible.",
+      "key": "45hqel"
+    },
+    {
+      "type": "text",
+      "markdown": "Jakob Nielsen and Rolf Molich gave us ten usability heuristics. Make system status visible. Match the real world. Give users control and freedom. Maintain consistency and standards. Prevent errors. Prefer recognition over recall.",
+      "key": "pymsl8"
+    },
+    {
+      "type": "text",
+      "markdown": "These are excellent principles. They distil decades of experience into memorable ideas that designers can carry into their work. They help us recognize qualities that distinguish good products and experiences from bad ones.",
+      "key": "kvoisi"
+    },
+    {
+      "type": "text",
+      "markdown": "The people behind them weren't simply theorists. They were masters of their craft, articulating insights earned through years of practice.",
+      "key": "7gv1f9"
+    },
+    {
+      "type": "figure",
+      "media": "articles/good-design-isnt-a-list-of-principles/the-tablets",
+      "width": "popout",
+      "lightbox": true,
+      "display": "fit",
+      "background": false,
+      "rounded": false,
+      "showCaption": false
+    },
+    {
+      "type": "text",
+      "markdown": "And yet, I have a fundamental problem with how we use these lists.",
+      "key": "mctqvx"
+    },
+    {
+      "type": "text",
+      "markdown": "**They tell us what good design looks like. They don't tell us how to decide what good design should look like.**",
+      "key": "c8aylp"
+    },
+    {
+      "type": "text",
+      "markdown": "*That's a subtle distinction, but it changes everything.*",
+      "key": "0qaaze"
+    },
+    {
+      "type": "heading",
+      "level": 2,
+      "text": "The problem with good design principles",
+      "key": "uw94x3"
+    },
+    {
+      "type": "text",
+      "markdown": "Consider two principles: consistency and personalization.",
+      "key": "r92mab"
+    },
+    {
+      "type": "text",
+      "markdown": "Consistency makes experiences predictable. Personalization makes them relevant to individual needs.",
+      "key": "5o0u9k"
+    },
+    {
+      "type": "text",
+      "markdown": "Both are desirable qualities in design. But they can also work against each other.",
+      "key": "ieoiqr"
+    },
+    {
+      "type": "figure",
+      "media": "articles/good-design-isnt-a-list-of-principles/tug-of-war",
+      "width": "popout",
+      "lightbox": true,
+      "display": "fit",
+      "background": false,
+      "rounded": false,
+      "showCaption": false
+    },
+    {
+      "type": "text",
+      "markdown": "Maximize consistency, and you risk creating a rigid experience that fails to accommodate individual differences.",
+      "key": "yd4beo"
+    },
+    {
+      "type": "text",
+      "markdown": "Maximize personalization, and you risk creating an inconsistent experience that becomes difficult to understand and navigate.",
+      "key": "swa65n"
+    },
+    {
+      "type": "text",
+      "markdown": "So, which one should you optimize for?",
+      "key": "h27auj"
+    },
+    {
+      "type": "text",
+      "markdown": "Neither. Or rather, it depends.",
+      "key": "f1h6o0"
+    },
+    {
+      "type": "text",
+      "markdown": "This is where the familiar lists begin to fall short as operating principles.",
+      "key": "r3wj2k"
+    },
+    {
+      "type": "text",
+      "markdown": "The parameters of design aren't sliders we should push to their maximum values. They are variables we must optimize in relation to one another.",
+      "key": "k8eq5y"
+    },
+    {
+      "type": "figure",
+      "media": "articles/good-design-isnt-a-list-of-principles/everything-at-max",
+      "width": "wide",
+      "lightbox": true,
+      "display": "fit",
+      "background": false,
+      "rounded": false,
+      "showCaption": false
+    },
+    {
+      "type": "text",
+      "markdown": "The same is true of simplicity and capability, novelty and familiarity, efficiency and exploration.",
+      "key": "7q02gi"
+    },
+    {
+      "type": "text",
+      "markdown": "Even aesthetics, often treated as an unquestionable good, may play very different roles depending on what we're designing and why.",
+      "key": "t3suht"
+    },
+    {
+      "type": "text",
+      "markdown": "A medical interface, a creative tool, a children's toy, and an industrial control system shouldn't necessarily optimize these parameters in the same way.",
+      "key": "xbd6ri"
+    },
+    {
+      "type": "figure",
+      "media": "articles/good-design-isnt-a-list-of-principles/four-rooms",
+      "width": "wide",
+      "lightbox": true,
+      "display": "fit",
+      "background": false,
+      "rounded": false,
+      "showCaption": false
+    },
+    {
+      "type": "text",
+      "markdown": "The principles themselves aren't the problem. The problem is treating them as instructions rather than considerations.",
+      "key": "2c5zv9"
+    },
+    {
+      "type": "quote",
+      "text": "The qualities of good design aren't universal targets to maximize. They're parameters to optimize against intent.",
+      "variant": "pull",
+      "key": "ix0wrp"
+    },
+    {
+      "type": "heading",
+      "level": 2,
+      "text": "The missing question",
+      "key": "r8seik"
+    },
+    {
+      "type": "text",
+      "markdown": "If the principles don't tell us how to balance these parameters, what does?",
+      "key": "i82v5y"
+    },
+    {
+      "type": "text",
+      "markdown": "What determines whether we should prioritize consistency over personalization, simplicity over capability, or familiarity over innovation?",
+      "key": "ebhi4p"
+    },
+    {
+      "type": "text",
+      "markdown": "I believe the answer begins with a more fundamental question:",
+      "key": "5ozbzi"
+    },
+    {
+      "type": "text",
+      "markdown": "**What are we trying to achieve?**",
+      "key": "80wgl4"
+    },
+    {
+      "type": "text",
+      "markdown": "Not what should the design look like. Not which principles should we follow. Not what would make this design resemble other designs we consider good.",
+      "key": "gmbeno"
+    },
+    {
+      "type": "text",
+      "markdown": "What are we actually trying to achieve with this creation?",
+      "key": "9psux8"
+    },
+    {
+      "type": "text",
+      "markdown": "This question changes the role of design principles entirely.",
+      "key": "047l71"
+    },
+    {
+      "type": "text",
+      "markdown": "Instead of treating consistency as an objective in itself, we ask whether consistency contributes to the outcomes we want.",
+      "key": "3sg0x4"
+    },
+    {
+      "type": "text",
+      "markdown": "Instead of assuming innovation is inherently desirable, we ask whether innovation serves a meaningful purpose.",
+      "key": "1snex3"
+    },
+    {
+      "type": "text",
+      "markdown": "Instead of pursuing simplicity because good design is supposed to be simple, we ask whether reducing complexity improves the outcomes we intend to achieve.",
+      "key": "jwwxuu"
+    },
+    {
+      "type": "text",
+      "markdown": "The distinction might seem subtle, but its implications are profound.",
+      "key": "fxrs33"
+    },
+    {
+      "type": "text",
+      "markdown": "We stop asking whether a design follows the principles of good design and start asking whether our design decisions are justified by what we're trying to accomplish.",
+      "key": "v7qqfk"
+    },
+    {
+      "type": "quote",
+      "text": "The question isn't whether a design follows the principles of good design. It's whether those principles help us achieve what we're trying to accomplish.",
+      "variant": "pull",
+      "key": "p4xzlt"
+    },
+    {
+      "type": "heading",
+      "level": 2,
+      "text": "Design is creation with an intended outcome",
+      "key": "rvijec"
+    },
+    {
+      "type": "text",
+      "markdown": "I'd define design as:",
+      "key": "dlc2ov"
+    },
+    {
+      "type": "text",
+      "markdown": "**Creation with an intended outcome.**",
+      "key": "m8tsfp"
+    },
+    {
+      "type": "text",
+      "markdown": "This is the foundation from which I believe we should reason about good design.",
+      "key": "60n2u3"
+    },
+    {
+      "type": "text",
+      "markdown": "Three conditions follow.",
+      "key": "iqvmj0"
+    },
+    {
+      "type": "heading",
+      "level": 3,
+      "text": "1. Understanding of intended outcomes",
+      "key": "0e3v5m"
+    },
+    {
+      "type": "text",
+      "markdown": "We need to understand what we're trying to achieve.",
+      "key": "z54wdt"
+    },
+    {
+      "type": "text",
+      "markdown": "Without this, we have no meaningful basis for evaluating our choices. We might have preferences, conventions, or established principles to guide us, but we lack the foundation for deciding which ones matter and how they should be applied.",
+      "key": "s830a0"
+    },
+    {
+      "type": "text",
+      "markdown": "Understanding the intended outcome gives us a basis for making those decisions.",
+      "key": "ho5jce"
+    },
+    {
+      "type": "heading",
+      "level": 3,
+      "text": "2. Mapping every design decision to its intent",
+      "key": "hw4lap"
+    },
+    {
+      "type": "text",
+      "markdown": "Every design decision must be grounded in what we're trying to achieve.",
+      "key": "9lqu8o"
+    },
+    {
+      "type": "text",
+      "markdown": "**If intent was not built into your decision, you are just rolling the dice.**",
+      "key": "llnbmx"
+    },
+    {
+      "type": "figure",
+      "media": "articles/good-design-isnt-a-list-of-principles/rolling-the-dice",
+      "width": "popout",
+      "lightbox": true,
+      "display": "fit",
+      "background": false,
+      "rounded": false,
+      "showCaption": false
+    },
+    {
+      "type": "text",
+      "markdown": "A decision might turn out to be right. It might even produce an excellent result. But without a clear relationship between the decision and the intended outcomes, its success is accidental rather than the result of deliberate design.",
+      "key": "5l43da"
+    },
+    {
+      "type": "text",
+      "markdown": "This doesn't mean every decision must be justified by a universal design principle. Quite the opposite.",
+      "key": "xv2j0e"
+    },
+    {
+      "type": "text",
+      "markdown": "It means understanding why we're making that decision and how it relates to our intended outcomes.",
+      "key": "j70urh"
+    },
+    {
+      "type": "text",
+      "markdown": "A decision can be unconventional and still be right. It can contradict an established design principle and still be right. What matters is whether it is grounded in intent.",
+      "key": "2af8rg"
+    },
+    {
+      "type": "heading",
+      "level": 3,
+      "text": "3. Successful achievement of intended outcomes",
+      "key": "m7okbm"
+    },
+    {
+      "type": "text",
+      "markdown": "Ultimately, the creation must achieve what we intended it to achieve.",
+      "key": "hfe3gv"
+    },
+    {
+      "type": "text",
+      "markdown": "Good reasoning and well-intentioned decisions aren't enough if the resulting design fails to deliver.",
+      "key": "8m51pm"
+    },
+    {
+      "type": "text",
+      "markdown": "The quality of our intentions doesn't guarantee the quality of the outcome. We must evaluate the creation by its success in achieving what it set out to do.",
+      "key": "zzhwt6"
+    },
+    {
+      "type": "text",
+      "markdown": "Together, these three conditions establish the foundation.",
+      "key": "v98qf6"
+    },
+    {
+      "type": "text",
+      "markdown": "They don't prescribe a particular aesthetic, interaction pattern, or design methodology. They establish how we should reason about the decisions that produce a design.",
+      "key": "5ea2sg"
+    },
+    {
+      "type": "quote",
+      "text": "Good design isn't about following the right principles. It's about making the right decisions for the outcomes you're trying to achieve.",
+      "variant": "pull",
+      "key": "40bqy0"
+    },
+    {
+      "type": "heading",
+      "level": 2,
+      "text": "The principles aren't the foundation. They're the parameters.",
+      "key": "4l03eq"
+    },
+    {
+      "type": "text",
+      "markdown": "This brings us back to Rams, Nielsen, and the many other thinkers who have attempted to articulate good design.",
+      "key": "yvwtye"
+    },
+    {
+      "type": "text",
+      "markdown": "Their principles remain valuable. In fact, they become more useful when we understand their role differently.",
+      "key": "g8hvwr"
+    },
+    {
+      "type": "text",
+      "markdown": "Consider Nielsen's usability heuristics.",
+      "key": "q2vtse"
+    },
+    {
+      "type": "text",
+      "markdown": "Visibility of system status. User control and freedom. Consistency and standards. Error prevention. Recognition rather than recall.",
+      "key": "p68u2p"
+    },
+    {
+      "type": "text",
+      "markdown": "These are powerful considerations when designing interactive systems. They help us identify qualities that might be essential to a successful design.",
+      "key": "0a44e6"
+    },
+    {
+      "type": "text",
+      "markdown": "But their relevance and appropriate expression depend on the intended outcomes.",
+      "key": "g9p5a6"
+    },
+    {
+      "type": "text",
+      "markdown": "Take visibility of system status.",
+      "key": "bll1tj"
+    },
+    {
+      "type": "text",
+      "markdown": "A system processing a consequential transaction may need to communicate every important state transition clearly. An ambient experience designed to operate unobtrusively might communicate status differently.",
+      "key": "gyvg01"
+    },
+    {
+      "type": "text",
+      "markdown": "The principle remains relevant, but its expression changes with the context and intent.",
+      "key": "sfcwg4"
+    },
+    {
+      "type": "text",
+      "markdown": "Or consider error prevention.",
+      "key": "rvj2dn"
+    },
+    {
+      "type": "text",
+      "markdown": "In a high-stakes system, preventing mistakes may be paramount. In an experimental creative tool, restricting what users can do in the name of error prevention might undermine exploration.",
+      "key": "5x7tp1"
+    },
+    {
+      "type": "text",
+      "markdown": "Neither principle should be applied blindly.",
+      "key": "om6v0t"
+    },
+    {
+      "type": "figure",
+      "media": "articles/good-design-isnt-a-list-of-principles/error-prevention",
+      "width": "wide",
+      "lightbox": true,
+      "display": "fit",
+      "background": false,
+      "rounded": false,
+      "showCaption": false
+    },
+    {
+      "type": "text",
+      "markdown": "The same reasoning applies to Rams' principles.",
+      "key": "x7pea1"
+    },
+    {
+      "type": "text",
+      "markdown": "Is aesthetics an intended outcome? Are we trying to innovate? Is longevity important to this particular creation? Would removing complexity improve the result, or would it compromise an essential capability?",
+      "key": "vcrwvw"
+    },
+    {
+      "type": "text",
+      "markdown": "These aren't questions that can be answered universally. They depend on what we're trying to achieve.",
+      "key": "71lfhk"
+    },
+    {
+      "type": "text",
+      "markdown": "**The principles help us identify what to consider. Intent helps us determine what to do with those considerations.**",
+      "key": "5ab7qo"
+    },
+    {
+      "type": "text",
+      "markdown": "This is the missing relationship.",
+      "key": "7e07ut"
+    },
+    {
+      "type": "text",
+      "markdown": "Rams and Nielsen gave us excellent lists of design considerations. What remains underarticulated is the first-principles reasoning that allows a designer to apply them effectively, resolve their conflicts, and determine the right balance for a particular problem.",
+      "key": "t3kunf"
+    },
+    {
+      "type": "heading",
+      "level": 2,
+      "text": "Why this matters",
+      "key": "relose"
+    },
+    {
+      "type": "text",
+      "markdown": "Without this foundation, design education can become an exercise in memorizing principles and applying patterns.",
+      "key": "bznofp"
+    },
+    {
+      "type": "text",
+      "markdown": "We learn that good design should be simple, so we remove things.",
+      "key": "54d6u0"
+    },
+    {
+      "type": "text",
+      "markdown": "We learn that good design should be consistent, so we standardize things.",
+      "key": "ejsk26"
+    },
+    {
+      "type": "text",
+      "markdown": "We learn that good design should be innovative, so we introduce something new.",
+      "key": "79j6z8"
+    },
+    {
+      "type": "text",
+      "markdown": "Each action might be correct. But none is justified merely because a principle recommends it.",
+      "key": "io4yug"
+    },
+    {
+      "type": "text",
+      "markdown": "When we don't understand the intent behind a decision, we cannot reliably determine whether it is appropriate.",
+      "key": "6ar8s0"
+    },
+    {
+      "type": "text",
+      "markdown": "We become good at recognizing the characteristics of good design without necessarily understanding the reasoning that produced them.",
+      "key": "6cjcri"
+    },
+    {
+      "type": "text",
+      "markdown": "This is particularly problematic when established principles conflict, when a problem is unfamiliar, or when the conventional solution isn't the right one.",
+      "key": "r3kxdw"
+    },
+    {
+      "type": "text",
+      "markdown": "In those situations, a checklist offers little guidance.",
+      "key": "4opzzh"
+    },
+    {
+      "type": "text",
+      "markdown": "We need to reason from first principles.",
+      "key": "3mtoto"
+    },
+    {
+      "type": "quote",
+      "text": "A checklist can tell you what to look for. It cannot tell you what matters most in the problem you're trying to solve.",
+      "variant": "pull",
+      "key": "lh3562"
+    },
+    {
+      "type": "figure",
+      "media": "articles/good-design-isnt-a-list-of-principles/the-checklist",
+      "width": "popout",
+      "lightbox": true,
+      "display": "fit",
+      "background": false,
+      "rounded": false,
+      "showCaption": false
+    },
+    {
+      "type": "heading",
+      "level": 2,
+      "text": "From following principles to deriving decisions",
+      "key": "7tycvt"
+    },
+    {
+      "type": "text",
+      "markdown": "Imagine approaching a design problem without beginning with a prescribed set of principles.",
+      "key": "b9g2ng"
+    },
+    {
+      "type": "text",
+      "markdown": "Instead, begin by understanding the intended outcomes.",
+      "key": "zskgnn"
+    },
+    {
+      "type": "text",
+      "markdown": "Determine what decisions need to be made and map each decision to its intent.",
+      "key": "shiki4"
+    },
+    {
+      "type": "text",
+      "markdown": "Then evaluate the resulting design by how successfully it achieves those outcomes.",
+      "key": "247hn3"
+    },
+    {
+      "type": "text",
+      "markdown": "At this point, Rams' principles, Nielsen's heuristics, and other established frameworks become useful resources. They help us identify relevant parameters, recognize potential problems, and explore possible solutions.",
+      "key": "7zoqin"
+    },
+    {
+      "type": "text",
+      "markdown": "But they don't dictate the answer.",
+      "key": "2r95b6"
+    },
+    {
+      "type": "text",
+      "markdown": "We might discover that consistency is essential in one part of a product and that personalization is essential in another.",
+      "key": "ipq3xt"
+    },
+    {
+      "type": "text",
+      "markdown": "We might decide that visual simplicity matters less than making a complex capability discoverable.",
+      "key": "q0ue1r"
+    },
+    {
+      "type": "text",
+      "markdown": "We might find that innovation contributes nothing meaningful to the problem we're solving.",
+      "key": "wpbkhn"
+    },
+    {
+      "type": "text",
+      "markdown": "These aren't exceptions to the principles of good design.",
+      "key": "pkyxdx"
+    },
+    {
+      "type": "text",
+      "markdown": "They are what happens when we understand why the principles matter in the first place.",
+      "key": "pzpwy4"
+    },
+    {
+      "type": "text",
+      "markdown": "The objective isn't to abandon design principles. It's to stop treating them as substitutes for design reasoning.",
+      "key": "t0kpfr"
+    },
+    {
+      "type": "heading",
+      "level": 2,
+      "text": "The principle behind the principles",
+      "key": "qvdpls"
+    },
+    {
+      "type": "text",
+      "markdown": "Perhaps the reason Rams' ten principles and Nielsen's ten heuristics have endured is that they make decades of expertise accessible. They turn complex observations into memorable, teachable ideas.",
+      "key": "7cz5s0"
+    },
+    {
+      "type": "text",
+      "markdown": "That is an extraordinary contribution.",
+      "key": "2jwgus"
+    },
+    {
+      "type": "text",
+      "markdown": "But a list of principles is a compressed expression of expertise, not necessarily a complete explanation of it.",
+      "key": "oz37qq"
+    },
+    {
+      "type": "text",
+      "markdown": "The experienced designer knows that simplicity isn't always better, consistency isn't always desirable, and innovation isn't always necessary.",
+      "key": "hujosv"
+    },
+    {
+      "type": "text",
+      "markdown": "They understand that the right decision depends on what they're trying to achieve.",
+      "key": "dfji4b"
+    },
+    {
+      "type": "text",
+      "markdown": "That understanding allows them to navigate situations in which principles conflict or provide no clear answer.",
+      "key": "dl734h"
+    },
+    {
+      "type": "text",
+      "markdown": "I believe this is the missing articulation: the first-principles foundation that connects design intent to design decisions and, ultimately, to outcomes.",
+      "key": "m4iet6"
+    },
+    {
+      "type": "text",
+      "markdown": "Design is creation with an intended outcome.",
+      "key": "a5bg4y"
+    },
+    {
+      "type": "text",
+      "markdown": "Good design begins with understanding that outcome, mapping decisions to their intent, and judging the result by whether it achieves what it set out to do.",
+      "key": "o32apk"
+    },
+    {
+      "type": "text",
+      "markdown": "The familiar principles still matter. But they belong one level below this foundation, where they can be used as parameters to reason about rather than rules to follow.",
+      "key": "0uot1d"
+    },
+    {
+      "type": "text",
+      "markdown": "Perhaps we should stop teaching designers only what good design looks like.",
+      "key": "w06cmp"
+    },
+    {
+      "type": "text",
+      "markdown": "Perhaps we should teach them how to reason their way to it.",
+      "key": "dx1vb2"
+    },
+    {
+      "type": "figure",
+      "media": "articles/good-design-isnt-a-list-of-principles/learning-to-listen",
+      "width": "popout",
+      "lightbox": true,
+      "display": "fit",
+      "background": false,
+      "rounded": false,
+      "showCaption": false
+    }
+  ],
+  "hero": {
+    "media": "articles/good-design-isnt-a-list-of-principles/the-mixing-desk",
+    "display": "fit",
+    "background": false,
+    "rounded": false,
+    "showCaption": false
+  },
+  "thumbnail": "articles/good-design-isnt-a-list-of-principles/the-mixing-desk-thumbnail",
+  "thumbnails": {
+    "square": "articles/good-design-isnt-a-list-of-principles/the-mixing-desk-square"
+  }
+}

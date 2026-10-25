@@ -92,6 +92,14 @@
         "view": "features",
         "children": [
           {
+            "id": "good-design-isnt-a-list-of-principles",
+            "kind": "item",
+            "item": {
+              "type": "article",
+              "id": "good-design-isnt-a-list-of-principles"
+            }
+          },
+          {
             "id": "perfecting-things-nobody-will-see",
             "kind": "item",
             "item": {
