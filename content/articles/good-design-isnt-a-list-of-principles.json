@@ -5,7 +5,7 @@
   "slug": "good-design-isnt-a-list-of-principles",
   "title": "What is good design? It's not the principles.",
   "summary": "We have lists of principles from some of the greatest minds in design. We teach them and use them to evaluate our work. But do they tell us how to make good design decisions? Or are we missing something fundamental about how design works?",
-  "status": "draft",
+  "status": "published",
   "visibility": "public",
   "updatedAt": "2026-10-25",
   "locale": "en",
@@ -649,5 +649,6 @@
   "thumbnail": "articles/good-design-isnt-a-list-of-principles/the-mixing-desk-thumbnail",
   "thumbnails": {
     "square": "articles/good-design-isnt-a-list-of-principles/the-mixing-desk-square"
-  }
+  },
+  "publishedAt": "2026-10-25"
 }
