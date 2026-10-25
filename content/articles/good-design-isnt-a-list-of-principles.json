@@ -200,42 +200,22 @@
     {
       "type": "text",
       "markdown": "We need to understand what we're trying to achieve.",
-      "key": "oi0jxt"
+      "key": "vhtmyk"
     },
     {
       "type": "text",
-      "markdown": "This sounds obvious, but it's worth distinguishing between creating something in response to a request and understanding the outcomes that the creation is meant to produce.",
-      "key": "61bxc6"
+      "markdown": "**Defining the intent is defining the identity of the project.** It establishes what we're doing, why we're doing it, and what success means. Without it, what are we even designing? And without knowing what we're trying to achieve, how can we determine whether we've succeeded?",
+      "key": "nig29i"
     },
     {
       "type": "text",
-      "markdown": "A request might specify a feature. The intended outcome might be to help people complete a task more easily. The broader intention might be to give people more time and freedom to do something they value.",
-      "key": "xj6r23"
+      "markdown": "Intent must also be defined at the right scope. An intended outcome might concern an individual interaction, an entire product, a business, or something far broader. The scope we choose determines which outcomes matter and which consequences we need to consider.",
+      "key": "oahm6p"
     },
     {
       "type": "text",
-      "markdown": "These are different levels of intent, and they can lead to different design decisions.",
-      "key": "08l5in"
-    },
-    {
-      "type": "text",
-      "markdown": "Understanding intent means looking beyond the immediate artifact to the outcomes it is meant to produce. It also means understanding the relevant context and the people affected by those outcomes.",
-      "key": "ribewm"
-    },
-    {
-      "type": "text",
-      "markdown": "This isn't a demand for perfect foresight. Nor does it require us to settle every question before we begin designing.",
-      "key": "z7cm7p"
-    },
-    {
-      "type": "text",
-      "markdown": "Designers explore problems and solutions, test assumptions, discover new possibilities, and revise their understanding along the way. Sometimes we discover what we should be trying to achieve through the process of designing itself.",
-      "key": "xmd67c"
-    },
-    {
-      "type": "text",
-      "markdown": "The point is not to follow a prescribed sequence. It's to maintain an understanding of the intended outcomes as that understanding evolves.",
-      "key": "ltivq1"
+      "markdown": "Understanding intent gives design its direction and success its measure. Without it, we have no meaningful basis for evaluating our decisions or the results they produce.",
+      "key": "hp5xh6"
     },
     {
       "type": "heading",
