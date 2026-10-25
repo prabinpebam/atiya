@@ -111,6 +111,11 @@ export function sectionOptions(index: ContentIndex) {
     .map((h) => ({ value: h.id, label: h.title, description: h.path }));
 }
 
+/** The site's topics a page can be given (content/topics.json), by name. */
+export function topicOptions(index: ContentIndex) {
+  return (index.topics?.topics ?? []).map((t) => ({ value: t.id, label: t.label })).sort((a, b) => a.label.localeCompare(b.label));
+}
+
 export interface LibraryPicture {
   id: string;
   /** A picture, or a video file (media.md §12). */

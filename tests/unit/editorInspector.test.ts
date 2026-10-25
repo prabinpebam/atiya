@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { clampWidth, followMove, followRemove, itemKey, widest, widthForKey, type WidthBounds } from '../../src/site/editor/model/inspector';
-import { duration, fieldId, onPlanet, statusChoices, videoUrl, WIDTHS } from '../../src/site/editor/model/inspectorFields';
+import { duration, fieldId, onPlanet, pickTopic, statusChoices, topicsDetail, videoUrl, WIDTHS } from '../../src/site/editor/model/inspectorFields';
 
 const B: WidthBounds = { min: 24, max: 60, room: 100, canvasMin: 24 };
 
@@ -77,5 +77,23 @@ describe("the inspector's fields (model/inspectorFields.ts, shared by its parts)
     expect(onPlanet(false, 'Library', true)).toBe('In the Library, which shows its section.');
     expect(onPlanet(false, 'Library', false)).toBe('In the Library, which shows its section, once it’s published.');
     expect(onPlanet(false, '', true)).toMatch(/no building shows its section/);
+  });
+});
+
+describe("a page's topics in its settings", () => {
+  it('keeps the order it had, puts a new one last, and leaves the field out when none is left', () => {
+    expect(pickTopic(undefined, 'craft', true)).toEqual(['craft']);
+    expect(pickTopic(['leadership', 'craft'], 'ai', true)).toEqual(['leadership', 'craft', 'ai']);
+    expect(pickTopic(['leadership', 'craft', 'ai'], 'craft', false)).toEqual(['leadership', 'ai']);
+    // ticked twice (a stale form) is still once, at the end
+    expect(pickTopic(['craft', 'ai'], 'craft', true)).toEqual(['ai', 'craft']);
+    expect(pickTopic(['craft'], 'craft', false)).toBeUndefined();
+  });
+
+  it('sums them up by name in the side navigation', () => {
+    const choices = [{ value: 'ai', label: 'AI' }, { value: 'craft', label: 'Craft' }, { value: 'leadership', label: 'Leadership' }];
+    expect(topicsDetail(undefined, choices)).toBe('None');
+    expect(topicsDetail(['craft', 'ai'], choices)).toBe('Craft, AI');
+    expect(topicsDetail(['craft', 'ai', 'leadership', 'gone'], choices)).toBe('Craft, AI and 2 more');
   });
 });

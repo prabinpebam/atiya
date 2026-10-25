@@ -99,3 +99,20 @@ export function onPlanet(privatePage: boolean, place: string, published: boolean
   if (place) return `In the ${place}, which shows its section${published ? '' : ', once it’s published'}.`;
   return 'Not on the planet: no building shows its section.';
 }
+
+/**
+ * A page's topics after one is ticked or cleared (documentation/sections/spec.md §3.8): the ones it had keep their
+ * order (the first three are the tags shown), a new one goes last, and none is nothing (the field is left out).
+ */
+export function pickTopic(current: readonly string[] | undefined, id: string, on: boolean): string[] | undefined {
+  const kept = (current ?? []).filter((t) => t !== id);
+  const next = on ? [...kept, id] : kept;
+  return next.length ? next : undefined;
+}
+
+/** The Topics row's detail in the page's settings: the first two topics' names, then how many more; else None. */
+export function topicsDetail(topics: readonly string[] | undefined, choices: readonly Choice[]): string {
+  const names = (topics ?? []).map((t) => choices.find((c) => c.value === t)?.label ?? t);
+  if (!names.length) return 'None';
+  return names.length <= 2 ? names.join(', ') : `${names.slice(0, 2).join(', ')} and ${names.length - 2} more`;
+}

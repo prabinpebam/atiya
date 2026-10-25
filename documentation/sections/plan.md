@@ -224,7 +224,7 @@ The owner asked for listed pages to say enough to earn the click, on the home's 
 2. **The highlight slide:** the words, then the facts (reading time, the Topics label and its tags), in their own column on a wide slide.
 3. **Cards and openings:** the tags on StoryCard, ArticleHeader and RelatedStories, through the `data-tag-list` recipe.
 4. **Browsing:** `/topics/` and `/topics/<id>/`.
-5. **Next:** a Topics field in a page's settings in edit mode.
+5. **Edit mode:** a page's topics are ticked in its settings (`PageForm`'s Topics pane, `pickTopic` in `model/inspectorFields.ts`): kept in the page's order, a new one last, none left removes the field.
 
 ## 2. Definition of Done
 
@@ -259,7 +259,7 @@ Each phase is done when every row for it is true and evidenced. **All rows were 
 | 21 | S8 | The home's highlight slide shows a page's section, reading time and topics (an album's picture count), the words leading and the facts in their own column on a wide slide | Visual baselines `highlight-card-*` and `page-home-*` in light and dark at 360, 768 and 1280 |
 | 22 | S8 | A card and an opening show at most three topic tags, in the page's order, never repeating its section, linked to their topic's page on the site and unlinked on the planet | `topics.test.ts`; visual baselines `story-card-*` and `article-header-*` |
 | 23 | S8 | `/topics/` and each `/topics/<id>/` list only open, published pages, and nothing is listed while no page has a topic | `topics.test.ts` ("never makes a page for a topic no page has"); `getTopicPages` passes only open, published pages; `verify:prod` (the leak check over the new routes) |
-| 24 | S8 | A page's topics can be set in edit mode | Not yet: set in the page's file (spec §3.8) |
+| 24 | S8 | A page's topics can be set in edit mode | `editorInspector.test.ts` ("a page's topics in its settings"); editor E2E "a page's topics are ticked in its settings" (the file and the canvas's tags) |
 
 ## 3. Validation per phase
 

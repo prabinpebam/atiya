@@ -18,6 +18,7 @@ import { starterTable, textToTable } from '../model/table';
 import { applyTableOperation, type TableCell, type TableOperation } from '../model/tableGrid';
 import { LAYOUT_CHOICES, startWidth } from '../model/collection';
 import { followMove, followRemove, itemKey } from '../model/inspector';
+import { pickTopic } from '../model/inspectorFields';
 import { tooLong } from '../model/limits';
 import { applySections, chooseSection, followSection, initSections, revealField } from './inspector';
 import { initRichFields } from './richtext';
@@ -968,6 +969,8 @@ export function initEditor(root: HTMLElement, signal: AbortSignal) {
     const kind = t.closest<HTMLElement>('[data-type]')?.dataset.type ?? 'text';
     const bad = (msg: string) => showIssues([{ file: state.key, path: t.name, message: msg }]);
     let value: unknown;
+    // a topic ticked or cleared: the page's own order is kept, a new one goes last (spec §3.8)
+    if (kind === 'topic') return change(ops.setPath(doc, 'topics', pickTopic(doc.topics, t.value, t.checked)), { canvas: true });
     if (t.type === 'checkbox') value = kind === 'bool-default-true' ? (t.checked ? undefined : false) : t.checked ? true : undefined;
     else if (kind === 'number') value = t.value === '' ? undefined : Number(t.value);
     else if (kind === 'duration') {

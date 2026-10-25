@@ -33,14 +33,14 @@ interface Props {
   section?: string;
   /** Its measure ("6 min read", "18 pictures"): the first of its facts. */
   meta?: string;
-  /** The measure's icon: clock for a reading time, gallery for an album's counts. */
+  /** The measure's icon: duration (an hourglass) for a reading time, gallery for an album's counts. */
   metaIcon?: IconName;
   /** What it's about (at most three), as tags under its measure; a tag with an address goes to its topic's page. */
   topics?: { label: string; href?: string }[];
   /** Loads the first slide picture without waiting for lazy visibility. */
   priority?: boolean;
 }
-const { title, text, href, picture: p, settings, section, meta, metaIcon = 'clock', topics = [], priority = false } = Astro.props;
+const { title, text, href, picture: p, settings, section, meta, metaIcon = 'duration', topics = [], priority = false } = Astro.props;
 const Frame = href ? 'div' : 'a';
 const titleId = `highlight-${stableId(Astro, 'HighlightCard')}`;
 ---

@@ -74,6 +74,27 @@ test.describe('editor', () => {
     expect(await (await request.get('/leadership/')).text()).toContain(`href="/leadership/${ARTICLE}/"`);
   });
 
+  test('a page\'s topics are ticked in its settings: kept in their order, a new one last, shown as tags', async ({ page }) => {
+    const topics = () => readJson(articleFile()).topics as string[] | undefined;
+    const had = topics() ?? [];
+    await openArticle(page);
+    await page.getByRole('tab', { name: 'Page', exact: true }).click();
+    // a narrow inspector shows every section; a wide one, the one picked
+    const pick = page.locator('[data-page-form] [data-section-pick="topics"]');
+    if (await pick.isVisible()) await pick.click();
+    const pane = page.locator('[data-page-form] [data-section="topics"]');
+    await pane.getByRole('checkbox', { name: 'Storytelling', exact: true }).check();
+    await saved(page);
+    expect(topics()).toEqual([...had.filter((t) => t !== 'storytelling'), 'storytelling']);
+    await expect(frame(page).locator('[data-tag-list]').getByText('Storytelling', { exact: true })).toBeVisible({ timeout: 15_000 });
+    for (const t of had) await pane.getByRole('checkbox', { name: new RegExp(`^${t}$`, 'i') }).uncheck();
+    await saved(page);
+    expect(topics()).toEqual(['storytelling']);
+    await pane.getByRole('checkbox', { name: 'Storytelling', exact: true }).uncheck();
+    await saved(page);
+    expect(topics()).toBeUndefined();
+  });
+
   test('editor thumbnails show whole images with square corners in Media, the picker and the inspector', async ({ page }) => {
     const before = readFileSync(articleFile(), 'utf8');
     const check = async (images: ReturnType<Page['locator']>) => {

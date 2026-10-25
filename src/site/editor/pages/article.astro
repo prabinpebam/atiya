@@ -23,7 +23,7 @@ import Button from '../../components/fundamentals/Button.astro';
 import Link from '../../components/fundamentals/Link.astro';
 import Tag from '../../components/fundamentals/Tag.astro';
 import Text from '../../components/fundamentals/Text.astro';
-import { load, mediaCards, mediaCount, mediaSummary, sectionOptions, STATUS_LABEL } from '../server/screens';
+import { load, mediaCards, mediaCount, mediaSummary, sectionOptions, STATUS_LABEL, topicOptions } from '../server/screens';
 import { ALWAYS, REGIONS_HEADER, regionsAsked, wants } from '../model/regions';
 import { mediaUsed, videosUsed } from '../../content/load';
 import { readDoc } from '../server/store';
@@ -164,7 +164,7 @@ const json = JSON.stringify(state).replace(/</g, '\\u003c');
                 </BlockForm>
               ))}
             </Fragment>
-            <PageForm slot="page" article={article} media={thumbs} sections={sectionOptions(loaded.index)} section={section} access={protectable ? access : undefined} privateSetup={privateSetup}             place={place} published={published} path={route?.path ?? null} />
+            <PageForm slot="page" article={article} media={thumbs} sections={sectionOptions(loaded.index)} topics={topicOptions(loaded.index)} section={section} access={protectable ? access : undefined} privateSetup={privateSetup}             place={place} published={published} path={route?.path ?? null} />
             {review && <AiReview slot="review" id={id} view={review} />}
           </Inspector>
         )}

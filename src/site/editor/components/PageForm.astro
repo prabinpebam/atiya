@@ -1,7 +1,7 @@
 ---
 /**
  * The page's settings in the inspector (documentation/editor/spec.md §3.5), in sections (kit/Sections): its title
- * and summary, publishing (status, visibility, who can see it, its section and its place on the planet; a private
+ * and summary, its topics (ticked from the site's vocabulary), publishing (status, visibility, who can see it, its section and its place on the planet; a private
  * page's address and Share), its lead picture, thumbnail and portrait (each with how it's shown), search and
  * sharing, and its dates. Every field is named by its path in the article (`seo.description`); a draft can be
  * deleted from its footer.
@@ -11,12 +11,14 @@
  * @key Up / Down: in the list of sections, the previous / next one
  */
 import Button from '../../components/fundamentals/Button.astro';
+import Checkbox from '../../components/fundamentals/Checkbox.astro';
 import Link from '../../components/fundamentals/Link.astro';
 import Select from '../../components/fundamentals/Select.astro';
 import Switch from '../../components/fundamentals/Switch.astro';
 import Text from '../../components/fundamentals/Text.astro';
 import TextField from '../../components/fundamentals/TextField.astro';
 import Sections from '../kit/Sections.astro';
+import Fieldset from '../kit/Fieldset.astro';
 import NavGroup from '../kit/NavGroup.astro';
 import NavRow from '../kit/NavRow.astro';
 import Pane from '../kit/Pane.astro';
@@ -28,7 +30,7 @@ import IssueNote from '../kit/IssueNote.astro';
 import type { Article } from '../../content/schema';
 import { pictureNote } from '../model/crop';
 import { PICTURE_SPECS, specTip, thumbnailFor } from '../../design/pictures';
-import { ACCESS, DISPLAYS, PAGE_KINDS, SECTION_HINT, onPlanet, statusChoices, type Choice, type Thumb } from '../model/inspectorFields';
+import { ACCESS, DISPLAYS, PAGE_KINDS, SECTION_HINT, onPlanet, statusChoices, topicsDetail, type Choice, type Thumb } from '../model/inspectorFields';
 
 interface Props {
   /** The article. */
@@ -49,6 +51,8 @@ interface Props {
    * published and open (documentation/sections/spec.md §5.2).
    */
   place: string;
+  /** The site's topics it can be given (content/topics.json), by name. */
+  topics?: Choice[];
   /** Published (a draft can be deleted; a published page is unpublished first). */
   published: boolean;
   /** Its address on the site, when placed. */
@@ -57,7 +61,7 @@ interface Props {
   privateSetup?: string | null;
 }
 
-const { article, media, sections, section, access, place, published, path, privateSetup = null } = Astro.props;
+const { article, media, sections, section, access, place, topics = [], published, path, privateSetup = null } = Astro.props;
 const privatePage = access === 'private';
 const thumbOf = (m?: string) => (m ? media[m] : undefined);
 // the lead picture, and what cards show (the thumbnail, or else the lead picture)
@@ -81,6 +85,7 @@ const VISIBILITY: Choice[] = [{ value: 'public', label: 'Public' }, { value: 'pu
     <Fragment slot="nav">
       <NavGroup label="Page">
         <NavRow pick="basics">Title and summary</NavRow>
+        <NavRow pick="topics" detail={topicsDetail(article.topics, topics)}>Topics</NavRow>
         <NavRow pick="publishing" detail={STATUS.find((s) => s.value === article.status)?.label}>Publishing</NavRow>
       </NavGroup>
       <NavGroup label="Pictures">
@@ -102,6 +107,19 @@ const VISIBILITY: Choice[] = [{ value: 'public', label: 'Public' }, { value: 'pu
       <TextField label="Slug" name="slug" id="page-slug" value={article.slug} required hint={privatePage ? 'Kept for when it’s public: a private page’s address is a code.' : path ? `Its address: ${path}. Changed, the old address simply goes.` : 'Its address once it has a section.'} />
       <TextField label="Summary" name="summary" id="page-summary" value={article.summary} multiline rows={3} required hint="At most 240 characters: the standfirst and the card's line. Search results show about the first 160, cut at a word." data-editor-count="240" />
       <Select label="Kind" name="kind" id="page-kind" value={article.kind} disabled={article.kind === 'talk'} options={KINDS} />
+    </Pane>
+
+    <Pane name="topics" title="Topics" titleId="page-s-topics">
+      <Text variant="small" tone="muted">Shown as tags on its cards and opening, and on each topic's page. Its first three are shown, leaving out one named like its section.</Text>
+      {
+        topics.length ? (
+          <Fieldset legend="What it's about">
+            {topics.map((t) => <Checkbox label={t.label} name="topics" value={t.value} id={`page-topic-${t.value}`} checked={!!article.topics?.includes(t.value)} data-type="topic" />)}
+          </Fieldset>
+        ) : (
+          <Text variant="small" tone="muted">The site has no topics yet: they're listed in content/topics.json.</Text>
+        )
+      }
     </Pane>
 
     <Pane name="publishing" title="Publishing" titleId="page-s-publishing">

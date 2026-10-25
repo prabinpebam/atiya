@@ -1,13 +1,13 @@
 ---
 import Example from '../../library/Example.astro';
 import PageForm from '../components/PageForm.astro';
-import { ARTICLE, MEDIA, SECTION_OPTIONS } from './samples';
+import { ARTICLE, MEDIA, SECTION_OPTIONS, TOPIC_OPTIONS } from './samples';
 ---
 
-<Example title="A draft's settings" description="access 'open': its title and summary, publishing, its pictures, search and dates; Delete this draft in the foot." layout="block">
-  <PageForm article={ARTICLE} media={MEDIA} sections={SECTION_OPTIONS} section="writing" access="open" place="library" published={false} path="/writing/a-walk-round-the-pond/" />
+<Example title="A draft's settings" description="access 'open': its title and summary, its topics, publishing, its pictures, search and dates; Delete this draft in the foot." layout="block">
+  <PageForm article={ARTICLE} media={MEDIA} sections={SECTION_OPTIONS} topics={TOPIC_OPTIONS} section="writing" access="open" place="library" published={false} path="/writing/a-walk-round-the-pond/" />
 </Example>
 
 <Example title="A private page's settings" description="access 'private': its private address, with Share and Change address." layout="block">
-  <PageForm article={ARTICLE} media={MEDIA} sections={SECTION_OPTIONS} section="work" access="private" place="" published path="/work/x7k2/" />
+  <PageForm article={ARTICLE} media={MEDIA} sections={SECTION_OPTIONS} topics={TOPIC_OPTIONS} section="work" access="private" place="" published path="/work/x7k2/" />
 </Example>

@@ -31,6 +31,7 @@
     "download": "download",
     "drag": "grip-vertical",
     "duplicate": "clone",
+    "duration": "hourglass-half",
     "edit": "pen-to-square",
     "edit-page": "pen",
     "error": "circle-exclamation",

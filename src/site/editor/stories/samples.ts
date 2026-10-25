@@ -76,6 +76,13 @@ export const SECTION_OPTIONS = [
   { value: 'about', label: 'About' },
 ];
 
+/** The site's topics a page can be given, by name. */
+export const TOPIC_OPTIONS = [
+  { value: 'craft', label: 'Craft' },
+  { value: 'leadership', label: 'Leadership' },
+  { value: 'storytelling', label: 'Storytelling' },
+];
+
 /** A page, as the page's settings edit it. */
 export const ARTICLE = {
   id: 'a-walk-round-the-pond',
