@@ -1,18 +1,46 @@
 {
   "label": "Highlights",
   "enabled": true,
-  "peek": false,
-  "arrows": true,
+  "peek": true,
+  "arrows": false,
   "pager": "dots",
   "display": "fill",
   "background": false,
-  "rounded": true,
+  "rounded": false,
   "shadow": false,
   "items": [
     {
       "id": "github",
       "type": "custom",
       "custom": "github"
+    },
+    {
+      "id": "slide-0162e0ee-caba-49e8-845d-f2b2a692db2c",
+      "type": "article",
+      "article": "do-what-makes-you-proud"
+    },
+    {
+      "id": "slide-ef206b00-24e6-40e8-a7bd-65554a8df3d0",
+      "type": "article",
+      "article": "cloner-pro",
+      "pictureStyle": {
+        "display": "fit",
+        "background": false,
+        "rounded": false,
+        "shadow": false
+      }
+    },
+    {
+      "id": "slide-38e2cc2b-0afd-42a9-a7c0-c1ddf5bd5fc4",
+      "type": "article",
+      "article": "my-journey-with-designup",
+      "picture": "articles/my-journey-with-designup/media8-mp4-snapshot-00-00-643-2-21x9",
+      "pictureStyle": {
+        "display": "fit",
+        "background": false,
+        "rounded": true,
+        "shadow": false
+      }
     }
   ]
 }

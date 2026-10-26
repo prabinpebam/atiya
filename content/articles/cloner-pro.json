@@ -9,7 +9,7 @@
   "status": "published",
   "visibility": "public",
   "publishedAt": "2026-10-01",
-  "updatedAt": "2026-10-13",
+  "updatedAt": "2026-10-26",
   "locale": "en",
   "thumbnail": "articles/cloner-pro/quarter-circle-patterns",
   "thumbnails": {
@@ -25,13 +25,6 @@
       "type": "text",
       "markdown": "The idea was to bring a procedural 3D workflow into a 2D design tool: select an object, clone it across a field, and then let a luma map or randomness change the result. Instead of hand-placing hundreds of elements, I wanted to sketch with systems.",
       "key": "u506p8"
-    },
-    {
-      "type": "figure",
-      "media": "articles/cloner-pro/quarter-circle-patterns",
-      "width": "wide",
-      "lightbox": true,
-      "key": "p3xq8b"
     },
     {
       "type": "heading",
@@ -191,5 +184,9 @@
     "figma-plugin",
     "ai",
     "generative-art"
-  ]
+  ],
+  "hero": {
+    "media": "articles/cloner-pro/quarter-circle-patterns",
+    "display": "fit"
+  }
 }
