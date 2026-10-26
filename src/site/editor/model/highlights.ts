@@ -3,12 +3,15 @@
  * The content contract owns eligibility and validation; the editor never copies source titles or pictures.
  */
 import { defaultHighlights, highlightCandidates, highlightSource, highlightState, HIGHLIGHT_MAX, type Highlights, type HighlightItem } from '../../content/highlights';
+import type { CardPicture } from '../../design/pictures';
+import { mediaId, pictureStyle } from '../../content/schema';
 import type { ContentIndex } from '../../content/load';
 import type { Picture } from '../../content/pictures';
 import type { ContributionData } from '../../scripts/contributionRules';
 
 export { HIGHLIGHT_MAX };
 export type { Highlights, HighlightItem };
+export { highlightPresentation } from '../../content/highlights';
 
 /** Both the layout's whole-screen live update and this form's own region must render its content. */
 export const HIGHLIGHT_REGIONS = ['screen', 'highlights'] as const;
@@ -70,6 +73,36 @@ export function excerptHighlight(items: HighlightItem[], id: string, text: strin
   });
 }
 
+/** The slide's picture choices, not edits to its source or the shared image sidecar. */
+export function pictureHighlight(item: HighlightItem, media: string, style?: Pick<CardPicture, 'display' | 'background' | 'rounded' | 'shadow'>): HighlightItem {
+  if (item.type === 'custom') return item;
+  const { pictureStyle: _, ...rest } = item;
+  if (rest.type === 'image') return { ...rest, media, ...(style ? { pictureStyle: style } : {}) };
+  const { picture: previous, ...source } = rest;
+  return { ...source, ...(media ? { picture: media } : {}), ...(style ? { pictureStyle: style } : {}) };
+}
+
+/** A pending picture preview is checked before it is rendered, just as a saved slide is. */
+export function previewPicture(item: HighlightItem, params: URLSearchParams): { item: HighlightItem; issue?: string } {
+  if (item.type === 'custom' || !params.has('draftPicture')) return { item };
+  const media = params.get('draftPicture') ?? '';
+  if ((media && !mediaId.safeParse(media).success) || (!media && item.type === 'image')) {
+    return { item, issue: 'Choose a library picture to preview this slide.' };
+  }
+  if (params.get('draftInherit') === 'true') return { item: pictureHighlight(item, media) };
+  const boolean = (name: string) => {
+    const value = params.get(name);
+    return value === 'true' ? true : value === 'false' ? false : value;
+  };
+  const style = pictureStyle.safeParse({
+    display: params.get('draftDisplay'), background: boolean('draftBackground'),
+    rounded: boolean('draftRounded'), shadow: boolean('draftShadow'),
+  });
+  return style.success
+    ? { item: pictureHighlight(item, media, style.data) }
+    : { item, issue: 'The picture settings could not be previewed. Choose the display and try again.' };
+}
+
 /** Public choices only; no pictures are decoded or fetched to draw this screen. */
 export function highlightsView(index: ContentIndex): { highlights: Highlights; choices: HighlightChoice[]; details: Record<string, HighlightDetail> } {
   const effective = defaultHighlights(index);
@@ -112,7 +145,7 @@ export const SOURCE_KINDS: readonly SourceKind[] = ['chart', 'page', 'album', 'p
  */
 export const SLIDE_KIND: Record<HighlightItem['type'], { label: string; plural: string; kind: SourceKind; icon: 'code' | 'article' | 'gallery' | 'image'; what: string }> = {
   custom: { label: 'Chart', plural: 'Charts', kind: 'chart', icon: 'code', what: 'A live chart drawn from your public data, with its own controls.' },
-  article: { label: 'Page', plural: 'Pages', kind: 'page', icon: 'article', what: "A page's lead picture and title, with its summary or a line you choose. Opens the page." },
+  article: { label: 'Page', plural: 'Pages', kind: 'page', icon: 'article', what: "A page's picture and title, with its summary or a line you choose. Opens the page." },
   album: { label: 'Album', plural: 'Albums', kind: 'album', icon: 'gallery', what: "An album's cover, title and summary. Opens the album." },
   image: { label: 'Picture', plural: 'Pictures', kind: 'picture', icon: 'image', what: 'One library picture with its caption. Opens it full size.' },
 };
@@ -248,8 +281,8 @@ export function sourceFacts(item: HighlightItem, state: { text?: string; href?: 
   const address = (what: string) => (state.href ? `${what} at ${state.href}` : `${what}, once it's placed in a section`);
   if (item.type === 'custom') return facts('Nothing: its controls work in place', 'Your public contributions and their totals', 'None: the chart draws itself');
   if (item.type === 'image') return facts('The picture full size', state.caption ? `Its caption: ${state.caption}` : 'None: it has no caption', 'This picture');
-  if (item.type === 'album') return facts(address('The album'), state.text ? 'Its title and summary' : 'Its title (it has no summary)', state.media ? 'Its cover' : 'None yet: choose a cover');
-  return facts(address('The page'), state.text ? 'Its title, and its summary or the excerpt below' : 'Its title, and the excerpt below', state.media ? 'Its lead picture' : 'None yet: add a lead picture');
+  if (item.type === 'album') return facts(address('The album'), state.text ? 'Its title and summary' : 'Its title (it has no summary)', item.picture ? 'A picture chosen for this slide' : state.media ? 'Its cover' : 'None yet: choose a cover');
+  return facts(address('The page'), state.text ? 'Its title, and its summary or the excerpt below' : 'Its title, and the excerpt below', item.picture ? 'A picture chosen for this slide' : state.media ? 'Its automatic page picture' : 'None yet: choose a slide picture');
 }
 
 /** One source previewed in Add slide (§2.1): what the page draws and lists for it. */

@@ -5,14 +5,17 @@ import HighlightsManager from '../components/HighlightsManager.astro';
 import SlideSources, { type SourceThumb } from '../components/SlideSources.astro';
 import SlidePreview from '../components/SlidePreview.astro';
 import ContentIssues from '../components/ContentIssues.astro';
-import { load } from '../server/screens';
+import MediaGrid from '../components/MediaGrid.astro';
+import CropDialog from '../components/CropDialog.astro';
+import Dialog from '../../components/compounds/Dialog.astro';
+import { load, mediaCards } from '../server/screens';
 import { readDoc } from '../server/store';
 import { HIGHLIGHTS_KEY } from '../server/highlights';
 import { thumbOf } from '../server/albumScreens';
 import { chartData } from '../model/highlightChart';
-import { chosenKind, chosenSlide, chosenSource, fixPlace, HIGHLIGHT_REGIONS, highlightsView, sourceFacts, sourceTiles, type SlidePreviewData } from '../model/highlights';
+import { chosenKind, chosenSlide, chosenSource, fixPlace, HIGHLIGHT_REGIONS, highlightsView, previewPicture, sourceFacts, sourceTiles, type SlidePreviewData } from '../model/highlights';
 import { regionsAsked, wants } from '../model/regions';
-import { highlightState } from '../../content/highlights';
+import { checkHighlights, highlightImages, highlightState } from '../../content/highlights';
 import { slidePicture } from '../../content/highlightPictures';
 import { timedAsync } from '../../content/timing';
 import { withBase } from '../../design/meta';
@@ -21,7 +24,7 @@ export const prerender = false;
 const SOURCES = 'highlight-sources';
 const loaded = load();
 const asked = regionsAsked(Astro.request.headers.get('X-Editor-Regions'));
-const view = loaded.ok && wants(asked, ...HIGHLIGHT_REGIONS, SOURCES) ? highlightsView(loaded.index) : null;
+const view = loaded.ok && wants(asked, ...HIGHLIGHT_REGIONS, SOURCES, 'highlight-preview') ? highlightsView(loaded.index) : null;
 const version = view ? readDoc(HIGHLIGHTS_KEY)?.version ?? null : null;
 const params = Astro.url.searchParams;
 const selected = view ? chosenSlide(view.highlights.items, params.get('slide')) : 'new';
@@ -29,6 +32,17 @@ const kind = chosenKind(params.get('kind'));
 const query = params.get('q') ?? '';
 const source = view && selected === 'new' ? chosenSource(view.choices, view.highlights.items, params.get('source')) : null;
 const tiles = view && selected === 'new' && !source ? sourceTiles(view.choices, view.highlights.items) : [];
+const selectedItem = view?.highlights.items.find((i) => i.id === selected);
+const selectedMedia = loaded.ok && selectedItem ? highlightState(loaded.index, selectedItem).media : undefined;
+const selectedPicture = loaded.ok && selectedMedia ? await timedAsync('highlights:picture', () => slidePicture(loaded.index, selectedMedia)) : undefined;
+const thumb = selectedPicture ? { thumb: selectedPicture.thumb, alt: selectedPicture.alt, width: selectedPicture.width, height: selectedPicture.height } : undefined;
+const publicImages = loaded.ok ? highlightImages(loaded.index) : new Set<string>();
+const PICKER_PAGE = 40;
+const pickerAt = Math.max(0, Math.floor(Number(params.get('picker') ?? 0)) || 0);
+const picker = loaded.ok && asked?.has('media-grid') ? await mediaCards(loaded.index, 'shared', { only: publicImages, page: { at: pickerAt, size: PICKER_PAGE } }) : null;
+const nextPicker = new URL(Astro.url);
+nextPicker.searchParams.set('picker', String(pickerAt + PICKER_PAGE));
+const paging = { of: publicImages.size, shown: Math.min(publicImages.size, pickerAt + PICKER_PAGE), total: `${publicImages.size} public pictures`, next: pickerAt + PICKER_PAGE < publicImages.size ? `${nextPicker.pathname}${nextPicker.search}` : null };
 
 // the tiles' pictures only when they're asked for on their own, so a screen is never drawn waiting on every picture
 let thumbs: Record<string, SourceThumb> | undefined;
@@ -43,15 +57,18 @@ if (loaded.ok && tiles.length && asked?.has(SOURCES) && !wants(asked, ...HIGHLIG
 const preview = await (async (): Promise<SlidePreviewData | null> => {
   if (!loaded.ok || !view || !source) return null;
   const index = loaded.index;
-  const state = highlightState(index, source.item);
-  const picture = state.media ? await slidePicture(index, state.media).catch(() => undefined) : undefined;
+  const draft = previewPicture(source.item, params);
+  const invalid = draft.issue ?? checkHighlights({ ...index, highlights: { ...view.highlights, items: [draft.item] } })[0]?.message;
+  const state = highlightState(index, draft.item);
+  const media = state.media;
+  const picture = !invalid && media ? await timedAsync('highlights:preview', () => slidePicture(index, media)) : undefined;
   const chart = source.item.type === 'custom' && index.github ? chartData(index.github) : undefined;
   const caption = source.item.type === 'image' ? index.media.get(source.item.media)?.caption : undefined;
   const place = fixPlace(source.item);
   const back = new URLSearchParams({ slide: 'new', ...(kind !== 'all' ? { kind } : {}), ...(query ? { q: query } : {}) });
   return {
-    source,
-    facts: sourceFacts(source.item, { text: state.text, href: state.href, media: state.media, caption }, view.highlights.items.length + 1),
+    source: { ...source, item: draft.item, reason: invalid ?? state.reason },
+    facts: sourceFacts(draft.item, { text: state.text, href: state.href, media: invalid ? undefined : state.media, caption }, view.highlights.items.length + 1),
     words: { title: state.title, text: state.text, href: state.href ? withBase(state.href) : undefined },
     picture,
     pictureFailed: !!state.media && !picture,
@@ -65,7 +82,7 @@ const preview = await (async (): Promise<SlidePreviewData | null> => {
 <EditorLayout title="Home highlights" screen="highlights" heading="Home highlights" intro="Choose what the classic home shows below its introduction. Slides stay linked to their pages and pictures. Each change saves here; save to remote to put it on the site.">
   {
     view ? (
-      <HighlightsManager {...view} version={version} selected={selected}>
+      <HighlightsManager {...view} version={version} selected={selected} thumb={thumb}>
         <Fragment slot="new">
           {preview ? (
             <SlidePreview {...preview} settings={view.highlights} labelledby="highlights-detail-title" />
@@ -78,4 +95,12 @@ const preview = await (async (): Promise<SlidePreviewData | null> => {
       <ContentIssues issues={loaded.issues} />
     ) : null
   }
+  {loaded.ok && (
+    <>
+      <Dialog id="highlight-picture-picker" title="Choose a slide picture" size="lg">
+        {picker ? <MediaGrid mode="pick" media={picker} owner="shared" paging={paging} /> : <MediaGrid mode="pick" media={[]} owner="shared" paging={paging} pending />}
+      </Dialog>
+      <CropDialog />
+    </>
+  )}
 </EditorLayout>

@@ -21,7 +21,8 @@ import ContributionHero from '../../components/compounds/ContributionHero.astro'
 import HighlightCard from '../../components/compounds/HighlightCard.astro';
 import Form from '../kit/Form.astro';
 import IssueNote from '../kit/IssueNote.astro';
-import { slideIcon, type Highlights, type SlidePreviewData } from '../model/highlights';
+import SlidePicture from '../kit/SlidePicture.astro';
+import { highlightPresentation, slideIcon, type Highlights, type SlidePreviewData } from '../model/highlights';
 
 interface Props extends SlidePreviewData {
   /** The carousel's settings, which the preview is drawn with. */
@@ -39,13 +40,14 @@ const missing = pictureFailed ? "The picture couldn't be drawn here. Reload to t
     <Button variant="quiet" size="sm" icon="arrow-left" href={back} data-highlights-go="new" data-highlights-back={source.key}>Back to sources</Button>
   </div>
   <Heading level={3} size="h4">{source.name}</Heading>
+  <div class="preview-content" data-region="highlight-preview">
   <figure class="frame">
     <div class="stage" inert>
       {
         chart ? (
           <ContributionHero data={chart} embedded />
         ) : picture ? (
-          <HighlightCard title={words.title} text={words.text} href={words.href} picture={picture} settings={settings} />
+          <HighlightCard title={words.title} text={words.text} href={words.href} picture={picture} settings={highlightPresentation(settings, source.item)} />
         ) : (
           <span class="missing">
             <Icon name={slideIcon(source.item)} size="lg" />
@@ -79,9 +81,11 @@ const missing = pictureFailed ? "The picture couldn't be drawn here. Reload to t
       </div>
     )
   }
+  </div>
   <Form gap="lg" data-highlights-new="" labelledby={labelledby}>
     <HiddenField name="source" value={source.key} />
     {source.item.type === 'article' && <TextField label="Page excerpt" name="excerpt" multiline optional maxlength={280} hint="Copy up to 280 characters word for word from the page. Leave it empty to use its summary." />}
+    <SlidePicture item={source.item} settings={settings} thumb={picture ? { thumb: picture.thumb, alt: picture.alt, width: picture.width, height: picture.height } : undefined} />
     <IssueNote data-editor-form-issue="" />
     <ActionBar>
       <Button variant="primary" type="submit" icon="plus">Add slide</Button>
@@ -90,7 +94,8 @@ const missing = pictureFailed ? "The picture couldn't be drawn here. Reload to t
 </div>
 
 <style>
-  .slide-preview {
+  .slide-preview,
+  .preview-content {
     display: grid;
     gap: var(--space-5);
   }

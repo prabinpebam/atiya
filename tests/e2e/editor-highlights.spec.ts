@@ -6,7 +6,7 @@
  */
 import { expect, test, type Page } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
-import { readFileSync, renameSync, writeFileSync } from 'node:fs';
+import { copyFileSync, mkdirSync, readFileSync, renameSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { FIXTURE, reset } from '../../scripts/editor-test-server.mjs';
 import type { Highlights } from '../../src/site/content/highlights';
@@ -69,6 +69,93 @@ test.describe('editor: home highlights', () => {
   });
   test.afterAll(() => reset());
 
+  test('chooses independent slide pictures and presentation on add and edit, and restores automatic body pictures without changing the page', async ({ page }) => {
+    const articleFile = join(FIXTURE, 'content', 'articles', 'fixture-album-note.json');
+    const original = JSON.parse(readFileSync(articleFile, 'utf8'));
+    const article = { ...original, status: 'published', hero: undefined, body: [
+      ...original.body, { type: 'figure', media: 'articles/fixture-album/p01', width: 'content' },
+    ] };
+    writeFileSync(`${articleFile}.tmp`, JSON.stringify(article));
+    renameSync(`${articleFile}.tmp`, articleFile);
+    const sourceBytes = readFileSync(articleFile, 'utf8');
+    const chosenMedia = 'articles/fixture-album/p02';
+    const chosenAlt = JSON.parse(readFileSync(join(FIXTURE, 'content', 'media', 'articles', 'fixture-album', 'p02.json'), 'utf8')).alt;
+    const autoAlt = JSON.parse(readFileSync(join(FIXTURE, 'content', 'media', 'articles', 'fixture-album', 'p01.json'), 'utf8')).alt;
+    await page.goto('/_edit/highlights/?slide=new&source=article%3Afixture-album-note');
+    const picture = () => screen(page).locator('[data-slide-picture]');
+    await expect(picture()).toContainText('Automatic picture');
+    await expect(picture().locator('[data-slide-picture-options]')).toBeHidden();
+    await picture().getByRole('button', { name: 'Choose picture', exact: true }).click();
+    const picker = page.getByRole('dialog', { name: 'Choose a slide picture' });
+    await expect(picker).toBeVisible();
+    await picker.locator(`[data-editor-media="${chosenMedia}"]`).click();
+    await expect(picker).not.toBeVisible();
+    await expect(picture().locator('input[name="picture"]')).toHaveValue(chosenMedia);
+    const livePreview = () => screen(page).locator('[data-region="highlight-preview"]');
+    await expect(livePreview().getByRole('img', { name: chosenAlt, exact: true })).toHaveCount(1);
+    await expect(livePreview()).toContainText('A picture chosen for this slide');
+    await picture().getByRole('checkbox', { name: 'Use carousel picture settings' }).uncheck();
+    await expect(picture().locator('[data-slide-picture-options]')).toBeVisible();
+    await select(page, 'Slide picture display', 'Fit');
+    await picture().getByRole('checkbox', { name: 'Round picture corners' }).uncheck();
+    await picture().getByRole('checkbox', { name: 'Use automatic background' }).check();
+    await picture().getByRole('checkbox', { name: 'Show picture shadow' }).check();
+    await expect(livePreview().locator('img')).toHaveAttribute('data-radius', 'none');
+    await expect(livePreview().locator('[data-picture]')).toHaveAttribute('data-shadow', '');
+    await screen(page).locator('[data-highlights-new]').getByRole('button', { name: 'Add slide', exact: true }).click();
+    await said(page, 'Added slide');
+    expect(saved().items[0]).toMatchObject({ type: 'article', picture: chosenMedia, pictureStyle: { display: 'fit', background: true, rounded: false, shadow: true } });
+    expect(readFileSync(articleFile, 'utf8')).toBe(sourceBytes);
+    const id = saved().items[0].id;
+    await page.reload();
+    await expect(picture().locator('input[name="picture"]')).toHaveValue(chosenMedia);
+    await expect(picture().getByRole('checkbox', { name: 'Round picture corners' })).not.toBeChecked();
+    await page.goto('/views/classic/');
+    const image = page.locator('#home-highlights [data-highlight-card]').getByRole('img', { name: chosenAlt, exact: true });
+    await expect(image).toBeVisible();
+    await expect(image).toHaveAttribute('data-mode', 'fit');
+    await expect(image).toHaveAttribute('data-radius', 'none');
+    await expect(page.locator('#home-highlights [data-picture]')).toHaveAttribute('data-shadow', '');
+    await page.goto(`/_edit/highlights/?slide=${id}`);
+    await picture().getByRole('button', { name: 'Use automatic', exact: true }).click();
+    await picture().getByRole('checkbox', { name: 'Use carousel picture settings' }).check();
+    await expect(picture().locator('[data-slide-picture-options]')).toBeHidden();
+    await screen(page).getByRole('button', { name: 'Save slide', exact: true }).click();
+    await said(page, 'Saved slide');
+    expect(saved().items[0]).not.toHaveProperty('picture');
+    expect(saved().items[0]).not.toHaveProperty('pictureStyle');
+    expect(readFileSync(articleFile, 'utf8')).toBe(sourceBytes);
+    await page.goto('/views/classic/');
+    await expect(page.locator('#home-highlights [data-highlight-card]').getByRole('img', { name: autoAlt, exact: true })).toBeVisible();
+
+    // More than a page of shared pictures sorts ahead of the upload: selection must wait for its card.
+    const shared = join(FIXTURE, 'content', 'media', 'shared');
+    mkdirSync(shared, { recursive: true });
+    for (let n = 0; n < 41; n++) {
+      const name = `a-highlight-${String(n).padStart(2, '0')}`;
+      copyFileSync(join(FIXTURE, 'content', 'media', 'articles', 'fixture-album', 'p01.webp'), join(shared, `${name}.webp`));
+      writeFileSync(join(shared, `${name}.json`), JSON.stringify({ kind: 'image', file: `${name}.webp`, alt: `Fixture image ${n}`, visibility: 'public' }));
+    }
+    await page.goto(`/_edit/highlights/?slide=${id}`);
+    await picture().getByRole('button', { name: 'Choose picture', exact: true }).click();
+    await expect(picker).toBeVisible();
+    await picker.getByText('Upload a picture or a video', { exact: true }).click();
+    await picker.getByLabel('Picture or video', { exact: true }).setInputFiles({
+      name: 'highlight-upload.svg', mimeType: 'image/svg+xml',
+      buffer: Buffer.from('<svg xmlns="http://www.w3.org/2000/svg" width="360" height="180"><rect width="360" height="180" fill="#4361a5"/><circle cx="90" cy="90" r="55" fill="#efc556"/></svg>'),
+    });
+    await picker.getByRole('textbox', { name: 'Alt text', exact: true }).fill('A gold circle on a blue field');
+    await picker.getByRole('button', { name: 'Upload it', exact: true }).click();
+    await expect(picker).not.toBeVisible({ timeout: 30_000 });
+    await expect(picture().locator('input[name="picture"]')).not.toHaveValue('');
+    await screen(page).getByRole('button', { name: 'Save slide', exact: true }).click();
+    await said(page, 'Saved slide');
+    expect(saved().items[0]).toMatchObject({ picture: expect.stringMatching(/^shared\//) });
+    expect(readFileSync(articleFile, 'utf8')).toBe(sourceBytes);
+    await page.goto('/views/classic/');
+    await expect(page.locator('#home-highlights [data-highlight-card]').getByRole('img', { name: 'A gold circle on a blue field', exact: true })).toBeVisible();
+  });
+
   test('is list and details: adds every kind, saves verbatim text and settings, orders and removes without deleting sources', async ({ page }) => {
     await page.goto('/_edit/highlights/');
     await expect(page.getByRole('heading', { level: 1, name: 'Home highlights' })).toBeVisible();
@@ -81,7 +168,7 @@ test.describe('editor: home highlights', () => {
     await addSource(page, 'custom:github');
     // a page's excerpt is set in its preview, as it's added
     await addSource(page, 'article:fixture-album-note', 'A few words before the pictures.');
-    await expect(rows(page).nth(1)).toContainText('Waiting: Add a lead picture');
+    await expect(rows(page).nth(1)).toContainText('Waiting: Choose a slide picture');
     await expect(screen(page).getByRole('textbox', { name: 'Page excerpt' })).toHaveValue('A few words before the pictures.');
     await addSource(page, 'album:fixture-album');
     await addSource(page, 'image:articles/fixture-album/p02');
@@ -370,7 +457,7 @@ test.describe('editor: home highlights', () => {
     await page.goto('/_edit/highlights/?slide=new&source=article:fixture-album-note');
     const page1 = screen(page).locator('[data-highlight-preview="article:fixture-album-note"]');
     await expect(page1.locator('.facts')).toContainText('Waiting');
-    await expect(page1.locator('[data-source-waiting]')).toContainText('Add a lead picture');
+    await expect(page1.locator('[data-source-waiting]')).toContainText('Choose a slide picture');
     await expect(page1.getByRole('link', { name: 'Edit page' })).toHaveAttribute('href', /\/_edit\/articles\/fixture-album-note\//);
     // a picture and the chart, each as the home would show it
     await page.goto('/_edit/highlights/?slide=new&source=image:articles/fixture-album/p02');
@@ -391,12 +478,13 @@ test.describe('editor: home highlights', () => {
     await expect(go(page, github)).toHaveAttribute('aria-current', 'true');
   });
 
-  test('has no image preload on a slide, and keeps labelled, accessible controls at phone widths in both themes on every step', async ({ page }) => {
+  test('prepares only the selected slide picture, and keeps labelled, accessible controls at phone widths in both themes on every step', async ({ page }) => {
     await page.setViewportSize({ width: 360, height: 800 });
     await page.goto('/_edit/highlights/');
     await addSource(page, 'article:fixture-album-note');
     await addSource(page, 'album:fixture-album');
-    await expect(screen(page).locator('img')).toHaveCount(0);
+    await expect(screen(page).locator('[data-slide-picture-preview] img')).toHaveCount(1);
+    await expect(list(page).locator('img')).toHaveCount(0);
     const checkBothThemes = async () => {
       for (const theme of ['light', 'dark']) {
         await page.evaluate((value) => document.documentElement.dataset.theme = value, theme);

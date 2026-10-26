@@ -1,0 +1,11 @@
+---
+import Example from '../../library/Example.astro';
+import SlidePicture from '../kit/SlidePicture.astro';
+import { HIGHLIGHTS, SOURCE_THUMBS } from './samples';
+---
+<Example title="Automatic picture" description="Inherits the carousel until this slide needs its own presentation. A page without a lead picture can still use a body picture, or an independent library picture.">
+  <SlidePicture item={{ id: 'page', type: 'article', article: 'sample' }} settings={HIGHLIGHTS} />
+</Example>
+<Example title="Independent picture" description="A selected library picture, fitted whole, with square corners and a shadow. These choices do not change the page.">
+  <SlidePicture item={{ id: 'page', type: 'article', article: 'sample', picture: 'shared/sample', pictureStyle: { display: 'fit', rounded: false, background: true, shadow: true } }} settings={HIGHLIGHTS} thumb={{ ...SOURCE_THUMBS['article:a-walk-round-the-pond'], alt: 'A pond in a meadow' }} />
+</Example>

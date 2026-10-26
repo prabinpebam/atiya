@@ -7,7 +7,7 @@ import { HIGHLIGHTS, HIGHLIGHT_CHOICES, HIGHLIGHT_DETAILS, SOURCE_THUMBS } from 
 ---
 
 <Example title="A slide chosen" description="The slides in order beside the chosen one: a page with its excerpt, Move up and Move down without dragging, and Remove slide, which never deletes the page." layout="block" bleed>
-  <HighlightsManager highlights={HIGHLIGHTS} choices={HIGHLIGHT_CHOICES} details={HIGHLIGHT_DETAILS} version="sample" selected="pond-page" />
+  <HighlightsManager highlights={HIGHLIGHTS} choices={HIGHLIGHT_CHOICES} details={HIGHLIGHT_DETAILS} version="sample" selected="pond-page" thumb={{ ...SOURCE_THUMBS['article:a-walk-round-the-pond'], alt: 'A pond in a meadow' }} />
 </Example>
 <Example title="Carousel settings" description="Above the rule: whether the carousel shows, its label and how it moves and shows pictures, the same for every slide." layout="block" bleed>
   <HighlightsManager highlights={HIGHLIGHTS} choices={HIGHLIGHT_CHOICES} details={HIGHLIGHT_DETAILS} version="sample" selected="settings" />

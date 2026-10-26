@@ -3,7 +3,8 @@
  * and editor. A saved public pick may wait for publication, but a private or missing source is an error.
  */
 import { z } from 'astro/zod';
-import { carouselPresentation, mediaId } from './schema';
+import { carouselPresentation, mediaId, pictureStyle } from './schema';
+import { thumbnailFor } from '../design/pictures';
 import type { ContentIndex, Issue } from './load';
 import { coverPicture } from './album';
 import { fullText, normalise } from '../home/evidence';
@@ -13,9 +14,9 @@ export const HIGHLIGHT_MAX = 12;
 const id = z.string().regex(/^[a-z0-9]+(-[a-z0-9]+)*$/, 'lowercase kebab-case');
 const highlightItem = z.discriminatedUnion('type', [
   z.strictObject({ id, type: z.literal('custom'), custom: z.literal('github') }),
-  z.strictObject({ id, type: z.literal('article'), article: id, text: z.string().trim().min(1).max(280).optional() }),
-  z.strictObject({ id, type: z.literal('album'), album: id }),
-  z.strictObject({ id, type: z.literal('image'), media: mediaId }),
+  z.strictObject({ id, type: z.literal('article'), article: id, text: z.string().trim().min(1).max(280).optional(), picture: mediaId.optional(), pictureStyle: pictureStyle.optional() }),
+  z.strictObject({ id, type: z.literal('album'), album: id, picture: mediaId.optional(), pictureStyle: pictureStyle.optional() }),
+  z.strictObject({ id, type: z.literal('image'), media: mediaId, pictureStyle: pictureStyle.optional() }),
 ]);
 
 export const highlightsFile = z.strictObject({
@@ -69,6 +70,40 @@ const publicImage = (index: Index, media: string) => {
   return image && image.origin === 'public' && ['public', 'publicRedacted', 'summaryOnly'].includes(image.visibility);
 };
 
+/** Public image choices are also the automatic candidates; private metadata never reaches the picker. */
+export function highlightImages(index: Pick<Index, 'media'>): Set<string> {
+  return new Set([...index.media.values()].filter((m) =>
+    m.origin === 'public' && ['public', 'publicRedacted', 'summaryOnly'].includes(m.visibility) && (!!m.alt || !!m.decorative),
+  ).map((m) => m.id));
+}
+
+/** One picture resolution for the home, previews, validation and media usage. */
+export function highlightPicture(index: Index, item: HighlightItem): string | undefined {
+  if (item.type === 'custom') return undefined;
+  if (item.type === 'image') return item.media;
+  if (item.picture) return item.picture;
+  if (item.type === 'album') return albumCover(index, item.album);
+  const a = index.articles.get(item.article);
+  if (!a) return undefined;
+  const body = a.body.flatMap((b): string[] => {
+    if (b.type === 'figure') return [b.media];
+    if (b.type === 'gallery' || b.type === 'carousel') return b.items.map((i) => i.media);
+    if (b.type === 'collection') return b.items.flatMap((i) => i.media ? [i.media] : []);
+    if (b.type === 'video') return [...(b.poster ? [b.poster] : []), ...(b.media ? [b.media] : [])];
+    return [];
+  });
+  const candidates = [thumbnailFor(a, 'wide'), a.hero?.media, a.thumbnail, ...body];
+  return candidates.find((id): id is string => {
+    const m = id && index.media.get(id);
+    return !!id && ((!!m && !!publicImage(index, m.id) && (!!m.alt || !!m.decorative)) || publicPoster(index, id));
+  });
+}
+
+/** Explicit false values stay explicit; absent slide values inherit the carousel. */
+export function highlightPresentation(settings: Pick<Highlights, 'display' | 'background' | 'rounded' | 'shadow'>, item: HighlightItem) {
+  return { display: settings.display, background: settings.background, rounded: settings.rounded, shadow: settings.shadow, ...(item.type === 'custom' ? {} : item.pictureStyle) };
+}
+
 /** The album's existing cover rule, never a second guess at its first picture. */
 function albumCover(index: Index, album: string): string | undefined {
   const source = index.albums.get(album);
@@ -87,13 +122,13 @@ export function highlightState(index: Index, item: HighlightItem): HighlightStat
   if (!source || index.origins.get(ref) !== 'public' || ('visibility' in source && source.visibility !== 'public')) {
     return { title: 'Unavailable source', reason: 'Choose an existing public page or album.' };
   }
-  const media = item.type === 'article' ? index.articles.get(ref)?.hero?.media : albumCover(index, ref);
+  const media = highlightPicture(index, item);
   const route = index.routes.find((r) => r.node.kind === 'item' && r.node.item.type === item.type && r.node.item.id === ref);
   const text = item.type === 'article' ? item.text ?? source.summary : source.summary;
   let reason: string | undefined;
   if (!route) reason = 'Place it in a section to show it.';
   else if (!route.published || route.access !== 'open') reason = 'Publish it to show it.';
-  else if (!media) reason = item.type === 'article' ? 'Add a lead picture to show it.' : 'Add a cover picture to show it.';
+  else if (!media) reason = item.type === 'article' ? 'Choose a slide picture or add a picture to the page.' : 'Choose a slide picture or add a cover picture.';
   else if (!publicImage(index, media) && !publicPoster(index, media)) reason = 'Choose a public cover picture to show it.';
   return { title: source.title, text, media, href: route?.path, ...(reason ? { reason } : {}) };
 }
@@ -130,6 +165,10 @@ export function checkHighlights(index: Index, skip: ReadonlySet<string> = new Se
   };
   index.highlights?.items.forEach((item, n) => {
     if (item.type === 'custom') return;
+    if (item.type !== 'image' && item.picture) {
+      if (!publicImage(index, item.picture)) add(n, 'This slide picture is missing or private. Choose a public picture or use automatic selection before deleting it or changing its access.');
+      else alt(n, item.picture);
+    }
     if (item.type === 'image') {
       if (!publicImage(index, item.media)) add(n, 'This highlighted picture is missing or private. Remove its highlight before deleting it or changing its access.');
       else alt(n, item.media);
@@ -145,7 +184,7 @@ export function checkHighlights(index: Index, skip: ReadonlySet<string> = new Se
     if (item.type === 'article' && item.text && !fullText(index.articles.get(ref)!).includes(normalise(item.text))) {
       add(n, 'The highlight text must come from the page word for word. Copy a short excerpt from it, or leave it empty to use its summary.');
     }
-    const media = item.type === 'article' ? index.articles.get(ref)?.hero?.media : albumCover(index, ref);
+    const media = highlightPicture(index, item);
     if (media && !publicImage(index, media) && !publicPoster(index, media)) add(n, 'The highlighted lead or cover must be public. Choose a public picture or remove the highlight.');
     else if (media) alt(n, media);
   });
@@ -155,9 +194,6 @@ export function checkHighlights(index: Index, skip: ReadonlySet<string> = new Se
 /** Direct/derived media usage, for the library's delete guards and usage reports. */
 export function highlightMedia(index: Index): string[] {
   return [...new Set(index.highlights?.items.flatMap((item) => {
-    if (item.type === 'image') return [item.media];
-    if (item.type === 'article') return index.articles.get(item.article)?.hero?.media ?? [];
-    if (item.type === 'album') return albumCover(index, item.album) ?? [];
-    return [];
+    return highlightPicture(index, item) ?? [];
   }) ?? [])];
 }

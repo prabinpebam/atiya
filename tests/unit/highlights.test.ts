@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { ContentError, loadContent, loadContentLeavingOut, type ContentIndex } from '../../src/site/content/load';
-import { checkHighlights, defaultHighlights, highlightCandidates, highlightMedia, highlightState, highlightsFile, HIGHLIGHT_MAX, visibleHighlights, type HighlightItem } from '../../src/site/content/highlights';
+import { checkHighlights, defaultHighlights, highlightCandidates, highlightImages, highlightMedia, highlightPicture, highlightPresentation, highlightState, highlightsFile, HIGHLIGHT_MAX, visibleHighlights, type HighlightItem } from '../../src/site/content/highlights';
 import { article, album } from '../../src/site/content/schema';
 
 const pic = 'library/picture';
@@ -83,7 +83,7 @@ describe('home highlights contract', () => {
     expect(highlightState(c, picks[1]).reason).toMatch(/Place/);
     c.articles.set('page', article.parse({ ...page('page'), hero: undefined }));
     c.routes.push({ path: '/work/page/', node: { id: 'page', kind: 'item', item: { type: 'article', id: 'page' } }, ancestors: [], title: 'A shared direction', label: 'A page', published: true, access: 'open' });
-    expect(highlightState(c, picks[1]).reason).toMatch(/lead picture/);
+    expect(highlightState(c, picks[1]).reason).toMatch(/Choose a slide picture/);
     c.albums.set('album', album.parse({ ...c.albums.get('album'), items: [] }));
     expect(highlightState(c, picks[2]).reason).toMatch(/cover picture/);
     expect(c.highlights!.items.map((i) => i.id)).toEqual(picks.map((i) => i.id));
@@ -106,6 +106,86 @@ describe('home highlights contract', () => {
   });
   it('counts direct and derived image uses once', () => {
     expect(highlightMedia(index())).toEqual([pic]);
+  });
+  it('chooses wide thumbnail, lead, thumbnail, then eligible body pictures in order without requiring a lead', () => {
+    const c = index();
+    const original = c.media.get(pic)!;
+    const ids = ['wide', 'lead', 'thumb', 'body', 'second'];
+    for (const id of ids) c.media.set(`library/${id}`, { ...original, id: `library/${id}` });
+    const a = (extra: Record<string, unknown>) => c.articles.set('page', article.parse({
+      ...page('page'), hero: undefined, ...extra,
+    }));
+    a({ thumbnails: { wide: 'library/wide' }, hero: { media: 'library/lead' }, thumbnail: 'library/thumb' });
+    expect(highlightPicture(c, picks[1])).toBe('library/wide');
+    a({ hero: { media: 'library/lead' }, thumbnail: 'library/thumb' });
+    expect(highlightPicture(c, picks[1])).toBe('library/lead');
+    a({ thumbnail: 'library/thumb', body: [{ type: 'figure', media: 'library/body' }] });
+    expect(highlightPicture(c, picks[1])).toBe('library/thumb');
+    a({ body: [{ type: 'gallery', items: [{ media: 'library/body' }, { media: 'library/second' }] }] });
+    expect(highlightPicture(c, picks[1])).toBe('library/body');
+    c.media.get('library/body')!.origin = 'private';
+    expect(highlightPicture(c, picks[1])).toBe('library/second');
+    c.media.get('library/second')!.alt = '';
+    expect(highlightPicture(c, picks[1])).toBeUndefined();
+    c.media.get('library/second')!.decorative = true;
+    expect(highlightPicture(c, picks[1])).toBe('library/second');
+    a({ body: [{ type: 'collection', layout: 'tiles', items: [{ heading: 'A picture', media: 'library/second' }] }] });
+    expect(highlightPicture(c, picks[1])).toBe('library/second');
+    a({ body: [{ type: 'video', embed: { provider: 'youtube', id: 'fixture' }, poster: pic, title: 'A film' }] });
+    expect(highlightPicture(c, picks[1])).toBe(pic);
+  });
+  it('keeps independent page/album pictures and false presentation values, but never bypasses source gates', () => {
+    const c = index();
+    const item: HighlightItem = { id: 'page', type: 'article', article: 'page', picture: pic, pictureStyle: { display: 'actual', background: false, rounded: false, shadow: false } };
+    const before = JSON.stringify(c.articles.get('page'));
+    c.articles.set('page', article.parse({ ...page('page'), hero: undefined }));
+    expect(highlightState(c, item)).toMatchObject({ media: pic });
+    expect(highlightState(c, item).reason).toBeUndefined();
+    expect(highlightPresentation(config(), item)).toEqual({ display: 'actual', background: false, rounded: false, shadow: false });
+    expect(highlightPresentation(config(), picks[1])).toEqual({ display: 'fit', background: true, rounded: false, shadow: true });
+    expect(highlightState(c, { id: 'album', type: 'album', album: 'album', picture: pic }).reason).toMatch(/Publish/);
+    c.routes = c.routes.filter((r) => r.node.id !== 'page');
+    expect(highlightState(c, item).reason).toMatch(/Place/);
+    expect(before).toContain('hero');
+    expect(c.articles.get('page')).not.toHaveProperty('picture');
+  });
+  it('uses public uploaded-video posters in body order, skipping absent or private posters', () => {
+    const c = index();
+    const id = 'library/film';
+    c.videos.set(id, {
+      id, kind: 'video', file: 'film.mp4', title: 'A short film', visibility: 'public',
+      master: '/content/media/library/film.mp4', posterMaster: '/content/media/library/film.poster.webp',
+      origin: 'public', width: 640, height: 360, duration: 2,
+    });
+    const a = (body: unknown[]) => c.articles.set('page', article.parse({ ...page('page'), hero: undefined, body }));
+    a([{ type: 'video', media: id }]);
+    expect(highlightPicture(c, picks[1])).toBe(id);
+    expect(highlightState(c, picks[1]).reason).toBeUndefined();
+    a([{ type: 'carousel', label: 'A mix', items: [{ media: id }, { media: pic }] }]);
+    expect(highlightPicture(c, picks[1])).toBe(id);
+    c.videos.get(id)!.origin = 'private';
+    expect(highlightPicture(c, picks[1])).toBe(pic);
+    c.videos.get(id)!.origin = 'public';
+    delete c.videos.get(id)!.posterMaster;
+    expect(highlightPicture(c, picks[1])).toBe(pic);
+  });
+  it('validates explicit overrides even while disabled, retains their uses and offers only eligible public images', () => {
+    for (const change of ['missing', 'private', 'alt', 'visibility']) {
+      const c = index();
+      const id = 'library/override';
+      c.media.set(id, { ...c.media.get(pic)!, id });
+      c.highlights = { ...config([{ id: 'page', type: 'article', article: 'page', picture: id }]), enabled: false };
+      expect(highlightMedia(c)).toEqual([id]);
+      expect(checkHighlights(c)).toEqual([]);
+      if (change === 'missing') c.media.delete(id);
+      else if (change === 'private') c.media.get(id)!.origin = 'private';
+      else if (change === 'alt') c.media.get(id)!.alt = '';
+      else c.media.get(id)!.visibility = 'privateDiscussionOnly';
+      expect(checkHighlights(c).length).toBeGreaterThan(0);
+      expect(highlightImages(c).has(id)).toBe(false);
+    }
+    expect(highlightsFile.safeParse(config([{ id: 'page', type: 'article', article: 'page', picture: pic, pictureStyle: { rounded: false } }])).success).toBe(true);
+    expect(highlightsFile.safeParse({ ...config(), items: [{ id: 'page', type: 'article', article: 'page', pictureStyle: { display: 'stretch' } }] }).success).toBe(false);
   });
   it('requires alt text for a highlighted library image and reports a broken configuration without stopping every dev page', () => {
     const d = docs();

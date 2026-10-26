@@ -9,7 +9,8 @@
  */
 import { api, onContentChange, refused, saveStatus, swapRegions, track } from './client';
 import { underWay } from '../model/feedback';
-import { addHighlight, excerptHighlight, HIGHLIGHT_MAX, moveHighlight, removeHighlight, type Highlights, type HighlightChoice } from '../model/highlights';
+import { addHighlight, excerptHighlight, HIGHLIGHT_MAX, moveHighlight, pictureHighlight, removeHighlight, type Highlights, type HighlightChoice, type HighlightItem } from '../model/highlights';
+import { fillPicker } from './picker';
 
 interface State {
   highlights: Highlights;
@@ -46,6 +47,94 @@ export function initHighlights(root: HTMLElement, signal: AbortSignal) {
   };
   const field = (name: string) => form?.elements.namedItem(name) as HTMLInputElement | null;
   const go = (id: string) => `[data-highlights-go="${id}"]`;
+  const picker = document.getElementById('highlight-picture-picker') as HTMLDialogElement | null;
+  const pictureField = form?.querySelector<HTMLElement>('[data-slide-picture]');
+  const initialPreview = pictureField?.querySelector('[data-slide-picture-preview]')?.cloneNode(true) as HTMLElement | undefined;
+  const initialName = pictureField?.querySelector('[data-slide-picture-name]')?.textContent;
+  const choosePicture = (id: string) => {
+    const input = field('picture');
+    if (!input || !pictureField) return;
+    const card = picker?.querySelector<HTMLElement>(`[data-editor-media="${CSS.escape(id)}"]`);
+    if (!card) {
+      say('This item cannot be used as a slide picture. Choose a public picture with alt text.');
+      return;
+    }
+    input.value = id;
+    const image = card?.querySelector('[data-picture]')?.cloneNode(true);
+    const preview = pictureField.querySelector('[data-slide-picture-preview]');
+    if (preview) preview.replaceChildren(...(image ? [image] : []));
+    const name = pictureField.querySelector('[data-slide-picture-name]');
+    if (name) name.textContent = card?.getAttribute('aria-label') || 'Chosen picture';
+    const automatic = pictureField.querySelector<HTMLButtonElement>('[data-slide-picture-auto]');
+    if (automatic) automatic.disabled = false;
+    input.dispatchEvent(new Event('change', { bubbles: true }));
+    picker?.close();
+    pictureField.querySelector<HTMLElement>('[data-slide-picture-pick]')?.focus();
+  };
+  const pictureOf = (item: HighlightItem) => pictureHighlight(item, field('picture')?.value ?? '', field('pictureInherit')?.checked !== false ? undefined : {
+    display: field('pictureDisplay')?.value as Highlights['display'],
+    background: !!field('pictureBackground')?.checked,
+    rounded: !!field('pictureRounded')?.checked,
+    shadow: !!field('pictureShadow')?.checked,
+  });
+  let previewGeneration = 0;
+  const updatePreview = async () => {
+    if (!form?.hasAttribute('data-highlights-new') || !pictureField) return;
+    const generation = ++previewGeneration;
+    const url = new URL(location.href);
+    url.searchParams.set('draftPicture', field('picture')?.value ?? '');
+    url.searchParams.set('draftInherit', String(!!field('pictureInherit')?.checked));
+    url.searchParams.set('draftDisplay', field('pictureDisplay')?.value ?? 'fill');
+    url.searchParams.set('draftBackground', String(!!field('pictureBackground')?.checked));
+    url.searchParams.set('draftRounded', String(!!field('pictureRounded')?.checked));
+    url.searchParams.set('draftShadow', String(!!field('pictureShadow')?.checked));
+    await swapRegions(['highlight-preview'], url.href, () => generation !== previewGeneration || !root.isConnected, { label: 'Updating slide preview…' });
+  };
+
+  root.addEventListener('click', (e) => {
+    const target = e.target as Element;
+    if (target.closest('[data-slide-picture-pick]') && picker) {
+      const mark = (grid: HTMLElement) => {
+        grid.dataset.pickKind = 'image';
+        grid.querySelectorAll<HTMLElement>('[data-editor-media]').forEach((card) =>
+          card.setAttribute('aria-pressed', String(card.dataset.editorMedia === field('picture')?.value)));
+      };
+      const grid = picker.querySelector<HTMLElement>('[data-editor-media-grid]');
+      if (grid) mark(grid);
+      picker.showModal();
+      void fillPicker(picker, mark);
+    }
+    if (target.closest('[data-slide-picture-auto]') && pictureField) {
+      const input = field('picture');
+      if (!input) return;
+      input.value = '';
+      const preview = pictureField.querySelector('[data-slide-picture-preview]');
+      if (preview) preview.replaceChildren(...(initialPreview && !initialPreview.hasAttribute('data-manual') ? [...initialPreview.childNodes].map((n) => n.cloneNode(true)) : []));
+      const name = pictureField.querySelector('[data-slide-picture-name]');
+      if (name) name.textContent = initialName && !initialPreview?.hasAttribute('data-manual') ? initialName : 'Automatic picture: save to see it.';
+      (target.closest('[data-slide-picture-auto]') as HTMLButtonElement).disabled = true;
+      input.dispatchEvent(new Event('change', { bubbles: true }));
+    }
+  }, { signal });
+  picker?.addEventListener('click', (e) => {
+    const card = (e.target as Element).closest<HTMLElement>('[data-editor-media]');
+    if (card?.dataset.editorMedia) choosePicture(card.dataset.editorMedia);
+  }, { signal });
+  picker?.addEventListener('media:uploaded', async (e) => {
+    const id = (e as CustomEvent<{ id: string }>).detail.id;
+    await swapRegions(['media-grid']);
+    let chosen = false;
+    await fillPicker(picker, (grid) => {
+      grid.dataset.pickKind = 'image';
+      if (chosen) return;
+      if (grid.querySelector(`[data-editor-media="${CSS.escape(id)}"]`)) {
+        chosen = true;
+        choosePicture(id);
+      } else if (!grid.dataset.mediaNext) {
+        say('This item cannot be used as a slide picture. Choose a public picture with alt text.');
+      }
+    });
+  }, { signal });
 
   /** Saves the whole file; on success the screen shows `slide` with the focus on `focus`, and the status says `what`. */
   const save = async (next: Highlights, what: string, slide: string, focus: string, el?: Element | null): Promise<boolean> => {
@@ -104,6 +193,11 @@ export function initHighlights(root: HTMLElement, signal: AbortSignal) {
   };
   form.addEventListener('input', changed, { signal });
   form.addEventListener('change', changed, { signal });
+  form.addEventListener('change', () => {
+    const options = pictureField?.querySelector<HTMLElement>('[data-slide-picture-options]');
+    if (options) options.hidden = !!field('pictureInherit')?.checked;
+    void updatePreview();
+  }, { signal });
 
   form.addEventListener(
     'submit',
@@ -135,7 +229,7 @@ export function initHighlights(root: HTMLElement, signal: AbortSignal) {
           return;
         }
         const id = `slide-${crypto.randomUUID()}`;
-        const items = addHighlight(h.items, choice.item, id);
+        const items = addHighlight(h.items, pictureOf(choice.item), id);
         if (items === h.items) {
           say(h.items.length >= HIGHLIGHT_MAX ? 'The carousel is full. Remove a slide to add another.' : 'That source is already a slide. Choose another.');
           return;
@@ -145,7 +239,7 @@ export function initHighlights(root: HTMLElement, signal: AbortSignal) {
       }
       // ---------- a slide's excerpt ----------
       const id = state.selected;
-      await save({ ...h, items: excerptHighlight(h.items, id, field('excerpt')?.value ?? '') }, 'Saved slide', id, 'button[type="submit"]');
+      await save({ ...h, items: excerptHighlight(h.items.map((item) => item.id === id ? pictureOf(item) : item), id, field('excerpt')?.value ?? '') }, 'Saved slide', id, 'button[type="submit"]');
     },
     { signal },
   );
@@ -160,6 +254,7 @@ export function initHighlights(root: HTMLElement, signal: AbortSignal) {
       if (at < 0) return;
       const move = t.closest<HTMLButtonElement>('[data-highlight-move]');
       if (move && !move.disabled) {
+        if (!leave()) return;
         const by = Number(move.dataset.highlightMove) as 1 | -1;
         // focus stays on the same move, unless it's now at the end it moved towards (then on the other)
         const i = at + by;
@@ -185,7 +280,7 @@ export function initHighlights(root: HTMLElement, signal: AbortSignal) {
 
   // a change made elsewhere (another tab, a source renamed or published): drawn again unless something here is unsaved
   onContentChange(() => {
-    if (unsaved) return;
+    if (unsaved || picker?.open) return;
     void swapRegions([REGION], location.href, () => unsaved, { quiet: true });
   }, signal);
 }

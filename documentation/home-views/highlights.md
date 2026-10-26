@@ -1,6 +1,6 @@
 # The classic home's highlights carousel
 
-> **TL;DR.** The space below the classic home's introduction is an owner-curated carousel, not a fixed GitHub feature. It can hold the interactive GitHub calendar, a page with its lead picture and a short excerpt, an album with its cover, or one library picture. The owner sets its order and presentation in edit mode. Its controls, peek, dots and filmstrip are the article image carousel's own, not a look-alike. It never advances by itself. This change is local until the owner authorises deployment.
+> **TL;DR.** The space below the classic home's introduction is an owner-curated carousel, not a fixed GitHub feature. It can hold the interactive GitHub calendar, a page with a representative picture and a short excerpt, an album with its cover, or one library picture. A slide can choose its own picture and presentation without changing the source page. The owner sets its order and presentation in edit mode. Its controls, peek, dots and filmstrip are the article image carousel's own, not a look-alike. It never advances by itself. This change is local until the owner authorises deployment.
 
 ## 1. Scope and placement
 
@@ -13,7 +13,7 @@ The existing GitHub calendar becomes a reusable contribution chart without a sec
 | Slide | Its source | What the visitor sees | Primary action |
 |---|---|---|---|
 | Custom: GitHub | The existing anonymous public-profile snapshot | The interactive chart and statistics, not a screenshot | Chart controls; profile link |
-| Page | An existing public article/page ID | Its current title and lead picture, plus its summary or a short verbatim excerpt the owner selects | Read the page at its canonical address |
+| Page | An existing public article/page ID | Its current title and automatic or chosen picture, plus its summary or a short verbatim excerpt the owner selects | Read the page at its canonical address |
 | Album | An existing public album ID | Its current title, summary and cover picture/poster | Open the album |
 | Image | An existing public image media ID | The picture, its sidecar alt and caption | Open the full picture in the page's lightbox |
 
@@ -25,7 +25,7 @@ Edit mode gains **Home highlights**, reachable from its navigation and action ce
 
 1. Show/hide the highlights area and name the carousel.
 2. Add a GitHub, page, album or image slide by browsing the public sources and previewing one as the carousel would show it, then adding it (§2.1). Only public resources are offered. No made-up content is added.
-3. Choose a page excerpt (optional, at most 280 characters, found in the article's own plain text); leaving it empty uses the article's summary. Titles and pictures stay linked to the source rather than copied.
+3. Choose a page excerpt (optional, at most 280 characters, found in the article's own plain text); leaving it empty uses the article's summary. Titles stay linked to the source. Each picture slide can use its automatic picture or an independent library picture, with its own presentation (§2.2).
 4. Reorder with Move up/Move down buttons in a slide's details, and remove a slide (two presses) without deleting its source.
 5. Set **Peek**, previous/next **buttons**, and pager **dots**, **filmstrip** or **wrapping filmstrip**. Dots-only is buttons off and dots selected. Picture display (fill, fit, actual, tile), automatic background, rounded corners and shadow use the article carousel's existing options.
 6. Save through the versioned content store, with the standard busy and saved/failed feedback. Conflicts preserve unsaved input. Other open screens and the preview hear changes.
@@ -92,7 +92,7 @@ Add slide was first a dropdown of titles. But the kinds differ: a live chart, a 
 The kinds' lines:
 
 - Charts: "A live chart drawn from your public data, with its own controls."
-- Pages: "A page's lead picture and title, with its summary or a line you choose. Opens the page."
+- Pages: "A page's picture and title, with its summary or a line you choose. Opens the page."
 - Albums: "An album's cover, title and summary. Opens the album."
 - Pictures: "One library picture with its caption. Opens it full size."
 
@@ -100,6 +100,22 @@ The kinds' lines:
 |---|---|---|---|
 | A1 | Seeing the slide before adding ends the add, look and remove loop. | The owner adds the slide he meant on the first try. | The owner's review of the flow |
 | A2 | Every source's picture (about 180) can fill in after the screen shows, quickly enough to browse. | Pictures appear within 2 s of the step opening with a warm picture cache. | The `editor:swap` measure for `highlight-sources` |
+
+### 2.2 A slide's representative picture
+
+| ID | Intent |
+|---|---|
+| P2 | The home can represent a page without changing how that page opens. |
+| J5 | When a page has no lead picture, or another picture represents it better, I want to choose the slide's picture independently, so the home tells the right story. |
+| U10 | A person can use a page's automatic picture without adding a lead picture (J5). |
+| U11 | A person can choose or upload a public picture for a page or album slide, and return to automatic selection without changing its source (J5). |
+| U12 | A person can set a slide's fill, fit, actual size or tile, automatic background, rounded corners and shadow, or return to the carousel's settings (J5). |
+
+Automatic page selection checks the wide thumbnail, lead picture and thumbnail in that order, then body pictures in document order: figures, gallery/carousel items, collection item pictures and video posters. It skips missing, non-public and unpublishable candidates and pictures without alt text unless decorative. An album keeps its existing cover rule. No eligible picture means waiting, not a requirement to add a lead picture.
+
+Both Add slide's preview and a saved slide's details offer **Choose picture**, opening the existing on-demand library picker with upload. Choosing changes only the pending slide; closing without choosing changes nothing. **Use automatic** removes a page/album override. A picture-only slide replaces its own picture. **Use carousel picture settings** removes the slide's presentation override; turning it off shows the four controls and stores all four explicit values, including `false`. These changes never modify a page, album or image sidecar. Add slide's preview updates through its own `highlight-preview` region, retaining the old preview until the new one is ready and never replacing the pending fields.
+
+Add slide / Save slide commits the choices with the existing versioned transaction and task feedback. A refused save preserves the pending picture, settings and excerpt and names the reason; an upload uses the library's existing progress and retry feedback. Uploaded media is a library item even if the slide is not subsequently saved. Home, preview, pager and usage guards use the same resolved picture. A chosen picture never bypasses a source's publication or placement requirements.
 
 ## 3. Content contract and safety
 
@@ -122,9 +138,9 @@ The optional `content/highlights.json` resource is read through the content repo
 }
 ```
 
-The other item shapes are `{id, type: "article", article, text?}`, `{id, type: "album", album}` and `{id, type: "image", media}`. Unknown keys, invalid settings, duplicate IDs/sources and missing/private references fail validation before a save writes bytes.
+The other item shapes are `{id, type: "article", article, text?, picture?, pictureStyle?}`, `{id, type: "album", album, picture?, pictureStyle?}` and `{id, type: "image", media, pictureStyle?}`. `picture` is a public image media ID; `pictureStyle` uses the shared display/background/rounded/shadow contract, overriding carousel values only where present. Unknown keys, invalid settings, duplicate IDs/sources and missing/private references fail validation before a save writes bytes.
 
-- A saved page/album pick can wait while its source is a draft or temporarily unplaced; only published, open, public sources render. A page without a lead picture or an album without a cover is also waiting. Edit mode says why. Republishing/restoring makes it return in the same position.
+- A saved page/album pick can wait while its source is a draft or temporarily unplaced; only published, open, public sources render. A page/album without an eligible resolved slide picture is also waiting. Edit mode says why. Republishing/restoring makes it return in the same position. Explicit picture overrides must be eligible even while the carousel is disabled.
 - A picture must be from the public library with publishable visibility and alt text (or intentionally decorative). A page/album cover is checked by the same public-media boundary. Dark versions and picture focus/display settings travel with the image.
 - Deleting a referenced resource is refused by the content check; the error tells the owner to remove the highlight first. Making it private is likewise refused rather than publishing the reference. Media usage reports include highlighted images.
 - No private page identifiers, titles, pictures or excerpts go in public markup. No runtime GitHub data fetching is added.
@@ -156,20 +172,22 @@ The article `Carousel` is extended with a trusted render-function slot, called w
 | HC8 | Existing behavior and build safety | Affected unit suites, types, production build/budgets/leak check, existing carousel regressions; no new dependency or live service call |
 | HC9 | Documented and local | This spec and evidence agree with the build; content/editor docs linked; clean scoped local work, no push or deployment |
 | HC10 | Adding is choosing by seeing (§2.1) | Unit cases for the kinds, counts, order, search, chosen source and fix links. Editor E2E: filter and search, preview of each kind with its details, a waiting source's reason and fix link, an added source going to its slide, adding a page with its excerpt from the preview, back keeping the kind and search, reload by address, the first draw without the sources' pictures, and axe in both themes at 360 px. Screenshots of both steps in light and dark |
+| HC11 | Independent representative pictures (U10 to U12) | Units for automatic precedence/body order, invalid explicit images even disabled, usage guards, draft/placement gates and style inheritance including false. Fixture E2E for choose/upload on add and edit, save/reopen, return to automatic/inherited settings, exact home picture/style and unchanged source. Affected editor screenshots in both themes |
 
 ## 6. As-built evidence
 
-Built locally on `feature/home-highlights-carousel`. The owner configuration contains GitHub only; the mixed examples are made-up library stories and isolated test fixtures. No push or deployment is authorised.
+Built locally on `feature/home-highlights-carousel`, with independent representative pictures added on `feature/highlight-picture-controls`. The mixed examples are made-up library stories and isolated test fixtures; this extension does not change the owner's content. No push or deployment is authorised.
 
 | Gate | Evidence |
 |---|---|
 | HC1, HC2 | `highlights.test.ts`, `editorHighlights.test.ts`: all item kinds/options, exact maximum, duplicate IDs/sources, verbatim excerpts, missing/private sources, delete/access transitions, derived media usage, alt text and degraded dev loading. The actual fixture home excludes draft pages/albums, restores them on republish, and hides empty/disabled highlights without bringing back the planet picture. |
 | HC3, HC4 | Twelve public browser cases passed across `highlights.spec.ts`, `contributions.spec.ts` and the affected `site.spec.ts` carousel cases. The mixed story uses the existing article carousel; the editor fixture checks repository-resolved lead/cover, exact excerpt, canonical links and the full-image lightbox. |
-| HC5 | Rebuilt as list and details on 24 October 2026 ([list and details](../editor/list-and-details.md)): the carousel settings, Add slide and the slides in the list, the chosen one in the details, every action saved on its own. Five `editor-highlights.spec.ts` cases passed on the rebuilt screen: add all four kinds, the excerpt, Move up and Move down with the ends disabled and the focus kept, settings, reopen by address, the two-press remove choosing the slide that took its place, a refused excerpt keeping its words, clean cross-tab updates, dirty input kept through a 409, public resolution, no image on a slide's details, axe in both themes at 360 px. Add slide's own flow is HC10. |
+| HC5 | Rebuilt as list and details on 24 October 2026 ([list and details](../editor/list-and-details.md)): the carousel settings, Add slide and the slides in the list, the chosen one in the details, every action saved on its own. Five `editor-highlights.spec.ts` cases passed on the rebuilt screen: add all four kinds, the excerpt, Move up and Move down with the ends disabled and the focus kept, settings, reopen by address, the two-press remove choosing the slide that took its place, a refused excerpt keeping its words, clean cross-tab updates, dirty input kept through a 409, public resolution, axe in both themes at 360 px. HC11 extends the details to prepare only the chosen slide's representative picture, never the whole library. Add slide's own flow is HC10. |
 | HC6 | Existing GitHub touch/tumble and reduced-motion tests passed inside the new home carousel; nested chart keys do not change slides, focused track keys do, and offscreen contents are inert. Axe passes in both themes, with public reflow at 320 px and editor reflow at 390 px. |
 | HC7 | The rebuild (24 October 2026) updated, on purpose, the HighlightsManager, RecommendationsManager, AlbumList, ListPane, ListLink and DetailPane story baselines; each was reviewed in both themes. Before it, the four affected visual groups passed during intentional baseline capture. All 38 added/changed images were reviewed: mixed carousel, cards and editor parts in both themes, including phone; only the two home phone baselines changed. Existing carousel examples retained their order and baselines. |
 | HC8 | 677 affected unit tests passed; the full Astro type check passed with existing hints only. `build-parity.mjs` passed both production builds, bundle budgets and sealed-output leak checks: 1,465 identical files, matching sealed shapes, only the expected docs difference. Landing eager JavaScript is 16.6 KB gzip; game/gate budgets remain unchanged. |
 | HC9 | This page, the content model and editor screen catalogue describe the implementation. No dependency or live service call was added. The work remains local. |
 | HC10 | Built on 24 October 2026 (§2.1): SlideSources and SlidePreview parts with stories, the rules pure in `model/highlights.ts` (kinds, counts, order, search, the chosen source, fix links, facts) with unit cases. Six `editor-highlights.spec.ts` cases pass on the new flow, among them: a kind and a search narrowing in place and kept in the address; a preview of each kind (the chart, a page, an album, a picture) with its details; a waiting page's reason and its Edit page link; a page added with its excerpt from the preview; an invented excerpt refused with the preview and its words kept; Back and the browser's back keeping the kind and search; a reload by address; a source that's already a slide going to it; no picture in the step's first HTML; axe in both themes at 360 px on a slide, the sources and a preview. On the owner's content, 179 sources draw at once and their pictures fill in about 0.6 s after the step opens (A2's 2 s met). Dark versions of pictures follow the theme on the tiles. After the design system review: each tile is a link to its preview (or to the slide it already is), named by its name and described by its status line, so it can open in a new tab; a tile focused by Back keeps the focus when the pictures arrive; the kind toggles' focus ring shows in full inside their scroller; a picture that couldn't be drawn says so and how to try again. |
+| HC11 | Built on 26 October 2026 (§2.2): 566 affected content, editor and design-system unit cases passed; Astro check reported no errors or warnings. All seven highlight editor E2Es passed, including automatic body-picture selection without a lead, independent selection on Add slide, live preview, per-slide presentation, save/reopen, exact home output, reset and unchanged source bytes. The upload regression adds 41 preceding fixture images, proving selection beyond the first 40-card picker page. After correcting inherited controls' hidden state, the picture workflow and phone accessibility cases passed again. Intentional screenshot capture passed all three affected story groups (HighlightsManager, SlidePreview and SlidePicture); all 53 changed/new images were reviewed in both themes, with enlarged picture-control captures. The design-system scoreboard meets all 18 targets. |
 
-Deliberately not run: the unrelated full game/editor suites and performance benchmark. This change uses existing carousel and input infrastructure; the focused existing carousel, GitHub and editor cases cover its behavior.
+For HC11, deliberately not run: full suites, the performance benchmark, production verification and build parity. No dependency, build or integration changed; affected units, types, fixture E2Es, the visual test build's sealing/leak check and scoped story captures cover this local extension. The earlier HC8 production/parity evidence belongs to the original carousel change, not this extension.

@@ -26,6 +26,8 @@ import DetailPane from '../kit/DetailPane.astro';
 import PlainList from '../kit/PlainList.astro';
 import Form from '../kit/Form.astro';
 import IssueNote from '../kit/IssueNote.astro';
+import SlidePicture from '../kit/SlidePicture.astro';
+import type { Thumb } from '../model/inspectorFields';
 import { HIGHLIGHT_MAX, settingsLine, slideIcon, slideLine, type Highlights, type HighlightChoice, type HighlightDetail } from '../model/highlights';
 
 interface Props {
@@ -39,9 +41,11 @@ interface Props {
   details: Record<string, HighlightDetail>;
   /** What the details show: a slide's ID, `new` (Add slide) or `settings` (the carousel's). */
   selected: string;
+  /** The selected slide's resolved picture, prepared without decoding the whole library. */
+  thumb?: Thumb;
 }
 
-const { highlights: h, version, choices, details, selected } = Astro.props;
+const { highlights: h, version, choices, details, selected, thumb } = Astro.props;
 const index = h.items.findIndex((i) => i.id === selected);
 const slide = index >= 0 ? h.items[index] : undefined;
 const mode = selected === 'settings' ? 'settings' : slide ? 'slide' : 'new';
@@ -120,12 +124,13 @@ const state = JSON.stringify({ highlights: h, version, choices, selected: slide?
           <Form gap="xl" data-highlights-slide="" labelledby={TITLE}>
             <section class="part" aria-labelledby="highlights-source">
               <Heading level={3} size="h4" id="highlights-source">Source</Heading>
-              <Text variant="ui">Slide {index + 1} of {h.items.length}. Its title and pictures come from its source, so change them there.</Text>
+              <Text variant="ui">Slide {index + 1} of {h.items.length}. Its title stays linked to its source. Its picture can be chosen independently.</Text>
               {slide.type === 'article' && <TextField label="Page excerpt" name="excerpt" value={slide.text ?? ''} multiline optional maxlength={280} hint="Copy up to 280 characters word for word from the page. Leave it empty to use its summary." />}
             </section>
+            <SlidePicture item={slide} settings={h} thumb={thumb} />
             <IssueNote data-editor-form-issue="" />
             <ActionBar align={slide.type === 'article' ? 'between' : 'start'}>
-              {slide.type === 'article' && <Button variant="primary" type="submit">Save slide</Button>}
+              {slide.type !== 'custom' && <Button variant="primary" type="submit">Save slide</Button>}
               <Button variant="quiet" icon="delete" data-highlight-remove="">Remove slide</Button>
             </ActionBar>
           </Form>

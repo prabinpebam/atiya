@@ -5,7 +5,7 @@ import ContributionHero from '../components/compounds/ContributionHero.astro';
 import HighlightCard from '../components/compounds/HighlightCard.astro';
 import { content, getPlacement, tagsOf } from './repository';
 import { albumMeasureOf, measureOf } from './opening';
-import { CUSTOM_SLIDES, defaultHighlights, visibleHighlights, type HighlightItem } from './highlights';
+import { CUSTOM_SLIDES, defaultHighlights, highlightPresentation, visibleHighlights, type HighlightItem } from './highlights';
 import type { Picture } from './pictures';
 import { slidePicture } from './highlightPictures';
 import { contributionStats } from './github';
@@ -41,6 +41,6 @@ const items: CarouselItem[] = slides.map((s) => s.picture ? { ...s.picture, capt
     const slide = slides[n];
     return slide.item.type === 'custom' && index.github
       ? <ContributionHero data={{ ...index.github, stats: contributionStats(index.github) }} embedded />
-      : slide.picture && <HighlightCard title={slide.title} text={slide.text} href={slide.href} picture={slide.picture} settings={settings} section={slide.section} meta={slide.meta} metaIcon={slide.item.type === 'album' ? 'gallery' : 'duration'} topics={slide.topics} priority={n === 0} />;
+      : slide.picture && <HighlightCard title={slide.title} text={slide.text} href={slide.href} picture={slide.picture} settings={highlightPresentation(settings, slide.item)} section={slide.section} meta={slide.meta} metaIcon={slide.item.type === 'album' ? 'gallery' : 'duration'} topics={slide.topics} priority={n === 0} />;
   }}
 </Carousel>}

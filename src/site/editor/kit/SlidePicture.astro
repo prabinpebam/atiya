@@ -1,0 +1,60 @@
+---
+/**
+ * A highlight's independent picture and presentation, on Add slide and a saved slide's details.
+ * @tier kit
+ * @a11y Labelled fields; choosing uses the page's modal library; inherited settings are hidden.
+ */
+import Button from '../../components/fundamentals/Button.astro';
+import Checkbox from '../../components/fundamentals/Checkbox.astro';
+import Heading from '../../components/fundamentals/Heading.astro';
+import HiddenField from '../../components/fundamentals/HiddenField.astro';
+import Image from '../../components/fundamentals/Image.astro';
+import Select from '../../components/fundamentals/Select.astro';
+import Text from '../../components/fundamentals/Text.astro';
+import ActionBar from '../../components/compounds/ActionBar.astro';
+import { stableId } from '../../design/stableId';
+import { DISPLAYS, type Thumb } from '../model/inspectorFields';
+import { highlightPresentation, type Highlights, type HighlightItem } from '../model/highlights';
+
+interface Props {
+  /** The slide being added or edited. */
+  item: HighlightItem;
+  /** Carousel defaults inherited until the slide has its own settings. */
+  settings: Highlights;
+  /** The resolved picture, if one is available. */
+  thumb?: Thumb;
+}
+const { item, settings, thumb } = Astro.props;
+const custom = item.type === 'custom';
+const media = custom ? '' : item.type === 'image' ? item.media : item.picture ?? '';
+const inherited = custom || !item.pictureStyle;
+const style = highlightPresentation(settings, item);
+const titleId = `slide-picture-${stableId(Astro, 'SlidePicture')}`;
+---
+{!custom && (
+  <section class="slide-picture" data-slide-picture aria-labelledby={titleId}>
+    <Heading level={3} size="h4" id={titleId}>Slide picture</Heading>
+    <Text variant="small" tone="muted">{item.type === 'image' ? 'Choose a library picture or upload one.' : 'Automatic uses a page picture or album cover. Choose another without changing the source.'}</Text>
+    <div class="preview" data-slide-picture-preview data-manual={media ? '' : undefined}>
+      {thumb && <Image src={thumb.thumb} alt="" width={thumb.width} height={thumb.height} ratio="21/9" display="fit" rounded={false} />}
+    </div>
+    <Text variant="small" data-slide-picture-name>{media ? thumb?.alt || 'Chosen picture' : thumb ? 'Automatic picture' : 'No automatic picture yet. Choose one below.'}</Text>
+    <HiddenField name="picture" value={media} />
+    <ActionBar gap="sm">
+      <Button variant="secondary" size="sm" icon="image" data-slide-picture-pick="">Choose picture</Button>
+      {item.type !== 'image' && <Button variant="quiet" size="sm" disabled={!media} data-slide-picture-auto="">Use automatic</Button>}
+    </ActionBar>
+    <Checkbox label="Use carousel picture settings" name="pictureInherit" checked={inherited} data-slide-picture-inherit="" />
+    <div class="options" data-slide-picture-options hidden={inherited}>
+      <Select label="Slide picture display" name="pictureDisplay" value={style.display ?? 'fill'} options={DISPLAYS} />
+      <Checkbox label="Use automatic background" name="pictureBackground" checked={!!style.background} />
+      <Checkbox label="Round picture corners" name="pictureRounded" checked={style.rounded !== false} />
+      <Checkbox label="Show picture shadow" name="pictureShadow" checked={!!style.shadow} />
+    </div>
+  </section>
+)}
+<style>
+  .slide-picture, .options { display: grid; gap: var(--space-4); }
+  .options[hidden] { display: none; }
+  .preview { max-inline-size: var(--size-measure); }
+</style>
