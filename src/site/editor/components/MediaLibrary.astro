@@ -47,6 +47,11 @@ const shown = `${cells.length} ${cells.length === 1 ? 'item' : 'items'}${filter 
     <Select label="Show" size="sm" options={[...LIBRARY_FILTERS]} value={filter} data-library-filter="" />
     <Button variant="secondary" size="sm" icon="link" data-dialog-open={ids.link}>Add link</Button>
   </div>
+  <div class="timeline" data-region="media-grid" data-library-selected={selected ?? ''}>
+    <script is:inline type="application/json" data-library-uses set:html={JSON.stringify(uses).replace(/</g, '\\u003c')} />
+    <Text variant="small" tone="muted">{shown}</Text>
+    <PhotoGrid label={`Your library: ${label}`} cells={cells} days empty={filter === 'all' ? 'Nothing in your library yet: upload in the list view, or add a link' : 'Nothing here under this filter'} />
+  </div>
   <SelectionBar data-library-selbar="">
     <Button size="sm" variant="secondary" icon="collection" data-library-act="album">Add to album</Button>
     <Button size="sm" variant="secondary" icon="calendar" data-library-act="date">Set the date</Button>
@@ -54,11 +59,6 @@ const shown = `${cells.length} ${cells.length === 1 ? 'item' : 'items'}${filter 
     <Button size="sm" variant="secondary" icon="delete" data-library-act="delete">Delete</Button>
     <Button size="sm" variant="quiet" icon="close" data-library-act="clear">Clear selection</Button>
   </SelectionBar>
-  <div class="timeline" data-region="media-grid" data-library-selected={selected ?? ''}>
-    <script is:inline type="application/json" data-library-uses set:html={JSON.stringify(uses).replace(/</g, '\\u003c')} />
-    <Text variant="small" tone="muted">{shown}</Text>
-    <PhotoGrid label={`Your library: ${label}`} cells={cells} days empty={filter === 'all' ? 'Nothing in your library yet: upload in the list view, or add a link' : 'Nothing here under this filter'} />
-  </div>
   <Dialog id={ids.delete} title="Delete from your library?" size="sm">
     <Text variant="ui"><span data-library-delete-words>The selected items will be deleted.</span></Text>
     <Fragment slot="actions">

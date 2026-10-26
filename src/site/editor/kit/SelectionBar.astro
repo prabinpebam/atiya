@@ -1,9 +1,9 @@
 ---
 /**
- * The bar over a grid of things chosen together (an album's items, the library): how many are chosen, then what
+ * The bar under a grid of things chosen together (an album's items, the library): how many are chosen, then what
  * can be done to them all, the screen's own actions ending with Clear selection. Hidden until something is
- * chosen, it keeps its room, so showing it never moves the grid under a double-click; it stays at the top while
- * the grid scrolls.
+ * chosen; it comes after the grid, so showing it never moves the grid under a double-click, and it stays at the
+ * bottom of the view while the grid scrolls under it.
  * @tier kit
  * @a11y A group named by its label (its buttons are Tab stops, so not a toolbar); the count is a polite status.
  * @key Tab moves through its buttons.
@@ -32,20 +32,21 @@ const { label = 'Selected items', shown = false, count = '0 selected', ...rest }
 <style>
   .selection-bar {
     position: sticky;
-    inset-block-start: 0;
+    inset-block-end: var(--space-4);
     z-index: var(--layer-raised);
     display: flex;
     flex-wrap: wrap;
     align-items: center;
     gap: var(--space-2) var(--space-3);
     padding: var(--space-2) var(--space-3);
+    border: var(--border-hairline) solid transparent;
     border-radius: var(--radius-lg);
     background: var(--color-bg-raised);
     box-shadow: var(--shadow-sm);
   }
 
-  /* hidden, it keeps its room: showing it never moves the grid under a double-click */
+  /* hidden, it takes no room: it's under the grid, so nothing above it moves when it shows */
   .selection-bar[hidden] {
-    visibility: hidden;
+    display: none;
   }
 </style>

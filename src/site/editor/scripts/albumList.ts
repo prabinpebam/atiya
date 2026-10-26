@@ -35,7 +35,7 @@ export function initAlbumList(root: HTMLElement, signal: AbortSignal) {
     }
     void task.done();
     saveStatus.saved('Order saved: your own order');
-    // the gallery's entry now says "Your own order"; the focus stays on the moved album's handle
+    // the gallery's entry now says "Your order"; the focus stays on the moved album's handle
     const focus = document.activeElement?.closest('[data-album-row]') ? row.dataset.albumRow : undefined;
     await swapRegions(['album-list']);
     if (focus) document.querySelector<HTMLElement>(`[data-album-list-move="${CSS.escape(focus)}"]`)?.focus();

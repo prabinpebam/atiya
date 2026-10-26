@@ -168,7 +168,9 @@ const note = required ? 'Required' : optional ? 'Optional' : undefined;
     display: block;
   }
 
+  /* a block: inline, a textarea sits on the line's baseline and leaves a gap under it before its hint */
   .input {
+    display: block;
     inline-size: 100%;
     min-block-size: var(--c-control-height-md);
     padding-block: var(--space-2);

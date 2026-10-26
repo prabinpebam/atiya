@@ -256,7 +256,7 @@
   --c-control-border: var(--color-border);
   --c-control-border-hover: var(--color-border-strong);
   --c-control-fill: var(--color-bg-raised);
-  --c-button-radius: var(--radius-pill);
+  --c-button-radius: var(--c-control-radius);
   --c-button-pad-x-sm: var(--space-4);
   --c-button-pad-x-md: var(--space-6);
   --c-button-pad-x-lg: var(--space-8);

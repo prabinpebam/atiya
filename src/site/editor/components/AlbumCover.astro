@@ -2,16 +2,18 @@
 /**
  * An album's cover as its band will look (documentation/gallery/spec.md §9.2, §9.6), at rest: a small band (its
  * 12 columns of square cells kept, its width capped), labelled Automatic (worked out from the cover picture and the
- * album's first items) or Arranged, with Edit cover beside it, which arranges the band in place (AlbumCoverEditor).
+ * album's first items) or Arranged, under its heading, with Edit cover at the head's end, which arranges the band in place (AlbumCoverEditor).
  * It carries the album's pictures and videos as Edit cover draws them, so they're fresh after every save.
  * @tier editor
- * @a11y A labelled group: its pictures are decorative here (they're the album's items, named in the grid), and its
- * label says whether it's automatic or arranged. Edit cover is a button that says what it opens.
+ * @a11y A region named by its heading, Cover; the tag after the heading says whether it's automatic or arranged.
+ * Its pictures are decorative here (they're the album's items, named in the grid). Edit cover is a button that says
+ * what it opens.
  */
 import Image from '../../components/fundamentals/Image.astro';
 import Text from '../../components/fundamentals/Text.astro';
 import Tag from '../../components/fundamentals/Tag.astro';
 import Button from '../../components/fundamentals/Button.astro';
+import SectionHead from '../kit/SectionHead.astro';
 import type { CoverItem } from '../model/cover';
 
 /** A tile of the band, with its thumbnail. */
@@ -49,11 +51,11 @@ const { tiles, arranged, items = [] } = Astro.props;
 const json = JSON.stringify(items).replace(/</g, '\\u003c');
 ---
 
-<section class="cover" aria-label={`Cover, ${arranged ? 'arranged' : 'automatic'}`} data-region="album-cover" data-album-cover="">
-  <div class="cover-head">
-    <Text as="span" variant="label">Cover</Text>
-    <Tag size="sm">{arranged ? 'Arranged' : 'Automatic'}</Tag>
-  </div>
+<section class="cover" aria-labelledby="album-cover-title" data-region="album-cover" data-album-cover="">
+  <SectionHead title="Cover" titleId="album-cover-title">
+    <Tag slot="tags" size="sm">{arranged ? 'Arranged' : 'Automatic'}</Tag>
+    <Button slot="end" variant="secondary" size="sm" icon="crop" disabled={!items.length} data-album-cover-edit="">Edit cover</Button>
+  </SectionHead>
   <div class="cover-body">
     {
       tiles.length ? (
@@ -70,20 +72,19 @@ const json = JSON.stringify(items).replace(/</g, '\\u003c');
         <Text variant="small" tone="muted">The cover fills itself once the album has pictures.</Text>
       )
     }
-    <div class="cover-side">
-      <Text variant="small" tone="muted">
-        {arranged ? 'Arranged by hand. Edit cover to move, resize or swap its tiles, or to go back to the automatic cover.' : 'Worked out from the cover picture and the album’s first items. Select a picture and choose Set as cover, or Edit cover to arrange it yourself.'}
-      </Text>
-      <Button variant="secondary" size="sm" icon="crop" disabled={!items.length} data-album-cover-edit="">Edit cover</Button>
-    </div>
+    <Text variant="small" tone="muted">
+      {arranged ? 'Arranged by hand. Edit cover to move, resize or swap its tiles, or to go back to the automatic cover.' : 'Worked out from the cover picture and the album’s first items. Select a picture and choose Set as cover, or Edit cover to arrange it yourself.'}
+    </Text>
   </div>
   <script is:inline type="application/json" data-cover-items set:html={json} />
 </section>
 
 <style>
+  /* as wide as the words above it, so Edit cover ends where the fields do */
   .cover {
     display: grid;
-    gap: var(--space-2);
+    gap: var(--space-4);
+    max-inline-size: var(--size-measure);
   }
 
   /* hidden while Edit cover arranges it in place */
@@ -91,22 +92,16 @@ const json = JSON.stringify(items).replace(/</g, '\\u003c');
     display: none;
   }
 
-  .cover-head {
-    display: flex;
-    align-items: baseline;
-    gap: var(--space-2);
-  }
-
+  /* the band, then a line on how it's made */
   .cover-body {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: start;
-    gap: var(--space-4);
+    display: grid;
+    justify-items: start;
+    gap: var(--space-2);
   }
 
   /* a small band: its width capped, its cells square, so it reads like the site's at a glance */
   .cover-frame {
-    flex: 1 1 auto;
+    inline-size: 100%;
     max-inline-size: var(--c-editor-album-cover-preview);
     container-type: inline-size;
   }
@@ -122,13 +117,5 @@ const json = JSON.stringify(items).replace(/</g, '\\u003c');
     overflow: hidden;
     border-radius: var(--radius-xs);
     background: var(--color-bg-sunk);
-  }
-
-  .cover-side {
-    display: grid;
-    flex: 1 1 var(--c-editor-thumb);
-    justify-items: start;
-    gap: var(--space-2);
-    max-inline-size: var(--c-editor-inspector);
   }
 </style>

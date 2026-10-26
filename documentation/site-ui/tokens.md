@@ -419,7 +419,7 @@ Every control: fields, buttons, the select, the switch and the slider, and any c
 
 | Token | Value | Resolves to | Use |
 |---|---|---|---|
-| `--c-button-radius` | `var(--radius-pill)` | `62.5rem` |  |
+| `--c-button-radius` | `var(--c-control-radius)` | `0.875rem` | A field's corners, so a button sits beside a select or an input as one family |
 | `--c-button-pad-x-sm` | `var(--space-4)` | `1rem` |  |
 | `--c-button-pad-x-md` | `var(--space-6)` | `1.5rem` |  |
 | `--c-button-pad-x-lg` | `var(--space-8)` | `2rem` |  |

@@ -1,5 +1,5 @@
 /**
- * The library (documentation/gallery/spec.md §9.9), pure: the timeline's months (newest first, "No date" by the
+ * The library (documentation/gallery/spec.md §9.9), pure: the timeline's months (newest first, "Date not set" by the
  * month added), its filters, and what deleting from the library says first (the albums it leaves) or why it's
  * refused (the pages that use it). The Media screen (pages/media.astro) and its script read these.
  */
@@ -62,9 +62,9 @@ export function matchesFilter(e: LibraryEntry, f: LibraryFilter): boolean {
 const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 const monthWords = (day: string) => `${MONTHS[Number(day.slice(5, 7)) - 1] ?? ''} ${day.slice(0, 4)}`.trim();
 
-/** An item's month on the timeline: "March 2026" taken, or "No date, added May 2026". */
+/** An item's month on the timeline: "March 2026" taken, or "Date not set, added May 2026". */
 export function monthGroup(e: Pick<LibraryEntry, 'taken' | 'added'>): string {
-  return e.taken ? monthWords(e.taken) : `No date, added ${monthWords(e.added)}`;
+  return e.taken ? monthWords(e.taken) : `Date not set, added ${monthWords(e.added)}`;
 }
 
 /** The timeline: the items a filter shows, newest taken first, then those without a date, newest added first; each with its month. */

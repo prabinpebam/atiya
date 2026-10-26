@@ -102,7 +102,7 @@ const groups = (['Content', 'Site', 'Checks'] as const)
       <div class="status"><SaveStatus /></div>
       {!SITE_FEATURES.managed && <TestStatus />}
       <div class="tools"><slot name="tools" /></div>
-      <Select label="Colour theme" hideLabel trigger="icon" align="end" options={THEME_OPTIONS} value="system" id="editor-theme" data-editor-theme-switch="" />
+      <div class="theme"><Select label="Colour theme" hideLabel trigger="icon" align="end" options={THEME_OPTIONS} value="system" id="editor-theme" data-editor-theme-switch="" /></div>
       <div class="pending" data-region="editor-pending" data-pending={checking ? undefined : String(pending)} data-pending-checking={checking ? '' : undefined}>
         {screen === 'article' && <span class="remote-status" data-editor-remote-status role="status" aria-live="polite" hidden />}
         {
@@ -231,6 +231,8 @@ const groups = (['Content', 'Site', 'Checks'] as const)
     display: none;
   }
 
+  /* one row of one height on every screen (nothing below it moves between screens); when it's short of
+     room, the statuses' words give way first and their signs stay, never a control */
   .top {
     grid-column: 1 / -1;
     display: flex;
@@ -262,7 +264,11 @@ const groups = (['Content', 'Site', 'Checks'] as const)
   .status {
     display: flex;
     flex: 0 1 auto;
-    min-inline-size: 0;
+    min-inline-size: var(--size-touch);
+  }
+
+  .theme {
+    flex: none;
   }
 
   .tools {

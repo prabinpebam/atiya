@@ -51,7 +51,7 @@ const { gallery, albums, elsewhere, current, setupHref, tilesHref } = Astro.prop
       <span class="new">
         <Button variant="primary" icon="plus" block data-album-list-new="">Add album</Button>
       </span>
-      <IconButton label="Show as tiles" icon="views" variant="secondary" href={tilesHref} />
+      <IconButton label="Show as tiles" icon="views" variant="secondary" shape="square" href={tilesHref} />
     </div>
       {
         albums.length ? (

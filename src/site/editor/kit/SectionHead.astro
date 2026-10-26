@@ -1,0 +1,49 @@
+---
+/**
+ * The head of a section on an editor's detail (an album's Cover, its Pictures and videos): the section's heading,
+ * what it is now beside it (the tags slot: Automatic or Arranged), and the one control that changes the whole
+ * section at the end (the end slot: Edit cover, the order). It keeps a small control's height, so heads with and
+ * without a control line up, and wraps its end under the heading when there's no room.
+ * @tier kit
+ * @a11y An h3 by default, whose id names its section (aria-labelledby on the section).
+ */
+import Heading from '../../components/fundamentals/Heading.astro';
+
+interface Props {
+  /** The section's heading. */
+  title: string;
+  /** The heading's id, which names the section. */
+  titleId: string;
+  /** The heading's level: 3 under a detail's own heading (an h2), 4 a level below. */
+  level?: 3 | 4;
+}
+
+const { title, titleId, level = 3 } = Astro.props;
+---
+
+<div class="section-head">
+  <div class="section-title">
+    <Heading level={level} size="h4" id={titleId}>{title}</Heading>
+    <slot name="tags" />
+  </div>
+  <slot name="end" />
+</div>
+
+<style>
+  .section-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-2) var(--space-4);
+    min-block-size: var(--c-control-height-sm);
+  }
+
+  /* the tag sits on the heading's baseline, as a word beside it would */
+  .section-title {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: var(--space-2);
+  }
+</style>

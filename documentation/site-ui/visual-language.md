@@ -106,8 +106,9 @@ Interface sizes are fixed. Reading and display sizes are fluid: each grows smoot
 
 | Thing | Radius |
 |---|---|
-| Buttons, tags, switches, progress bars, icon buttons, avatars | Pill or round |
-| Text fields, the select's trigger, options | 14 px |
+| Tags, switches, progress bars, icon buttons on their own, avatars | Pill or round |
+| Buttons, segmented controls, text fields, the select's trigger, options | 14 px: a button sits beside a field as one family (pills were changed on 2026-10-27: a pill beside a 14 px field looked like two systems, and long or stacked pills don't wrap well) |
+| Icon buttons in a row of buttons or fields (a toolbar, a list's head) | 14 px (`shape="square"`), so they match their neighbours |
 | Pictures in the text, cards, the dropdown list | 20 px |
 | Feature pictures, the library's canvases | 28 px |
 | A full-bleed picture | Square |

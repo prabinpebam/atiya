@@ -41,7 +41,7 @@
     "c.button.primary-bg-hover": {"v":"var(--color-accent-hover)"},
     "c.button.primary-text": {"v":"var(--color-on-accent)"},
     "c.button.quiet-text": {"v":"var(--color-accent)"},
-    "c.button.radius": {"v":"var(--radius-pill)"},
+    "c.button.radius": {"v":"var(--c-control-radius)"},
     "c.button.secondary-border": {"v":"var(--color-text)"},
     "c.button.secondary-text": {"v":"var(--color-text)"},
     "c.carousel.gap": {"v":"var(--space-8)"},
@@ -492,6 +492,19 @@
     "weight.semibold": {"v":"600"}
   },
   "entries": [
+    {
+      "date": "2026-10-27",
+      "changes": {
+        "c.button.radius": [
+          {
+            "v": "var(--radius-pill)"
+          },
+          {
+            "v": "var(--c-control-radius)"
+          }
+        ]
+      }
+    },
     {
       "date": "2026-10-25",
       "changes": {

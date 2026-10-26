@@ -375,7 +375,7 @@ export const LIBRARY_CELLS: (PhotoCell & { albums: string[]; articles: string[] 
   { ...cell('samples/bridge', bridge, { taken: '2026-05-02', group: 'May 2026', needsAlt: true, alt: '' }), albums: [], articles: [] },
   { ...cell('samples/workshop', workshop, { taken: '2026-04-11', group: 'April 2026', kind: 'drawing' }), albums: [], articles: ['Field notes'] },
   { ...cell('samples/plaza', plaza, { taken: '2026-04-02', group: 'April 2026', private: true }), albums: ['Our trip north'], articles: [] },
-  { ...cell('samples/clip', pond, { group: 'No date, added June 2026', kind: 'embed' }), albums: [], articles: [] },
+  { ...cell('samples/clip', pond, { group: 'Date not set, added June 2026', kind: 'embed' }), albums: [], articles: [] },
 ];
 
 /** The cover band as it stands: a lead picture and three beside it (12 columns). */

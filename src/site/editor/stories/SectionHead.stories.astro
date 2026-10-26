@@ -1,0 +1,21 @@
+---
+import Example from '../../library/Example.astro';
+import SectionHead from '../kit/SectionHead.astro';
+import Tag from '../../components/fundamentals/Tag.astro';
+import Button from '../../components/fundamentals/Button.astro';
+---
+
+<Example title="A heading and its action" description="The section's heading, what it is now beside it, and the control that changes it at the end." layout="block">
+  <SectionHead title="Cover" titleId="story-section-head-cover">
+    <Tag slot="tags" size="sm">Automatic</Tag>
+    <Button slot="end" variant="secondary" size="sm" icon="crop">Edit cover</Button>
+  </SectionHead>
+</Example>
+
+<Example title="Only a heading" description="No tag, no control: it keeps a small control's height, so it lines up with the heads that have one." layout="block">
+  <SectionHead title="Pictures and videos" titleId="story-section-head-items" />
+</Example>
+
+<Example title="A level below" description="level 4: a section inside a section." layout="block">
+  <SectionHead title="Phones" titleId="story-section-head-level" level={4} />
+</Example>

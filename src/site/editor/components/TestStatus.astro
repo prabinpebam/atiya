@@ -23,8 +23,10 @@ import { withBase } from '../../design/meta';
     display: inline-flex;
     gap: var(--space-2);
     align-items: center;
-    min-inline-size: 0;
+    /* squeezed, it keeps its padding, the dot and the icon */
+    min-inline-size: calc(var(--size-touch) + var(--space-3));
     min-block-size: var(--size-touch);
+    overflow: hidden;
     padding: var(--space-1) var(--space-3);
     border-radius: var(--radius-pill);
     color: var(--color-text-muted);
@@ -53,9 +55,16 @@ import { withBase } from '../../design/meta';
     display: inline-flex;
     gap: var(--space-1);
     align-items: center;
+    min-inline-size: 0;
     overflow: hidden;
     color: var(--color-text);
     font-weight: var(--weight-medium);
+  }
+
+  /* on a full top bar the words give way, the dot and the icon stay */
+  [data-t='text'] {
+    min-inline-size: 0;
+    overflow: hidden;
     text-overflow: ellipsis;
   }
 

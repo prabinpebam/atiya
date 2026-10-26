@@ -58,6 +58,21 @@ test.describe('editor: albums: list and details', () => {
     await bar.getByRole('button', { name: 'Clear selection' }).click();
     await expect(bar).toBeHidden();
   });
+
+  test('a cell focused from the keyboard is never under the selection bar', async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 520 });
+    await page.goto('/_edit/albums/fixture-album/');
+    const items = page.locator('[data-album-items] li[data-item]');
+    await items.nth(0).click({ modifiers: ['Control'] });
+    const bar = page.getByRole('group', { name: 'Selected items' });
+    await expect(bar).toBeVisible();
+    await page.keyboard.press('End');
+    const focused = page.locator('[data-album-items] li[data-item]:focus');
+    await expect(focused).toHaveCount(1);
+    const cell = (await focused.boundingBox())!;
+    const under = (await bar.boundingBox())!;
+    expect(cell.y + cell.height).toBeLessThanOrEqual(under.y);
+  });
 });
 
 const POSTERS = join(process.cwd(), 'tests', 'fixtures', 'gallery', 'content', 'media', 'articles', 'fixture-album');

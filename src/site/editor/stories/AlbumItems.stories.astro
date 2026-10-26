@@ -4,10 +4,14 @@ import AlbumItems from '../components/AlbumItems.astro';
 import { PHOTO_CELLS } from './samples';
 ---
 
-<Example title="The album's items" description="The grid in date order, with the selection bar that shows when something is selected." layout="block">
-  <AlbumItems title="Kitchen garden" cells={PHOTO_CELLS} days />
+<Example title="The album's items" description="Its heading with the order, then the grid under the days taken; the selection bar shows under it when something is selected." layout="block">
+  <AlbumItems title="Kitchen garden" cells={PHOTO_CELLS} order="oldest" />
+</Example>
+
+<Example title="Newest first" description="The days taken, latest first." layout="block">
+  <AlbumItems title="Kitchen garden" cells={PHOTO_CELLS} order="newest" />
 </Example>
 
 <Example title="In your own order" description="No day headers." layout="block">
-  <AlbumItems title="Kitchen garden" cells={PHOTO_CELLS} days={false} />
+  <AlbumItems title="Kitchen garden" cells={PHOTO_CELLS} order="custom" />
 </Example>

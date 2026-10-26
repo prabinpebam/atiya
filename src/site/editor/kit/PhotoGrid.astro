@@ -51,7 +51,7 @@ export interface PhotoCell {
   cover?: boolean;
   /** Its library item's ID (for its name when it has no alt text). */
   media?: string;
-  /** Its header in place of the day taken (the library's months: "March 2026", "No date, added May 2026"). */
+  /** Its header in place of the day taken (the library's months: "March 2026", "Date not set, added May 2026"). */
   group?: string;
   /** It's in private-pages/ (the library tags it Private). */
   private?: boolean;
@@ -62,7 +62,7 @@ interface Props {
   label: string;
   /** The items in the order shown. */
   cells: PhotoCell[];
-  /** Headers for the days taken (a sorted album). */
+  /** Headers for the days taken (a sorted album); none while no item has a date. */
   days?: boolean;
   /** The words of the empty album's drop target. */
   empty?: string;
@@ -72,7 +72,9 @@ interface Props {
   [data: `data-${string}`]: string | undefined;
 }
 
-const { label, cells, days = false, empty = 'Drop pictures and videos here, or add from your library', add, ...rest } = Astro.props;
+const { label, cells, days: daysAsked = false, empty = 'Drop pictures and videos here, or add from your library', add, ...rest } = Astro.props;
+// headers only when some item has a day (or a group): one "Date not set" over every item says nothing
+const days = daysAsked && cells.some((c) => c.group ?? c.taken);
 const id = `photo-grid-${stableId(Astro, 'PhotoGrid')}`;
 const BADGE: Partial<Record<PhotoCell['kind'], { icon: 'video' | 'link' | 'animated' | 'pen'; words: string }>> = {
   video: { icon: 'video', words: 'Video' },
@@ -80,7 +82,7 @@ const BADGE: Partial<Record<PhotoCell['kind'], { icon: 'video' | 'link' | 'anima
   animated: { icon: 'animated', words: 'Animation' },
   drawing: { icon: 'pen', words: 'Drawing' },
 };
-const dayWords = (d?: string) => (d ? new Date(`${d}T12:00:00Z`).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' }) : 'No date');
+const dayWords = (d?: string) => (d ? new Date(`${d}T12:00:00Z`).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' }) : 'Date not set');
 // the days (or the groups the cells name) in the order shown: a run of items in the same one is one group
 const groups: { day?: string; label?: string; cells: PhotoCell[] }[] = [];
 for (const c of cells) {
@@ -245,6 +247,8 @@ const first = cells[0]?.id;
     border-radius: var(--radius-sm);
     background: var(--color-bg-sunk);
     cursor: default;
+    /* a cell focused from the keyboard scrolls clear of the selection bar stuck at the view's bottom */
+    scroll-margin-block-end: calc(var(--c-control-height-sm) + var(--space-12));
   }
 
   .cell[data-kind='text'] {

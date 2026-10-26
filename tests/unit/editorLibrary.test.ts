@@ -6,7 +6,7 @@ const entry = (id: string, more: Partial<LibraryEntry> = {}): LibraryEntry => ({
 describe('the library (gallery spec §9.9)', () => {
   it('groups by the month taken, and those without a date by the month added', () => {
     expect(monthGroup({ taken: '2026-03-14', added: '2026-05-01' })).toBe('March 2026');
-    expect(monthGroup({ added: '2026-05-01' })).toBe('No date, added May 2026');
+    expect(monthGroup({ added: '2026-05-01' })).toBe('Date not set, added May 2026');
   });
 
   it('puts the newest taken first, then those without a date, newest added first', () => {
@@ -18,7 +18,7 @@ describe('the library (gallery spec §9.9)', () => {
       entry('mid', { taken: '2026-02-11' }),
     ]);
     expect(shown.map((e) => e.id)).toEqual(['new', 'mid', 'old', 'undated-late', 'undated-early']);
-    expect(shown.map((e) => e.group)).toEqual(['April 2026', 'February 2026', 'December 2025', 'No date, added June 2026', 'No date, added January 2026']);
+    expect(shown.map((e) => e.group)).toEqual(['April 2026', 'February 2026', 'December 2025', 'Date not set, added June 2026', 'Date not set, added January 2026']);
   });
 
   it('filters by albums, alt text, privacy and kind', () => {

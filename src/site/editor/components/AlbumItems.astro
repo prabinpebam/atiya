@@ -1,34 +1,48 @@
 ---
 /**
- * The album editor's items (documentation/gallery/spec.md §9.2 to §9.4): the selection bar, shown while anything
- * is selected, and the grid of every item in the order shown (the kit's PhotoGrid), ending in an Add tile. Files
- * dropped anywhere on the album editor are added: where they were dropped when that's on an item, else in their
- * places. It hosts the album editor's script, which selects, orders, adds and saves.
+ * The album editor's items (documentation/gallery/spec.md §9.2 to §9.4): a section under its heading, Pictures and
+ * videos, with the album's order (oldest first, newest first or your own) at the head's end; then the grid of every
+ * item in the order shown (the kit's PhotoGrid), ending in an Add tile; then the selection bar, shown while
+ * anything is selected. Files dropped anywhere on the album editor are added: where they were dropped when that's
+ * on an item, else in their places. It hosts the album editor's script, which selects, orders, adds and saves.
  * @tier editor
- * @a11y The selection bar is a labelled toolbar that says how many are selected (a polite live region); every drag
- * has a button and a key: Move to start, Move to end, and Alt with an arrow key.
+ * @a11y A region named by its heading. The selection bar is a labelled group that says how many are selected (a
+ * polite live region); every drag has a button and a key: Move to start, Move to end, and Alt with an arrow key.
  * @key Ctrl+A: selects every item
  * @key Escape: clears the selection
  * @key Alt+Arrow: moves the focused item, or the selection, one place
  * @key Delete: removes the selection from the album (it stays in the library)
  */
 import Button from '../../components/fundamentals/Button.astro';
+import Select from '../../components/fundamentals/Select.astro';
 import PhotoGrid, { type PhotoCell } from '../kit/PhotoGrid.astro';
 import SelectionBar from '../kit/SelectionBar.astro';
+import SectionHead from '../kit/SectionHead.astro';
 
 interface Props {
   /** The album's title, to name the grid. */
   title: string;
   /** The items in the order shown. */
   cells: PhotoCell[];
-  /** A sorted album: headers for the days taken. */
-  days: boolean;
+  /** The album's order: by the date taken, or your own. */
+  order: 'oldest' | 'newest' | 'custom';
 }
 
-const { title, cells, days } = Astro.props;
+const { title, cells, order } = Astro.props;
+const ORDERS = [
+  { value: 'oldest', label: 'Oldest first' },
+  { value: 'newest', label: 'Newest first' },
+  { value: 'custom', label: 'Your order' },
+];
 ---
 
-<div class="items" data-album-items>
+<section class="items" aria-labelledby="album-items-title" data-album-items>
+  <SectionHead title="Pictures and videos" titleId="album-items-title">
+    <Fragment slot="end"><Select label="Order" hideLabel size="sm" options={ORDERS} value={order} data-album-sort="" /></Fragment>
+  </SectionHead>
+  <div data-region="album-grid">
+    <PhotoGrid label={`Items in ${title}`} cells={cells} days={order !== 'custom'} add="Add" />
+  </div>
   <SelectionBar data-album-selbar="">
     <span data-album-only="cover" hidden><Button size="sm" variant="secondary" icon="image" data-album-act="cover">Set as cover</Button></span>
     <span data-album-only="text" hidden><Button size="sm" variant="secondary" icon="edit" data-album-act="text">Edit the words</Button></span>
@@ -41,10 +55,7 @@ const { title, cells, days } = Astro.props;
     <Button size="sm" variant="secondary" icon="delete" data-album-act="remove">Remove from album</Button>
     <Button size="sm" variant="quiet" icon="close" data-album-act="clear">Clear selection</Button>
   </SelectionBar>
-  <div data-region="album-grid">
-    <PhotoGrid label={`Items in ${title}`} cells={cells} days={days} add="Add" />
-  </div>
-</div>
+</section>
 
 <script>
   import { each } from '../../scripts/page';
@@ -56,6 +67,6 @@ const { title, cells, days } = Astro.props;
 <style>
   .items {
     display: grid;
-    gap: var(--space-3);
+    gap: var(--space-4);
   }
 </style>

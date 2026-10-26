@@ -16,6 +16,12 @@ Each still works (the build keeps writing its custom property), but nothing may 
 | `--c-bento-picture-band` | `5.5rem` | Bento's pictures now take their tile's width, shown whole: no replacement |
 | `--c-bento-picture-side` | `6rem` | Bento's pictures now take their tile's width, shown whole: no replacement |
 
+## 27 October 2026
+
+**Changed in value** (1)
+
+- `--c-button-radius`: `var(--radius-pill)` → `var(--c-control-radius)`
+
 ## 25 October 2026
 
 **Added** (8)

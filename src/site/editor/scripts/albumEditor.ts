@@ -156,7 +156,7 @@ export function initAlbumEditor(root: HTMLElement, signal: AbortSignal) {
     setHidden('[data-album-only="text"]', !one || !('text' in one));
   };
   const setHidden = (sel: string, hidden: boolean) => root.querySelectorAll<HTMLElement>(sel).forEach((b) => (b.hidden = hidden));
-  /** The header's tools follow the album: Undo, Redo, Sort, Publish. */
+  /** The tools follow the album: the header's Undo, Redo and Publish, and the order in the items' head. */
   const paintTools = () => {
     const undo = document.querySelector<HTMLButtonElement>('[data-album-undo]');
     const redo = document.querySelector<HTMLButtonElement>('[data-album-redo]');

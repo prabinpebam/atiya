@@ -19,7 +19,6 @@ import AlbumBand from '../../components/compounds/AlbumBand.astro';
 import IconButton from '../../components/fundamentals/IconButton.astro';
 import Button from '../../components/fundamentals/Button.astro';
 import Link from '../../components/fundamentals/Link.astro';
-import Select from '../../components/fundamentals/Select.astro';
 import Tag from '../../components/fundamentals/Tag.astro';
 import Text from '../../components/fundamentals/Text.astro';
 import { load, mediaCards, mediaCount, mediaSummary } from '../server/screens';
@@ -95,11 +94,6 @@ const pickerPaging = loaded.ok
 
 const state = { id, key, version: doc.version, album, facts: grid.facts, owner };
 const json = JSON.stringify(state).replace(/</g, '\\u003c');
-const ORDERS = [
-  { value: 'oldest', label: 'Oldest first' },
-  { value: 'newest', label: 'Newest first' },
-  { value: 'custom', label: 'Your own order' },
-];
 ---
 
 <EditorLayout title={album.title} screen="album" heading="Albums" intro={ALBUMS_LIST_INTRO}>
@@ -112,8 +106,6 @@ const ORDERS = [
     <IconButton label="Undo" icon="undo" size="sm" data-album-undo="" />
     <IconButton label="Redo" icon="redo" size="sm" data-album-redo="" />
     <Button variant="primary" size="sm" icon="plus" data-dialog-open="album-add">Add</Button>
-    <Select label="Order" hideLabel size="sm" options={ORDERS} value={album.order ?? 'oldest'} data-album-sort="" />
-    <Button variant="secondary" size="sm" icon="crop" data-album-cover-edit="">Edit cover</Button>
     <IconButton label="Preview in the gallery" icon="preview" size="sm" data-album-preview-open="" />
     <IconButton label="Settings" icon="settings" size="sm" data-dialog-open="album-settings" />
     {path && <IconButton label="View on the site" icon="external" size="sm" href={path} />}
@@ -132,7 +124,7 @@ const ORDERS = [
         <AlbumWords title={album.title} summary={album.summary} description={album.description} count={count} dates={dates} needAlt={needAlt} status={published ? 'published' : 'draft'} />
         <AlbumCover tiles={band.tiles} arranged={band.arranged} items={band.items} />
         <AlbumCoverEditor square={square} />
-        <AlbumItems title={album.title} cells={grid.cells} days={(album.order ?? 'oldest') !== 'custom'} />
+        <AlbumItems title={album.title} cells={grid.cells} order={album.order ?? 'oldest'} />
         <Dialog id="album-add" title="Add to the album">
           <AlbumAdd kind="files" />
         </Dialog>

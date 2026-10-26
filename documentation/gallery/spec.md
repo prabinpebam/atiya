@@ -785,22 +785,23 @@ Albums are made and kept the way a photo app keeps them: a screen of every album
 <figure class="slate-figure" data-diagram="gallery-editor">
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 700" role="img" aria-labelledby="ga-editor__title ga-editor__desc" preserveAspectRatio="xMidYMid meet" data-slate-svg-motion="viewport" data-slate-safe-margin="24">
 <title id="ga-editor__title">The album editor</title>
-<desc id="ga-editor__desc">The album editor, from top to bottom. The header holds the album's title and its actions: Add, Sort, Edit cover, Settings, Preview and Publish. Below it, the album's title, short description and introduction are typed in place, with a line of facts: the count, the span of dates, and how many pictures need alt text, with Review. Then the cover as its band will look, marked Automatic, with Set as cover and Edit cover as the ways to change it. A selection bar shows while items are selected, with what they can do. Below it, every item is in a grid of thumbnails in the order shown, some selected, with a text card across the grid between two rows. Beside the grid, the viewer shows one item large with its words to edit: caption, description, alt text with Suggest, date taken and place, downloads, and the other albums it's in.</desc>
+<desc id="ga-editor__desc">The album editor, from top to bottom. The header holds the album's title and its actions: Add, Preview, Settings and Publish. Below it, the album's name as the heading, with a line of facts under it: draft or published, the count, the span of dates, and how many pictures need alt text, with Review; then its title, short description and introduction, typed in place. Then the Cover section: its heading marked Automatic, with Edit cover at the heading's end, and the cover as its band will look, with Set as cover as the other way to change it. Then the Pictures and videos section: its heading with the album's order at the end, and every item in a grid of thumbnails in that order, some selected, with a text card across the grid between two rows. Beside the grid, the viewer shows one item large with its words to edit: caption, description, alt text with Suggest, date taken and place, downloads, and the other albums it's in. A selection bar shows under the grid while items are selected, with what they can do.</desc>
 <g id="ga-editor__frame" data-slate-svg-step="1" data-slate-svg-effect="fade-rise">
 <rect id="ga-editor__body-1" x="40" y="40" width="920" height="620" rx="16" fill="var(--color-neutral-bg-1)" stroke="var(--color-neutral-stroke-1)" stroke-width="1.5" />
 <rect id="ga-editor__body-2" x="56" y="56" width="888" height="44" rx="10" fill="var(--color-neutral-bg-1)" stroke="var(--color-neutral-stroke-2)" stroke-width="1.5" />
 <text x="72" y="84" text-anchor="start" font-family="Segoe UI, system-ui, -apple-system, sans-serif" fill="var(--color-neutral-fg-1)" font-size="15" font-weight="600" data-slate-fit-target="ga-editor__body-2" data-slate-fit-padding="16">Summer sketches</text>
-<text x="400" y="84" text-anchor="start" font-family="Segoe UI, system-ui, -apple-system, sans-serif" fill="var(--color-neutral-fg-2)" font-size="13" data-slate-fit-target="ga-editor__body-2" data-slate-fit-padding="16">Add · Sort · Edit cover · Settings · Preview · Publish</text>
+<text x="560" y="84" text-anchor="start" font-family="Segoe UI, system-ui, -apple-system, sans-serif" fill="var(--color-neutral-fg-2)" font-size="13" data-slate-fit-target="ga-editor__body-2" data-slate-fit-padding="16">Add · Preview · Settings · Publish</text>
 </g>
 <g id="ga-editor__words" data-slate-svg-step="2" data-slate-svg-effect="fade-rise">
 <rect id="ga-editor__body-3" x="56" y="112" width="888" height="84" rx="14" fill="var(--color-neutral-bg-2)" stroke="var(--color-neutral-stroke-2)" stroke-width="1.5" />
-<text x="72" y="140" text-anchor="start" font-family="Segoe UI, system-ui, -apple-system, sans-serif" fill="var(--color-neutral-fg-1)" font-size="17" font-weight="600" data-slate-fit-target="ga-editor__body-3" data-slate-fit-padding="16">Title, short description and introduction, typed in place</text>
-<text x="72" y="164" text-anchor="start" font-family="Segoe UI, system-ui, -apple-system, sans-serif" fill="var(--color-neutral-fg-2)" font-size="13" data-slate-fit-target="ga-editor__body-3" data-slate-fit-padding="16">Each saves as it's typed</text>
-<text x="72" y="186" text-anchor="start" font-family="Segoe UI, system-ui, -apple-system, sans-serif" fill="var(--color-neutral-fg-2)" font-size="13" data-slate-fit-target="ga-editor__body-3" data-slate-fit-padding="16">21 items · March to May 2026 · 7 need alt text · Review</text>
+<text x="72" y="140" text-anchor="start" font-family="Segoe UI, system-ui, -apple-system, sans-serif" fill="var(--color-neutral-fg-1)" font-size="17" font-weight="600" data-slate-fit-target="ga-editor__body-3" data-slate-fit-padding="16">Summer sketches</text>
+<text x="72" y="164" text-anchor="start" font-family="Segoe UI, system-ui, -apple-system, sans-serif" fill="var(--color-neutral-fg-2)" font-size="13" data-slate-fit-target="ga-editor__body-3" data-slate-fit-padding="16">Draft · 21 items · March to May 2026 · 7 need alt text · Review</text>
+<text x="72" y="186" text-anchor="start" font-family="Segoe UI, system-ui, -apple-system, sans-serif" fill="var(--color-neutral-fg-2)" font-size="13" data-slate-fit-target="ga-editor__body-3" data-slate-fit-padding="16">Title, short description and introduction, each saved as it's typed</text>
 </g>
 <g id="ga-editor__cover" data-slate-svg-step="3" data-slate-svg-effect="fade-rise">
 <rect id="ga-editor__body-4" x="56" y="208" width="888" height="150" rx="14" fill="var(--color-neutral-bg-2)" stroke="var(--color-neutral-stroke-2)" stroke-width="1.5" />
 <text x="72" y="236" text-anchor="start" font-family="Segoe UI, system-ui, -apple-system, sans-serif" fill="var(--color-neutral-fg-1)" font-size="17" font-weight="600" data-slate-fit-target="ga-editor__body-4" data-slate-fit-padding="16">Cover · Automatic</text>
+<text x="820" y="236" text-anchor="start" font-family="Segoe UI, system-ui, -apple-system, sans-serif" fill="var(--color-neutral-fg-2)" font-size="13" data-slate-fit-target="ga-editor__body-4" data-slate-fit-padding="16">Edit cover</text>
 <rect id="ga-editor__body-5" x="72" y="248" width="260" height="96" rx="10" fill="var(--color-brand-bg)" />
 <text x="88" y="280" text-anchor="start" font-family="Segoe UI, system-ui, -apple-system, sans-serif" fill="var(--color-on-brand)" font-size="17" font-weight="600" data-slate-fit-target="ga-editor__body-5" data-slate-fit-padding="16">Lead</text>
 <text x="88" y="302" text-anchor="start" font-family="Segoe UI, system-ui, -apple-system, sans-serif" fill="var(--color-on-brand)" font-size="13" data-slate-fit-target="ga-editor__body-5" data-slate-fit-padding="16">The cover picture</text>
@@ -808,36 +809,38 @@ Albums are made and kept the way a photo app keeps them: a screen of every album
 <rect id="ga-editor__body-7" x="472" y="248" width="124" height="44" rx="8" fill="var(--color-neutral-bg-1)" stroke="var(--color-neutral-stroke-1)" stroke-width="1.5" />
 <rect id="ga-editor__body-8" x="340" y="300" width="124" height="44" rx="8" fill="var(--color-neutral-bg-1)" stroke="var(--color-neutral-stroke-1)" stroke-width="1.5" />
 <rect id="ga-editor__body-9" x="472" y="300" width="124" height="44" rx="8" fill="var(--color-neutral-bg-1)" stroke="var(--color-neutral-stroke-1)" stroke-width="1.5" />
-<text x="620" y="280" text-anchor="start" font-family="Segoe UI, system-ui, -apple-system, sans-serif" fill="var(--color-neutral-fg-2)" font-size="13" data-slate-fit-target="ga-editor__body-4" data-slate-fit-padding="16">Set as cover on any item,</text>
-<text x="620" y="302" text-anchor="start" font-family="Segoe UI, system-ui, -apple-system, sans-serif" fill="var(--color-neutral-fg-2)" font-size="13" data-slate-fit-target="ga-editor__body-4" data-slate-fit-padding="16">or Edit cover to arrange it</text>
+<text x="620" y="302" text-anchor="start" font-family="Segoe UI, system-ui, -apple-system, sans-serif" fill="var(--color-neutral-fg-2)" font-size="13" data-slate-fit-target="ga-editor__body-4" data-slate-fit-padding="16">Or Set as cover on any item</text>
 </g>
-<g id="ga-editor__selection" data-slate-svg-step="4" data-slate-svg-effect="fade-rise">
-<rect id="ga-editor__body-10" x="56" y="370" width="888" height="40" rx="10" fill="var(--color-neutral-bg-1)" stroke="var(--color-neutral-stroke-2)" stroke-width="1.5" />
-<text x="72" y="396" text-anchor="start" font-family="Segoe UI, system-ui, -apple-system, sans-serif" fill="var(--color-neutral-fg-1)" font-size="15" font-weight="600" data-slate-fit-target="ga-editor__body-10" data-slate-fit-padding="16">4 selected</text>
-<text x="220" y="396" text-anchor="start" font-family="Segoe UI, system-ui, -apple-system, sans-serif" fill="var(--color-neutral-fg-2)" font-size="13" data-slate-fit-target="ga-editor__body-10" data-slate-fit-padding="16">Add to cover · Set as cover · Add to album · Set the date · Remove from album</text>
+<g id="ga-editor__grid" data-slate-svg-step="4" data-slate-svg-effect="fade-rise">
+<rect id="ga-editor__body-10" x="56" y="370" width="600" height="232" rx="14" fill="var(--color-neutral-bg-2)" stroke="var(--color-neutral-stroke-2)" stroke-width="1.5" />
+<text x="72" y="396" text-anchor="start" font-family="Segoe UI, system-ui, -apple-system, sans-serif" fill="var(--color-neutral-fg-1)" font-size="17" font-weight="600" data-slate-fit-target="ga-editor__body-10" data-slate-fit-padding="16">Pictures and videos</text>
+<text x="500" y="396" text-anchor="start" font-family="Segoe UI, system-ui, -apple-system, sans-serif" fill="var(--color-neutral-fg-2)" font-size="13" data-slate-fit-target="ga-editor__body-10" data-slate-fit-padding="16">Oldest first</text>
+<rect id="ga-editor__body-11" x="72" y="410" width="134" height="64" rx="8" fill="var(--color-brand-bg)" />
+<rect id="ga-editor__body-12" x="214" y="410" width="134" height="64" rx="8" fill="var(--color-brand-bg)" />
+<rect id="ga-editor__body-13" x="356" y="410" width="134" height="64" rx="8" fill="var(--color-neutral-bg-1)" stroke="var(--color-neutral-stroke-1)" stroke-width="1.5" />
+<rect id="ga-editor__body-14" x="498" y="410" width="142" height="64" rx="8" fill="var(--color-neutral-bg-1)" stroke="var(--color-neutral-stroke-1)" stroke-width="1.5" />
+<rect id="ga-editor__body-15" x="72" y="482" width="568" height="36" rx="8" fill="var(--color-neutral-bg-1)" stroke="var(--color-neutral-stroke-1)" stroke-width="1.5" stroke-dasharray="6 5" />
+<text x="88" y="506" text-anchor="start" font-family="Segoe UI, system-ui, -apple-system, sans-serif" fill="var(--color-neutral-fg-2)" font-size="13" data-slate-fit-target="ga-editor__body-15" data-slate-fit-padding="16">Text card: words between pictures</text>
+<rect id="ga-editor__body-16" x="72" y="526" width="134" height="60" rx="8" fill="var(--color-brand-bg)" />
+<rect id="ga-editor__body-17" x="214" y="526" width="134" height="60" rx="8" fill="var(--color-neutral-bg-1)" stroke="var(--color-neutral-stroke-1)" stroke-width="1.5" />
+<rect id="ga-editor__body-18" x="356" y="526" width="134" height="60" rx="8" fill="var(--color-brand-bg)" />
+<rect id="ga-editor__body-19" x="498" y="526" width="142" height="60" rx="8" fill="var(--color-neutral-bg-1)" stroke="var(--color-neutral-stroke-1)" stroke-width="1.5" stroke-dasharray="6 5" />
+<text x="550" y="562" text-anchor="start" font-family="Segoe UI, system-ui, -apple-system, sans-serif" fill="var(--color-neutral-fg-2)" font-size="13" data-slate-fit-target="ga-editor__body-19" data-slate-fit-padding="16">Add</text>
 </g>
-<g id="ga-editor__grid" data-slate-svg-step="5" data-slate-svg-effect="fade-rise">
-<rect id="ga-editor__body-11" x="56" y="422" width="600" height="222" rx="14" fill="var(--color-neutral-bg-2)" stroke="var(--color-neutral-stroke-2)" stroke-width="1.5" />
-<rect id="ga-editor__body-12" x="72" y="438" width="134" height="72" rx="8" fill="var(--color-brand-bg)" />
-<rect id="ga-editor__body-13" x="214" y="438" width="134" height="72" rx="8" fill="var(--color-brand-bg)" />
-<rect id="ga-editor__body-14" x="356" y="438" width="134" height="72" rx="8" fill="var(--color-neutral-bg-1)" stroke="var(--color-neutral-stroke-1)" stroke-width="1.5" />
-<rect id="ga-editor__body-15" x="498" y="438" width="142" height="72" rx="8" fill="var(--color-neutral-bg-1)" stroke="var(--color-neutral-stroke-1)" stroke-width="1.5" />
-<rect id="ga-editor__body-16" x="72" y="518" width="568" height="36" rx="8" fill="var(--color-neutral-bg-1)" stroke="var(--color-neutral-stroke-1)" stroke-width="1.5" stroke-dasharray="6 5" />
-<text x="88" y="542" text-anchor="start" font-family="Segoe UI, system-ui, -apple-system, sans-serif" fill="var(--color-neutral-fg-2)" font-size="13" data-slate-fit-target="ga-editor__body-16" data-slate-fit-padding="16">Text card: words between pictures</text>
-<rect id="ga-editor__body-17" x="72" y="562" width="134" height="66" rx="8" fill="var(--color-brand-bg)" />
-<rect id="ga-editor__body-18" x="214" y="562" width="134" height="66" rx="8" fill="var(--color-neutral-bg-1)" stroke="var(--color-neutral-stroke-1)" stroke-width="1.5" />
-<rect id="ga-editor__body-19" x="356" y="562" width="134" height="66" rx="8" fill="var(--color-brand-bg)" />
-<rect id="ga-editor__body-20" x="498" y="562" width="142" height="66" rx="8" fill="var(--color-neutral-bg-1)" stroke="var(--color-neutral-stroke-1)" stroke-width="1.5" />
+<g id="ga-editor__viewer" data-slate-svg-step="5" data-slate-svg-effect="fade-rise">
+<rect id="ga-editor__body-20" x="672" y="370" width="272" height="232" rx="14" fill="var(--color-neutral-bg-2)" stroke="var(--color-neutral-stroke-2)" stroke-width="1.5" />
+<text x="688" y="398" text-anchor="start" font-family="Segoe UI, system-ui, -apple-system, sans-serif" fill="var(--color-neutral-fg-1)" font-size="17" font-weight="600" data-slate-fit-target="ga-editor__body-20" data-slate-fit-padding="16">The viewer</text>
+<text x="688" y="424" text-anchor="start" font-family="Segoe UI, system-ui, -apple-system, sans-serif" fill="var(--color-neutral-fg-2)" font-size="13" data-slate-fit-target="ga-editor__body-20" data-slate-fit-padding="16">Caption · Description</text>
+<text x="688" y="448" text-anchor="start" font-family="Segoe UI, system-ui, -apple-system, sans-serif" fill="var(--color-neutral-fg-2)" font-size="13" data-slate-fit-target="ga-editor__body-20" data-slate-fit-padding="16">Alt text · Suggest</text>
+<text x="688" y="472" text-anchor="start" font-family="Segoe UI, system-ui, -apple-system, sans-serif" fill="var(--color-neutral-fg-2)" font-size="13" data-slate-fit-target="ga-editor__body-20" data-slate-fit-padding="16">Date taken · Place</text>
+<text x="688" y="496" text-anchor="start" font-family="Segoe UI, system-ui, -apple-system, sans-serif" fill="var(--color-neutral-fg-2)" font-size="13" data-slate-fit-target="ga-editor__body-20" data-slate-fit-padding="16">Downloads</text>
+<text x="688" y="520" text-anchor="start" font-family="Segoe UI, system-ui, -apple-system, sans-serif" fill="var(--color-neutral-fg-2)" font-size="13" data-slate-fit-target="ga-editor__body-20" data-slate-fit-padding="16">Also in Monsoon walks</text>
+<text x="688" y="544" text-anchor="start" font-family="Segoe UI, system-ui, -apple-system, sans-serif" fill="var(--color-neutral-fg-2)" font-size="13" data-slate-fit-target="ga-editor__body-20" data-slate-fit-padding="16">Previous · Next</text>
 </g>
-<g id="ga-editor__viewer" data-slate-svg-step="6" data-slate-svg-effect="fade-rise">
-<rect id="ga-editor__body-21" x="672" y="422" width="272" height="222" rx="14" fill="var(--color-neutral-bg-2)" stroke="var(--color-neutral-stroke-2)" stroke-width="1.5" />
-<text x="688" y="450" text-anchor="start" font-family="Segoe UI, system-ui, -apple-system, sans-serif" fill="var(--color-neutral-fg-1)" font-size="17" font-weight="600" data-slate-fit-target="ga-editor__body-21" data-slate-fit-padding="16">The viewer</text>
-<text x="688" y="476" text-anchor="start" font-family="Segoe UI, system-ui, -apple-system, sans-serif" fill="var(--color-neutral-fg-2)" font-size="13" data-slate-fit-target="ga-editor__body-21" data-slate-fit-padding="16">Caption · Description</text>
-<text x="688" y="500" text-anchor="start" font-family="Segoe UI, system-ui, -apple-system, sans-serif" fill="var(--color-neutral-fg-2)" font-size="13" data-slate-fit-target="ga-editor__body-21" data-slate-fit-padding="16">Alt text · Suggest</text>
-<text x="688" y="524" text-anchor="start" font-family="Segoe UI, system-ui, -apple-system, sans-serif" fill="var(--color-neutral-fg-2)" font-size="13" data-slate-fit-target="ga-editor__body-21" data-slate-fit-padding="16">Date taken · Place</text>
-<text x="688" y="548" text-anchor="start" font-family="Segoe UI, system-ui, -apple-system, sans-serif" fill="var(--color-neutral-fg-2)" font-size="13" data-slate-fit-target="ga-editor__body-21" data-slate-fit-padding="16">Downloads</text>
-<text x="688" y="572" text-anchor="start" font-family="Segoe UI, system-ui, -apple-system, sans-serif" fill="var(--color-neutral-fg-2)" font-size="13" data-slate-fit-target="ga-editor__body-21" data-slate-fit-padding="16">Also in Monsoon walks</text>
-<text x="688" y="596" text-anchor="start" font-family="Segoe UI, system-ui, -apple-system, sans-serif" fill="var(--color-neutral-fg-2)" font-size="13" data-slate-fit-target="ga-editor__body-21" data-slate-fit-padding="16">Previous · Next</text>
+<g id="ga-editor__selection" data-slate-svg-step="6" data-slate-svg-effect="fade-rise">
+<rect id="ga-editor__body-21" x="56" y="612" width="600" height="36" rx="10" fill="var(--color-neutral-bg-1)" stroke="var(--color-neutral-stroke-2)" stroke-width="1.5" />
+<text x="72" y="636" text-anchor="start" font-family="Segoe UI, system-ui, -apple-system, sans-serif" fill="var(--color-neutral-fg-1)" font-size="15" font-weight="600" data-slate-fit-target="ga-editor__body-21" data-slate-fit-padding="16">4 selected</text>
+<text x="180" y="636" text-anchor="start" font-family="Segoe UI, system-ui, -apple-system, sans-serif" fill="var(--color-neutral-fg-2)" font-size="13" data-slate-fit-target="ga-editor__body-21" data-slate-fit-padding="16">Add to cover · Set as cover · Add to album · Set the date · Remove</text>
 </g>
 <text x="40" y="684" text-anchor="start" font-family="Segoe UI, system-ui, -apple-system, sans-serif" fill="var(--color-neutral-fg-2)" font-size="12">Select, drag and open items; every change saves at once and can be undone.</text>
 </svg>
@@ -849,22 +852,23 @@ Albums are made and kept the way a photo app keeps them: a screen of every album
 
 | Part | What it is | Rule |
 |---|---|---|
-| Header | Back to Albums; the album's title; Add; Sort; Edit cover; Settings; Preview; Publish or Unpublish | In Atiya Studio, the app's title bar draws it |
+| Header | Back to Albums; the album's title; Undo and Redo; Add; Preview; Settings; Publish or Unpublish | In Atiya Studio, the app's title bar draws it |
+| Facts | Draft or Published, the counts, the span of dates, Needs alt text with Review | Worked out; under the album's name |
 | The words | The title, the short description and the introduction, typed in place | Each saves as it's typed |
-| Facts | The counts, the span of dates, Needs alt text with Review | Worked out |
-| The cover | The band as it will look, marked Automatic or Arranged | Edit cover arranges it in place |
-| The items | Every item in the order shown, as a grid of thumbnails | Select, drag, open; text cards at full width |
-| Selection bar | What the selected items can do | Shown while anything is selected |
+| The cover | A section headed Cover, marked Automatic or Arranged, with Edit cover; the band as it will look | Edit cover arranges it in place |
+| The items | A section headed Pictures and videos, with the album's order; every item in that order, as a grid of thumbnails | Select, drag, open; text cards at full width |
+| Selection bar | What the selected items can do | Under the grid, kept in view, while anything is selected; takes no room otherwise |
 | The viewer | One item large, with its words to edit | Opened by pressing an item |
 
 </details>
 
 From top to bottom:
-- **The header** (its slots, so Atiya Studio's title bar shows them, editor spec §2): **Back to Albums**, the album's title, then **Add** ([§9.4](#94-adding)), **Sort** (Oldest first, Newest first, Your order, the current one checked), **Edit cover** ([§9.6](#96-the-cover)), **Settings**, **Preview** (the album's page on the dev server) and **Publish** (or **Unpublish** once it's published). The status line follows every save.
+- **The header** (its slots, so Atiya Studio's title bar shows them, editor spec §2): **Back to Albums**, the album's title, **Undo** and **Redo**, then **Add** ([§9.4](#94-adding)), **Preview** (the album's page on the dev server), **Settings**, **View on the site** (once it's published) and **Publish** (or **Unpublish** once it's published). The status line follows every save. The order and Edit cover belong to the sections they change (below), so neither is in the header (the owner's review, 27 October 2026: the header ran out of room, and Edit cover was there twice).
+- **The facts,** under the album's name, worked out: Draft or Published, the counts, the span of dates, the album's weight (with the sealed budget for a private album), and, when any picture needs it, **"7 need alt text · Review"** ([§9.5](#95-the-viewer-and-the-words)).
 - **The words,** in the album page's own type: the title (a single line), the short description (plain, with its limit counted as it's typed) and the introduction (a `RichField`, "Add an introduction" until there's one). Each saves as it's typed.
-- **The facts,** worked out: the counts, the span of dates, the album's weight (with the sealed budget for a private album), and, when any picture needs it, **"7 need alt text · Review"** ([§9.5](#95-the-viewer-and-the-words)).
-- **The cover,** as its band will look at the page's wide width, labelled **Automatic** or **Arranged**, with Edit cover beside it.
-- **The items:** every item in the order shown, as a grid of square thumbnails (whole, not cropped, on the picture's own edge colour) with their kind's badge, and a Needs alt text mark where it applies. Text cards are full rows with their words. The grid ends in an **Add** tile, a dashed square the size of a thumbnail, which opens Add as the header's button does; it's a pointer's shortcut, so it takes no focus and assistive technology goes by the header's Add (a listbox holds only its items). An empty album shows one large drop target instead, which opens Add too: "Drop pictures and videos here, or add from your library".
+- **The cover,** a section headed **Cover**, marked **Automatic** or **Arranged**, with **Edit cover** ([§9.6](#96-the-cover)) at the heading's end; under it the band as it will look at the page's wide width, and a line on how it's made.
+- **The items,** a section headed **Pictures and videos**, with the album's order at the heading's end (Oldest first, Newest first, Your order). Sorted by date, the grid is grouped under the days taken, with undated items under **Date not set**; when no item has a date, there are no day headings at all. Every item in the order shown, as a grid of square thumbnails (whole, not cropped, on the picture's own edge colour) with their kind's badge, and a Needs alt text mark where it applies. Text cards are full rows with their words. The grid ends in an **Add** tile, a dashed square the size of a thumbnail, which opens Add as the header's button does; it's a pointer's shortcut, so it takes no focus and assistive technology goes by the header's Add (a listbox holds only its items). An empty album shows one large drop target instead, which opens Add too: "Drop pictures and videos here, or add from your library".
+- **The selection bar,** under the grid and kept in view at the bottom of the window, while anything is selected; it takes no room otherwise.
 - **Settings** is a sheet ([§9.2.1](#921-settings)).
 - **Publish** puts the album on the site. It needs a title of its own, at least one item, alt text on every picture and a title on every video; when something's missing, it says what, and offers Review for the alt text ([§9.7](#97-saving-undo-and-checks)). **Unpublish** makes it a draft again, refused while a published page shows it (V51).
 
@@ -883,7 +887,7 @@ A sheet over the editor, each setting showing its default until it's changed; se
 The grid works as a photo app's does:
 - **Selecting:** a check circle shows on a thumbnail under the pointer or the focus; pressing it selects the item. While anything is selected, pressing any thumbnail adds or removes it, Shift and a press selects the range to it, Ctrl or Cmd and A selects every item, and Escape clears the selection. With the keyboard, the arrow keys move the focus through the grid, Space selects or deselects, and Shift with the arrows extends the selection.
 - **Opening:** with nothing selected, pressing a thumbnail (or Enter on it) opens the viewer at it ([§9.5](#95-the-viewer-and-the-words)).
-- **The selection bar,** above the grid while anything is selected, says how many ("4 selected") and holds what they can do (the kit's `SelectionBar`, shared with the Media library: a group named Selected items, its count a polite status, keeping its room while hidden so the grid never moves):
+- **The selection bar,** under the grid and held in view at the window's bottom while anything is selected, says how many ("4 selected") and holds what they can do (the kit's `SelectionBar`, shared with the Media library: a group named Selected items, its count a polite status). It takes no room while hidden, and since it's under the grid, showing it never moves a thumbnail:
   - **Add to cover** and **Remove from cover** (a tile placed where it fits first, or taken out; [§9.6](#96-the-cover));
   - **Set as cover**, with one item selected;
   - **Add to album**, another album or a new one (the pictures stay in this one too);
@@ -1065,7 +1069,7 @@ The request and its words live with the other AI tasks in edit mode's server; th
 ### 9.9 The library
 
 The Media screen becomes the library every album is made from, as a photo app's library is:
-- **A timeline:** the library's pictures and videos grouped by the month they were taken ("March 2026"), newest first, with those without a date in "No date" by the month they were added. The existing list stays as a view.
+- **A timeline:** the library's pictures and videos grouped by the month they were taken ("March 2026"), newest first, with those without a date in "Date not set" by the month they were added. The existing list stays as a view.
 - **The same grid** as an album's (the kit's `PhotoGrid`): thumbnails, selection, ranges, select all, the keyboard.
 - **For a selection:** **Add to album** (an album, or New album… made from them), Set the date, Set the place, Delete.
 - **Filters:** Not in any album, In albums, Needs alt text, and the kinds, beside the existing ones (Private, the owner folders).
