@@ -22,6 +22,8 @@ interface Props {
   variant?: 'quiet' | 'secondary' | 'primary' | 'overlay';
   /** sm 40 px (44 to touch), md 48 px, lg 56 px. */
   size?: 'sm' | 'md' | 'lg';
+  /** The icon's size: md (the default; lg's is larger anyway), or lg, filling more of a small button, for a mark that stands for something (GitHub's beside a heading). */
+  iconSize?: 'md' | 'lg';
   /** round (the default), or square with rounded corners: tighter side by side, as in a toolbar. */
   shape?: 'round' | 'square';
   /** Makes it a link. */
@@ -43,7 +45,7 @@ interface Props {
   [data: `data-${string}`]: string | undefined;
 }
 
-const { label, icon, variant = 'quiet', size = 'md', shape = 'round', href, pressed, disabled = false, tooltip = 'bottom', type = 'button', ...rest } = Astro.props;
+const { label, icon, variant = 'quiet', size = 'md', iconSize = 'md', shape = 'round', href, pressed, disabled = false, tooltip = 'bottom', type = 'button', ...rest } = Astro.props;
 const isLink = href !== undefined && !disabled;
 const Tag = isLink ? 'a' : 'button';
 const i = svgOf(icon);
@@ -55,6 +57,7 @@ const accessibleLabel = `${label}${policy.newTab ? NEW_TAB_NOTE : ''}`;
   class="icon-button"
   data-variant={variant}
   data-size={size}
+  data-icon-size={iconSize === 'lg' ? 'lg' : undefined}
   data-shape={shape === 'square' ? 'square' : undefined}
   data-tip={tooltip === 'none' ? undefined : tooltip}
   data-label={label}
@@ -119,7 +122,8 @@ const accessibleLabel = `${label}${policy.newTab ? NEW_TAB_NOTE : ''}`;
     height: var(--size-icon);
   }
 
-  .icon-button[data-size='lg'] .glyph {
+  .icon-button[data-size='lg'] .glyph,
+  .icon-button[data-icon-size='lg'] .glyph {
     width: var(--size-icon-lg);
     height: var(--size-icon-lg);
   }
