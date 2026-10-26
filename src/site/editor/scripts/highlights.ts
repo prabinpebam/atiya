@@ -9,7 +9,7 @@
  */
 import { api, onContentChange, refused, saveStatus, swapRegions, track } from './client';
 import { underWay } from '../model/feedback';
-import { addHighlight, excerptHighlight, HIGHLIGHT_MAX, moveHighlight, pictureHighlight, removeHighlight, type Highlights, type HighlightChoice, type HighlightItem } from '../model/highlights';
+import { addHighlight, excerptHighlight, HIGHLIGHT_MAX, moveHighlight, pictureHighlight, removeHighlight, slideBackground, SLIDE_PICTURE_REGION, type Highlights, type HighlightChoice, type HighlightItem, type SlidePictureStyle } from '../model/highlights';
 import { fillPicker } from './picker';
 
 interface State {
@@ -49,8 +49,6 @@ export function initHighlights(root: HTMLElement, signal: AbortSignal) {
   const go = (id: string) => `[data-highlights-go="${id}"]`;
   const picker = document.getElementById('highlight-picture-picker') as HTMLDialogElement | null;
   const pictureField = form?.querySelector<HTMLElement>('[data-slide-picture]');
-  const initialPreview = pictureField?.querySelector('[data-slide-picture-preview]')?.cloneNode(true) as HTMLElement | undefined;
-  const initialName = pictureField?.querySelector('[data-slide-picture-name]')?.textContent;
   const choosePicture = (id: string) => {
     const input = field('picture');
     if (!input || !pictureField) return;
@@ -60,35 +58,49 @@ export function initHighlights(root: HTMLElement, signal: AbortSignal) {
       return;
     }
     input.value = id;
-    const image = card?.querySelector('[data-picture]')?.cloneNode(true);
-    const preview = pictureField.querySelector('[data-slide-picture-preview]');
-    if (preview) preview.replaceChildren(...(image ? [image] : []));
-    const name = pictureField.querySelector('[data-slide-picture-name]');
+    const name = pictureField.querySelector('[data-slide-picture-name] p');
     if (name) name.textContent = card?.getAttribute('aria-label') || 'Chosen picture';
     const automatic = pictureField.querySelector<HTMLButtonElement>('[data-slide-picture-auto]');
     if (automatic) automatic.disabled = false;
-    input.dispatchEvent(new Event('change', { bubbles: true }));
+    changed();
+    void updatePreview();
     picker?.close();
     pictureField.querySelector<HTMLElement>('[data-slide-picture-pick]')?.focus();
   };
-  const pictureOf = (item: HighlightItem) => pictureHighlight(item, field('picture')?.value ?? '', field('pictureInherit')?.checked !== false ? undefined : {
-    display: field('pictureDisplay')?.value as Highlights['display'],
-    background: !!field('pictureBackground')?.checked,
+  const inheriting = () => field('pictureInherit')?.value !== 'false';
+  /** The slide's own look, as the always-shown fields say it. */
+  const lookOf = (): SlidePictureStyle => ({
+    display: (field('pictureDisplay')?.value || 'fill') as SlidePictureStyle['display'],
+    background: slideBackground(field('pictureBackground')?.value ?? 'none', field('pictureColour')?.value ?? ''),
     rounded: !!field('pictureRounded')?.checked,
     shadow: !!field('pictureShadow')?.checked,
   });
+  const pictureOf = (item: HighlightItem) => pictureHighlight(item, field('picture')?.value ?? '', inheriting() ? undefined : lookOf());
+  /** Whether the slide follows the carousel, said in the line and on Use carousel settings. */
+  const following = (inherit: boolean) => {
+    const input = field('pictureInherit');
+    if (input) input.value = String(inherit);
+    const line = pictureField?.querySelector('[data-slide-picture-following] p');
+    if (line) line.textContent = inherit ? 'Following the carousel settings. Change any to give this slide its own.' : 'This slide has its own picture settings.';
+    const reset = pictureField?.querySelector<HTMLButtonElement>('[data-slide-picture-reset]');
+    if (reset) reset.disabled = inherit;
+    const colour = pictureField?.querySelector<HTMLElement>('[data-slide-picture-colour]');
+    if (colour) colour.hidden = field('pictureBackground')?.value !== 'colour';
+  };
   let previewGeneration = 0;
   const updatePreview = async () => {
-    if (!form?.hasAttribute('data-highlights-new') || !pictureField) return;
+    if (!pictureField) return;
     const generation = ++previewGeneration;
+    const look = lookOf();
     const url = new URL(location.href);
     url.searchParams.set('draftPicture', field('picture')?.value ?? '');
-    url.searchParams.set('draftInherit', String(!!field('pictureInherit')?.checked));
-    url.searchParams.set('draftDisplay', field('pictureDisplay')?.value ?? 'fill');
-    url.searchParams.set('draftBackground', String(!!field('pictureBackground')?.checked));
-    url.searchParams.set('draftRounded', String(!!field('pictureRounded')?.checked));
-    url.searchParams.set('draftShadow', String(!!field('pictureShadow')?.checked));
-    await swapRegions(['highlight-preview'], url.href, () => generation !== previewGeneration || !root.isConnected, { label: 'Updating slide preview…' });
+    url.searchParams.set('draftInherit', String(inheriting()));
+    url.searchParams.set('draftDisplay', look.display ?? 'fill');
+    url.searchParams.set('draftBackground', String(look.background));
+    url.searchParams.set('draftRounded', String(look.rounded));
+    url.searchParams.set('draftShadow', String(look.shadow));
+    const regions = form?.hasAttribute('data-highlights-new') ? ['highlight-preview', SLIDE_PICTURE_REGION] : [SLIDE_PICTURE_REGION];
+    await swapRegions(regions, url.href, () => generation !== previewGeneration || !root.isConnected, { label: 'Updating slide preview…' });
   };
 
   root.addEventListener('click', (e) => {
@@ -108,12 +120,26 @@ export function initHighlights(root: HTMLElement, signal: AbortSignal) {
       const input = field('picture');
       if (!input) return;
       input.value = '';
-      const preview = pictureField.querySelector('[data-slide-picture-preview]');
-      if (preview) preview.replaceChildren(...(initialPreview && !initialPreview.hasAttribute('data-manual') ? [...initialPreview.childNodes].map((n) => n.cloneNode(true)) : []));
-      const name = pictureField.querySelector('[data-slide-picture-name]');
-      if (name) name.textContent = initialName && !initialPreview?.hasAttribute('data-manual') ? initialName : 'Automatic picture: save to see it.';
+      const name = pictureField.querySelector('[data-slide-picture-name] p');
+      if (name) name.textContent = 'Automatic picture';
       (target.closest('[data-slide-picture-auto]') as HTMLButtonElement).disabled = true;
-      input.dispatchEvent(new Event('change', { bubbles: true }));
+      changed();
+      void updatePreview();
+    }
+    const reset = target.closest<HTMLButtonElement>('[data-slide-picture-reset]');
+    if (reset && !reset.disabled && pictureField) {
+      // back to following the carousel: its settings shown, the slide's own forgotten
+      const select = (name: string, value: string) => field(name)?.closest('[data-select]')?.dispatchEvent(new CustomEvent('select-set', { detail: { value } }));
+      select('pictureDisplay', h.display ?? 'fill');
+      select('pictureBackground', h.background ? 'auto' : 'none');
+      const rounded = field('pictureRounded');
+      if (rounded) rounded.checked = h.rounded !== false;
+      const shadow = field('pictureShadow');
+      if (shadow) shadow.checked = !!h.shadow;
+      following(true);
+      changed();
+      void updatePreview();
+      pictureField.querySelector<HTMLElement>('[data-slide-picture-pick]')?.focus();
     }
   }, { signal });
   picker?.addEventListener('click', (e) => {
@@ -193,9 +219,11 @@ export function initHighlights(root: HTMLElement, signal: AbortSignal) {
   };
   form.addEventListener('input', changed, { signal });
   form.addEventListener('change', changed, { signal });
-  form.addEventListener('change', () => {
-    const options = pictureField?.querySelector<HTMLElement>('[data-slide-picture-options]');
-    if (options) options.hidden = !!field('pictureInherit')?.checked;
+  // a change to the picture's look gives the slide its own settings, and is previewed
+  const LOOK = new Set(['pictureDisplay', 'pictureBackground', 'pictureColour', 'pictureRounded', 'pictureShadow']);
+  form.addEventListener('change', (e) => {
+    if (!LOOK.has((e.target as HTMLInputElement).name)) return;
+    following(false);
     void updatePreview();
   }, { signal });
 

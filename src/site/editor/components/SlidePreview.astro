@@ -1,7 +1,7 @@
 ---
 /**
  * Add slide's second step (documentation/home-views/highlights.md §2.1): one source drawn as the home's carousel
- * would show it (the carousel's own HighlightCard, or the embedded GitHub chart), with the carousel's settings,
+ * would show it (the carousel's own HighlightCard, or the embedded GitHub chart), with the slide's picture settings,
  * then what it uses (its kind, where it leads, its words, its picture and its place), why it waits and where to put
  * that right, a page's excerpt, and Add slide. Back to sources keeps the kind and the search. The preview can't be
  * used (inert): it shows the look; the details say the rest.
@@ -56,7 +56,7 @@ const missing = pictureFailed ? "The picture couldn't be drawn here. Reload to t
         )
       }
     </div>
-    <figcaption><Text as="span" variant="small" tone="muted">How the home would show it, with the carousel's settings.</Text></figcaption>
+    <figcaption><Text as="span" variant="small" tone="muted">How the home would show it, with this slide's picture settings.</Text></figcaption>
   </figure>
   <dl class="facts">
     <div class="fact">
@@ -85,7 +85,7 @@ const missing = pictureFailed ? "The picture couldn't be drawn here. Reload to t
   <Form gap="lg" data-highlights-new="" labelledby={labelledby}>
     <HiddenField name="source" value={source.key} />
     {source.item.type === 'article' && <TextField label="Page excerpt" name="excerpt" multiline optional maxlength={280} hint="Copy up to 280 characters word for word from the page. Leave it empty to use its summary." />}
-    <SlidePicture item={source.item} settings={settings} thumb={picture ? { thumb: picture.thumb, alt: picture.alt, width: picture.width, height: picture.height } : undefined} />
+    <SlidePicture item={source.item} settings={settings} thumb={picture ? { thumb: picture.thumb, alt: picture.alt, width: picture.width, height: picture.height, bg: picture.bg, focus: picture.focus } : undefined} />
     <IssueNote data-editor-form-issue="" />
     <ActionBar>
       <Button variant="primary" type="submit" icon="plus">Add slide</Button>

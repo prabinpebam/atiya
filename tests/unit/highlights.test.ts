@@ -185,7 +185,11 @@ describe('home highlights contract', () => {
       expect(highlightImages(c).has(id)).toBe(false);
     }
     expect(highlightsFile.safeParse(config([{ id: 'page', type: 'article', article: 'page', picture: pic, pictureStyle: { rounded: false } }])).success).toBe(true);
-    expect(highlightsFile.safeParse({ ...config(), items: [{ id: 'page', type: 'article', article: 'page', pictureStyle: { display: 'stretch' } }] }).success).toBe(false);
+    // a slide can stretch its picture and choose a colour behind it; the carousel's own settings can't
+    expect(highlightsFile.safeParse({ ...config(), items: [{ id: 'page', type: 'article', article: 'page', pictureStyle: { display: 'stretch', background: '#204060' } }] }).success).toBe(true);
+    expect(highlightsFile.safeParse({ ...config(), items: [{ id: 'page', type: 'article', article: 'page', pictureStyle: { display: 'squash' } }] }).success).toBe(false);
+    expect(highlightsFile.safeParse({ ...config(), items: [{ id: 'page', type: 'article', article: 'page', pictureStyle: { background: 'red' } }] }).success).toBe(false);
+    expect(highlightsFile.safeParse({ ...config(), display: 'stretch' }).success).toBe(false);
   });
   it('requires alt text for a highlighted library image and reports a broken configuration without stopping every dev page', () => {
     const d = docs();

@@ -28,7 +28,7 @@ import Form from '../kit/Form.astro';
 import IssueNote from '../kit/IssueNote.astro';
 import SlidePicture from '../kit/SlidePicture.astro';
 import type { Thumb } from '../model/inspectorFields';
-import { HIGHLIGHT_MAX, settingsLine, slideIcon, slideLine, type Highlights, type HighlightChoice, type HighlightDetail } from '../model/highlights';
+import { HIGHLIGHT_MAX, settingsLine, slideIcon, slideLine, type Highlights, type HighlightChoice, type HighlightDetail, type HighlightItem } from '../model/highlights';
 
 interface Props {
   /** The effective saved configuration (including absent-file compatibility). */
@@ -42,10 +42,12 @@ interface Props {
   /** What the details show: a slide's ID, `new` (Add slide) or `settings` (the carousel's). */
   selected: string;
   /** The selected slide's resolved picture, prepared without decoding the whole library. */
-  thumb?: Thumb;
+  thumb?: Thumb & { bg?: string; focus?: string };
+  /** The selected slide with its unsaved picture choices, when its preview is drawn again; left out, the saved slide. */
+  pictureItem?: HighlightItem;
 }
 
-const { highlights: h, version, choices, details, selected, thumb } = Astro.props;
+const { highlights: h, version, choices, details, selected, thumb, pictureItem } = Astro.props;
 const index = h.items.findIndex((i) => i.id === selected);
 const slide = index >= 0 ? h.items[index] : undefined;
 const mode = selected === 'settings' ? 'settings' : slide ? 'slide' : 'new';
@@ -127,7 +129,7 @@ const state = JSON.stringify({ highlights: h, version, choices, selected: slide?
               <Text variant="ui">Slide {index + 1} of {h.items.length}. Its title stays linked to its source. Its picture can be chosen independently.</Text>
               {slide.type === 'article' && <TextField label="Page excerpt" name="excerpt" value={slide.text ?? ''} multiline optional maxlength={280} hint="Copy up to 280 characters word for word from the page. Leave it empty to use its summary." />}
             </section>
-            <SlidePicture item={slide} settings={h} thumb={thumb} />
+            <SlidePicture item={pictureItem?.id === slide.id ? pictureItem : slide} settings={h} thumb={thumb} />
             <IssueNote data-editor-form-issue="" />
             <ActionBar align={slide.type === 'article' ? 'between' : 'start'}>
               {slide.type !== 'custom' && <Button variant="primary" type="submit">Save slide</Button>}

@@ -2,19 +2,43 @@
  * Home highlights' editor rules: trusted source choices, stable slide IDs and immutable list operations.
  * The content contract owns eligibility and validation; the editor never copies source titles or pictures.
  */
-import { defaultHighlights, highlightCandidates, highlightSource, highlightState, HIGHLIGHT_MAX, type Highlights, type HighlightItem } from '../../content/highlights';
-import type { CardPicture } from '../../design/pictures';
-import { mediaId, pictureStyle } from '../../content/schema';
+import { defaultHighlights, highlightCandidates, highlightSource, highlightState, HIGHLIGHT_MAX, slidePictureStyle, type Highlights, type HighlightItem, type SlidePictureStyle } from '../../content/highlights';
+import { mediaId } from '../../content/schema';
 import type { ContentIndex } from '../../content/load';
 import type { Picture } from '../../content/pictures';
 import type { ContributionData } from '../../scripts/contributionRules';
+import { DISPLAYS, type Choice } from './inspectorFields';
 
 export { HIGHLIGHT_MAX };
-export type { Highlights, HighlightItem };
+export type { Highlights, HighlightItem, SlidePictureStyle };
 export { highlightPresentation } from '../../content/highlights';
 
 /** Both the layout's whole-screen live update and this form's own region must render its content. */
 export const HIGHLIGHT_REGIONS = ['screen', 'highlights'] as const;
+/** The slide picture's own preview, drawn again as its look changes. */
+export const SLIDE_PICTURE_REGION = 'slide-picture';
+
+/** How a slide's picture can sit in its frame: the usual displays, and stretch. */
+export const SLIDE_DISPLAYS: Choice[] = [...DISPLAYS, { value: 'stretch', label: 'Stretch', description: 'Fills the frame exactly, out of its own shape' }];
+
+/** What's behind a slide's picture: nothing, its own edge colour, or a colour chosen for it. */
+export type BackgroundKind = 'none' | 'auto' | 'colour';
+export const BACKGROUNDS: Choice[] = [
+  { value: 'none', label: 'None', description: 'Nothing behind the picture' },
+  { value: 'auto', label: 'Automatic', description: 'The colour at the picture’s edges' },
+  { value: 'colour', label: 'Colour', description: 'A colour you choose' },
+];
+export const backgroundKind = (background: SlidePictureStyle['background']): BackgroundKind =>
+  typeof background === 'string' ? 'colour' : background ? 'auto' : 'none';
+/** The stored background for a kind: false, true or the colour. */
+export const slideBackground = (kind: string, colour: string): SlidePictureStyle['background'] =>
+  kind === 'colour' && /^#[0-9A-Fa-f]{6}$/.test(colour) ? colour.toLowerCase() : kind === 'auto';
+/** The colour the picker starts on: the chosen one, else the picture's edge colour (`rgb(r g b)`), else white. */
+export function backgroundColour(background: SlidePictureStyle['background'], edge?: string): string {
+  if (typeof background === 'string') return background.toLowerCase();
+  const rgb = edge?.match(/^rgb\((\d+)[ ,]+(\d+)[ ,]+(\d+)\)$/);
+  return rgb ? `#${rgb.slice(1).map((n) => Math.min(255, Number(n)).toString(16).padStart(2, '0')).join('')}` : '#ffffff';
+}
 
 /** A public resource Add slide offers (§2.1), drawn without its picture. */
 export interface HighlightChoice {
@@ -74,7 +98,7 @@ export function excerptHighlight(items: HighlightItem[], id: string, text: strin
 }
 
 /** The slide's picture choices, not edits to its source or the shared image sidecar. */
-export function pictureHighlight(item: HighlightItem, media: string, style?: Pick<CardPicture, 'display' | 'background' | 'rounded' | 'shadow'>): HighlightItem {
+export function pictureHighlight(item: HighlightItem, media: string, style?: SlidePictureStyle): HighlightItem {
   if (item.type === 'custom') return item;
   const { pictureStyle: _, ...rest } = item;
   if (rest.type === 'image') return { ...rest, media, ...(style ? { pictureStyle: style } : {}) };
@@ -94,7 +118,7 @@ export function previewPicture(item: HighlightItem, params: URLSearchParams): { 
     const value = params.get(name);
     return value === 'true' ? true : value === 'false' ? false : value;
   };
-  const style = pictureStyle.safeParse({
+  const style = slidePictureStyle.safeParse({
     display: params.get('draftDisplay'), background: boolean('draftBackground'),
     rounded: boolean('draftRounded'), shadow: boolean('draftShadow'),
   });

@@ -5,7 +5,7 @@ import { randomUUID } from 'node:crypto';
 import { dirname, join } from 'node:path';
 import sharp from 'sharp';
 import { loadContent } from '../../src/site/content/load';
-import { addHighlight, chosenKind, chosenSlide, chosenSource, excerptHighlight, fixPlace, freeChoices, highlightsView, highlightSource, HIGHLIGHT_MAX, HIGHLIGHT_REGIONS, kindLine, matchesSource, moveHighlight, pictureHighlight, previewPicture, removeHighlight, settingsLine, shownSources, SLIDE_KIND, slideIcon, slideLine, sourceCounts, sourcesLine, sourceFacts, sourceTiles, type HighlightChoice, type Highlights, type HighlightItem } from '../../src/site/editor/model/highlights';
+import { addHighlight, backgroundColour, backgroundKind, BACKGROUNDS, slideBackground, SLIDE_DISPLAYS, chosenKind, chosenSlide, chosenSource, excerptHighlight, fixPlace, freeChoices, highlightsView, highlightSource, HIGHLIGHT_MAX, HIGHLIGHT_REGIONS, kindLine, matchesSource, moveHighlight, pictureHighlight, previewPicture, removeHighlight, settingsLine, shownSources, SLIDE_KIND, slideIcon, slideLine, sourceCounts, sourcesLine, sourceFacts, sourceTiles, type HighlightChoice, type Highlights, type HighlightItem } from '../../src/site/editor/model/highlights';
 import { liveRegions } from '../../src/site/editor/model/live';
 import { regionsAsked, regionsHeader, wants } from '../../src/site/editor/model/regions';
 import { references } from '../../src/site/editor/model/references';
@@ -128,9 +128,28 @@ describe('home highlights curation', () => {
     params.set('draftPicture', 'shared/picture');
     params.set('draftInherit', 'false');
     params.set('draftDisplay', 'stretch');
+    params.set('draftBackground', '#204060');
+    expect(previewPicture(mixed[1], params).item).toMatchObject({ pictureStyle: { display: 'stretch', background: '#204060' } });
+    params.set('draftBackground', 'red');
+    expect(previewPicture(mixed[1], params).issue).toMatch(/settings/);
+    params.set('draftBackground', 'false');
+    params.set('draftDisplay', 'squash');
     expect(previewPicture(mixed[1], params).issue).toMatch(/settings/);
     expect(previewPicture(mixed[0], params).item).toBe(mixed[0]);
     expect(previewPicture(mixed[1], new URLSearchParams()).item).toBe(mixed[1]);
+  });
+  it('offers stretch and a chosen background colour for a slide, starting the colour from the picture edge', () => {
+    expect(SLIDE_DISPLAYS.map((d) => d.value)).toEqual(['fill', 'fit', 'actual', 'tile', 'stretch']);
+    expect(BACKGROUNDS.map((b) => b.value)).toEqual(['none', 'auto', 'colour']);
+    expect([false, true, '#204060', undefined].map(backgroundKind)).toEqual(['none', 'auto', 'colour', 'none']);
+    expect(slideBackground('colour', '#20A0FF')).toBe('#20a0ff');
+    expect(slideBackground('colour', 'blue')).toBe(false);
+    expect(slideBackground('auto', '#20a0ff')).toBe(true);
+    expect(slideBackground('none', '#20a0ff')).toBe(false);
+    expect(backgroundColour('#ABCDEF', 'rgb(1 2 3)')).toBe('#abcdef');
+    expect(backgroundColour(true, 'rgb(32 64 255)')).toBe('#2040ff');
+    expect(backgroundColour(false, 'rgb(1, 2, 3)')).toBe('#010203');
+    expect(backgroundColour(false)).toBe('#ffffff');
   });
 
   it('offers public sources only, including waiting draft pages/albums; absent config never invents picks', () => {

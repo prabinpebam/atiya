@@ -2,10 +2,17 @@
 import Example from '../../library/Example.astro';
 import SlidePicture from '../kit/SlidePicture.astro';
 import { HIGHLIGHTS, SOURCE_THUMBS } from './samples';
+const pond = { ...SOURCE_THUMBS['article:a-walk-round-the-pond'], alt: 'A pond in a meadow', bg: 'rgb(124 170 120)' };
 ---
-<Example title="Automatic picture" description="Inherits the carousel until this slide needs its own presentation. A page without a lead picture can still use a body picture, or an independent library picture.">
+<Example title="Automatic picture" description="A page without a lead picture can still use a body picture, or an independent library picture. Its look follows the carousel until one is changed.">
+  <SlidePicture item={{ id: 'page', type: 'article', article: 'sample' }} settings={HIGHLIGHTS} thumb={pond} />
+</Example>
+<Example title="No picture yet" description="Nothing on the page to take automatically: choose one from the library. The look is ready for when one is chosen.">
   <SlidePicture item={{ id: 'page', type: 'article', article: 'sample' }} settings={HIGHLIGHTS} />
 </Example>
-<Example title="Independent picture" description="A selected library picture, fitted whole, with square corners and a shadow. These choices do not change the page.">
-  <SlidePicture item={{ id: 'page', type: 'article', article: 'sample', picture: 'shared/sample', pictureStyle: { display: 'fit', rounded: false, background: true, shadow: true } }} settings={HIGHLIGHTS} thumb={{ ...SOURCE_THUMBS['article:a-walk-round-the-pond'], alt: 'A pond in a meadow' }} />
+<Example title="Its own look" description="A chosen library picture, stretched to the frame over a chosen colour, with square corners and a shadow. These choices never change the page.">
+  <SlidePicture item={{ id: 'page', type: 'article', article: 'sample', picture: 'shared/sample', pictureStyle: { display: 'stretch', rounded: false, background: '#204060', shadow: true } }} settings={HIGHLIGHTS} thumb={pond} />
+</Example>
+<Example title="Fitted over its edge colour" description="The automatic picture fitted whole, with its own edge colour behind it.">
+  <SlidePicture item={{ id: 'page', type: 'article', article: 'sample', pictureStyle: { display: 'fit', rounded: true, background: true, shadow: false } }} settings={HIGHLIGHTS} thumb={pond} />
 </Example>

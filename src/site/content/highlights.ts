@@ -3,7 +3,7 @@
  * and editor. A saved public pick may wait for publication, but a private or missing source is an error.
  */
 import { z } from 'astro/zod';
-import { carouselPresentation, mediaId, pictureStyle } from './schema';
+import { carouselPresentation, mediaId, PICTURE_DISPLAYS } from './schema';
 import { thumbnailFor } from '../design/pictures';
 import type { ContentIndex, Issue } from './load';
 import { coverPicture } from './album';
@@ -12,11 +12,22 @@ import { fullText, normalise } from '../home/evidence';
 export const HIGHLIGHTS_FILE = 'highlights.json';
 export const HIGHLIGHT_MAX = 12;
 const id = z.string().regex(/^[a-z0-9]+(-[a-z0-9]+)*$/, 'lowercase kebab-case');
+/** A slide's picture can also be stretched to its frame, out of its own shape (highlights spec §2.2). */
+export const SLIDE_DISPLAYS = [...PICTURE_DISPLAYS, 'stretch'] as const;
+export type SlideDisplay = (typeof SLIDE_DISPLAYS)[number];
+/** A slide's own picture look: true puts the picture's edge colour behind it, a #RRGGBB colour that colour. */
+export const slidePictureStyle = z.strictObject({
+  display: z.enum(SLIDE_DISPLAYS).optional(),
+  background: z.union([z.boolean(), z.string().regex(/^#[0-9A-Fa-f]{6}$/, 'a colour as #RRGGBB')]).optional(),
+  rounded: z.boolean().optional(),
+  shadow: z.boolean().optional(),
+});
+export type SlidePictureStyle = z.infer<typeof slidePictureStyle>;
 const highlightItem = z.discriminatedUnion('type', [
   z.strictObject({ id, type: z.literal('custom'), custom: z.literal('github') }),
-  z.strictObject({ id, type: z.literal('article'), article: id, text: z.string().trim().min(1).max(280).optional(), picture: mediaId.optional(), pictureStyle: pictureStyle.optional() }),
-  z.strictObject({ id, type: z.literal('album'), album: id, picture: mediaId.optional(), pictureStyle: pictureStyle.optional() }),
-  z.strictObject({ id, type: z.literal('image'), media: mediaId, pictureStyle: pictureStyle.optional() }),
+  z.strictObject({ id, type: z.literal('article'), article: id, text: z.string().trim().min(1).max(280).optional(), picture: mediaId.optional(), pictureStyle: slidePictureStyle.optional() }),
+  z.strictObject({ id, type: z.literal('album'), album: id, picture: mediaId.optional(), pictureStyle: slidePictureStyle.optional() }),
+  z.strictObject({ id, type: z.literal('image'), media: mediaId, pictureStyle: slidePictureStyle.optional() }),
 ]);
 
 export const highlightsFile = z.strictObject({
@@ -100,7 +111,7 @@ export function highlightPicture(index: Index, item: HighlightItem): string | un
 }
 
 /** Explicit false values stay explicit; absent slide values inherit the carousel. */
-export function highlightPresentation(settings: Pick<Highlights, 'display' | 'background' | 'rounded' | 'shadow'>, item: HighlightItem) {
+export function highlightPresentation(settings: Pick<Highlights, 'display' | 'background' | 'rounded' | 'shadow'>, item: HighlightItem): SlidePictureStyle {
   return { display: settings.display, background: settings.background, rounded: settings.rounded, shadow: settings.shadow, ...(item.type === 'custom' ? {} : item.pictureStyle) };
 }
 

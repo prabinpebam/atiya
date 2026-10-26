@@ -4,10 +4,11 @@
  * text and square at full bleed. It has no background colour of its own, so a transparent picture sits
  * straight on the page. Pictures carry this site, so every
  * one is given the space and the care of a printed plate.
- * It's shown one of four ways in its frame (a ratio, or the cell it fills; without one, its own shape as
+ * It's shown one of five ways in its frame (a ratio, or the cell it fills; without one, its own shape as
  * wide as its place): fill, cropped to the frame around its focus point; fit, whole, with room round it;
  * actual, at its own size, centred and never enlarged (made smaller only to fit); tile, repeated at its
- * own size across the frame (the picture itself shows instead until the page's script has drawn the tiles).
+ * own size across the frame (the picture itself shows instead until the page's script has drawn the tiles);
+ * stretch, whole and filling the frame exactly, out of its own shape.
  * A fitted image hugs its visible picture inside a fixed-ratio frame, so its rounded corners do not
  * fall on the empty space around it. A picture can have a dark mode version: it shows instead when the page is dark (the reader's theme,
  * or their system's), through a <picture> whose dark source scripts/theme.ts points at the theme; tiles
@@ -48,8 +49,8 @@ interface Props {
   ratio?: '1/1' | '4/5' | '3/4' | '4/3' | '3/2' | '16/9' | '21/9';
   /** cover fills a crop; contain shows the whole picture inside it (display says the same, and wins). */
   fit?: 'cover' | 'contain';
-  /** How it's shown in its frame: fill, fit, actual (its own size, never enlarged) or tile. Left out, from fit (cover: fill). */
-  display?: 'fill' | 'fit' | 'actual' | 'tile';
+  /** How it's shown in its frame: fill, fit, actual (its own size, never enlarged), tile, or stretch (filling the frame exactly, out of its own shape). Left out, from fit (cover: fill). */
+  display?: 'fill' | 'fit' | 'actual' | 'tile' | 'stretch';
   /** Which part stays in a crop ("50% 30%"). */
   focus?: string;
   /** default: softly rounded; feature: rounder, for a lead picture; none: square (full bleed, filmstrips). */
@@ -132,7 +133,7 @@ const imgAlt = tile ? '' : alt;
         decoding="async"
         fetchpriority={priority ? 'high' : undefined}
         data-ratio={ratio}
-        data-fit={mode === 'fit' ? 'contain' : 'cover'}
+        data-fit={mode === 'fit' ? 'contain' : mode === 'stretch' ? 'stretch' : 'cover'}
         data-radius={radius}
         data-fill={fill ? '' : undefined}
         data-bg={bg ? '' : undefined}
@@ -153,7 +154,7 @@ const imgAlt = tile ? '' : alt;
       decoding="async"
       fetchpriority={priority ? 'high' : undefined}
       data-ratio={ratio}
-      data-fit={mode === 'fit' ? 'contain' : 'cover'}
+      data-fit={mode === 'fit' ? 'contain' : mode === 'stretch' ? 'stretch' : 'cover'}
       data-radius={radius}
       data-fill={fill ? '' : undefined}
       data-bg={bg ? '' : undefined}
@@ -193,6 +194,10 @@ const imgAlt = tile ? '' : alt;
 
   .image[data-fit='contain'] {
     object-fit: contain;
+  }
+
+  .image[data-fit='stretch'] {
+    object-fit: fill;
   }
 
   .image[data-radius='feature'] {

@@ -46,6 +46,13 @@ const night = sample('plaza-night');
   </div>
 </Example>
 
+<Example title="Stretch" description="Filling the frame exactly, out of its own shape: nothing cropped, nothing left empty. Only a home highlight slide offers it, for a picture made to be stretched.">
+  <div class="demo-grid">
+    <Image src={pond.src} srcset={pond.srcset} sizes={half} alt={pond.alt} width={pond.width} height={pond.height} ratio="21/9" display="stretch" />
+    <Image src={pond.src} srcset={pond.srcset} sizes={half} alt={pond.alt} width={pond.width} height={pond.height} ratio="1/1" display="stretch" />
+  </div>
+</Example>
+
 <Example title="A colour behind it, and square corners" description="Fitted in a 16:9 frame with the picture's own edge colour behind it (worked out from the picture when the site is built; set by hand here), then the same with its corners squared.">
   <div class="demo-grid">
     <Image src={pond.src} srcset={pond.srcset} sizes={half} alt={pond.alt} width={pond.width} height={pond.height} ratio="16/9" display="fit" bg={{ light: 'rgb(124 170 120)', dark: 'rgb(30 52 44)' }} />

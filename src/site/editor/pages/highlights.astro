@@ -13,7 +13,7 @@ import { readDoc } from '../server/store';
 import { HIGHLIGHTS_KEY } from '../server/highlights';
 import { thumbOf } from '../server/albumScreens';
 import { chartData } from '../model/highlightChart';
-import { chosenKind, chosenSlide, chosenSource, fixPlace, HIGHLIGHT_REGIONS, highlightsView, previewPicture, sourceFacts, sourceTiles, type SlidePreviewData } from '../model/highlights';
+import { chosenKind, chosenSlide, chosenSource, fixPlace, HIGHLIGHT_REGIONS, highlightsView, previewPicture, SLIDE_PICTURE_REGION, sourceFacts, sourceTiles, type SlidePreviewData } from '../model/highlights';
 import { regionsAsked, wants } from '../model/regions';
 import { checkHighlights, highlightImages, highlightState } from '../../content/highlights';
 import { slidePicture } from '../../content/highlightPictures';
@@ -24,7 +24,7 @@ export const prerender = false;
 const SOURCES = 'highlight-sources';
 const loaded = load();
 const asked = regionsAsked(Astro.request.headers.get('X-Editor-Regions'));
-const view = loaded.ok && wants(asked, ...HIGHLIGHT_REGIONS, SOURCES, 'highlight-preview') ? highlightsView(loaded.index) : null;
+const view = loaded.ok && wants(asked, ...HIGHLIGHT_REGIONS, SOURCES, 'highlight-preview', SLIDE_PICTURE_REGION) ? highlightsView(loaded.index) : null;
 const version = view ? readDoc(HIGHLIGHTS_KEY)?.version ?? null : null;
 const params = Astro.url.searchParams;
 const selected = view ? chosenSlide(view.highlights.items, params.get('slide')) : 'new';
@@ -32,10 +32,13 @@ const kind = chosenKind(params.get('kind'));
 const query = params.get('q') ?? '';
 const source = view && selected === 'new' ? chosenSource(view.choices, view.highlights.items, params.get('source')) : null;
 const tiles = view && selected === 'new' && !source ? sourceTiles(view.choices, view.highlights.items) : [];
-const selectedItem = view?.highlights.items.find((i) => i.id === selected);
+const savedItem = view?.highlights.items.find((i) => i.id === selected);
+// a saved slide's unsaved picture choices, checked as a saved slide is, redraw its picture's preview
+const draftItem = savedItem ? previewPicture(savedItem, params) : undefined;
+const selectedItem = draftItem && !draftItem.issue && loaded.ok && view && !checkHighlights({ ...loaded.index, highlights: { ...view.highlights, items: [draftItem.item] } }).length ? draftItem.item : savedItem;
 const selectedMedia = loaded.ok && selectedItem ? highlightState(loaded.index, selectedItem).media : undefined;
 const selectedPicture = loaded.ok && selectedMedia ? await timedAsync('highlights:picture', () => slidePicture(loaded.index, selectedMedia)) : undefined;
-const thumb = selectedPicture ? { thumb: selectedPicture.thumb, alt: selectedPicture.alt, width: selectedPicture.width, height: selectedPicture.height } : undefined;
+const thumb = selectedPicture ? { thumb: selectedPicture.thumb, alt: selectedPicture.alt, width: selectedPicture.width, height: selectedPicture.height, bg: selectedPicture.bg, focus: selectedPicture.focus } : undefined;
 const publicImages = loaded.ok ? highlightImages(loaded.index) : new Set<string>();
 const PICKER_PAGE = 40;
 const pickerAt = Math.max(0, Math.floor(Number(params.get('picker') ?? 0)) || 0);
@@ -82,7 +85,7 @@ const preview = await (async (): Promise<SlidePreviewData | null> => {
 <EditorLayout title="Home highlights" screen="highlights" heading="Home highlights" intro="Choose what the classic home shows below its introduction. Slides stay linked to their pages and pictures. Each change saves here; save to remote to put it on the site.">
   {
     view ? (
-      <HighlightsManager {...view} version={version} selected={selected} thumb={thumb}>
+      <HighlightsManager {...view} version={version} selected={selected} thumb={thumb} pictureItem={selectedItem}>
         <Fragment slot="new">
           {preview ? (
             <SlidePreview {...preview} settings={view.highlights} labelledby="highlights-detail-title" />
