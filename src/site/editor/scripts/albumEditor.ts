@@ -2,7 +2,8 @@
  * The album editor (documentation/gallery/spec.md §9.2 to §9.4, §9.7): the words typed in place, the grid's
  * selection (a click, Shift for a range, Ctrl or Cmd for one more, Ctrl+A, Escape), moving (a drag, Alt with an
  * arrow key, Move to start or end), the selection bar, Sort, Settings, Publish, and adding: files dropped anywhere
- * on the grid or chosen with Upload (each its own tile with its progress, two at a time, never blocking the grid),
+ * on the page (where they were dropped when that's on an item, else in their places) or chosen with Upload or the
+ * grid's Add tile (each its own tile with its progress, two at a time, never blocking the grid),
  * items from the library (the picker), a text card or a YouTube or Vimeo link. Every change is kept at once, saved
  * through one queue (never two saves at once) and can be undone. The rules are the pure model/album.ts; this only
  * wires them to the page.
@@ -10,7 +11,7 @@
 import type { Album } from '../../content/schema';
 import type { AlbumMedia, MediaLookup } from '../../content/album';
 import { SaveQueue } from '../model/queue';
-import { addItems, addText, editText, moveBy, moveItems, moveToEnd, moveToStart, pickRange, pickToggle, removeItems, setCoverLead, setItemDownload, setItemPlay, setSettings, setWords, sortAlbum, type AlbumSettings } from '../model/album';
+import { addItemsAt, addText, editText, landingBefore, moveBy, moveItems, moveToEnd, moveToStart, pickRange, pickToggle, removeItems, setCoverLead, setItemDownload, setItemPlay, setSettings, setWords, sortAlbum, type AlbumSettings } from '../model/album';
 import { isVideoFile, needsConversion, pictureSizeIssue, posterTime, refusedFormat, svgChoices, typeOf, videoSizeIssue } from '../model/upload';
 import { takenOf } from '../model/exif';
 import { announce, api, editorUrl, onContentChange, refused, saveStatus, startTask, swapRegions, TAB } from './client';
@@ -110,8 +111,7 @@ export function initAlbumEditor(root: HTMLElement, signal: AbortSignal) {
       return announce('Couldn’t show the album again: is the dev server running?', 'negative');
     }
     if (carried.length) {
-      const lists = root.querySelectorAll('[data-photo-grid] ul[data-photo-cells]');
-      lists[lists.length - 1]?.append(...carried);
+      carried.forEach(placeTile);
       root.querySelector('[data-photo-empty]')?.setAttribute('hidden', '');
     }
     const fresh = read();
@@ -130,12 +130,14 @@ export function initAlbumEditor(root: HTMLElement, signal: AbortSignal) {
     // a custom order is one list: its cells follow the album's items
     if ((doc.order ?? 'oldest') === 'custom' && g?.querySelectorAll('ul[data-photo-cells]').length === 1) {
       const list = g.querySelector('ul[data-photo-cells]')!;
-      const uploads = [...list.querySelectorAll('li[data-upload]')];
+      const uploads = [...list.querySelectorAll<HTMLElement>('li[data-upload]')];
       for (const i of doc.items) {
         const c = cellOf(i.id);
         if (c) list.append(c);
       }
-      list.append(...uploads);
+      const add = list.querySelector(':scope > [data-photo-add]');
+      if (add) list.append(add);
+      uploads.forEach(placeTile);
     }
     picked = picked.filter((id) => ids.has(id));
     paintPicked();
@@ -237,6 +239,8 @@ export function initAlbumEditor(root: HTMLElement, signal: AbortSignal) {
       // a refused upload's tile goes when it's clicked
       const failed = t.closest<HTMLElement>('li[data-upload][data-failed]');
       if (failed) return failed.remove();
+      // the grid's Add tile (or the empty album's drop target) opens Add, as the header's button does
+      if (t.closest('[data-photo-add], [data-photo-empty]')) return dialog('album-add')?.showModal();
       const cell = t.closest<HTMLElement>('li[data-item]');
       if (cell && root.contains(cell)) {
         focusCell(cell);
@@ -330,8 +334,32 @@ export function initAlbumEditor(root: HTMLElement, signal: AbortSignal) {
   // ---------- dragging: items to move, files to add ----------
   let dragging: string[] = [];
   let dropBefore: string | null = null;
+  let over = 0;
   const MOVE = 'application/x-album-items';
   const clearDrop = () => root.querySelectorAll('[data-drop]').forEach((c) => c.removeAttribute('data-drop'));
+  const endDrop = () => {
+    over = 0;
+    unmark();
+  };
+  const unmark = () => {
+    dropBefore = null;
+    grid()?.removeAttribute('data-dropping');
+    clearDrop();
+  };
+  /** Where a drop lands, marked: before the item under the pointer (the next one past its middle), else the end (null). */
+  const markDrop = (t: Element, x: number): string | null => {
+    clearDrop();
+    const cell = t.closest<HTMLElement>('li[data-item]');
+    let target: HTMLElement | undefined;
+    if (cell && root.contains(cell)) {
+      const box = cell.getBoundingClientRect();
+      const all = cells();
+      target = x > box.left + box.width / 2 ? all[all.indexOf(cell) + 1] : cell;
+    }
+    if (target) target.setAttribute('data-drop', 'before');
+    else root.querySelector('[data-photo-add]')?.setAttribute('data-drop', 'end');
+    return target?.dataset.item ?? null;
+  };
   root.addEventListener(
     'dragstart',
     (e) => {
@@ -349,57 +377,70 @@ export function initAlbumEditor(root: HTMLElement, signal: AbortSignal) {
     'dragend',
     () => {
       root.querySelectorAll('[data-dragging]').forEach((c) => c.removeAttribute('data-dragging'));
-      clearDrop();
+      endDrop();
       dragging = [];
     },
     { signal },
   );
   const files = (e: DragEvent) => !!e.dataTransfer?.types.includes('Files');
-  root.addEventListener(
-    'dragover',
+  // files are taken anywhere on the page but in a dialog (its own fields take them) or a field that took them first
+  const takesFiles = (e: DragEvent): Element | null => {
+    const t = e.target instanceof Element ? e.target : null;
+    return files(e) && !e.defaultPrevented && t && !t.closest('dialog') ? t : null;
+  };
+  document.addEventListener(
+    'dragenter',
     (e) => {
-      const g = grid();
-      if (!g || !g.contains(e.target as Node)) return;
-      if (files(e)) {
-        e.preventDefault();
-        g.setAttribute('data-dropping', '');
-        return;
-      }
-      if (!dragging.length) return;
-      e.preventDefault();
-      const cell = (e.target as Element).closest<HTMLElement>('li[data-item]');
-      clearDrop();
-      if (!cell) return void (dropBefore = null);
-      const box = cell.getBoundingClientRect();
-      const after = e.clientX > box.left + box.width / 2;
-      const all = cells();
-      const target = after ? all[all.indexOf(cell) + 1] : cell;
-      dropBefore = target?.dataset.item ?? null;
-      target?.setAttribute('data-drop', 'before');
+      if (files(e)) over++;
     },
     { signal },
   );
-  root.addEventListener(
+  document.addEventListener(
     'dragleave',
     (e) => {
-      const g = grid();
-      if (g && !g.contains(e.relatedTarget as Node | null)) g.removeAttribute('data-dropping');
+      if (files(e) && --over <= 0) endDrop();
     },
     { signal },
   );
-  root.addEventListener(
+  document.addEventListener(
+    'dragover',
+    (e) => {
+      const t = e.target instanceof Element ? e.target : null;
+      const f = takesFiles(e);
+      if (f) {
+        e.preventDefault();
+        e.dataTransfer!.dropEffect = 'copy';
+        grid()?.setAttribute('data-dropping', '');
+        dropBefore = markDrop(f, e.clientX);
+        return;
+      }
+      if (files(e)) return unmark();
+      const g = grid();
+      if (!dragging.length || !g || !t || !g.contains(t)) return;
+      e.preventDefault();
+      dropBefore = markDrop(t, e.clientX);
+    },
+    { signal },
+  );
+  document.addEventListener(
     'drop',
     (e) => {
+      const t = e.target instanceof Element ? e.target : null;
+      const at = dropBefore;
+      if (files(e)) {
+        if (!takesFiles(e)) return endDrop();
+        e.preventDefault();
+        endDrop();
+        return upload([...(e.dataTransfer?.files ?? [])], at);
+      }
       const g = grid();
-      if (!g || !g.contains(e.target as Node)) return;
+      if (!g || !t || !g.contains(t)) return;
       e.preventDefault();
-      g.removeAttribute('data-dropping');
-      clearDrop();
-      if (files(e)) return upload([...(e.dataTransfer?.files ?? [])]);
+      endDrop();
       if (!dragging.length) return;
       const ids = dragging;
-      if (dropBefore && ids.includes(dropBefore)) return;
-      move((a) => moveItems(a, ids, dropBefore, lookup), `Moved ${count(ids.length, 'item')}`);
+      if (at && ids.includes(at)) return;
+      move((a) => moveItems(a, ids, at, lookup), `Moved ${count(ids.length, 'item')}`);
     },
     { signal },
   );
@@ -408,25 +449,43 @@ export function initAlbumEditor(root: HTMLElement, signal: AbortSignal) {
   const waiting: { file: File; tile: HTMLElement }[] = [];
   let running = 0;
   let tiles = 0;
-  const upload = (list: File[]) => {
+  /** Each upload's tile and its place in the batch it was dropped in (§9.4: where it was dropped). */
+  type Batch = { anchor: string | null; landed: (string | undefined)[] };
+  const placed = new WeakMap<HTMLElement, { batch: Batch; i: number }>();
+  const landsBefore = (tile?: HTMLElement) => {
+    const p = tile && placed.get(tile);
+    return p ? landingBefore(p.batch.landed, p.i, p.batch.anchor) : null;
+  };
+  /** An upload's tile in its place: before the item it lands before, else last, before the Add tile. */
+  const placeTile = (tile: HTMLElement) => {
+    const at = landsBefore(tile);
+    const cell = at ? cellOf(at) : null;
+    if (cell) return cell.before(tile);
+    const lists = grid()?.querySelectorAll('ul[data-photo-cells]');
+    const list = lists?.[lists.length - 1];
+    const add = list?.querySelector(':scope > [data-photo-add]');
+    if (add) add.before(tile);
+    else list?.append(tile);
+  };
+  const upload = (list: File[], before: string | null = null) => {
     const g = grid();
     const template = g?.querySelector<HTMLTemplateElement>('template[data-photo-upload]');
     if (!g || !template || !list.length) return;
     g.querySelector<HTMLElement>('[data-photo-empty]')?.setAttribute('hidden', '');
-    const lists = g.querySelectorAll('ul[data-photo-cells]');
-    const into = lists[lists.length - 1];
-    for (const file of list) {
+    const batch: Batch = { anchor: before, landed: list.map(() => undefined) };
+    list.forEach((file, i) => {
       const tile = template.content.firstElementChild!.cloneNode(true) as HTMLElement;
       const n = `u${++tiles}`;
       tile.querySelectorAll('[id]').forEach((el) => (el.id = `${el.id}-${n}`));
       tile.querySelectorAll('[aria-labelledby]').forEach((el) => el.setAttribute('aria-labelledby', `${el.getAttribute('aria-labelledby')}-${n}`));
       tile.querySelector('[data-upload-name]')!.textContent = file.name;
       tile.setAttribute('aria-label', `Uploading ${file.name}`);
-      into?.append(tile);
+      placed.set(tile, { batch, i });
+      placeTile(tile);
       const why = refusedFormat(file) ?? (isVideoFile(file) ? videoSizeIssue(file.size) : needsConversion(typeOf(file)) ? `${file.name} needs converting first: add it in Media, then add it from your library.` : pictureSizeIssue(typeOf(file), file.size));
       if (why) failTile(tile, why);
       else waiting.push({ file, tile });
-    }
+    });
     announce(`Uploading ${count(waiting.length, 'file')}…`);
     pump();
   };
@@ -489,18 +548,22 @@ export function initAlbumEditor(root: HTMLElement, signal: AbortSignal) {
   };
   /** Library items added to the album; `tile` (an upload's) goes once the grid shows them. */
   const added = (ids: string[], tile?: HTMLElement, note = '') => {
-    const r = addItems(doc, ids, {});
+    const before = doc;
+    const r = addItemsAt(doc, ids, landsBefore(tile), lookup);
     if (!r.added.length) {
       tile?.remove();
       return announce(note || `${count(r.skipped.length, 'item')} ${r.skipped.length === 1 ? 'was' : 'were'} already in the album.`);
     }
     // the tile stays until the grid is drawn with its item
+    const p = tile && placed.get(tile);
+    if (p) p.batch.landed[p.i] = r.added[0];
     if (tile) {
       tile.setAttribute('data-done', '');
       progress(tile, 1);
     }
     change(r.album, `Added ${count(r.added.length, 'item')}`);
-    if (note) announce(note);
+    const words = [note, switched(before).trim()].filter(Boolean).join(' ');
+    if (words) announce(words);
   };
 
   // ---------- the picker: from the library ----------

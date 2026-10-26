@@ -3,11 +3,15 @@
  * An album's items as a photo app shows them (documentation/gallery/spec.md §9.2, §9.3): square thumbnails, each
  * picture whole on its own edge colour, with its kind's badge, a Needs alt text mark and a check circle; text cards
  * as full rows with their words; and, in a sorted album, the days they were taken as headers. Empty, it's one
- * large drop target. The album editor's script selects, moves, opens and uploads through the data attributes
- * (data-photo-grid, data-item, data-open-item, data-photo-upload); the grid itself draws, never decides.
+ * large drop target. Given `add`, its last tile adds (a dashed square, as a photo app's "Add" is). Files dropped
+ * on it show where they'll land with the drop marker (`data-drop` on a cell, or on the Add tile for the end). The
+ * album editor's script selects, moves, opens and uploads through the data attributes (data-photo-grid, data-item,
+ * data-open-item, data-photo-upload, data-photo-add); the grid itself draws, never decides.
  * @tier kit
  * @a11y A multi-selectable listbox named by `label`: each item is an option, selected with aria-selected; the
  * days are labelled groups. One option takes the Tab stop (a roving tabindex), and the arrows move between them.
+ * @a11y The Add tile is a pointer's shortcut to the header's Add button, which is the keyboard's and a screen
+ * reader's way (a listbox holds only its options, so the tile is hidden from them and takes no focus).
  * @a11y A thumbnail's name is its alt text (or its kind and file when it has none), with what it's marked (Cover,
  * Needs alt text) in words, never by colour alone.
  * @key Arrows: move the focus through the grid (the album editor's script)
@@ -62,11 +66,13 @@ interface Props {
   days?: boolean;
   /** The words of the empty album's drop target. */
   empty?: string;
+  /** The words of a last tile that adds, as the header's Add does (none: no tile). */
+  add?: string;
   /** Data attributes pass through to the grid. */
   [data: `data-${string}`]: string | undefined;
 }
 
-const { label, cells, days = false, empty = 'Drop pictures and videos here, or add from your library', ...rest } = Astro.props;
+const { label, cells, days = false, empty = 'Drop pictures and videos here, or add from your library', add, ...rest } = Astro.props;
 const id = `photo-grid-${stableId(Astro, 'PhotoGrid')}`;
 const BADGE: Partial<Record<PhotoCell['kind'], { icon: 'video' | 'link' | 'animated' | 'pen'; words: string }>> = {
   video: { icon: 'video', words: 'Video' },
@@ -94,7 +100,7 @@ const nameOf = (c: PhotoCell) => {
 const first = cells[0]?.id;
 ---
 
-<div class="photo-grid" id={id} role="listbox" aria-multiselectable="true" aria-label={label} data-photo-grid data-empty={cells.length ? undefined : ''} {...rest}>
+<div class="photo-grid" id={id} role="listbox" aria-multiselectable="true" aria-label={label} data-photo-grid data-empty={cells.length ? undefined : ''} data-adds={add ? '' : undefined} {...rest}>
   {
     !cells.length && (
       <div class="empty" data-photo-empty>
@@ -157,6 +163,12 @@ const first = cells[0]?.id;
               </span>
             </li>
           ))}
+          {add && gi === groups.length - 1 && (
+            <li class="add" aria-hidden="true" data-photo-add>
+              <Icon name="plus" size="lg" />
+              <Text as="span" variant="ui">{add}</Text>
+            </li>
+          )}
         </ul>
       </div>
     ))
@@ -268,6 +280,46 @@ const first = cells[0]?.id;
 
   .cell[data-drop='before'] {
     box-shadow: calc(-1 * var(--border-strong)) 0 0 0 var(--color-accent);
+  }
+
+  .add {
+    display: grid;
+    place-items: center;
+    align-content: center;
+    gap: var(--space-1);
+    inline-size: var(--c-editor-photo-cell);
+    aspect-ratio: 1;
+    border: var(--border-control) dashed var(--color-border-strong);
+    border-radius: var(--radius-sm);
+    color: var(--color-text-muted);
+    cursor: pointer;
+  }
+
+  .photo-grid[data-adds] .empty {
+    cursor: pointer;
+  }
+
+  @media (hover: hover) {
+    .add:hover,
+    .photo-grid[data-adds] .empty:hover {
+      border-color: var(--color-accent);
+      background: var(--color-bg-sunk);
+      color: var(--color-text);
+    }
+  }
+
+  .add:active,
+  .photo-grid[data-adds] .empty:active {
+    border-color: var(--color-accent);
+    background: var(--color-bg-sunk);
+    color: var(--color-text);
+  }
+
+  .add[data-drop] {
+    border-style: solid;
+    border-color: var(--color-accent);
+    box-shadow: inset 0 0 0 var(--border-control) var(--color-accent);
+    color: var(--color-text);
   }
 
   .check {

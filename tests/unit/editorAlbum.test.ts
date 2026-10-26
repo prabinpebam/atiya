@@ -7,12 +7,14 @@ import { album as albumSchema, type Album } from '../../src/site/content/schema'
 import { albumProblems, type AlbumMedia, type MediaLookup } from '../../src/site/content/album';
 import {
   addItems,
+  addItemsAt,
   addText,
   albumIdFrom,
   dayGroups,
   editText,
   inOwnOrder,
   itemIdFor,
+  landingBefore,
   moveBy,
   moveItems,
   moveToEnd,
@@ -152,6 +154,39 @@ describe('adding (§9.4)', () => {
     expect(nextTextId(r.album)).toBe('text-2');
     expect(editText(r.album, 'text-1', 'Day 2').items[2]).toEqual({ id: 'text-1', text: 'Day 2' });
     expect(ids(editText(r.album, 'text-1', '  '))).toEqual(['b', 'a', 'c', 'd']);
+  });
+  it('adds dropped files where they were dropped, switching a sorted album to the own order', () => {
+    const r = addItemsAt(base(), ['library/e'], 'a', lookup);
+    expect(r.added).toEqual(['e']);
+    expect(r.album.order).toBe('custom');
+    // the order on screen (b, a, c, d by day), with e dropped before a
+    expect(ids(r.album)).toEqual(['b', 'e', 'a', 'c', 'd']);
+    valid(r.album);
+    // dropped outside the grid: in its place by its day, the order kept
+    const free = addItemsAt(base(), ['library/e'], null, lookup);
+    expect(free.album.order).toBeUndefined();
+    expect(ids(free.album)).toEqual(['a', 'b', 'c', 'd', 'e']);
+    // dropped before an item that's gone since: added as if dropped outside
+    expect(addItemsAt(base(), ['library/e'], 'gone', lookup).album.order).toBeUndefined();
+    // one already in the album moves nothing
+    expect(addItemsAt(base(), ['albums/trip/a'], 'c', lookup).album).toEqual(base());
+  });
+  it('keeps a dropped batch in the order it was dropped, whichever upload lands first', () => {
+    // three files dropped before c: the second lands first, then the third, then the first
+    expect(landingBefore([undefined, undefined, undefined], 1, 'c')).toBe('c');
+    expect(landingBefore([undefined, 'f2', undefined], 2, 'c')).toBe('c');
+    expect(landingBefore([undefined, 'f2', 'f3'], 0, 'c')).toBe('f2');
+    // dropped at the end: the last one goes to the end, the others before the ones after them
+    expect(landingBefore([undefined, undefined], 1, null)).toBeNull();
+    expect(landingBefore([undefined, 'f2'], 0, null)).toBe('f2');
+    let a = inOwnOrder(base(), lookup);
+    const landed: (string | undefined)[] = [undefined, undefined];
+    for (const [i, media] of [[1, 'library/y'], [0, 'library/x']] as const) {
+      const r = addItemsAt(a, [media], landingBefore(landed, i, 'c'), lookup);
+      landed[i] = r.added[0];
+      a = r.album;
+    }
+    expect(ids(a)).toEqual(['b', 'a', 'x', 'y', 'c', 'd']);
   });
 });
 

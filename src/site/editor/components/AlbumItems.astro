@@ -1,8 +1,9 @@
 ---
 /**
  * The album editor's items (documentation/gallery/spec.md §9.2 to §9.4): the selection bar, shown while anything
- * is selected, and the grid of every item in the order shown (the kit's PhotoGrid), which takes files dropped from
- * the desktop anywhere on it. It hosts the album editor's script, which selects, orders, adds and saves.
+ * is selected, and the grid of every item in the order shown (the kit's PhotoGrid), ending in an Add tile. Files
+ * dropped anywhere on the album editor are added: where they were dropped when that's on an item, else in their
+ * places. It hosts the album editor's script, which selects, orders, adds and saves.
  * @tier editor
  * @a11y The selection bar is a labelled toolbar that says how many are selected (a polite live region); every drag
  * has a button and a key: Move to start, Move to end, and Alt with an arrow key.
@@ -41,7 +42,7 @@ const { title, cells, days } = Astro.props;
     <Button size="sm" variant="quiet" icon="close" data-album-act="clear">Clear selection</Button>
   </SelectionBar>
   <div data-region="album-grid">
-    <PhotoGrid label={`Items in ${title}`} cells={cells} days={days} />
+    <PhotoGrid label={`Items in ${title}`} cells={cells} days={days} add="Add" />
   </div>
 </div>
 

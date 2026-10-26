@@ -126,6 +126,26 @@ export function addItems(album: Album, mediaIds: readonly string[], opts: { befo
   return { album: { ...album, items }, added: fresh.map((i) => i.id), skipped };
 }
 
+/**
+ * Adds library items where they were dropped (§9.4): before the item `before`, switching a sorted album to the
+ * owner's order as a move does (§9.3); with no `before`, in their places as `addItems` puts them.
+ */
+export function addItemsAt(album: Album, mediaIds: readonly string[], before: string | null, lookup: MediaLookup): { album: Album; added: string[]; skipped: string[] } {
+  const r = addItems(album, mediaIds);
+  if (!before || !r.added.length || !album.items.some((i) => i.id === before)) return r;
+  return { ...r, album: moveItems(r.album, r.added, before, lookup) };
+}
+
+/**
+ * Where one file of a dropped batch lands as its upload finishes (§9.4): before the first file after it that's
+ * already in the album, else before the item it was dropped on (`anchor`), so the batch keeps the order it was
+ * dropped in whichever upload finishes first. `landed` holds each file's item ID once it's in.
+ */
+export function landingBefore(landed: readonly (string | undefined)[], i: number, anchor: string | null): string | null {
+  for (let j = i + 1; j < landed.length; j++) if (landed[j]) return landed[j]!;
+  return anchor;
+}
+
 /** Takes items out of the album (§9.3, Remove from album): their library items stay. A cover that showed one forgets it. */
 export function removeItems(album: Album, ids: readonly string[]): Album {
   const gone = new Set(ids);

@@ -15,3 +15,7 @@ import { PHOTO_CELLS } from './samples';
 <Example title="An empty album" description="The whole grid is a drop target, saying what it takes." layout="block">
   <PhotoGrid label="Items in Untitled album" cells={[]} />
 </Example>
+
+<Example title="Ending in an Add tile" description="The album editor's grid ends in a tile that adds, as the header's Add does; files dropped on an item land before it." layout="block">
+  <PhotoGrid label="Items in Kitchen garden" cells={PHOTO_CELLS.slice(0, 5)} add="Add" />
+</Example>
