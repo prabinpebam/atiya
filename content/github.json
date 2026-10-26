@@ -1,13 +1,8 @@
 {
   "login": "prabinpebam",
-  "fetchedAt": "2026-10-25T21:00:52.670Z",
-  "through": "2026-10-25",
+  "fetchedAt": "2026-10-26T22:48:01.356Z",
+  "through": "2026-10-26",
   "days": [
-    {
-      "date": "2025-10-26",
-      "count": 0,
-      "level": 0
-    },
     {
       "date": "2025-10-27",
       "count": 0,
@@ -1825,8 +1820,13 @@
     },
     {
       "date": "2026-10-25",
-      "count": 42,
-      "level": 2
+      "count": 55,
+      "level": 3
+    },
+    {
+      "date": "2026-10-26",
+      "count": 24,
+      "level": 1
     }
   ]
 }
