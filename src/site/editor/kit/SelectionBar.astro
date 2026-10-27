@@ -17,14 +17,16 @@ interface Props {
   shown?: boolean;
   /** How many are chosen, in words ("3 selected"); the script keeps it up to date in `[data-selection-count]`. */
   count?: string;
+  /** Its actions are icon buttons (each named by its tooltip): one row, close together. */
+  icons?: boolean;
   /** Data attributes pass through to the bar (the screen's hooks). */
   [data: `data-${string}`]: string | undefined;
 }
 
-const { label = 'Selected items', shown = false, count = '0 selected', ...rest } = Astro.props;
+const { label = 'Selected items', shown = false, count = '0 selected', icons = false, ...rest } = Astro.props;
 ---
 
-<div class="selection-bar" role="group" aria-label={label} hidden={!shown} {...rest}>
+<div class="selection-bar" role="group" aria-label={label} hidden={!shown} data-icons={icons ? '' : undefined} {...rest}>
   <Text as="span" variant="label"><span role="status" data-selection-count>{count}</span></Text>
   <slot />
 </div>
@@ -48,5 +50,16 @@ const { label = 'Selected items', shown = false, count = '0 selected', ...rest }
   /* hidden, it takes no room: it's under the grid, so nothing above it moves when it shows */
   .selection-bar[hidden] {
     display: none;
+  }
+
+  /* icon buttons: one row, close together, the count set apart from them */
+  .selection-bar[data-icons] {
+    flex-wrap: nowrap;
+    gap: var(--space-1);
+    padding-block: var(--space-1);
+  }
+
+  .selection-bar[data-icons] [data-selection-count] {
+    margin-inline-end: var(--space-2);
   }
 </style>

@@ -1,0 +1,23 @@
+---
+import Example from '../../library/Example.astro';
+import AlbumInspector from '../components/AlbumInspector.astro';
+import AlbumSelection from '../components/AlbumSelection.astro';
+import AlbumForm from '../components/AlbumForm.astro';
+import { ALBUM_SECTIONS, SELECTION_MANY } from './samples';
+
+const settings = { layout: 'grid', captions: true, dates: true, download: true, large: false } as const;
+---
+
+<Example title="The selection" description="Two tabs: what's selected in the album, and the album itself. Something is selected, so the Selection tab is open." layout="block">
+  <AlbumInspector open="selection">
+    <AlbumSelection slot="selection" view={SELECTION_MANY} />
+    <AlbumForm slot="album" title="Kitchen garden" count="8 pictures" needAlt={0} status="draft" settings={settings} section="gallery" sections={ALBUM_SECTIONS} private={false} path={null} />
+  </AlbumInspector>
+</Example>
+
+<Example title="The album" description="Nothing selected: the Album tab is open, with its facts and its settings." layout="block">
+  <AlbumInspector open="album">
+    <AlbumSelection slot="selection" view={{ state: 'none' }} />
+    <AlbumForm slot="album" title="Kitchen garden" count="8 pictures" dates="3 to 9 May 2026" needAlt={1} status="draft" settings={settings} section="gallery" sections={ALBUM_SECTIONS} private={false} path={null} />
+  </AlbumInspector>
+</Example>

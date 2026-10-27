@@ -33,7 +33,8 @@ export function initViewerHost(root: HTMLElement, signal: AbortSignal) {
   /** What the info panel still has to save is saved before it's drawn again. */
   const flush = async () => {
     const waits: Promise<unknown>[] = [];
-    dialog.querySelector('[data-media-info]')?.dispatchEvent(new CustomEvent('viewer:flush', { detail: { waits } }));
+    // the viewer's and the inspector's (scripts/albumInspector.ts): both may hold the same picture's words
+    for (const info of [dialog.querySelector('[data-media-info]'), root.querySelector('[data-album-inspector] [data-media-info]')]) info?.dispatchEvent(new CustomEvent('viewer:flush', { detail: { waits } }));
     await Promise.all(waits);
   };
 
@@ -230,13 +231,7 @@ export function initViewerStage(stage: HTMLElement, signal: AbortSignal) {
       const act = t.closest<HTMLButtonElement>('[data-viewer-act]');
       if (!act) return;
       const what = act.dataset.viewerAct!;
-      if (what === 'add-to') return root.dispatchEvent(new CustomEvent('album:selection', { detail: { what: 'album', ids: [id] } }));
       root.dispatchEvent(new CustomEvent('album:act', { detail: { what, ids: [id] } }));
-      if (what === 'cover') {
-        act.disabled = true;
-        const label = act.querySelector('.label') ?? act;
-        label.textContent = 'The cover picture';
-      }
       // removed: back to the grid, which says so (with Undo)
       if (what === 'remove') (stage.closest('dialog') as HTMLDialogElement | null)?.close();
     },

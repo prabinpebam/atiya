@@ -4,7 +4,8 @@
  * (an article's byline, date and reading time; a page's title only), an album (its own layout, AlbumLayout:
  * documentation/gallery/spec.md §7), or a section, listing its published pages and albums in its view. The navigation is the structure's (§4). The public
  * route renders it; so does edit mode's canvas, with `editable`, which adds only what the canvas needs
- * to find each block (a comment before it) and passes the page-end slot through for its overlay.
+ * to find each block (a comment before it), leaves out the site's header and breadcrumbs (their links lead
+ * nowhere there) and passes the page-end slot through for its overlay.
  */
 import ArticleLayout from '../layouts/ArticleLayout.astro';
 import AlbumLayout from '../layouts/AlbumLayout.astro';
@@ -144,7 +145,7 @@ const sealedPages = privateBands ? privatePages.filter((l) => !privateBands.hidd
 
 {
   article && header ? (
-    <ArticleLayout title={docTitle} description={article.seo?.description ?? searchCopy(article.summary)} nav={nav} footer={footer} action={action} crumbs={crumbs} header={{ ...header, isPrivate: access === 'private', draft: import.meta.env.DEV && !editable && !!route && !route.published }} related={related} sealed={sealed} shows={shows}>
+    <ArticleLayout title={docTitle} description={article.seo?.description ?? searchCopy(article.summary)} nav={nav} footer={footer} action={action} crumbs={crumbs} header={{ ...header, isPrivate: access === 'private', draft: import.meta.env.DEV && !editable && !!route && !route.published }} related={related} sealed={sealed} shows={shows} bare={editable}>
       <Blocks blocks={article.body} editable={editable} />
       <slot name="page-end" slot="page-end" />
     </ArticleLayout>

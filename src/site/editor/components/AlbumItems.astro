@@ -3,7 +3,7 @@
  * The album editor's items (documentation/gallery/spec.md §9.2 to §9.4): a section under its heading, Pictures and
  * videos, with the album's order (oldest first, newest first or your own) at the head's end; then the grid of every
  * item in the order shown (the kit's PhotoGrid), ending in an Add tile; then the selection bar, shown while
- * anything is selected. Files dropped anywhere on the album editor are added: where they were dropped when that's
+ * anything is selected (moving and removing it; its details are the inspector's, AlbumSelection). Files dropped anywhere on the album editor are added: where they were dropped when that's
  * on an item, else in their places. It hosts the album editor's script, which selects, orders, adds and saves.
  * @tier editor
  * @a11y A region named by its heading. The selection bar is a labelled group that says how many are selected (a
@@ -13,7 +13,7 @@
  * @key Alt+Arrow: moves the focused item, or the selection, one place
  * @key Delete: removes the selection from the album (it stays in the library)
  */
-import Button from '../../components/fundamentals/Button.astro';
+import IconButton from '../../components/fundamentals/IconButton.astro';
 import Select from '../../components/fundamentals/Select.astro';
 import PhotoGrid, { type PhotoCell } from '../kit/PhotoGrid.astro';
 import SelectionBar from '../kit/SelectionBar.astro';
@@ -43,17 +43,11 @@ const ORDERS = [
   <div data-region="album-grid">
     <PhotoGrid label={`Items in ${title}`} cells={cells} days={order !== 'custom'} add="Add" />
   </div>
-  <SelectionBar data-album-selbar="">
-    <span data-album-only="cover" hidden><Button size="sm" variant="secondary" icon="image" data-album-act="cover">Set as cover</Button></span>
-    <span data-album-only="text" hidden><Button size="sm" variant="secondary" icon="edit" data-album-act="text">Edit the words</Button></span>
-    <Button size="sm" variant="secondary" icon="arrow-up" data-album-act="start">Move to start</Button>
-    <Button size="sm" variant="secondary" icon="arrow-down" data-album-act="end">Move to end</Button>
-    <Button size="sm" variant="secondary" icon="collection" data-album-act="add-to">Add to album</Button>
-    <Button size="sm" variant="secondary" icon="calendar" data-album-act="date">Set the date</Button>
-    <Button size="sm" variant="secondary" icon="location" data-album-act="place">Set the place</Button>
-    <Button size="sm" variant="secondary" icon="download" data-album-act="downloads">Set downloads</Button>
-    <Button size="sm" variant="secondary" icon="delete" data-album-act="remove">Remove from album</Button>
-    <Button size="sm" variant="quiet" icon="close" data-album-act="clear">Clear selection</Button>
+  <SelectionBar icons data-album-selbar="">
+    <IconButton label="Move to start" icon="arrow-up" size="sm" shape="square" variant="quiet" tooltip="top" data-album-act="start" />
+    <IconButton label="Move to end" icon="arrow-down" size="sm" shape="square" variant="quiet" tooltip="top" data-album-act="end" />
+    <IconButton label="Remove from album" icon="delete" size="sm" shape="square" variant="quiet" tooltip="top" data-album-act="remove" />
+    <span class="clear"><IconButton label="Clear selection" icon="close" size="sm" shape="square" variant="quiet" tooltip="top" data-album-act="clear" /></span>
   </SelectionBar>
 </section>
 
@@ -68,5 +62,11 @@ const ORDERS = [
   .items {
     display: grid;
     gap: var(--space-4);
+  }
+
+  /* away from Remove from album, at the bar's end */
+  .clear {
+    display: inline-flex;
+    margin-inline-start: auto;
   }
 </style>

@@ -1,10 +1,10 @@
 /**
- * The Albums screen's list view (documentation/editor/list-and-details.md B8): choosing between the gallery's setup
- * and an album opens another page, but nothing above the list moves: the same heading and line, the list and the
- * details at the same place, and the details open with a heading either way. The editor project, on the fixture
- * server (port 4330, with the gallery fixture's `fixture-album`).
+ * The album editor (documentation/gallery/spec.md §9.2, §9.6): a studio, the albums docked beside the album and
+ * the inspector at its end, its Album tab the album's words and settings, its Selection tab the details of what's
+ * selected in the album (one item's words, a text card's, or what several share), kept in the address. Then adding
+ * in the grid. The editor project, on the fixture server (port 4330, with the gallery fixture's albums).
  *
- *   npx playwright test --project=editor -g "editor: albums: list"
+ *   npx playwright test --project=editor -g "editor: albums"
  */
 import { readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
@@ -12,38 +12,66 @@ import AxeBuilder from '@axe-core/playwright';
 import { expect, test, type Page } from '@playwright/test';
 import { FIXTURE, reset } from '../../scripts/editor-test-server.mjs';
 
-const top = async (page: Page, selector: string) => Math.round((await page.locator(selector).first().boundingBox())!.y);
-
-async function layout(page: Page, details: string) {
-  await expect(page.locator('main h1')).toBeVisible();
-  return {
-    heading: await page.locator('main h1').innerText(),
-    line: await page.locator('.screen-head p').first().innerText(),
-    head: await top(page, '.screen-head'),
-    list: await top(page, '[data-album-list]'),
-    details: await top(page, details),
-  };
-}
-
-test.describe('editor: albums: list and details', () => {
+const sidecar = (id: string) => JSON.parse(readFileSync(join(FIXTURE, 'content', 'media', 'articles', 'fixture-album', `${id}.json`), 'utf8')) as { place?: string };
+const albumFile = (id: string) => JSON.parse(readFileSync(join(FIXTURE, 'content', 'albums', `${id}.json`), 'utf8')) as { items: { id: string; text?: string }[] };
+const inspector = (page: Page) => page.locator('[data-album-inspector]');
+const tab = (page: Page, name: string) => inspector(page).getByRole('tab', { name });
+test.describe('editor: albums: the inspector', () => {
   test.beforeEach(() => reset());
 
-  test('the header stays put between the gallery and an album', async ({ page }) => {
-    await page.setViewportSize({ width: 1280, height: 800 });
-    await page.goto('/_edit/albums/?view=list');
-    const gallery = await layout(page, '#gallery-setup-title');
-    expect(gallery.heading).toBe('Albums');
-
+  test('a studio: the albums beside the album, the inspector at its end on the Album tab, which renames the album as you type', async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 });
     await page.goto('/_edit/albums/fixture-album/');
-    const album = await layout(page, '[data-album-words] h2');
-    expect(album).toEqual(gallery);
+    await expect(page.locator('[data-album-list]')).toBeVisible();
+    await expect(inspector(page)).toBeVisible();
+    await expect(tab(page, 'Album')).toHaveAttribute('aria-selected', 'true');
+    await inspector(page).getByLabel('Title', { exact: true }).fill('Harbour walks');
+    await expect(page.locator('[data-title-line][data-album-heading]')).toHaveText('Harbour walks');
+    const axe = await new AxeBuilder({ page }).include('[data-album-inspector]').analyze();
+    expect(axe.violations.map((v) => `${v.id}: ${v.nodes.map((n) => n.target).join(', ')}`)).toEqual([]);
   });
 
-  test("typing the album's title renames its details' heading and the top bar's", async ({ page }) => {
+  test('a click selects one item and the Selection tab shows it; Ctrl adds to it; the address keeps it', async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 });
     await page.goto('/_edit/albums/fixture-album/');
-    await page.locator('[data-album-words]').getByLabel('Title', { exact: true }).fill('Harbour walks');
-    await expect(page.locator('#album-words-title')).toHaveText('Harbour walks');
-    await expect(page.locator('[data-title-line][data-album-heading]')).toHaveText('Harbour walks');
+    const items = page.locator('[data-album-items] li[data-item]');
+    await items.nth(0).click();
+    await expect(tab(page, 'Selection')).toHaveAttribute('aria-selected', 'true');
+    await expect(page).toHaveURL(/[?&]selected=p01\b/);
+    const selection = page.locator('[data-album-selection]');
+    await expect(selection).toHaveAttribute('data-album-selection', 'one');
+    await expect(selection.locator('#album-selection-title')).toHaveText('Picture');
+    await expect(selection.getByLabel('Caption')).toBeVisible();
+    // a plain click on another replaces it
+    await items.nth(1).click();
+    await expect(page).toHaveURL(/[?&]selected=p02\b/);
+    await expect(page.locator('[data-album-items] li[data-item][aria-selected="true"]')).toHaveCount(1);
+    await items.nth(2).click({ modifiers: ['Control'] });
+    await expect(selection).toHaveAttribute('data-album-selection', 'many');
+    await expect(selection.locator('#album-selection-title')).toHaveText('2 selected');
+    await page.reload();
+    await expect(page.locator('[data-album-selection]')).toHaveAttribute('data-album-selection', 'many');
+    await expect(tab(page, 'Selection')).toHaveAttribute('aria-selected', 'true');
+  });
+
+  test("several selected: a place set once is each picture's own", async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await page.goto('/_edit/albums/fixture-album/?selected=p01,p02');
+    const selection = page.locator('[data-album-selection="many"]');
+    const place = selection.getByLabel('Place');
+    await place.fill('Harbour wall');
+    await place.press('Tab');
+    await expect.poll(() => [sidecar('p01').place, sidecar('p02').place], { timeout: 30_000 }).toEqual(['Harbour wall', 'Harbour wall']);
+  });
+
+  test("a text card's words are edited in the inspector, saved as they're typed", async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await page.goto('/_edit/albums/fixture-story/');
+    await page.locator('[data-album-items] li[data-item="words"]').click();
+    const words = page.locator('[data-album-selection="one"]').getByLabel('Words');
+    await expect(words).toBeVisible();
+    await words.fill('From the pass, the way down.');
+    await expect.poll(() => albumFile('fixture-story').items.find((i) => i.id === 'words')?.text, { timeout: 30_000 }).toBe('From the pass, the way down.');
   });
 
   test('choosing items shows the selection bar with its count, and Clear selection hides it', async ({ page }) => {

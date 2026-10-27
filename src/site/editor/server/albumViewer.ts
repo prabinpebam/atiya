@@ -7,7 +7,7 @@
 import { statSync } from 'node:fs';
 import type { Album } from '../../content/schema';
 import type { ContentIndex } from '../../content/load';
-import { albumOrder, coverLead, coverPicture, isTextItem, itemKind, type ItemKind } from '../../content/album';
+import { albumOrder, isTextItem, itemKind, type ItemKind } from '../../content/album';
 import { embedPoster, picture, video } from '../../content/pictures';
 import { PROVIDERS } from '../../content/providers';
 import { fileOf } from '../../content/source';
@@ -47,8 +47,7 @@ export async function viewerItem(index: ContentIndex, album: Album, asked: strin
   if (!item) return null;
   const ids = review ? reviewIds(cells, itemId) : cells.map((c) => c.id);
   const step = viewerStep(ids, itemId)!;
-  const lead = coverPicture(album, lookup)?.item.id ?? coverLead(album);
-  const base = { id: item.id, step, albumDownload: settingsOf(album).download === true, cover: item.id === lead, uses: [] as ViewerUse[], facts: [] as string[], needsAlt: needs(item), large: false };
+  const base = { id: item.id, step, albumDownload: settingsOf(album).download === true, uses: [] as ViewerUse[], facts: [] as string[], needsAlt: needs(item), large: false };
   if (isTextItem(item)) return { ...base, kind: 'text', text: item.text, facts: [KIND_WORDS.text] };
   const kind: ViewerItem['kind'] = itemKind(item, lookup) ?? 'missing';
   const own = { ...(item.download !== undefined ? { download: item.download } : {}), ...(item.autoplay ? { autoplay: true } : {}), ...(item.loop ? { loop: true } : {}) };

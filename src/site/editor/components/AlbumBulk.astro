@@ -1,9 +1,9 @@
 ---
 /**
- * What the album editor's selection does to several items at once (documentation/gallery/spec.md §9.3), each in
- * its own dialog: Add to album (another album, or a new one: the items stay in this one too), Set the date and Set
- * the place (on every selected picture's own words, §4, saved together), and Downloads (this album's: Follow the
- * album, Allow or Don't allow). scripts/albumActions.ts fills in the count and saves.
+ * What the Media screen's selection does to several library items at once (documentation/gallery/spec.md §9.9),
+ * each in its own dialog: Add to album (another album, or a new one), Set the date and Set the place (on every
+ * selected picture's own words, §4, saved together). scripts/albumActions.ts fills in the count and saves. In an
+ * album, the inspector's Selection tab does the same for its selected items (AlbumSelection).
  * @tier editor
  * @a11y Each field is labelled; how many items it changes is said above the fields, and a refusal beside them (a
  * polite status).
@@ -17,20 +17,18 @@ import StatusNote from '../kit/StatusNote.astro';
 import { PLACE_MAX } from '../../content/schema';
 
 interface Props {
-  /** What it does: add to another album, set the date taken, set the place, or set Downloads. */
-  kind: 'album' | 'date' | 'place' | 'download';
+  /** What it does: add to another album, set the date taken, or set the place. */
+  kind: 'album' | 'date' | 'place';
   /** The other albums to choose from (Add to album). */
   albums?: { id: string; title: string }[];
-  /** Whether the album itself allows downloads (Downloads: what Follow the album means). */
-  albumDownload?: boolean;
   /** Where the selection is: an album (the default; its items stay in it too) or the library (the Media screen). */
   from?: 'album' | 'library';
 }
 
-const { kind, albums = [], albumDownload = false, from = 'album' } = Astro.props;
+const { kind, albums = [], from = 'album' } = Astro.props;
 const NEW = '+new';
-const ICONS = { album: 'collection', date: 'calendar', place: 'location', download: 'download' } as const;
-const SAVES = { album: 'Add to album', date: 'Set the date', place: 'Set the place', download: 'Set downloads' };
+const ICONS = { album: 'collection', date: 'calendar', place: 'location' } as const;
+const SAVES = { album: 'Add to album', date: 'Set the date', place: 'Set the place' };
 const choices = [...albums.map((a) => ({ value: a.id, label: a.title })), { value: NEW, label: 'A new album', description: 'Made now, with these in it' }];
 ---
 
@@ -52,21 +50,7 @@ const choices = [...albums.map((a) => ({ value: a.id, label: a.title })), { valu
     )
   }
   {kind === 'date' && <TextField label="Date taken" type="date" name="taken" hint="Leave it empty to clear their dates: they'll use their files' own again." />}
-  {
-    kind === 'download' && (
-      <Select
-        label="Downloads"
-        name="download"
-        value="follow"
-        options={[
-          { value: 'follow', label: albumDownload ? 'Follow the album (allowed)' : 'Follow the album (not allowed)' },
-          { value: 'allow', label: 'Allow' },
-          { value: 'deny', label: "Don't allow" },
-        ]}
-        hint="Whether the lightbox offers their original files here. A linked video never can be."
-      />
-    )
-  }
+
   {kind === 'place' && <TextField label="Place" name="place" maxlength={PLACE_MAX} hint="Leave it empty to clear their places." />}
   <StatusNote live="polite" data-bulk-problem="" />
   <ActionBar align="end">
@@ -88,5 +72,5 @@ const choices = [...albums.map((a) => ({ value: a.id, label: a.title })), { valu
   import { each } from '../../scripts/page';
   import { initAlbumActions } from '../scripts/albumActions';
 
-  each<HTMLElement>('[data-album-editor], [data-media-library]', (root, signal) => initAlbumActions(root, signal));
+  each<HTMLElement>('[data-media-library]', (root, signal) => initAlbumActions(root, signal));
 </script>

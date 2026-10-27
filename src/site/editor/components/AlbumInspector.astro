@@ -1,0 +1,41 @@
+---
+/**
+ * The album editor's inspector (documentation/gallery/spec.md §9.6), docked at the studio's end like the article
+ * editor's: two tabs, Selection (the details of what's selected in the album: the selection slot, AlbumSelection)
+ * and Album (the album's own words and settings: the album slot, AlbumForm). It opens on Selection when the address
+ * names a selection, else on Album; selecting in the album turns to Selection. Its width is the studio's
+ * (scripts/resize.ts); its forms' sections lay out by their own width (kit/Sections). scripts/albumInspector.ts
+ * follows the selection, keeps it in the address and draws the Selection tab again.
+ * @tier editor
+ * @a11y The tabs follow the APG pattern; every field in them has a label, and hints say what a field does.
+ * @a11y Drawn again from the server after a change (a region), it keeps what it shows with a line along its top.
+ */
+import Tabs from '../../components/compounds/Tabs.astro';
+import type { IconName } from '../../design/icons';
+
+interface Props {
+  /** The tab it opens on: the selection's details (the address names a selection) or the album's. */
+  open?: 'selection' | 'album';
+}
+
+const { open = 'album' } = Astro.props;
+const tabs: { id: string; label: string; icon: IconName }[] = [
+  { id: 'selection', label: 'Selection', icon: 'image' },
+  { id: 'album', label: 'Album', icon: 'gallery' },
+];
+---
+
+<div data-album-inspector data-inspector-shell data-scrollbar data-busy-line="sticky">
+  <Tabs label="Settings" id="album-inspector-tabs" fill tabs={tabs} selected={open}>
+    <div slot="selection" data-inspector-panel><slot name="selection" /></div>
+    <div slot="album" data-inspector-panel><slot name="album" /></div>
+  </Tabs>
+</div>
+
+
+<script>
+  import { each } from '../../scripts/page';
+  import { initAlbumInspector } from '../scripts/albumInspector';
+
+  each<HTMLElement>('[data-album-editor]', (root, signal) => initAlbumInspector(root, signal));
+</script>

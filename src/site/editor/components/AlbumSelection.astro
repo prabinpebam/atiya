@@ -1,0 +1,154 @@
+---
+/**
+ * The album editor's inspector, its Selection tab (documentation/gallery/spec.md §9.6): the details of what's
+ * selected in the album, drawn by the server from the address's `?selected=`. Nothing selected: how to select.
+ * One picture or video: its kind and place in the album, its preview with View large, then its words and this
+ * album's settings for it (the info slot: MediaInfo, saved as they're typed). One text card: its words, saved as
+ * they're typed. Several: what they are, their thumbnails, then what they can share: the date taken and the place
+ * (each picture's own words, set on all of them at once) and this album's downloads. scripts/albumInspector.ts
+ * draws it again when the selection changes and saves what several share.
+ * @tier editor
+ * @a11y Named by its heading. Every field is labelled; a value the selected items don't share says so in its hint
+ * (never a value that isn't theirs); a refused change is said under the fields (a polite status).
+ */
+import TextField from '../../components/fundamentals/TextField.astro';
+import Select from '../../components/fundamentals/Select.astro';
+import Button from '../../components/fundamentals/Button.astro';
+import Image from '../../components/fundamentals/Image.astro';
+import Text from '../../components/fundamentals/Text.astro';
+import Pane from '../kit/Pane.astro';
+import PictureField from '../kit/PictureField.astro';
+import SectionHead from '../kit/SectionHead.astro';
+import StatusNote from '../kit/StatusNote.astro';
+import { ITEM_DESCRIPTION_MAX, PLACE_MAX } from '../../content/schema';
+import { type SelectionView, type Shared } from '../model/albumInspector';
+
+interface Props {
+  /** What's selected, as the server drew it. */
+  view: SelectionView;
+}
+
+const { view } = Astro.props;
+const KIND: Record<string, string> = { picture: 'Picture', animated: 'Animated picture', drawing: 'Drawing', video: 'Video file', embed: 'Linked video', text: 'Text card', missing: 'Missing item' };
+const one = view.state === 'one' ? view.item : null;
+const many = view.state === 'many' ? view : null;
+const mixed = (s: Shared, what: string) => (s.state === 'mixed' ? `Mixed: each keeps its own ${what} until you set one here.` : undefined);
+const valueOf = (s: Shared) => (s.state === 'same' ? s.value : '');
+const follow = many?.albumDownload ? 'Follow the album (allowed)' : 'Follow the album (not allowed)';
+const DOWNLOADS = [
+  { value: 'follow', label: follow },
+  { value: 'allow', label: 'Allow' },
+  { value: 'deny', label: "Don't allow" },
+];
+const download = many?.summary.download;
+const more = many ? many.summary.count - many.thumbs.length : 0;
+---
+
+<div class="album-selection" data-region="album-selection" data-album-selection={view.state}>
+  {view.state === 'none' && <Text variant="ui" tone="muted">Select a picture, a video or a text card to see its details. Ctrl or Shift selects more than one.</Text>}
+  {
+    one && (
+      <Fragment>
+        <SectionHead title={KIND[one.kind]} titleId="album-selection-title">
+          <Fragment slot="end">
+            <Text as="span" variant="small" tone="muted">
+              {one.step.at} of {one.step.of}
+            </Text>
+          </Fragment>
+        </SectionHead>
+        {one.kind === 'text' ? (
+          <TextField label="Words" id="album-card-text" multiline rows={6} maxlength={ITEM_DESCRIPTION_MAX} value={one.text ?? ''} hint="Short Markdown: *italic*, **bold** and links. Saved as you type." data-album-card-text={one.id} />
+        ) : one.kind === 'missing' ? (
+          <Text variant="ui" tone="muted">
+            It's no longer in your library. Remove it from the album, or add the picture again.
+          </Text>
+        ) : (
+          <Fragment>
+            <PictureField thumb={view.state === 'one' ? view.thumb : undefined} ratio="4/3" words={view.state === 'one' && view.thumb?.alt ? view.thumb.alt : one.kind === 'embed' || one.kind === 'video' ? undefined : 'No alt text'} empty="placeholder">
+              <Button variant="secondary" size="sm" icon="expand" data-album-view={one.id}>
+                View large
+              </Button>
+            </PictureField>
+            <slot name="info" />
+          </Fragment>
+        )}
+      </Fragment>
+    )
+  }
+  {
+    many && (
+      <Fragment>
+        <SectionHead title={`${many.summary.count} selected`} titleId="album-selection-title" />
+        <Text variant="small" tone="muted">
+          {many.summary.words}
+        </Text>
+        <ul class="thumbs" aria-label="Selected items">
+          {many.thumbs.map((t) => (
+            <li>
+              <Image src={t.thumb} alt={t.alt} width={t.width} height={t.height} ratio="1/1" />
+            </li>
+          ))}
+          {more > 0 && (
+            <li class="more">
+              <Text as="span" variant="small" tone="muted">
+                +{more}
+              </Text>
+            </li>
+          )}
+        </ul>
+        <div class="groups">
+        {many.summary.media.length > 0 ? (
+          <Pane name="words" title="Their words" titleId="album-selection-words" group data-selection-words="">
+            <Text variant="small" tone="muted">
+              Each picture's own: set here, it changes wherever the picture is shown.
+            </Text>
+            <TextField label="Date taken" type="date" id="album-selection-taken" name="taken" value={valueOf(many.taken)} hint={mixed(many.taken, 'date') ?? 'Leave it empty to use their files’ own dates.'} />
+            <TextField label="Place" id="album-selection-place" name="place" maxlength={PLACE_MAX} value={valueOf(many.place)} hint={mixed(many.place, 'place') ?? 'Leave it empty to clear their places.'} />
+            <StatusNote live="polite" hidden data-selection-problem="" />
+          </Pane>
+        ) : (
+          <Text variant="small" tone="muted">
+            Text cards have no date or place.
+          </Text>
+        )}
+        {download && (
+          <Pane name="album" title="In this album" titleId="album-selection-album" group>
+            <Select label="Downloads" id="album-selection-download" options={DOWNLOADS} value={download === 'mixed' ? undefined : download} placeholder={download === 'mixed' ? 'Mixed: each keeps its own' : undefined} data-selection-download="" />
+          </Pane>
+        )}
+        </div>
+      </Fragment>
+    )
+  }
+</div>
+
+<style>
+  .album-selection {
+    display: grid;
+    align-content: start;
+    gap: var(--space-4);
+  }
+
+  /* its groups a section's space apart, as the Album tab's */
+  .groups {
+    display: grid;
+    gap: var(--space-5);
+  }
+
+  .thumbs {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(var(--size-avatar-md), 1fr));
+    gap: var(--space-2);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .more {
+    display: grid;
+    place-items: center;
+    aspect-ratio: 1;
+    border-radius: var(--c-image-radius);
+    background: var(--color-bg-sunk);
+  }
+</style>

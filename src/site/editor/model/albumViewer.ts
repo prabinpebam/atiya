@@ -64,7 +64,6 @@ export interface ViewerItem {
   autoplay?: boolean;
   loop?: boolean;
   albumDownload: boolean;
-  cover: boolean;
   uses: ViewerUse[];
   /** The file's facts, in words. */
   facts: string[];

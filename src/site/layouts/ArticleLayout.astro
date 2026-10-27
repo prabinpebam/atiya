@@ -54,14 +54,16 @@ interface Props {
   sealed?: { access: 'private'; id: string; contact: string; privacy?: string };
   /** The articles the page shows (dev only): a change to another article's files doesn't reload it. */
   shows?: string[];
+  /** Edit mode's canvas: the page without the site's header and breadcrumbs, whose links lead nowhere there. */
+  bare?: boolean;
 }
 
-const { title, description, nav, footer, action, crumbs, header, prev, next, frame, related, sealed, shows } = Astro.props;
+const { title, description, nav, footer, action, crumbs, header, prev, next, frame, related, sealed, shows, bare = false } = Astro.props;
 const sealing = !!sealed && import.meta.env.PROD;
 ---
 
 <PageShell title={title} description={description} frame={frame ? 'planet' : 'site'} canonical={frame?.canonical} sealed={sealed?.access} shows={shows} preload={header.standfirst ? ['display', 'display-italic', 'text', 'ui'] : ['display', 'text', 'ui']}>
-  {frame ? <PlaceBar frame={frame} /> : <SiteHeader nav={nav} action={action} access />}
+  {frame ? <PlaceBar frame={frame} /> : !bare && <SiteHeader nav={nav} action={action} access />}
   <main id="main" class="page" tabindex="-1">
     {
       sealing && (
@@ -74,7 +76,7 @@ const sealing = !!sealed && import.meta.env.PROD;
     {sealed && <span hidden data-page-title>{title}</span>}
     <article class="article" data-minimap-source>
       {
-        crumbs && !frame && (
+        crumbs && !frame && !bare && (
           <div class="crumbs">
             <Breadcrumbs trail={crumbs.trail} current={crumbs.current} />
           </div>

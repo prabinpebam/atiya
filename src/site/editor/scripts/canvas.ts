@@ -394,7 +394,8 @@ export function initCanvas(chrome: HTMLElement, signal: AbortSignal) {
   // ---------- clicks: select, and keep links and players inert ----------
   /** The page's own way round it, not its content: the minimap works in the canvas as on the site. */
   const wayfinding = (t: EventTarget | null) => t instanceof Element && !!t.closest('[data-minimap]');
-  on(
+  // on the window, so it runs before the page's own document listeners (the lightbox's opened pictures first)
+  addEventListener(
     'click',
     (e) => {
       if (preview) return;
@@ -414,7 +415,7 @@ export function initCanvas(chrome: HTMLElement, signal: AbortSignal) {
         select(null);
       }
     },
-    true,
+    { signal, capture: true },
   );
 
   chrome.addEventListener(

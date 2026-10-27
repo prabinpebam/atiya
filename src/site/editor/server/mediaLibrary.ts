@@ -88,7 +88,6 @@ export async function libraryItem(index: ContentIndex, id: string): Promise<View
   const used = usesOf(index, id);
   return {
     ...item,
-    cover: false,
     uses: [
       ...used.albums.map((a) => ({ title: a.title, href: withBase(`/_edit/albums/${a.id}/`), kind: 'album' as const, draft: a.status !== 'published' })),
       ...used.articles.map((a) => ({ title: a.title, href: withBase(`/_edit/articles/${a.id}/`), kind: 'page' as const, draft: a.status !== 'published' })),

@@ -123,3 +123,27 @@
 [data-title-line] > [data-variant][data-tone] {
   text-wrap: nowrap;
 }
+
+/* ---------- a docked inspector (the article editor's, the album editor's): the studio's end column, scrolled in
+   place with its own bar, and its tab panels each a column at least as tall as it (the shown form takes all of
+   it and its actions sit at the bottom) ---------- */
+[data-inspector-shell] {
+  block-size: 100%;
+  min-block-size: 0;
+  padding: var(--space-4);
+  overflow: auto;
+  scrollbar-width: none;
+  border-inline-start: var(--border-hairline) solid var(--color-rule);
+  background: var(--color-bg-raised);
+}
+
+[data-inspector-panel] {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  min-block-size: 0;
+}
+
+[data-inspector-panel] > [hidden] {
+  display: none;
+}

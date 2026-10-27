@@ -1,0 +1,14 @@
+{
+  "kind": "embed",
+  "provider": "youtube",
+  "id": "f-fSpQO3jdo",
+  "title": "WrapUp of DesignUp 2018",
+  "shape": {
+    "width": 1920,
+    "height": 1080
+  },
+  "poster": {
+    "file": "wrapup-of-designup-2018.poster.webp"
+  },
+  "visibility": "public"
+}

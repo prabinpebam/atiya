@@ -38,7 +38,7 @@ Use list and details when a screen lets someone **add, choose, edit, order or re
 It doesn't apply to:
 
 - **a screen that edits one object:** Settings, Ways to explore, Navigation (one menu, previewed as it reads), the themes panel;
-- **a canvas or a grid of pictures:** the article editor, the album editor's photo grid, Media and the Albums tiles view, where the pictures are the list;
+- **a canvas or a grid of pictures:** the article editor, the album editor (a studio like the article editor's since 28 October 2026: the list of albums docked beside its grid, and an inspector), Media and the Albums tiles view, where the pictures are the list;
 - **a report:** the dashboard, Save to remote, Tests.
 
 One screen is a **known exception, waiting on a rebuild:** **AI** (`/_edit/ai/`). Its services are a collection (added, edited, tested and removed one by one), but it shows them as cards with a form each, and Remove asks with the browser's own confirm instead of a two-press Remove. It was built before this pattern was written down (AI services stage S4) and is recorded here rather than counted as following it. The rebuild puts the services in a `ListPane` (the writer and the decider as its settings row, Add a service in `add`) beside a `DetailPane` for the chosen service (its model, private pages, Test and a two-press Remove), keyed by `?service=` ([AI services §16](./ai-services.md#16-as-built)). It's the owner's to schedule, and until then no new screen may follow its lead.
@@ -86,7 +86,7 @@ The details keep a form's measure (`--size-popout`) however wide the screen; the
 | B5 | **Removing takes two presses.** The first turns the button into "Remove for good" or "Delete for good" (`data-confirm`); the second removes it. Afterwards the item that took its place is chosen (the next, else the new last), else `new`. |
 | B6 | **Focus stays where the person is.** After choosing, focus stays on the chosen row (on Add, it goes to the new item's first field); after a move, on the same Move button, unless the item reached that end (then on the other); after a removal, on the newly chosen row. |
 | B7 | **Phones.** Under 56 rem the list sits above the details and its rows scroll within a cap (`--c-editor-scope-list`), so the details are never pushed out of reach. |
-| B8 | **Nothing above the list moves.** The screen's heading and line are the same whichever item is chosen, and the list and the details start at the same place. When choosing an item opens a page of its own (an album opens the album editor), that page draws the same heading and line (one constant, like `ALBUMS_LIST_INTRO`), and its details open with the item's name as their heading and a line, as every other details pane does. |
+| B8 | **Nothing above the list moves.** The screen's heading and line are the same whichever item is chosen, and the list and the details start at the same place; the details open with the item's name as their heading and a line, as every other details pane does. When choosing an item opens a page of its own that isn't a list and details (an album opens the album editor, a studio), the list is docked in that page's own frame instead, with the open item marked. |
 
 ## 5. Building a new screen on it
 
@@ -116,3 +116,4 @@ The details keep a form's measure (`--size-popout`) however wide the screen; the
   - Home highlights was rebuilt from a single form of cards into this pattern ([highlights spec §2](../home-views/highlights.md)).
   - Sections (its own `SectionManager` with tabs) and Access (`GrantDetails`, with its state groups) keep their own list contents inside the same `SplitView` and `ListPane`.
   - The album editor took the Albums screen's heading and line, and its details open with the album's name (B8), so choosing between the gallery and an album no longer moves the list up and down (the owner's report, 24 October 2026).
+- **28 October 2026.** The album editor became a studio (the article editor's `Studio`, in its `flow` form): the list of albums is docked as its outline (`ListPane docked`, `AlbumList docked`), the album in the middle, and an inspector on the right, so it no longer draws the Albums screen's heading and line (B8 as changed) ([gallery spec §9.2](../gallery/spec.md#92-the-album-editor)).

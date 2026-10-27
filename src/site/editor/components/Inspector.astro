@@ -28,9 +28,9 @@ const tabs: { id: string; label: string; icon: IconName }[] = [
 if (review) tabs.push({ id: 'review', label: 'Review', icon: 'sparkles' });
 ---
 
-<div class="inspector" data-region="inspector" data-editor-inspector data-scrollbar data-busy-line="sticky">
+<div data-region="inspector" data-editor-inspector data-inspector-shell data-scrollbar data-busy-line="sticky">
   <Tabs label="Settings" id="inspector-tabs" fill tabs={tabs} selected={review ? 'review' : undefined}>
-    <div slot="block" class="panel">
+    <div slot="block" data-inspector-panel>
       <div data-editor-noblock>
         <Text variant="ui" tone="muted">Select a block on the page, or in the outline, to see its settings.</Text>
       </div>
@@ -46,28 +46,3 @@ if (review) tabs.push({ id: 'review', label: 'Review', icon: 'sparkles' });
   </Tabs>
 </div>
 
-<style>
-  .inspector {
-    block-size: 100%;
-    min-block-size: 0;
-    padding: var(--space-4);
-    overflow: auto;
-    scrollbar-width: none;
-    border-inline-start: var(--border-hairline) solid var(--color-rule);
-    background: var(--color-bg-raised);
-  }
-
-  /* a panel is a column at least as tall as the inspector (the tabs fill it): the shown form (kit/Form, fill)
-     takes all of it, its sections stretch, and its actions sit at the bottom (BlockForm). Drawn again from the
-     server, it keeps what it shows with a line held at the top of what scrolls (data-busy-line="sticky") */
-  .panel {
-    display: flex;
-    flex-direction: column;
-    gap: var(--space-4);
-    min-block-size: 0;
-  }
-
-  .panel > [hidden] {
-    display: none;
-  }
-</style>

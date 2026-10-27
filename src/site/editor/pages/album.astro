@@ -1,20 +1,24 @@
 ---
-/** Edit mode's album editor (documentation/gallery/spec.md §9.2 to §9.7). Dev only: injected by integrations/editor.mjs. */
+/**
+ * Edit mode's album editor (documentation/gallery/spec.md §9.2 to §9.7), a studio like the article editor's: the
+ * albums list docked beside the album (its cover and items), and the inspector (its Selection and Album tabs).
+ * Dev only: injected by integrations/editor.mjs.
+ */
 import EditorLayout from '../EditorLayout.astro';
-import AlbumWords from '../components/AlbumWords.astro';
 import AlbumCover from '../components/AlbumCover.astro';
 import AlbumCoverEditor from '../components/AlbumCoverEditor.astro';
 import AlbumItems from '../components/AlbumItems.astro';
-import AlbumSettings from '../components/AlbumSettings.astro';
+import AlbumForm from '../components/AlbumForm.astro';
+import AlbumInspector from '../components/AlbumInspector.astro';
+import AlbumSelection from '../components/AlbumSelection.astro';
+import Studio from '../components/Studio.astro';
 import AlbumAdd from '../components/AlbumAdd.astro';
 import AlbumViewer from '../components/AlbumViewer.astro';
 import MediaInfo from '../components/MediaInfo.astro';
-import AlbumBulk from '../components/AlbumBulk.astro';
 import MediaGrid from '../components/MediaGrid.astro';
 import ContentIssues from '../components/ContentIssues.astro';
 import AlbumList from '../components/AlbumList.astro';
 import Dialog from '../../components/compounds/Dialog.astro';
-import SplitView from '../../components/compounds/SplitView.astro';
 import IconButton from '../../components/fundamentals/IconButton.astro';
 import Button from '../../components/fundamentals/Button.astro';
 import Link from '../../components/fundamentals/Link.astro';
@@ -25,16 +29,19 @@ import { ALWAYS, REGIONS_HEADER, regionsAsked, wants } from '../model/regions';
 import { readDoc } from '../server/store';
 import { OVERLAY, STRUCTURE } from '../server/articles';
 import { albumKey, albumSection, albumSections, lookupOf } from '../server/albums';
-import { albumCells, coverBand } from '../server/albumScreens';
+import { albumCells, coverBand, thumbOf } from '../server/albumScreens';
+import { sidecarOf } from '../server/media';
 import { viewerItem } from '../server/albumViewer';
 import { galleryList } from '../server/gallery';
 import { bandOf } from '../../content/bands';
 import { albumCounts, albumDates, countWords, dateSpan } from '../../content/album';
 import { settingsOf } from '../model/album';
-import { galleries, ALBUMS_LIST_INTRO } from '../model/gallery';
+import { galleries } from '../model/gallery';
+import { parseSelected, selectionSummary, shared, SELECTION_THUMBS, type SelectionView } from '../model/albumInspector';
 import { albumPath } from '../../content/repository';
 import { withBase } from '../../design/meta';
 import { hasPrivate, privateRoot } from '../../content/source';
+import { isTextItem } from '../../content/album';
 import type { Album, Overlay, SiteStructure } from '../../content/schema';
 
 export const prerender = false;
@@ -75,7 +82,23 @@ const needAlt = grid.cells.filter((c) => c.needsAlt).length;
 const itemAsked = Astro.url.searchParams.get('item');
 const reviewing = Astro.url.searchParams.get('review') === '1';
 const viewer = loaded.ok && !fragment && draw('album-viewer') && (itemAsked || reviewing) ? await viewerItem(loaded.index, album, itemAsked ?? '', reviewing) : null;
-const others = loaded.ok ? [...loaded.index.albums.values()].filter((a) => a.id !== id).map((a) => ({ id: a.id, title: a.title })) : [];
+// the inspector's Selection tab (§9.6): what the address says is selected (?selected=, kept by scripts/albumInspector.ts)
+const ids = parseSelected(Astro.url.searchParams.get('selected'), album);
+const wordsOf = (media: string) => sidecarOf(media)?.sidecar as { taken?: string; place?: string } | undefined;
+let selection: SelectionView = { state: 'none' };
+if (loaded.ok && !fragment && draw('album-selection') && ids.length === 1) {
+  const item = await viewerItem(loaded.index, album, ids[0], false);
+  const it = album.items.find((i) => i.id === ids[0]);
+  const thumb = item && it && !isTextItem(it) && item.kind !== 'missing' ? await thumbOf(loaded.index, it.media).catch(() => undefined) : undefined;
+  if (item) selection = { state: 'one', item, thumb };
+} else if (loaded.ok && !fragment && draw('album-selection') && ids.length > 1) {
+  const summary = selectionSummary(album, ids, lookup);
+  const shown = summary.media.filter((m) => lookup(m)).slice(0, SELECTION_THUMBS);
+  const thumbs = await Promise.all(shown.map((m) => thumbOf(loaded.index, m)));
+  const taken = shared(summary.media.map((m) => wordsOf(m)?.taken));
+  const place = shared(summary.media.map((m) => wordsOf(m)?.place));
+  selection = { state: 'many', summary, thumbs, taken, place, albumDownload: settings.download };
+}
 // the albums list beside it (§9.2)
 const list = loaded.ok && !fragment && draw('album-list') ? await galleryList(loaded.index, section) : null;
 
@@ -97,7 +120,7 @@ const state = { id, key, version: doc.version, album, facts: grid.facts, owner }
 const json = JSON.stringify(state).replace(/</g, '\\u003c');
 ---
 
-<EditorLayout title={album.title} screen="album" heading="Albums" intro={ALBUMS_LIST_INTRO}>
+<EditorLayout title={album.title} screen="album" nav={false}>
   <Fragment slot="title">
     <Link href={withBase('/_edit/albums/')} variant="quiet">Albums</Link>
     <span data-album-heading data-title-line title={album.title}><Text as="span" variant="ui"><strong>{album.title}</strong></Text></span>
@@ -107,7 +130,6 @@ const json = JSON.stringify(state).replace(/</g, '\\u003c');
     <IconButton label="Undo" icon="undo" size="sm" data-album-undo="" />
     <IconButton label="Redo" icon="redo" size="sm" data-album-redo="" />
     <Button variant="primary" size="sm" icon="plus" data-dialog-open="album-add">Add</Button>
-    <IconButton label="Settings" icon="settings" size="sm" data-dialog-open="album-settings" />
     {path && <IconButton label="View on the site" icon="external" size="sm" href={path} />}
     <Button variant="secondary" size="sm" icon="publish" data-album-publish="">{published ? 'Unpublish' : 'Publish'}</Button>
   </Fragment>
@@ -115,13 +137,10 @@ const json = JSON.stringify(state).replace(/</g, '\\u003c');
     loaded.ok && fragment ? (
       picker && <MediaGrid mode="pick" media={picker} owner={owner} paging={pickerPaging} />
     ) : loaded.ok ? (
-      <SplitView>
-      <Fragment slot="list">
-        {list && <AlbumList gallery={list.gallery && { id: list.gallery.id, title: list.gallery.title, line: list.line ?? '' }} albums={list.albums} elsewhere={list.elsewhere} current={id} setupHref={withBase('/_edit/albums/?view=list')} tilesHref={withBase('/_edit/albums/?view=tiles')} />}
-      </Fragment>
-      <div data-album-editor data-editor-stack>
+      <Studio flow data-album-editor="">
+        {list && <AlbumList docked slot="outline" gallery={list.gallery && { id: list.gallery.id, title: list.gallery.title, line: list.line ?? '' }} albums={list.albums} elsewhere={list.elsewhere} current={id} setupHref={withBase('/_edit/albums/?view=list')} tilesHref={withBase('/_edit/albums/?view=tiles')} />}
+      <div slot="canvas" data-editor-stack>
         <script is:inline type="application/json" data-region="album-state" data-album-state set:html={json} />
-        <AlbumWords title={album.title} summary={album.summary} description={album.description} count={count} dates={dates} needAlt={needAlt} status={published ? 'published' : 'draft'} />
         <AlbumCover band={band} arranged={cover.arranged} items={cover.items} />
         <AlbumCoverEditor square={square} />
         <AlbumItems title={album.title} cells={grid.cells} order={album.order ?? 'oldest'} />
@@ -136,9 +155,6 @@ const json = JSON.stringify(state).replace(/</g, '\\u003c');
               Add them
             </Button>
           </Fragment>
-        </Dialog>
-        <Dialog id="album-settings" title="Album settings">
-          <AlbumSettings layout={settings.layout} captions={settings.captions} dates={settings.dates} download={settings.download} large={settings.large} section={section} sections={sections} private={priv} protectable={hasPrivate(privateRoot())} path={path} />
         </Dialog>
         <Dialog id="album-text" title="Text card">
           <AlbumAdd kind="text" />
@@ -169,20 +185,14 @@ const json = JSON.stringify(state).replace(/</g, '\\u003c');
             <AlbumViewer item={viewer} review={reviewing}>{viewer && <Fragment slot="info"><MediaInfo item={viewer} review={reviewing} /></Fragment>}</AlbumViewer>
           </div>
         </Dialog>
-        <Dialog id="album-add-to" title="Add to another album">
-          <AlbumBulk kind="album" albums={others} />
-        </Dialog>
-        <Dialog id="album-date" title="Set the date taken" size="sm">
-          <AlbumBulk kind="date" />
-        </Dialog>
-        <Dialog id="album-place" title="Set the place" size="sm">
-          <AlbumBulk kind="place" />
-        </Dialog>
-        <Dialog id="album-downloads" title="Downloads" size="sm">
-          <AlbumBulk kind="download" albumDownload={settings.download} />
-        </Dialog>
       </div>
-      </SplitView>
+      <AlbumInspector slot="inspector" open={ids.length ? 'selection' : 'album'}>
+        <AlbumSelection slot="selection" view={selection}>
+          {selection.state === 'one' && selection.item.media && <Fragment slot="info"><MediaInfo item={selection.item} scope="inspector" /></Fragment>}
+        </AlbumSelection>
+        <AlbumForm slot="album" title={album.title} summary={album.summary} description={album.description} count={count} dates={dates} needAlt={needAlt} status={published ? 'published' : 'draft'} settings={settings} section={section} sections={sections} private={priv} protectable={hasPrivate(privateRoot())} path={path} />
+      </AlbumInspector>
+      </Studio>
     ) : (
       <ContentIssues issues={loaded.issues} />
     )

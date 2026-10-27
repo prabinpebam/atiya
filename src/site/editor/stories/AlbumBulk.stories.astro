@@ -4,22 +4,14 @@ import AlbumBulk from '../components/AlbumBulk.astro';
 import { OTHER_ALBUMS } from './samples';
 ---
 
-<Example title="Add to another album" description="Choose an album, or a new one by its title; the items stay in this one too.">
-  <AlbumBulk kind="album" albums={OTHER_ALBUMS} />
-</Example>
-
-<Example title="Add to album, from the library" description="The Media screen's selection: no album of their own to stay in.">
+<Example title="Add to album, from the library" description="The Media screen's selection: another album, or a new one by its title.">
   <AlbumBulk kind="album" albums={OTHER_ALBUMS} from="library" />
 </Example>
 
 <Example title="Set the date taken" description="One date for every selected item, saved on each.">
-  <AlbumBulk kind="date" />
+  <AlbumBulk kind="date" from="library" />
 </Example>
 
 <Example title="Set the place" description="One place for every selected item, saved on each.">
-  <AlbumBulk kind="place" />
-</Example>
-
-<Example title="Downloads" description="Follow the album, or allow or turn off downloads for the selected items.">
-  <AlbumBulk kind="download" albumDownload />
+  <AlbumBulk kind="place" from="library" />
 </Example>

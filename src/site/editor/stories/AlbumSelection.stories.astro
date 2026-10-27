@@ -1,0 +1,32 @@
+---
+import Example from '../../library/Example.astro';
+import AlbumSelection from '../components/AlbumSelection.astro';
+import MediaInfo from '../components/MediaInfo.astro';
+import { SELECTION_MANY, SELECTION_MIXED, SELECTION_ONE, VIEWER_MISSING, VIEWER_TEXT } from './samples';
+---
+
+<Example title="Nothing selected" description="How to select: a click, Ctrl or Shift for more." layout="block">
+  <AlbumSelection view={{ state: 'none' }} />
+</Example>
+
+<Example title="One picture" description="Its kind and place in the album, its preview with View large, then its words and this album's settings for it." layout="block">
+  <AlbumSelection view={SELECTION_ONE}>
+    {SELECTION_ONE.state === 'one' && <Fragment slot="info"><MediaInfo item={SELECTION_ONE.item} scope="inspector" /></Fragment>}
+  </AlbumSelection>
+</Example>
+
+<Example title="A text card" description="Its words, saved as they're typed." layout="block">
+  <AlbumSelection view={{ state: 'one', item: VIEWER_TEXT }} />
+</Example>
+
+<Example title="A missing item" description="Its library item is gone: what to do about it." layout="block">
+  <AlbumSelection view={{ state: 'one', item: VIEWER_MISSING }} />
+</Example>
+
+<Example title="Several selected" description="What they are and their thumbnails, then what they share: the date they were taken, their place and this album's downloads." layout="block">
+  <AlbumSelection view={SELECTION_MANY} />
+</Example>
+
+<Example title="Several that differ" description="A value they don't share is left empty, and its hint says each keeps its own; more than eight show as a count." layout="block">
+  <AlbumSelection view={SELECTION_MIXED} />
+</Example>

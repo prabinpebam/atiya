@@ -20,6 +20,7 @@ import type { BandTile } from '../../scripts/albumBandRules';
 import type { CoverItem } from '../model/cover';
 import type { PhotoCell } from '../kit/PhotoGrid.astro';
 import type { ViewerItem } from '../model/albumViewer';
+import type { SelectionView } from '../model/albumInspector';
 import type { Picture } from '../../content/pictures';
 import { rowLine, type AlbumRow, type Gallery } from '../model/gallery';
 import { chartData } from '../model/highlightChart';
@@ -419,7 +420,7 @@ export const COVER_ITEMS: CoverItem[] = [
 /** A sample painting as the viewer draws it. */
 const pictureOf = (s: ReturnType<typeof sample>, more: Partial<Picture> = {}): Picture => ({ src: s.src, srcset: s.srcset, alt: s.alt, width: s.width, height: s.height, full: s.full, thumb: s.thumb, bg: 'transparent', ...more });
 
-const VIEWER_BASE = { albumDownload: true, cover: false, needsAlt: false, large: false, uses: [] as ViewerItem['uses'] };
+const VIEWER_BASE = { albumDownload: true, needsAlt: false, large: false, uses: [] as ViewerItem['uses'] };
 
 /** The viewer at a picture with its dark mode version, used on a page and in another album (made-up names). */
 export const VIEWER_PICTURE: ViewerItem = {
@@ -429,7 +430,6 @@ export const VIEWER_PICTURE: ViewerItem = {
   step: { at: 1, of: 8, prev: null, next: 'i2' },
   picture: pictureOf(pond, { dark: { src: plaza.src, srcset: plaza.srcset, width: plaza.width, height: plaza.height, full: plaza.full, thumb: plaza.thumb, bg: 'transparent' } }),
   media: { id: 'samples/pond', key: '/content/media/samples/pond.json', version: 'sample', sidecar: { kind: 'image', file: 'pond.webp', alt: pond.alt, caption: pond.caption, place: 'The lily pond', taken: '2026-05-03', visibility: 'public' } },
-  cover: true,
   uses: [
     { title: 'Walks on the planet', href: '/_edit/albums/walks/', kind: 'album', draft: false },
     { title: 'Ponds I have known', href: '/_edit/article/ponds/', kind: 'page', draft: true },
@@ -555,3 +555,22 @@ export const SLIDE_PREVIEW_PICTURE: SlidePreviewData = {
 
 /** A failed drawing in Add slide: the picture exists, but couldn't be drawn here. */
 export const SLIDE_PREVIEW_FAILED: SlidePreviewData = { ...SLIDE_PREVIEW_PICTURE, picture: undefined, pictureFailed: true };
+
+/** The album inspector's Selection tab: one picture (its thumbnail), several sharing a date, and several that differ. */
+export const SELECTION_ONE: SelectionView = { state: 'one', item: VIEWER_PICTURE, thumb: thumbOf(pond) };
+export const SELECTION_MANY: SelectionView = {
+  state: 'many',
+  summary: { count: 3, words: '3 pictures', media: ['samples/pond', 'samples/bridge', 'samples/workshop'], download: 'follow' },
+  thumbs: [thumbOf(pond), thumbOf(bridge), thumbOf(workshop)],
+  taken: { state: 'same', value: '2026-05-03' },
+  place: { state: 'none' },
+  albumDownload: true,
+};
+export const SELECTION_MIXED: SelectionView = {
+  state: 'many',
+  summary: { count: 12, words: '10 pictures, 1 video, 1 text card', media: ['samples/pond', 'samples/bridge', 'samples/workshop', 'samples/plaza', 'samples/tour'], download: 'mixed' },
+  thumbs: [thumbOf(pond), thumbOf(bridge), thumbOf(workshop), thumbOf(plaza), thumbOf(pond), thumbOf(bridge), thumbOf(workshop), thumbOf(plaza)],
+  taken: { state: 'mixed' },
+  place: { state: 'same', value: 'The lily pond' },
+  albumDownload: false,
+};

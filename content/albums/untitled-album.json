@@ -3,9 +3,9 @@
   "type": "album",
   "slug": "untitled-album",
   "title": "DesignUp",
-  "status": "draft",
+  "status": "published",
   "createdAt": "2026-10-23",
-  "updatedAt": "2026-10-23",
+  "updatedAt": "2026-10-27",
   "items": [
     {
       "id": "colorful-geometric-arrow-cluster",
@@ -30,9 +30,17 @@
     {
       "id": "pasted-picture-2026-10-09-2",
       "media": "articles/my-journey-with-designup/pasted-picture-2026-10-09-2"
+    },
+    {
+      "id": "speaker-intro-3072x896",
+      "media": "albums/untitled-album/speaker-intro-3072x896"
+    },
+    {
+      "id": "wrapup-of-designup-2018",
+      "media": "albums/untitled-album/wrapup-of-designup-2018"
     }
   ],
-  "summary": "Collection of the creative I created for DesignUp along with photos and videos from the even I took.",
+  "summary": "Collection of the creatives I created for DesignUp along with photos and videos from the even I took.",
   "description": "DesignUp is a community and conference for product creators, designers, makers and technology leaders across India and Southeast Asia. It began in Bengaluru and grew through large conferences and smaller events across Indian cities and Singapore, bringing practitioners together to share their work, ideas and experience.\nI was responsible for the creatives, photos and videos that you see here.",
   "cover": {
     "tiles": [
@@ -76,7 +84,24 @@
         "y": 2,
         "w": 3,
         "h": 2
+      },
+      {
+        "item": "speaker-intro-3072x896",
+        "x": 4,
+        "y": 4,
+        "w": 6,
+        "h": 2,
+        "display": "fill",
+        "bg": "#632bbc"
+      },
+      {
+        "item": "wrapup-of-designup-2018",
+        "x": 0,
+        "y": 4,
+        "w": 4,
+        "h": 2
       }
     ]
-  }
+  },
+  "publishedAt": "2026-10-27"
 }

@@ -18,16 +18,18 @@ interface Props {
   label?: string;
   /** What scrolls when it's taller than the window: the whole panel (padded, its parts apart), only its last part (the caller's own scroller), or only the rows it draws under its head and add slots. */
   scroll?: 'whole' | 'last' | 'rows';
+  /** Docked in a studio's outline column: as tall as the column, ruled only at its end, not floating. */
+  docked?: boolean;
   /** Data attributes pass through to the panel (the screen's hooks, data-scrollbar). */
   [data: `data-${string}`]: string | undefined;
 }
 
-const { as: Tag = 'nav', label, scroll = 'whole', ...rest } = Astro.props;
+const { as: Tag = 'nav', label, scroll = 'whole', docked = false, ...rest } = Astro.props;
 ---
 
 {
   scroll === 'rows' ? (
-    <Tag class="list-pane" aria-label={label} data-scroll={scroll} {...rest}>
+    <Tag class="list-pane" aria-label={label} data-scroll={scroll} data-docked={docked ? '' : undefined} {...rest}>
       {Astro.slots.has('head') && (
         <div class="list-pane-head">
           <slot name="head" />
@@ -43,7 +45,7 @@ const { as: Tag = 'nav', label, scroll = 'whole', ...rest } = Astro.props;
       </div>
     </Tag>
   ) : (
-    <Tag class="list-pane" aria-label={label} data-scroll={scroll} {...rest}>
+    <Tag class="list-pane" aria-label={label} data-scroll={scroll} data-docked={docked ? '' : undefined} {...rest}>
       <slot />
     </Tag>
   )
@@ -58,6 +60,17 @@ const { as: Tag = 'nav', label, scroll = 'whole', ...rest } = Astro.props;
     border: var(--border-hairline) solid var(--color-rule);
     border-radius: var(--radius-lg);
     background: var(--color-bg-raised);
+  }
+
+  /* docked: the outline column's whole height, ruled off from the canvas beside it */
+  .list-pane[data-docked] {
+    position: static;
+    block-size: 100%;
+    max-block-size: none;
+    min-block-size: 0;
+    border: 0;
+    border-inline-end: var(--border-hairline) solid var(--color-rule);
+    border-radius: 0;
   }
 
   .list-pane[data-scroll='whole'] {

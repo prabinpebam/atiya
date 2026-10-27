@@ -1,16 +1,15 @@
 /**
- * What the album editor's selection (and the viewer's Add to album) does to several items at once
- * (components/AlbumBulk.astro; documentation/gallery/spec.md §9.3): Add to album (another, or a new one), Set the
- * date and Set the place (on each picture's own words, §4, in one save) and Downloads (this album's, handed to the
- * album editor's save). `album:selection` opens the dialog for the chosen items. In the library (the Media screen,
- * §9.9) the chosen items are library items already, and there's no album of their own.
+ * What the Media screen's selection does to several library items at once (components/AlbumBulk.astro;
+ * documentation/gallery/spec.md §9.9): Add to album (another, or a new one), Set the date and Set the place (on
+ * each picture's own words, §4, in one save). `album:selection` opens the dialog for the chosen items. In an album,
+ * the inspector's Selection tab does this for its selected items (scripts/albumInspector.ts).
  */
 import { announce, api, refused, saveStatus, startTask } from './client';
 import { batchProblem, type WordsChange } from '../model/albumViewer';
 import type { Album } from '../../content/schema';
 
-type Bulk = 'album' | 'date' | 'place' | 'download';
-const DIALOG: Record<Bulk, string> = { album: 'album-add-to', date: 'album-date', place: 'album-place', download: 'album-downloads' };
+type Bulk = 'album' | 'date' | 'place';
+const DIALOG: Record<Bulk, string> = { album: 'album-add-to', date: 'album-date', place: 'album-place' };
 const NEW = '+new';
 
 export function initAlbumActions(root: HTMLElement, signal: AbortSignal) {
@@ -47,11 +46,11 @@ export function initAlbumActions(root: HTMLElement, signal: AbortSignal) {
     (e) => {
       const d = (e as CustomEvent<{ what: Bulk; ids: string[] }>).detail;
       const media = mediaOf(d.ids);
-      if (d.what !== 'download' && !media.length) return announce('A text card has no picture to change: choose pictures or videos.');
+      if (!media.length) return announce('A text card has no picture to change: choose pictures or videos.');
       ids = d.ids;
       const el = part(d.what);
       const count = el?.querySelector('[data-bulk-count]');
-      if (count) count.textContent = d.what === 'download' ? `For ${many(d.ids.length, 'item')} in this album` : `For ${many(media.length, 'selected item')}`;
+      if (count) count.textContent = `For ${many(media.length, 'selected item')}`;
       say(d.what, '');
       dialog(d.what)?.showModal();
     },
@@ -80,11 +79,7 @@ export function initAlbumActions(root: HTMLElement, signal: AbortSignal) {
 
   const run = async (what: Bulk, el: HTMLElement, button: HTMLElement) => {
     const value = (n: string) => el.querySelector<HTMLInputElement>(`[name="${n}"]`)?.value.trim() ?? '';
-    if (what === 'download') {
-      const v = value('download');
-      root.dispatchEvent(new CustomEvent('album:act', { detail: { what: `download-${v || 'follow'}`, ids } }));
-      return dialog(what)?.close();
-    }
+
     const media = mediaOf(ids);
     if (what === 'album') {
       let target = value('album');

@@ -146,6 +146,20 @@ test.describe('editor', () => {
     await expect(rows.first()).toBeFocused();
   });
 
+  test("a picture on the canvas selects its block and never opens the lightbox: a figure's and a carousel's alike", async ({ page }) => {
+    await openArticle(page);
+    const f = frame(page);
+    const before = readFileSync(articleFile(), 'utf8');
+    for (const link of [f.locator('figure a[data-lightbox]').first(), f.locator('[data-carousel] a[data-lightbox]').first()]) {
+      await link.scrollIntoViewIfNeeded();
+      await link.click({ force: true });
+      await expect(f.locator('[data-chrome-selected]')).toBeVisible();
+      await page.waitForTimeout(500);
+      await expect(f.locator('dialog[data-lightbox-dialog]')).not.toHaveAttribute('open', '');
+    }
+    expect(readFileSync(articleFile(), 'utf8')).toBe(before);
+  });
+
   test('the guard: writes from another origin or without the header are refused, and no screen can be framed elsewhere', async ({ request }) => {
     const json = { 'Content-Type': 'application/json' };
     expect((await request.put('/_edit/api/structure', { headers: { ...json, 'X-Editor': '1', Origin: 'http://evil.localhost:4330' }, data: {} })).status()).toBe(403);
@@ -229,11 +243,17 @@ test.describe('editor', () => {
     await expect(page.locator('[data-region="left-out"]')).toBeHidden();
   });
 
-  test('the canvas is the public page: the same elements in the same order, apart from the overlay', async ({ page, context }) => {
+  test('the canvas is the public page: the same elements in the same order, apart from the overlay, the header and the breadcrumbs', async ({ page, context }) => {
     await openArticle(page);
     const canvas = page.frame({ url: /\/_edit\/canvas\// });
     expect(canvas).not.toBeNull();
-    const shape = () => [...document.querySelectorAll('main *')].filter((e) => !e.closest('[data-editor-chrome]')).map((e) => e.tagName.toLowerCase()).join(' ');
+    // the canvas leaves out the site's header and breadcrumbs: their links lead nowhere there
+    expect(await canvas!.locator('[data-site-header], nav[aria-label="Breadcrumb"]').count()).toBe(0);
+    const shape = () =>
+      [...document.querySelectorAll('main *')]
+        .filter((e) => !e.closest('[data-editor-chrome], nav[aria-label="Breadcrumb"]') && !e.querySelector(':scope > nav[aria-label="Breadcrumb"]'))
+        .map((e) => e.tagName.toLowerCase())
+        .join(' ');
     const site = await context.newPage();
     await site.goto(`/leadership/${ARTICLE}/`);
     const [a, b] = [await canvas!.evaluate(shape), await site.evaluate(shape)];

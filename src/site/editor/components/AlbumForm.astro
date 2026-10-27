@@ -1,0 +1,156 @@
+---
+/**
+ * An album's own settings in its editor's inspector, the Album tab (documentation/gallery/spec.md §9.2, §9.2.1):
+ * what's worked out from its items on top (draft or published, the counts, the span of dates, and how many pictures
+ * need alt text, with Review), then its sections: its title and words (typed in place and saved as they're typed),
+ * where it is (its section, its address, who can see it) and how it shows (its layout, captions, dates, downloads
+ * and large uploads, each saved as it's changed; one set back to its default leaves the file). Delete album is in
+ * its foot. A wide inspector shows the list of sections beside the chosen one (kit/Sections).
+ * @tier editor
+ * @a11y A labelled form; every control is labelled, and a refused change is said in the status line. The facts are
+ * a polite live region, so a change in the counts is heard.
+ */
+import TextField from '../../components/fundamentals/TextField.astro';
+import Select from '../../components/fundamentals/Select.astro';
+import Switch from '../../components/fundamentals/Switch.astro';
+import Text from '../../components/fundamentals/Text.astro';
+import Tag from '../../components/fundamentals/Tag.astro';
+import Button from '../../components/fundamentals/Button.astro';
+import ActionBar from '../../components/compounds/ActionBar.astro';
+import Form from '../kit/Form.astro';
+import FormFoot from '../kit/FormFoot.astro';
+import Sections from '../kit/Sections.astro';
+import NavGroup from '../kit/NavGroup.astro';
+import NavRow from '../kit/NavRow.astro';
+import Pane from '../kit/Pane.astro';
+import { ACCESS } from '../model/inspectorFields';
+
+interface Props {
+  /** The album's title. */
+  title: string;
+  /** Its short description. */
+  summary?: string;
+  /** Its introduction (rich text, as Markdown). */
+  description?: string;
+  /** Its counts in words ("12 pictures, 1 video"; empty: nothing yet). */
+  count: string;
+  /** The span of the days its pictures were taken. */
+  dates?: string;
+  /** How many pictures need alt text. */
+  needAlt: number;
+  /** A draft, or on the site. */
+  status: 'draft' | 'published';
+  /** Its settings, as they apply (defaults filled in). */
+  settings: { layout: 'grid' | 'story'; captions: boolean; dates: boolean; download: boolean; large: boolean };
+  /** The section it's in. */
+  section: string | null;
+  /** The sections it can be in. */
+  sections: { value: string; label: string; description?: string }[];
+  /** A private album. */
+  private: boolean;
+  /** Whether private-pages/ is set up, so it can be made private (an open album only: a private one can always be made public). */
+  protectable?: boolean;
+  /** Its address on the site, when it has one. */
+  path: string | null;
+}
+
+const { title, summary = '', description = '', count, dates, needAlt, status, settings, section, sections, private: priv, protectable = false, path } = Astro.props;
+const LAYOUTS = [
+  { value: 'grid', label: 'Grid', description: 'Its items as a grid of thumbnails' },
+  { value: 'story', label: 'Story', description: 'One item after another, each with its words' },
+];
+const sectionName = sections.find((s) => s.value === section)?.label ?? 'Not in a section';
+const shows = [settings.layout === 'story' ? 'Story' : 'Grid', settings.download ? 'downloads' : ''].filter(Boolean).join(', ');
+---
+
+<div class="album-form" data-album-form="">
+  <p class="facts" role="status" data-region="album-facts">
+    <Tag size="sm" tone={status === 'published' ? 'positive' : 'neutral'}>{status === 'published' ? 'Published' : 'Draft'}</Tag>
+    <Text as="span" variant="small" tone="muted">
+      {[count || 'Nothing in it yet', dates].filter(Boolean).join(' · ')}
+    </Text>
+    {
+      needAlt > 0 && (
+        <Tag size="sm" tone="negative" icon="error">
+          {needAlt === 1 ? '1 needs alt text' : `${needAlt} need alt text`}
+        </Tag>
+      )
+    }
+    {
+      needAlt > 0 && (
+        <Button variant="quiet" size="sm" icon="sparkles" data-album-review="">
+          Review
+        </Button>
+      )
+    }
+  </p>
+
+  <Form fill label="Album settings" data-album-settings="">
+    <Sections name="album" label="Album settings">
+      <Fragment slot="nav">
+        <NavGroup label="Album">
+          <NavRow pick="words" detail={title}>Title and words</NavRow>
+          <NavRow pick="where" detail={priv ? `${sectionName}, private` : sectionName}>Where it is</NavRow>
+          <NavRow pick="shows" detail={shows}>How it shows</NavRow>
+        </NavGroup>
+      </Fragment>
+
+      <Pane name="words" title="Title and words" titleId="album-s-words">
+        <TextField label="Title" id="album-title" value={title} maxlength={120} data-album-field="title" />
+        <TextField label="Short description" id="album-summary" value={summary} multiline rows={2} maxlength={240} optional hint="Under its band, and on its cards." data-album-field="summary" />
+        <TextField label="Introduction" id="album-description" value={description} multiline rows={5} maxlength={1500} optional hint="At the top of its page. Markdown: **bold**, *italic* and [links](https://…)." data-album-field="description" />
+      </Pane>
+
+      <Pane name="where" title="Where it is" titleId="album-s-where">
+        <Select label="Section" id="album-section" options={sections} value={section ?? ''} placeholder="Not in a section" data-album-setting="section" />
+        <Text variant="small" tone="muted">{path ? `Its address: ${path}` : 'It gets its address once it’s published.'}</Text>
+        {
+          priv || protectable ? (
+            <Select
+              label="Who can see it"
+              id="album-access"
+              options={ACCESS}
+              value={priv ? 'private' : 'open'}
+              hint="Changing it moves the album and its own pictures between content/ and private-pages/. A private album is published encrypted; share it from Access."
+              data-album-setting="access"
+            />
+          ) : (
+            <Text variant="small" tone="muted">Who can see it: everyone. To keep an album for people you choose, set up private pages first.</Text>
+          )
+        }
+      </Pane>
+
+      <Pane name="shows" title="How it shows" titleId="album-s-shows">
+        <Select label="Layout" id="album-layout" options={LAYOUTS} value={settings.layout} data-album-setting="layout" />
+        <Switch label="Captions under pictures" id="album-captions" checked={settings.captions} disabled={settings.layout === 'story'} data-album-setting="captions" />
+        <Switch label="Show dates taken" id="album-dates" checked={settings.dates} data-album-setting="dates" />
+        <Switch label="Allow downloads" id="album-download" checked={settings.download} data-album-setting="download" />
+        <Switch label="Upload large pictures at full detail" id="album-large" checked={settings.large} data-album-setting="large" />
+      </Pane>
+    </Sections>
+
+    <FormFoot>
+      <ActionBar gap="sm">
+        <Button variant="quiet" size="sm" icon="delete" data-album-delete-open="">Delete album</Button>
+      </ActionBar>
+    </FormFoot>
+  </Form>
+</div>
+
+<style>
+  .album-form {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
+    min-block-size: 0;
+  }
+
+  .facts {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+    align-items: center;
+    margin: 0;
+  }
+</style>

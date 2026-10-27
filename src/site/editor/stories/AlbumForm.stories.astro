@@ -1,0 +1,16 @@
+---
+import Example from '../../library/Example.astro';
+import AlbumForm from '../components/AlbumForm.astro';
+import { ALBUM_SECTIONS } from './samples';
+
+const open = { layout: 'grid', captions: true, dates: true, download: false, large: false } as const;
+const story = { layout: 'story', captions: false, dates: false, download: true, large: true } as const;
+---
+
+<Example title="A draft album" description="What's worked out from its items on top, with Review for the pictures that need alt text; then its sections: its words, where it is and how it shows. Delete album is in the foot." layout="block">
+  <AlbumForm title="Kitchen garden" summary="A week of planting, and what came up." description="We planted the beds in **May**." count="8 pictures" dates="3 to 9 May 2026" needAlt={2} status="draft" settings={open} section="gallery" sections={ALBUM_SECTIONS} private={false} protectable path={null} />
+</Example>
+
+<Example title="Published and private" description="On the site at its address, private, shown as a story with downloads." layout="block">
+  <AlbumForm title="Harbour walks" count="22 pictures, 2 videos" dates="Spring 2026" needAlt={0} status="published" settings={story} section={null} sections={ALBUM_SECTIONS} private path="/gallery/harbour-walks/" />
+</Example>

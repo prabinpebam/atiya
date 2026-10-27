@@ -1,7 +1,8 @@
 /**
- * The album editor (documentation/gallery/spec.md §9.2 to §9.4, §9.7): the words typed in place, the grid's
- * selection (a click, Shift for a range, Ctrl or Cmd for one more, Ctrl+A, Escape), moving (a drag, Alt with an
- * arrow key, Move to start or end), the selection bar, Sort, Settings, Publish, and adding: files dropped anywhere
+ * The album editor (documentation/gallery/spec.md §9.2 to §9.4, §9.7): the words and settings typed in the inspector,
+ * the grid's selection (a click, Shift for a range, Ctrl or Cmd for one more, the check circle, Ctrl+A, Escape, kept
+ * in the address), moving (a drag, Alt with an arrow key, Move to start or end), the selection bar, Sort, Publish,
+ * and adding: files dropped anywhere
  * on the page (where they were dropped when that's on an item, else in their places) or chosen with Upload or the
  * grid's Add tile (each its own tile with its progress, two at a time, never blocking the grid),
  * items from the library (the picker), a text card or a YouTube or Vimeo link. Every change is kept at once, saved
@@ -11,9 +12,10 @@
 import type { Album } from '../../content/schema';
 import type { AlbumMedia, MediaLookup } from '../../content/album';
 import { SaveQueue } from '../model/queue';
-import { addItemsAt, addText, editText, landingBefore, moveBy, moveItems, moveToEnd, moveToStart, pickRange, pickToggle, removeItems, setCoverLead, setItemDownload, setItemPlay, setSettings, setWords, sortAlbum, type AlbumSettings } from '../model/album';
+import { addItemsAt, addText, editText, landingBefore, moveBy, moveItems, moveToEnd, moveToStart, pickRange, pickToggle, removeItems, setItemDownload, setItemPlay, setSettings, setWords, sortAlbum, type AlbumSettings } from '../model/album';
 import { isVideoFile, needsConversion, pictureSizeIssue, posterTime, refusedFormat, svgChoices, typeOf, videoSizeIssue } from '../model/upload';
 import { takenOf } from '../model/exif';
+import { parseSelected, SELECTED_PARAM } from '../model/albumInspector';
 import { announce, api, editorUrl, onContentChange, refused, saveStatus, startTask, swapRegions, TAB } from './client';
 import { fillPicker } from './picker';
 import { initAlbumCover } from './albumCover';
@@ -118,6 +120,8 @@ export function initAlbumEditor(root: HTMLElement, signal: AbortSignal) {
     if (fresh) state.facts = fresh.facts;
     picked = picked.filter((id) => cellOf(id));
     paintPicked();
+    // what the inspector shows may have changed with it (its place in the album, downloads, an undone change)
+    root.dispatchEvent(new CustomEvent('album:drawn'));
     if (focused) focusCell(cellOf(focused));
   };
 
@@ -151,11 +155,9 @@ export function initAlbumEditor(root: HTMLElement, signal: AbortSignal) {
     if (bar) bar.hidden = !picked.length;
     const count = bar?.querySelector('[data-selection-count]');
     if (count) count.textContent = `${picked.length} selected`;
-    const one = picked.length === 1 ? doc.items.find((i) => i.id === picked[0]) : undefined;
-    setHidden('[data-album-only="cover"]', !one || 'text' in one);
-    setHidden('[data-album-only="text"]', !one || !('text' in one));
+    // the inspector's Selection tab follows (scripts/albumInspector.ts)
+    root.dispatchEvent(new CustomEvent('album:picked', { detail: { ids: [...picked] } }));
   };
-  const setHidden = (sel: string, hidden: boolean) => root.querySelectorAll<HTMLElement>(sel).forEach((b) => (b.hidden = hidden));
   /** The tools follow the album: the header's Undo, Redo and Publish, and the order in the items' head. */
   const paintTools = () => {
     const undo = document.querySelector<HTMLButtonElement>('[data-album-undo]');
@@ -175,9 +177,9 @@ export function initAlbumEditor(root: HTMLElement, signal: AbortSignal) {
 
   // ---------- the selection ----------
   const pick = (id: string, e: { shiftKey: boolean; ctrlKey: boolean; metaKey: boolean }, fromCheck = false) => {
-    // as in a photo app: once anything is selected, a click adds or takes away
+    // a click selects one (its details in the inspector); Ctrl or Cmd, or its check, adds or takes away; Shift a range
     if (e.shiftKey) picked = pickRange(order(), anchor, id);
-    else if (e.ctrlKey || e.metaKey || fromCheck || picked.length) picked = pickToggle(order(), picked, id);
+    else if (e.ctrlKey || e.metaKey || fromCheck) picked = pickToggle(order(), picked, id);
     else picked = [id];
     if (!e.shiftKey) anchor = id;
     paintPicked();
@@ -205,9 +207,6 @@ export function initAlbumEditor(root: HTMLElement, signal: AbortSignal) {
       return paintPicked();
     }
     if (!ids.length) return;
-    // the selection's dialogs (scripts/albumActions.ts): Add to album, Set the date, Set the place, Downloads
-    const bulk = ({ 'add-to': 'album', date: 'date', place: 'place', downloads: 'download' } as Record<string, string>)[what];
-    if (bulk) return void root.dispatchEvent(new CustomEvent('album:selection', { detail: { what: bulk, ids } }));
     if (what.startsWith('download-')) {
       const v = what.slice('download-'.length);
       return change(setItemDownload(doc, ids, v === 'allow' ? true : v === 'deny' ? false : undefined, lookup), 'Downloads set');
@@ -219,15 +218,6 @@ export function initAlbumEditor(root: HTMLElement, signal: AbortSignal) {
       picked = [];
       paintPicked();
       return announce(`Removed ${ids.length}. They’re still in your library. Undo puts them back.`);
-    }
-    if (what === 'cover') {
-      const r = setCoverLead(doc, ids[0]);
-      if (!r.ok) return announce(r.why, 'negative');
-      return change(r.album, 'Cover picture set');
-    }
-    if (what === 'text') {
-      const item = doc.items.find((i) => i.id === ids[0]);
-      if (item && 'text' in item) return openText(item.id, item.text);
     }
   };
 
@@ -258,10 +248,7 @@ export function initAlbumEditor(root: HTMLElement, signal: AbortSignal) {
       if (d.albumPickerUse !== undefined) return usePicked();
       if (d.albumTextSave !== undefined) return saveText();
       if (d.albumLinkAdd !== undefined) return void addLink();
-      if (d.albumDeleteOpen !== undefined) {
-        dialog('album-settings')?.close();
-        return dialog('album-delete')?.showModal();
-      }
+      if (d.albumDeleteOpen !== undefined) return dialog('album-delete')?.showModal();
       if (d.albumDeleteConfirm !== undefined) return void deleteAlbum();
       if (d.albumReload !== undefined) location.reload();
     },
@@ -665,6 +652,20 @@ export function initAlbumEditor(root: HTMLElement, signal: AbortSignal) {
 
   // ---------- the words, as they're typed ----------
   let typingTimer = 0;
+  let cardTimer = 0;
+  let cardPending: (() => void) | null = null;
+  const typedCard = (id: string, value: string) => {
+    window.clearTimeout(cardTimer);
+    saveStatus.dirty();
+    cardPending = () => {
+      cardPending = null;
+      if (!value.trim()) return saveStatus.failed('Give the text card some words, or remove it.');
+      if (doc.items.some((i) => i.id === id)) change(editText(doc, id, value), 'Text card changed', { typing: true });
+    };
+    cardTimer = window.setTimeout(() => cardPending?.(), 500);
+  };
+  // the inspector keeps what's typed before it draws another selection
+  root.addEventListener('album:flush', () => (window.clearTimeout(cardTimer), cardPending?.()), { signal });
   const typed = (field: Word, value: string) => {
     window.clearTimeout(typingTimer);
     saveStatus.dirty();
@@ -672,7 +673,7 @@ export function initAlbumEditor(root: HTMLElement, signal: AbortSignal) {
       if (field === 'title' && !value.trim()) return saveStatus.failed('Give the album a title.');
       change(setWords(doc, { [field]: value }), '', { typing: true });
       if (field === 'title')
-        document.querySelectorAll<HTMLElement>('[data-album-heading], #album-words-title').forEach((h) => {
+        document.querySelectorAll<HTMLElement>('[data-album-heading]').forEach((h) => {
           (h.querySelector('strong') ?? h).textContent = value.trim();
           h.title = value.trim();
         });
@@ -683,7 +684,10 @@ export function initAlbumEditor(root: HTMLElement, signal: AbortSignal) {
     (e) => {
       const el = e.target as HTMLInputElement | HTMLTextAreaElement;
       const field = el.closest<HTMLElement>('[data-album-field]')?.dataset.albumField as Word | undefined;
-      if (field && WORDS.includes(field)) typed(field, el.value);
+      if (field && WORDS.includes(field)) return typed(field, el.value);
+      // a text card's words, in the inspector (§9.6): one step of Undo while typing, saved as for the album's words
+      const card = el.closest<HTMLElement>('[data-album-card-text]')?.dataset.albumCardText;
+      if (card) typedCard(card, el.value);
     },
     { signal },
   );
@@ -861,6 +865,9 @@ export function initAlbumEditor(root: HTMLElement, signal: AbortSignal) {
     });
   }, signal);
 
+  // a selection the address names (?selected=, kept by the inspector) is selected again
+  picked = parseSelected(new URLSearchParams(location.search).get(SELECTED_PARAM), doc).filter((id) => cellOf(id));
+  anchor = picked[0] ?? null;
   paintTools();
   paintPicked();
   initAlbumCover(root, signal, { album: () => doc, change: (next, what) => change(next, what), lookup });
@@ -869,7 +876,9 @@ export function initAlbumEditor(root: HTMLElement, signal: AbortSignal) {
     const title = root.querySelector<HTMLInputElement>('[data-album-field="title"] input');
     title?.focus();
     title?.select();
-    history.replaceState(history.state, '', location.pathname);
+    const u = new URL(location.href);
+    u.searchParams.delete('new');
+    history.replaceState(history.state, '', u);
   }
 }
 

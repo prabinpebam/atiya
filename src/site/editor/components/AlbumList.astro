@@ -4,7 +4,7 @@
  * setup: title, description, the order of its albums), Add album and the switch to tiles, then the gallery's
  * albums in its order, each with its cover, its title and what it holds, and a handle that moves it (the owner's
  * own order from then on); the albums in another section, or in none, after them. Shown beside an album being
- * edited and beside the gallery's setup.
+ * edited (docked in its studio's outline) and beside the gallery's setup.
  * @tier editor
  * @a11y A navigation landmark; the entry whose details show is aria-current. Each handle is a button named for its
  * album: drag it, or press Alt with Up or Down on it or on its album, to move the album. The move is announced,
@@ -33,13 +33,15 @@ interface Props {
   setupHref: string;
   /** The Tiles view's address. */
   tilesHref: string;
+  /** Docked in the album editor's outline column (its studio), rather than beside the gallery's setup. */
+  docked?: boolean;
 }
 
-const { gallery, albums, elsewhere, current, setupHref, tilesHref } = Astro.props;
+const { gallery, albums, elsewhere, current, setupHref, tilesHref, docked = false } = Astro.props;
 ---
 
 <div class="album-list" data-region="album-list" data-album-list data-gallery={gallery?.id}>
-  <ListPane label="Albums" scroll="rows">
+  <ListPane label="Albums" scroll="rows" docked={docked}>
     <Fragment slot="head">
       <ListLink href={setupHref} current={current === 'gallery'} name={gallery?.title ?? 'Gallery'} meta={[gallery?.line ?? 'No section shows albums yet']} data-album-list-setup="">
         <span slot="mark" class="thumb" data-blank>
@@ -109,6 +111,8 @@ const { gallery, albums, elsewhere, current, setupHref, tilesHref } = Astro.prop
 
 <style>
   .album-list {
+    display: grid;
+    min-block-size: 0;
     min-inline-size: 0;
   }
 

@@ -5,8 +5,8 @@
  * caption, the description (short rich text), the alt text with Suggest, the day it was taken and the place; for a
  * video file or a linked video its title; credit and licence under More. Then what's this album's own: Downloads,
  * and a video file's Play by itself and Loop, saved with the album. Then the picture's tools (Find the focus, Make
- * it standard), where else it's used, and its file's facts. A text card's words are the album's, edited from the
- * stage. scripts/mediaInfo.ts saves it (run by the viewer's script).
+ * it standard), where else it's used, and its file's facts. A text card's words are the album's, edited in the
+ * album editor's inspector (AlbumSelection). scripts/mediaInfo.ts saves it (run by the viewer's script).
  * @tier editor
  * @a11y Every field is labelled, with its limits in its hint; a refused change is said beside the fields (a polite
  * status) and in the status line; "Also in" is a list of links named by the album or page.
@@ -22,6 +22,7 @@ import Text from '../../components/fundamentals/Text.astro';
 import Heading from '../../components/fundamentals/Heading.astro';
 import ActionBar from '../../components/compounds/ActionBar.astro';
 import Fieldset from '../kit/Fieldset.astro';
+import Pane from '../kit/Pane.astro';
 import RichField from '../kit/RichField.astro';
 import AltSuggestion from '../kit/AltSuggestion.astro';
 import StatusNote from '../kit/StatusNote.astro';
@@ -36,9 +37,11 @@ interface Props {
   review?: boolean;
   /** Shown in the library (spec §9.9), not in an album: no "In this album" settings and no tools (the details beside it hold them), and every use listed under Used in. */
   library?: boolean;
+  /** Where it's drawn, which keeps its fields' ids apart from another copy's on the same screen: the viewer's dialog, or the album editor's docked inspector. */
+  scope?: 'viewer' | 'inspector';
 }
 
-const { item, review = false, library = false } = Astro.props;
+const { item, review = false, library = false, scope = 'viewer' } = Astro.props;
 const media = item.media;
 const sc = (media?.sidecar ?? {}) as Record<string, unknown> & { licence?: { name?: string; url?: string } };
 const kind: WordsKind | null = media ? (media.sidecar.kind as WordsKind) : null;
@@ -52,7 +55,12 @@ const DOWNLOADS = [
   { value: 'deny', label: "Don't allow" },
 ];
 const download = item.download === undefined ? 'follow' : item.download ? 'allow' : 'deny';
-const uid = `info-${item.id}`;
+const uid = `info-${scope}-${item.id}`;
+// docked in the album's inspector, its groups are the inspector's own sections (ruled, under a heading), as the Album tab's
+const docked = scope === 'inspector';
+const Group = (docked ? Pane : Fieldset) as unknown as (props: { name?: string; title?: string; titleId?: string; group?: boolean; legend?: string }) => ReturnType<typeof Fieldset>;
+const group = (name: string, title: string) => (docked ? { name, title, titleId: `info-${name}`, group: true } : { legend: title });
+const usesTitle = library ? 'Used in' : 'Also in';
 ---
 
 <div class="media-info" data-media-info={item.id} data-review={review ? '' : undefined}>
@@ -60,7 +68,7 @@ const uid = `info-${item.id}`;
   {
     !media && item.kind === 'text' && (
       <Text variant="small" tone="muted">
-        A text card's words are the album's: Edit the words, beside it.
+        A text card's words are the album's: select it in the album to edit them in the inspector.
       </Text>
     )
   }
@@ -68,37 +76,37 @@ const uid = `info-${item.id}`;
   {
     media && kind && (
       <Fragment>
-        <Fieldset legend="Its words">
-          {kind !== 'image' && <TextField label="Title" name="title" value={str('title')} maxlength={200} hint="Names the video, for everyone." />}
-          <TextField label="Caption" name="caption" value={str('caption')} maxlength={CAPTION_MAX} optional hint={`Under it in the album and the lightbox: ${CAPTION_MAX} characters at most.`} />
+        <Group {...group('words', 'Its words')}>
+          {kind !== 'image' && <TextField label="Title" name="title" id={`${uid}-title`} value={str('title')} maxlength={200} hint="Names the video, for everyone." />}
+          <TextField label="Caption" name="caption" id={`${uid}-caption`} value={str('caption')} maxlength={CAPTION_MAX} optional hint={`Under it in the album and the lightbox: ${CAPTION_MAX} characters at most.`} />
           <RichField label="Description" toolsLabel="Description: formatting" inputId={`${uid}-description`} name="description" markdown={str('description')} hint="A few lines about it, shown in the lightbox: two paragraphs at most." />
           {kind !== 'video' && (
             <Fragment>
-              <TextField label="Alt text" name="alt" value={str('alt')} multiline rows={3} hint={'Say what it shows to someone who can\u2019t see it, in 250 characters at most (never \u201cimage of\u201d).'} data-viewer-focus={review ? '' : undefined} />
+              <TextField label="Alt text" name="alt" id={`${uid}-alt`} value={str('alt')} multiline rows={3} hint={'Say what it shows to someone who can\u2019t see it, in 250 characters at most (never \u201cimage of\u201d).'} data-viewer-focus={review ? '' : undefined} />
               {kind === 'image' && <AltSuggestion ask />}
-              {kind === 'image' && <Checkbox label="It's decorative: it adds nothing a reader would miss" name="decorative" checked={sc.decorative === true} />}
+              {kind === 'image' && <Checkbox label="It's decorative: it adds nothing a reader would miss" name="decorative" id={`${uid}-decorative`} checked={sc.decorative === true} />}
             </Fragment>
           )}
           <div class="when">
-            <TextField label="Date taken" type="date" name="taken" value={str('taken')} optional />
+            <TextField label="Date taken" type="date" name="taken" id={`${uid}-taken`} value={str('taken')} optional />
             <Button variant="quiet" size="sm" icon="close" data-info-clear="taken">
               Clear
             </Button>
           </div>
-          <TextField label="Place" name="place" value={str('place')} maxlength={PLACE_MAX} optional hint="Where it was taken, in your words." />
+          <TextField label="Place" name="place" id={`${uid}-place`} value={str('place')} maxlength={PLACE_MAX} optional hint="Where it was taken, in your words." />
           <details class="more">
             <summary>More: credit and licence</summary>
             <div class="more-fields">
-              <TextField label="Credit" name="credit" value={str('credit')} optional />
-              <TextField label="Licence" name="licenceName" value={sc.licence?.name ?? ''} optional hint="Its name: CC BY 4.0, All rights reserved." />
-              <TextField label="Licence address" type="url" name="licenceUrl" value={sc.licence?.url ?? ''} optional />
+              <TextField label="Credit" name="credit" id={`${uid}-credit`} value={str('credit')} optional />
+              <TextField label="Licence" name="licenceName" id={`${uid}-licenceName`} value={sc.licence?.name ?? ''} optional hint="Its name: CC BY 4.0, All rights reserved." />
+              <TextField label="Licence address" type="url" name="licenceUrl" id={`${uid}-licenceUrl`} value={sc.licence?.url ?? ''} optional />
             </div>
           </details>
           <StatusNote live="polite" data-info-problem="" />
-        </Fieldset>
+        </Group>
         {!library && (
-        <Fieldset legend="In this album">
-          {kind !== 'embed' && <Select label="Downloads" options={DOWNLOADS} value={download} name="download" hint="Whether the lightbox offers its original file here." data-info-download="" />}
+        <Group {...group('album', 'In this album')}>
+          {kind !== 'embed' && <Select label="Downloads" options={DOWNLOADS} value={download} name="download" id={`${uid}-download`} hint="Whether the lightbox offers its original file here." data-info-download="" />}
           {kind === 'embed' && (
             <Text variant="small" tone="muted">
               A linked video can't be downloaded from the site.
@@ -106,14 +114,14 @@ const uid = `info-${item.id}`;
           )}
           {kind === 'video' && (
             <Fragment>
-              <Switch label="Play by itself (muted)" name="autoplay" checked={!!item.autoplay} data-info-play="autoplay" />
-              <Switch label="Loop" name="loop" checked={!!item.loop} data-info-play="loop" />
+              <Switch label="Play by itself (muted)" name="autoplay" id={`${uid}-autoplay`} checked={!!item.autoplay} data-info-play="autoplay" />
+              <Switch label="Loop" name="loop" id={`${uid}-loop`} checked={!!item.loop} data-info-play="loop" />
               <Text variant="small" tone="muted">
                 Caption tracks: coming later.
               </Text>
             </Fragment>
           )}
-        </Fieldset>
+        </Group>
         )}
         {!library && (kind === 'image' || kind === 'embed') && (
           <ActionBar gap="sm">
@@ -148,10 +156,29 @@ const uid = `info-${item.id}`;
     </Text>
   )}
   {
-    item.uses.length > 0 && (
+    docked && item.uses.length > 0 && (
+      <Pane name="uses" title={usesTitle} titleId="info-uses">
+        <PlainList>
+          {item.uses.map((u) => (
+            <li>
+              <Link href={u.href} variant="quiet">
+                {u.title}
+              </Link>{' '}
+              <Text as="span" variant="small" tone="muted">
+                {u.kind === 'album' ? 'Album' : 'Page'}
+                {u.draft ? ', draft' : ''}
+              </Text>
+            </li>
+          ))}
+        </PlainList>
+      </Pane>
+    )
+  }
+  {
+    !docked && item.uses.length > 0 && (
       <section class="part">
         <Heading level={3} size="ui">
-          {library ? 'Used in' : 'Also in'}
+          {usesTitle}
         </Heading>
         <PlainList>
           {item.uses.map((u) => (

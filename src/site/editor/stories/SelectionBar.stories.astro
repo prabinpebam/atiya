@@ -2,21 +2,25 @@
 import Example from '../../library/Example.astro';
 import SelectionBar from '../kit/SelectionBar.astro';
 import Button from '../../components/fundamentals/Button.astro';
+import IconButton from '../../components/fundamentals/IconButton.astro';
 ---
 
 <Example title="Three chosen" description="How many are chosen, what can be done to them all, then Clear selection." layout="block">
   <SelectionBar shown count="3 selected">
     <Button size="sm" variant="secondary" icon="collection">Add to album</Button>
     <Button size="sm" variant="secondary" icon="calendar">Set the date</Button>
-    <Button size="sm" variant="secondary" icon="delete">Remove from album</Button>
+    <Button size="sm" variant="secondary" icon="delete">Delete</Button>
     <Button size="sm" variant="quiet" icon="close">Clear selection</Button>
   </SelectionBar>
 </Example>
 
-<Example title="One chosen" description="Actions that need exactly one item join the bar." layout="block">
-  <SelectionBar shown count="1 selected">
-    <Button size="sm" variant="secondary" icon="image">Set as cover</Button>
-    <Button size="sm" variant="secondary" icon="collection">Add to album</Button>
-    <Button size="sm" variant="quiet" icon="close">Clear selection</Button>
+<Example title="Icon buttons" description="One row of icon buttons, each named by its tooltip (the album editor's)." layout="block">
+  <SelectionBar shown icons count="2 selected">
+    <IconButton label="Move to start" icon="arrow-up" size="sm" shape="square" variant="quiet" tooltip="top" />
+    <IconButton label="Move to end" icon="arrow-down" size="sm" shape="square" variant="quiet" tooltip="top" />
+    <IconButton label="Set the date" icon="calendar" size="sm" shape="square" variant="quiet" tooltip="top" />
+    <IconButton label="Set the place" icon="location" size="sm" shape="square" variant="quiet" tooltip="top" />
+    <IconButton label="Remove from album" icon="delete" size="sm" shape="square" variant="quiet" tooltip="top" />
+    <IconButton label="Clear selection" icon="close" size="sm" shape="square" variant="quiet" tooltip="top" />
   </SelectionBar>
 </Example>

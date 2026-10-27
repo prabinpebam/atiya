@@ -32,6 +32,9 @@ export function initMediaInfo(panel: HTMLElement, signal: AbortSignal) {
   // in an album, the editor hears it; in the library (spec §9.9), the library does
   const root = panel.closest<HTMLElement>('[data-album-editor]') ?? document.querySelector<HTMLElement>('[data-media-library]');
   const send = (type: string, detail: unknown) => root?.dispatchEvent(new CustomEvent(type, { detail }));
+  // docked in the album's inspector (scripts/albumInspector.ts), it's drawn again there, not in the viewer
+  const docked = !!panel.closest('[data-album-inspector]');
+  const again = () => (docked ? send('album:selection-redraw', null) : send('viewer:go', { id: state.item }));
   const problem = panel.querySelector<HTMLElement>('[data-info-problem]');
   const say = (text: string) => {
     if (!problem) return;
@@ -74,7 +77,7 @@ export function initMediaInfo(panel: HTMLElement, signal: AbortSignal) {
       if (!r.ok) {
         failed = true;
         if (r.status === 409) {
-          say('Its words were changed elsewhere since you opened it: close the viewer and open it again to see them.');
+          say('Its words were changed elsewhere since you opened it: open it again to see them.');
           saveStatus.failed('Not saved: its words were changed elsewhere.');
           return 'stop';
         }
@@ -198,7 +201,7 @@ export function initMediaInfo(panel: HTMLElement, signal: AbortSignal) {
         }
         void task.done();
         saveStatus.saved('Made it standard: saved again at 2560 px');
-        return send('viewer:go', { id: state.item });
+        return again();
       }
       // the review: Accept saves the suggestion and goes on
       if (state.review && t.closest('[data-alt-accept]')) void onward();
@@ -255,7 +258,7 @@ export function initMediaInfo(panel: HTMLElement, signal: AbortSignal) {
   // ---------- a change made elsewhere: drawn again, unless something here waits to be saved ----------
   onContentChange((c) => {
     if (c.origin === TAB || typed || queue.pending || !c.files.includes(state.media.key)) return;
-    send('viewer:go', { id: state.item });
+    again();
   }, signal);
   window.addEventListener(
     'beforeunload',
