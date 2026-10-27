@@ -15,7 +15,6 @@ import ContentIssues from '../components/ContentIssues.astro';
 import AlbumList from '../components/AlbumList.astro';
 import Dialog from '../../components/compounds/Dialog.astro';
 import SplitView from '../../components/compounds/SplitView.astro';
-import AlbumBand from '../../components/compounds/AlbumBand.astro';
 import IconButton from '../../components/fundamentals/IconButton.astro';
 import Button from '../../components/fundamentals/Button.astro';
 import Link from '../../components/fundamentals/Link.astro';
@@ -65,7 +64,10 @@ const draw = (...names: string[]) => wants(asked, ...names);
 const fragment = !!asked && [...asked].every((n) => (ALWAYS as readonly string[]).includes(n) || n === 'media-grid');
 const lookup = loaded.ok ? lookupOf(loaded.index) : () => undefined;
 const grid = loaded.ok && !fragment && draw('album-grid', 'album-facts', 'album-state') ? await albumCells(loaded.index, album) : { cells: [], facts: {} };
-const band = loaded.ok && !fragment && draw('album-cover') ? await coverBand(loaded.index, album) : { arranged: false, tiles: [], items: [] };
+const cover = loaded.ok && !fragment && draw('album-cover') ? await coverBand(loaded.index, album) : { arranged: false, items: [] };
+// the cover at rest is its band as the gallery draws it, from what's saved (§9.2)
+// stills only: nothing plays in the inert band, where its Pause can't be reached
+const band = loaded.ok && !fragment && draw('album-cover') ? await bandOf(id, path ?? '#').then((b) => b && { ...b, square: square || undefined, tiles: b.tiles.map(({ motion: _, ...t }) => t) }) : undefined;
 const count = countWords(albumCounts(album.items, lookup));
 const dates = dateSpan(albumDates(album, lookup));
 const needAlt = grid.cells.filter((c) => c.needsAlt).length;
@@ -74,9 +76,8 @@ const itemAsked = Astro.url.searchParams.get('item');
 const reviewing = Astro.url.searchParams.get('review') === '1';
 const viewer = loaded.ok && !fragment && draw('album-viewer') && (itemAsked || reviewing) ? await viewerItem(loaded.index, album, itemAsked ?? '', reviewing) : null;
 const others = loaded.ok ? [...loaded.index.albums.values()].filter((a) => a.id !== id).map((a) => ({ id: a.id, title: a.title })) : [];
-// the albums list beside it (§9.2), and its band as the gallery shows it, drawn only when Preview asks
+// the albums list beside it (§9.2)
 const list = loaded.ok && !fragment && draw('album-list') ? await galleryList(loaded.index, section) : null;
-const preview = loaded.ok && asked?.has('album-preview') ? await bandOf(id, path ?? '#') : undefined;
 
 // the picker, a page at a time, when it asks (performance-report.md R5)
 const PICKER_PAGE = 40;
@@ -106,7 +107,6 @@ const json = JSON.stringify(state).replace(/</g, '\\u003c');
     <IconButton label="Undo" icon="undo" size="sm" data-album-undo="" />
     <IconButton label="Redo" icon="redo" size="sm" data-album-redo="" />
     <Button variant="primary" size="sm" icon="plus" data-dialog-open="album-add">Add</Button>
-    <IconButton label="Preview in the gallery" icon="preview" size="sm" data-album-preview-open="" />
     <IconButton label="Settings" icon="settings" size="sm" data-dialog-open="album-settings" />
     {path && <IconButton label="View on the site" icon="external" size="sm" href={path} />}
     <Button variant="secondary" size="sm" icon="publish" data-album-publish="">{published ? 'Unpublish' : 'Publish'}</Button>
@@ -122,7 +122,7 @@ const json = JSON.stringify(state).replace(/</g, '\\u003c');
       <div data-album-editor data-editor-stack>
         <script is:inline type="application/json" data-region="album-state" data-album-state set:html={json} />
         <AlbumWords title={album.title} summary={album.summary} description={album.description} count={count} dates={dates} needAlt={needAlt} status={published ? 'published' : 'draft'} />
-        <AlbumCover tiles={band.tiles} arranged={band.arranged} items={band.items} />
+        <AlbumCover band={band} arranged={cover.arranged} items={cover.items} />
         <AlbumCoverEditor square={square} />
         <AlbumItems title={album.title} cells={grid.cells} order={album.order ?? 'oldest'} />
         <Dialog id="album-add" title="Add to the album">
@@ -180,17 +180,6 @@ const json = JSON.stringify(state).replace(/</g, '\\u003c');
         </Dialog>
         <Dialog id="album-downloads" title="Downloads" size="sm">
           <AlbumBulk kind="download" albumDownload={settings.download} />
-        </Dialog>
-        <Dialog id="album-preview" title="In the gallery" size="lg" closeLabel="Back to the album">
-          <div data-region="album-preview" data-album-preview>
-            {preview ? (
-              <AlbumBand {...preview} headingLevel={2} />
-            ) : asked?.has('album-preview') ? (
-              <Text variant="ui" tone="muted">Nothing to show yet: the gallery shows an album once it holds a picture or a video.</Text>
-            ) : (
-              <Text variant="ui" tone="muted">Drawing the album as the gallery shows it…</Text>
-            )}
-          </div>
         </Dialog>
       </div>
       </SplitView>

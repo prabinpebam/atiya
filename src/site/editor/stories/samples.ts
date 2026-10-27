@@ -15,7 +15,8 @@ import type { AiService } from '../server/aiSettings';
 import type { Runner } from '../model/aiServices';
 import { reviewView } from '../model/aiReview';
 import type { AlbumCardView } from '../components/AlbumCards.astro';
-import type { CoverTileView } from '../components/AlbumCover.astro';
+import type { Band } from '../../content/bands';
+import type { BandTile } from '../../scripts/albumBandRules';
 import type { CoverItem } from '../model/cover';
 import type { PhotoCell } from '../kit/PhotoGrid.astro';
 import type { ViewerItem } from '../model/albumViewer';
@@ -378,13 +379,34 @@ export const LIBRARY_CELLS: (PhotoCell & { albums: string[]; articles: string[] 
   { ...cell('samples/clip', pond, { group: 'Date not set, added June 2026', kind: 'embed' }), albums: [], articles: [] },
 ];
 
-/** The cover band as it stands: a lead picture and three beside it (12 columns). */
-export const COVER_TILES: CoverTileView[] = [
-  { item: 'i1', x: 0, y: 0, w: 6, h: 4, thumb: pond.thumb, width: pond.width, height: pond.height },
-  { item: 'i2', x: 6, y: 0, w: 3, h: 2, thumb: bridge.thumb, width: bridge.width, height: bridge.height },
-  { item: 'i4', x: 9, y: 0, w: 3, h: 2, thumb: workshop.thumb, width: workshop.width, height: workshop.height },
-  { item: 'i5', x: 6, y: 2, w: 6, h: 2, thumb: plaza.thumb, width: plaza.width, height: plaza.height },
-];
+/** A sample painting as a tile of the gallery's band, at its places on the wide and the phone grid. */
+const bandTile = (id: string, s: ReturnType<typeof sample>, place: BandTile['place'], phone: BandTile['phone']): BandTile => ({
+  id,
+  kind: 'picture',
+  name: s.alt,
+  href: `#item-${id}`,
+  place,
+  phone,
+  still: { src: s.src, srcset: s.srcset, width: s.width, height: s.height },
+});
+
+/** An album's band as the gallery draws it: a lead picture and three beside it (12 columns; made-up words). */
+export const COVER_BAND: Band = {
+  id: 'our-trip-north',
+  title: 'Our trip north',
+  href: '#',
+  site: '#',
+  counts: '7 pictures, 1 video',
+  dates: 'May 2026',
+  summary: 'A week of ponds, bridges and a workshop by the sea.',
+  tiles: [
+    bandTile('i1', pond, { x: 0, y: 0, w: 6, h: 4 }, { x: 0, y: 0, w: 6, h: 4 }),
+    bandTile('i2', bridge, { x: 6, y: 0, w: 3, h: 2 }, { x: 0, y: 4, w: 3, h: 2 }),
+    { ...bandTile('i4', workshop, { x: 9, y: 0, w: 3, h: 2 }, { x: 3, y: 4, w: 3, h: 2 }), kind: 'video', length: '0:40' },
+    bandTile('i5', plaza, { x: 6, y: 2, w: 6, h: 2 }, { x: 0, y: 6, w: 6, h: 2 }),
+  ],
+  total: 8,
+};
 
 /** The album's pictures as Edit cover draws them (made-up names and sizes). */
 export const COVER_ITEMS: CoverItem[] = [

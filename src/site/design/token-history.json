@@ -113,7 +113,7 @@
     "c.dropcap.size": {"v":"4.35em"},
     "c.editor-ai-prompt.width": {"v":"34rem"},
     "c.editor-album-cards.min": {"v":"15rem"},
-    "c.editor-album-cover.preview": {"v":"26rem"},
+    "c.editor-album-cover.preview": {"v":"26rem","d":"The cover at rest is the gallery's band at the column's full width (27 October 2026): no replacement"},
     "c.editor-album-list.thumb": {"v":"2.5rem"},
     "c.editor-context.menu": {"v":"14rem"},
     "c.editor-crop.handle": {"v":"0.875rem"},
@@ -501,6 +501,15 @@
           },
           {
             "v": "var(--c-control-radius)"
+          }
+        ],
+        "c.editor-album-cover.preview": [
+          {
+            "v": "26rem"
+          },
+          {
+            "v": "26rem",
+            "d": "The cover at rest is the gallery's band at the column's full width (27 October 2026): no replacement"
           }
         ]
       }

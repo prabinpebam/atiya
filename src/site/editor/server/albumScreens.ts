@@ -4,7 +4,7 @@
  */
 import type { Album } from '../../content/schema';
 import type { ContentIndex } from '../../content/load';
-import { albumCounts, albumDates, albumOrder, albumsOrder, aspectOf, coverLead, coverOf, coverPicture, countWords, dateSpan, isMediaItem, isTextItem, itemKind, type ItemKind } from '../../content/album';
+import { albumCounts, albumDates, albumOrder, albumsOrder, aspectOf, coverLead, coverPicture, countWords, dateSpan, isMediaItem, isTextItem, itemKind, type ItemKind } from '../../content/album';
 import type { CoverItem } from '../model/cover';
 import { embedPoster, picture, video } from '../../content/pictures';
 import { findHub, hubs } from '../model/structure';
@@ -144,20 +144,9 @@ export async function albumCells(index: ContentIndex, album: Album): Promise<{ c
   return { cells, facts };
 }
 
-/** The cover band as it stands: its tiles with their thumbnails, whether it's arranged, and the album's pictures and videos as Edit cover draws them (§9.6). */
-export async function coverBand(
-  index: ContentIndex,
-  album: Album,
-): Promise<{ arranged: boolean; tiles: { item: string; x: number; y: number; w: number; h: number; thumb: string; alt: string; bg?: string; width: number; height: number }[]; items: CoverItem[] }> {
+/** The cover as it stands: whether it's arranged, and the album's pictures and videos as Edit cover draws them (§9.6). */
+export async function coverBand(index: ContentIndex, album: Album): Promise<{ arranged: boolean; items: CoverItem[] }> {
   const lookup = lookupOf(index);
-  const byId = new Map(album.items.map((i) => [i.id, i]));
-  const tiles = await Promise.all(
-    coverOf(album, lookup).map(async (t) => {
-      const item = byId.get(t.item);
-      const shown = item && !isTextItem(item) ? await thumbOf(index, item.media) : { thumb: '', alt: '', width: 1, height: 1 };
-      return { item: t.item, x: t.x, y: t.y, w: t.w, h: t.h, ...shown };
-    }),
-  );
   const items = await Promise.all(
     albumOrder(album, lookup)
       .filter(isMediaItem)
@@ -182,5 +171,5 @@ export async function coverBand(
         };
       }),
   );
-  return { arranged: !!album.cover && 'tiles' in album.cover, tiles, items };
+  return { arranged: !!album.cover && 'tiles' in album.cover, items };
 }

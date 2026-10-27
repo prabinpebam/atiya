@@ -21,7 +21,7 @@ import Divider from '../fundamentals/Divider.astro';
 import { stableId } from '../../design/stableId';
 import { placeStyle, seeAll, tileSizes, type BandTile } from '../../scripts/albumBandRules';
 
-interface Props {
+export interface Props {
   /** The album page's ID (Pause is kept for the visit under it). */
   id: string;
   /** The album's title. */

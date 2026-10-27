@@ -1,53 +1,33 @@
 ---
 /**
- * An album's cover as its band will look (documentation/gallery/spec.md §9.2, §9.6), at rest: a small band (its
- * 12 columns of square cells kept, its width capped), labelled Automatic (worked out from the cover picture and the
- * album's first items) or Arranged, under its heading, with Edit cover at the head's end, which arranges the band in place (AlbumCoverEditor).
+ * An album's cover at rest (documentation/gallery/spec.md §9.2, §9.6): its band exactly as the gallery draws it
+ * (the site's AlbumBand, from what's saved: its title, counts, tiles and short description, at the column's width,
+ * as Edit cover arranges it), labelled Automatic (worked out from the cover picture and the album's first items) or
+ * Arranged, under its heading, with Edit cover at the head's end, which arranges the band in place (AlbumCoverEditor).
  * It carries the album's pictures and videos as Edit cover draws them, so they're fresh after every save.
  * @tier editor
  * @a11y A region named by its heading, Cover; the tag after the heading says whether it's automatic or arranged.
- * Its pictures are decorative here (they're the album's items, named in the grid). Edit cover is a button that says
- * what it opens.
+ * The band is a picture of the gallery here, inert (its links lead nowhere in edit mode; its items are named in the
+ * grid). Edit cover is a button that says what it opens.
  */
-import Image from '../../components/fundamentals/Image.astro';
+import AlbumBand from '../../components/compounds/AlbumBand.astro';
 import Text from '../../components/fundamentals/Text.astro';
 import Tag from '../../components/fundamentals/Tag.astro';
 import Button from '../../components/fundamentals/Button.astro';
 import SectionHead from '../kit/SectionHead.astro';
 import type { CoverItem } from '../model/cover';
-
-/** A tile of the band, with its thumbnail. */
-export interface CoverTileView {
-  /** Its item's ID. */
-  item: string;
-  /** Its column (0 to 11). */
-  x: number;
-  /** Its row. */
-  y: number;
-  /** Its width in cells. */
-  w: number;
-  /** Its height in cells. */
-  h: number;
-  /** Its thumbnail (none: a plain cell). */
-  thumb: string;
-  /** The thumbnail's edge colour. */
-  bg?: string;
-  /** The thumbnail's width (px). */
-  width: number;
-  /** The thumbnail's height (px). */
-  height: number;
-}
+import type { Props as BandProps } from '../../components/compounds/AlbumBand.astro';
 
 interface Props {
-  /** The band's tiles. */
-  tiles: CoverTileView[];
+  /** The album's band as the gallery draws it (none: nothing to show yet). */
+  band?: BandProps;
   /** Arranged by hand (else automatic). */
   arranged: boolean;
   /** The album's pictures and videos, as Edit cover draws them (none: nothing to arrange yet). */
   items?: CoverItem[];
 }
 
-const { tiles, arranged, items = [] } = Astro.props;
+const { band, arranged, items = [] } = Astro.props;
 const json = JSON.stringify(items).replace(/</g, '\\u003c');
 ---
 
@@ -56,35 +36,26 @@ const json = JSON.stringify(items).replace(/</g, '\\u003c');
     <Tag slot="tags" size="sm">{arranged ? 'Arranged' : 'Automatic'}</Tag>
     <Button slot="end" variant="secondary" size="sm" icon="crop" disabled={!items.length} data-album-cover-edit="">Edit cover</Button>
   </SectionHead>
-  <div class="cover-body">
-    {
-      tiles.length ? (
-        <div class="cover-frame">
-          <div class="band">
-            {tiles.map((t) => (
-              <div class="tile" style={`grid-area: ${t.y + 1} / ${t.x + 1} / span ${t.h} / span ${t.w}`}>
-                {t.thumb && <Image src={t.thumb} alt="" width={t.width} height={t.height} display="fill" fill rounded={false} bg={t.bg ? { light: t.bg } : undefined} />}
-              </div>
-            ))}
-          </div>
-        </div>
-      ) : (
-        <Text variant="small" tone="muted">The cover fills itself once the album has pictures.</Text>
-      )
-    }
-    <Text variant="small" tone="muted">
-      {arranged ? 'Arranged by hand. Edit cover to move, resize or swap its tiles, or to go back to the automatic cover.' : 'Worked out from the cover picture and the album’s first items. Select a picture and choose Set as cover, or Edit cover to arrange it yourself.'}
-    </Text>
-  </div>
+  <Text variant="small" tone="muted">
+    {arranged ? 'Arranged by hand. Edit cover to move, resize or swap its tiles, or to go back to the automatic cover.' : 'Worked out from the cover picture and the album’s first items. Select a picture and choose Set as cover, or Edit cover to arrange it yourself.'}
+  </Text>
+  {
+    band ? (
+      <div class="band" inert data-cover-band>
+        <AlbumBand {...band} headingLevel={4} />
+      </div>
+    ) : (
+      <Text variant="small" tone="muted">The gallery shows the album once it holds a picture or a video.</Text>
+    )
+  }
   <script is:inline type="application/json" data-cover-items set:html={json} />
 </section>
 
 <style>
-  /* as wide as the words above it, so Edit cover ends where the fields do */
+  /* the head, how it's made, then the band as the gallery shows it, at the column's width */
   .cover {
     display: grid;
     gap: var(--space-4);
-    max-inline-size: var(--size-measure);
   }
 
   /* hidden while Edit cover arranges it in place */
@@ -92,30 +63,7 @@ const json = JSON.stringify(items).replace(/</g, '\\u003c');
     display: none;
   }
 
-  /* the band, then a line on how it's made */
-  .cover-body {
-    display: grid;
-    justify-items: start;
-    gap: var(--space-2);
-  }
-
-  /* a small band: its width capped, its cells square, so it reads like the site's at a glance */
-  .cover-frame {
-    inline-size: 100%;
-    max-inline-size: var(--c-editor-album-cover-preview);
-    container-type: inline-size;
-  }
-
   .band {
-    display: grid;
-    grid-template-columns: repeat(12, minmax(0, 1fr));
-    grid-auto-rows: calc((100cqi - 11 * var(--space-0-5)) / 12);
-    gap: var(--space-0-5);
-  }
-
-  .tile {
-    overflow: hidden;
-    border-radius: var(--radius-xs);
-    background: var(--color-bg-sunk);
+    min-inline-size: 0;
   }
 </style>

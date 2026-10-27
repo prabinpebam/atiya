@@ -1009,7 +1009,7 @@ The album editor's cover preview at rest (documentation/gallery/spec.md §9.2): 
 
 | Token | Value | Resolves to | Use |
 |---|---|---|---|
-| `--c-editor-album-cover-preview` | `26rem` |  | The widest the album editor's cover preview gets at rest; Edit cover draws the band at the column's full width |
+| `--c-editor-album-cover-preview` | `26rem` |  | **Deprecated**: The cover at rest is the gallery's band at the column's full width (27 October 2026): no replacement. The widest the album editor's cover preview gets at rest; Edit cover draws the band at the column's full width |
 
 ## `c.editor-album-list` · Component
 
