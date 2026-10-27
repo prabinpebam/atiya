@@ -1113,7 +1113,7 @@ The Media screen becomes the library every album is made from, as a photo app's 
 | AI | The switch "Suggest alt text for new pictures" ([§9.8](#98-suggested-alt-text)) |
 | Access | A grant's scope can name an album, as it names a page; a section's grant covers its albums |
 | The action center | Finds albums by title and opens the album editor; finds "Add album" |
-| Save to remote | Albums and their files saved with the rest, private first, as pages are |
+| Save to remote | Albums and their files saved with the rest, private first, as pages are. From the album editor, the top bar's Save to remote opens the article editor's dialog over the album, with the album's own changes ticked |
 
 ## 10. Accessibility
 

@@ -68,7 +68,9 @@ const checking = !git;
 // recorded (documentation/access/spec.md §8.3); git that couldn't be read says so instead of "nothing"
 const pending = git ? pendingCount(git) : 0;
 const unknown = !!git?.error;
-const articlePublish = screen === 'article' && git && wants(asked, 'publish', 'publish-issues') ? await publishView(Astro.url) : null;
+// a page's and an album's editor save to remote in a dialog over the editor (spec §7.1); other screens go to the Save to remote screen
+const inDialog = screen === 'article' || screen === 'album';
+const articlePublish = inDialog && git && wants(asked, 'publish', 'publish-issues') ? await publishView(Astro.url) : null;
 const to = (p: string) => withBase(`/_edit/${p}`);
 // files dev left out because they don't pass the content check (content/load.ts loadContentLeavingOut): every
 // screen says so above its own, so a file broken by hand is seen and never stops edit mode
@@ -104,7 +106,7 @@ const groups = (['Content', 'Site', 'Checks'] as const)
       <div class="tools"><slot name="tools" /></div>
       <div class="theme"><Select label="Colour theme" hideLabel trigger="icon" align="end" options={THEME_OPTIONS} value="system" id="editor-theme" data-editor-theme-switch="" /></div>
       <div class="pending" data-region="editor-pending" data-pending={checking ? undefined : String(pending)} data-pending-checking={checking ? '' : undefined}>
-        {screen === 'article' && <span class="remote-status" data-editor-remote-status role="status" aria-live="polite" hidden />}
+        {inDialog && <span class="remote-status" data-editor-remote-status role="status" aria-live="polite" hidden />}
         {
           checking ? (
             <span class="checking">
@@ -124,7 +126,7 @@ const groups = (['Content', 'Site', 'Checks'] as const)
           )
         }
         {
-          screen === 'article'
+          inDialog
             ? <Button variant={pending ? 'primary' : 'secondary'} size="sm" icon="upload" data-dialog-open="save-to-remote">Save to remote</Button>
             : <Button href={to('publish/')} variant={pending ? 'primary' : 'secondary'} size="sm" icon="upload">Save to remote</Button>
         }
@@ -180,7 +182,7 @@ const groups = (['Content', 'Site', 'Checks'] as const)
       }
     </main>
     {
-      screen === 'article' && (
+      inDialog && (
         <Dialog id="save-to-remote" title="Save to remote" size="lg" closeLabel="Close and keep editing">
           {articlePublish ? (
             <ChangeList {...articlePublish.changeList} wide />

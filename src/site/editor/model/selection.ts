@@ -30,6 +30,24 @@ export function pageScope(resources: readonly string[], id: string): string[] {
 /** The page an edit mode address is the editor of (/_edit/articles/<id>/), or null. */
 export const pageOf = (path: string): string | null => /\/_edit\/articles\/([^/]+)\/?$/.exec(path)?.[1] ?? null;
 
+/** The changes that are one album's: its file in either folder (a private album lives in private-pages/) and its own media. */
+export function albumScope(resources: readonly string[], id: string): string[] {
+  const files = [`/content/albums/${id}.json`, `/private/albums/${id}.json`];
+  const media = [`/content/media/albums/${id}/`, `/private/media/albums/${id}/`];
+  return resources.filter((r) => files.includes(r) || media.some((folder) => r.startsWith(folder)));
+}
+
+/** The album an edit mode address is the editor of (/_edit/albums/<id>/), or null. */
+export const albumOf = (path: string): string | null => /\/_edit\/albums\/([^/]+)\/?$/.exec(path)?.[1] ?? null;
+
+/** The changes Save to remote ticks to begin with when opened from an editor's address (a page's or an album's), or undefined: every change. */
+export function editorScope(resources: readonly string[], path: string): string[] | undefined {
+  const page = pageOf(path);
+  if (page) return pageScope(resources, page);
+  const album = albumOf(path);
+  return album ? albumScope(resources, album) : undefined;
+}
+
 /** What happens to the message when private pages are in the save (documentation/access/spec.md §8.3), or null. */
 export function privateNote(keys: readonly string[]): string | null {
   if (!keys.some((k) => k.startsWith('/private/'))) return null;

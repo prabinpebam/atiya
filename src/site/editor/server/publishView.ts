@@ -1,6 +1,6 @@
 import type { ChangeRow } from '../components/ChangeList.astro';
 import { actionsUrl, groupChanges, suggestMessage, type Titles } from '../model/names';
-import { pageOf, pageScope, privateNote as privateNoteFor } from '../model/selection';
+import { editorScope, privateNote as privateNoteFor } from '../model/selection';
 import { summariseChange, type SummaryContext } from '../model/changeSummary';
 import { readDoc } from './store';
 import { load } from './screens';
@@ -36,8 +36,10 @@ export async function publishView(url: URL) {
   const context: SummaryContext = { status: (key) => statusOf.get(key), before: (key) => committed.get(key), after: now, titles };
   const rows: ChangeRow[] = groupChanges(state.files, titles).map((change) => {
     const id = change.resource.replace(/^\/(content|private)\/(articles|media|people)\//, '').replace(/\.json$/, '');
+    const album = /^\/(?:content|private)\/albums\/([^/]+)\.json$/.exec(change.resource)?.[1];
     const href =
       change.status === 'deleted' ? undefined
+      : album ? `albums/${album}/`
       : change.kind === 'Article' || change.kind === 'Private page' ? `articles/${id}/`
       : change.kind === 'Media' ? `media/?id=${id}`
       : change.kind === 'Sections' ? 'sections/'
@@ -71,8 +73,7 @@ export async function publishView(url: URL) {
   const privateNote = privateNoteFor(state.files.map((file) => file.key));
   const remote = await remoteUrl(state.upstream);
 
-  // opened from a page's editor: that page's changes are the ones ticked to begin with
-  const pageId = pageOf(url.pathname);
+  // opened from a page's or an album's editor: its changes are the ones ticked to begin with
   return {
     branch: state.branch,
     issues: loaded.ok ? [] : loaded.issues,
@@ -84,7 +85,7 @@ export async function publishView(url: URL) {
       privateNote,
       actions: remote ? actionsUrl(remote) : null,
       published,
-      scope: pageId ? pageScope(rows.map((row) => row.resource), pageId) : undefined,
+      scope: editorScope(rows.map((row) => row.resource), url.pathname),
     },
   };
 }

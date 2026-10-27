@@ -20,7 +20,7 @@ import { MAX_GIF_BYTES, MAX_VIDEO_BYTES } from '../../src/site/editor/model/uplo
 import { addLinkedVideo, ONLY_PROVIDERS, standInFetch } from '../../src/site/editor/server/albumEmbed';
 import { byteRange } from '../../integrations/content-files.mjs';
 import { asCommitted, changes, committedJson, discard, pendingCount, publish, push } from '../../src/site/editor/server/git';
-import { chosenFiles, messageFor, pageOf, pageScope, privateNote, saveLabel } from '../../src/site/editor/model/selection';
+import { albumOf, albumScope, chosenFiles, editorScope, messageFor, pageOf, pageScope, privateNote, saveLabel } from '../../src/site/editor/model/selection';
 import editor from '../../integrations/editor.mjs';
 
 const ROOT = join(__dirname, '../..');
@@ -900,6 +900,25 @@ describe('choosing what a save takes (documentation/editor/spec.md §7.1)', () =
     expect(pageOf('/atiya/_edit/articles/my-page')).toBe('my-page');
     expect(pageOf('/_edit/publish/')).toBeNull();
     expect(pageOf('/_edit/articles/')).toBeNull();
+  });
+  it("ticks an album's own changes when opened from its editor: its file in either folder and its media", () => {
+    const resources = [
+      '/content/albums/trip.json',
+      '/private/albums/trip.json',
+      '/content/albums/trips.json',
+      '/content/media/albums/trip/p1',
+      '/private/media/albums/trip/p2',
+      '/content/media/albums/trips/p1',
+      '/content/articles/trip.json',
+      '/content/site.json',
+    ];
+    expect(albumScope(resources, 'trip')).toEqual(['/content/albums/trip.json', '/private/albums/trip.json', '/content/media/albums/trip/p1', '/private/media/albums/trip/p2']);
+    expect(albumOf('/_edit/albums/trip/')).toBe('trip');
+    expect(albumOf('/atiya/_edit/albums/trip')).toBe('trip');
+    expect(albumOf('/_edit/albums/')).toBeNull();
+    expect(editorScope(resources, '/_edit/albums/trip/')).toEqual(albumScope(resources, 'trip'));
+    expect(editorScope(resources, '/_edit/articles/trip/')).toEqual(['/content/articles/trip.json']);
+    expect(editorScope(resources, '/_edit/publish/')).toBeUndefined();
   });
 });
 

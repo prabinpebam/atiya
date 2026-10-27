@@ -6,6 +6,7 @@
  *
  *   npx playwright test --project=editor -g "editor: albums"
  */
+import { execFileSync } from 'node:child_process';
 import { readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import AxeBuilder from '@axe-core/playwright';
@@ -179,5 +180,31 @@ test.describe('editor: albums: adding in the grid', () => {
     await paste('[data-album-items] li[data-item="cloud"]');
     await expect.poll(() => storyItems().length, { timeout: 30_000 }).toBe(5);
     expect(storyItems().some((i) => /pasted-picture/.test(i.media ?? ''))).toBe(true);
+  });
+});
+
+test.describe('editor: albums: save to remote', () => {
+  test.beforeEach(() => reset());
+
+  test("Save to remote opens the article editor's dialog over the album, with only the album's changes ticked", async ({ page }) => {
+    const site = join(FIXTURE, 'content', 'site.json');
+    writeFileSync(site, JSON.stringify({ ...JSON.parse(readFileSync(site, 'utf8')), positioning: 'Left for a later save.' }, null, 2) + '\n');
+    const file = join(FIXTURE, 'content', 'albums', 'fixture-story.json');
+    writeFileSync(file, JSON.stringify({ ...JSON.parse(readFileSync(file, 'utf8')), title: 'Saved on its own' }, null, 2) + '\n');
+    await page.goto('/_edit/albums/fixture-story/');
+    const albumUrl = page.url();
+    await page.getByRole('button', { name: 'Save to remote', exact: true }).click();
+    const dialog = page.getByRole('dialog', { name: 'Save to remote' });
+    await expect(dialog.getByRole('heading', { name: '2 changes to save' })).toBeVisible({ timeout: 15_000 });
+    const row = (name: string) => dialog.locator('li', { has: page.locator(`[data-publish-discard][data-name^="${name}"]`) }).getByRole('checkbox');
+    await expect(row('File: albums/fixture-story')).toBeChecked();
+    await expect(row('Settings')).not.toBeChecked();
+    await dialog.getByRole('button', { name: 'Save 1 of 2 to remote' }).click();
+    await expect(dialog.getByRole('heading', { name: 'Saved to remote', exact: true })).toBeVisible({ timeout: 30_000 });
+    await expect(page.locator('[data-editor-remote-status]')).toHaveText('Saved to remote');
+    expect(execFileSync('git', ['show', '--name-only', '--format=', 'HEAD'], { cwd: FIXTURE, encoding: 'utf8' }).trim()).toBe('content/albums/fixture-story.json');
+    await dialog.getByRole('button', { name: 'Close and keep editing' }).click();
+    await expect(page).toHaveURL(albumUrl);
+    await expect(page.locator('[data-album-items]')).toBeVisible();
   });
 });
