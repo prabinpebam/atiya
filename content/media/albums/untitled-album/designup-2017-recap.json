@@ -1,0 +1,14 @@
+{
+  "kind": "embed",
+  "provider": "youtube",
+  "id": "yiPUZtXp09Y",
+  "title": "DesignUp 2017 Recap",
+  "shape": {
+    "width": 1920,
+    "height": 1080
+  },
+  "poster": {
+    "file": "designup-2017-recap.poster.webp"
+  },
+  "visibility": "public"
+}

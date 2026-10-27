@@ -5,7 +5,7 @@
   "title": "DesignUp",
   "status": "published",
   "createdAt": "2026-10-23",
-  "updatedAt": "2026-10-27",
+  "updatedAt": "2026-10-28",
   "items": [
     {
       "id": "colorful-geometric-arrow-cluster",
@@ -42,6 +42,18 @@
     {
       "id": "wrapup-of-designup-2018",
       "media": "albums/untitled-album/wrapup-of-designup-2018"
+    },
+    {
+      "id": "designup-2017-recap",
+      "media": "albums/untitled-album/designup-2017-recap"
+    },
+    {
+      "id": "designup-3-years-recap-2018",
+      "media": "albums/untitled-album/designup-3-years-recap-2018"
+    },
+    {
+      "id": "pasted-picture-2026-10-09-6",
+      "media": "articles/my-journey-with-designup/pasted-picture-2026-10-09-6"
     }
   ],
   "summary": "Collection of the creatives I created for DesignUp along with photos and videos from the even I took.",
@@ -75,9 +87,9 @@
       },
       {
         "item": "media9",
-        "x": 6,
-        "y": 2,
-        "w": 3,
+        "x": 10,
+        "y": 4,
+        "w": 2,
         "h": 2,
         "display": "fit",
         "bg": "#000000"
@@ -103,6 +115,13 @@
         "x": 0,
         "y": 4,
         "w": 4,
+        "h": 2
+      },
+      {
+        "item": "designup-2017-recap",
+        "x": 6,
+        "y": 2,
+        "w": 3,
         "h": 2
       }
     ]

@@ -1,0 +1,15 @@
+{
+  "kind": "embed",
+  "provider": "vimeo",
+  "id": "1234686450",
+  "title": "DesignUp 3 years recap, 2018",
+  "shape": {
+    "width": 1920,
+    "height": 560
+  },
+  "duration": 100,
+  "poster": {
+    "file": "designup-3-years-recap-2018.poster.webp"
+  },
+  "visibility": "public"
+}
