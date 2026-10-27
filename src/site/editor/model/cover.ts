@@ -205,12 +205,43 @@ export const moveTo = (album: Album, show: Show, item: string, at: { x: number; 
     return me ? place(tiles, item, { ...at, w: me.w, h: me.h }, g) : { ok: false, why: GONE };
   });
 
-/** A tile resized by its handles (its top-left corner stays). */
+/** A tile resized to a size, its top-left corner kept. */
 export const resizeTo = (album: Album, show: Show, item: string, size: { w: number; h: number }, lookup: MediaLookup): Outcome =>
   arrange(album, show, lookup, (tiles, g) => {
     const me = tiles.find((t) => t.item === item);
     return me ? place(tiles, item, { x: me.x, y: me.y, ...size }, g) : { ok: false, why: GONE };
   });
+
+/** An edge or a corner of a tile, which the pointer resizes it by. */
+export type Edge = 'top' | 'right' | 'bottom' | 'left' | 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right';
+/** Every edge and corner, as the tile draws its handles. */
+export const EDGES: readonly Edge[] = ['top', 'right', 'bottom', 'left', 'top-left', 'top-right', 'bottom-left', 'bottom-right'];
+
+/**
+ * The rect a tile takes when an edge (or a corner: its two edges) is dragged by `dx`, `dy` cells: the opposite edges
+ * stay put; a moving edge stops at the grid's sides and at the tile's least size. Taller than the grid allows is
+ * left for `place` to refuse, so the outline can say why.
+ */
+export function edgeRect(from: Rect, edge: Edge, dx: number, dy: number, grid: Grid): Rect {
+  const right = from.x + from.w;
+  const bottom = from.y + from.h;
+  const clamp = (n: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, n));
+  let { x, y, w, h } = from;
+  if (edge.includes('left')) {
+    x = clamp(from.x + dx, Math.max(0, right - grid.maxW), right - grid.minW);
+    w = right - x;
+  }
+  if (edge.includes('right')) w = clamp(from.w + dx, grid.minW, Math.min(grid.maxW, grid.columns - from.x));
+  if (edge.includes('top')) {
+    y = clamp(from.y + dy, 0, bottom - grid.minH);
+    h = bottom - y;
+  }
+  if (edge.includes('bottom')) h = Math.max(grid.minH, from.h + dy);
+  return { x, y, w, h };
+}
+
+/** A tile given a whole new rect (dragged by any of its edges): placed as a move is, the tiles it meets pushed down. */
+export const reshapeTo = (album: Album, show: Show, item: string, rect: Rect, lookup: MediaLookup): Outcome => arrange(album, show, lookup, (tiles, g) => place(tiles, item, rect, g));
 
 /** An arrow key (or the tile bar's button): moves the tile a cell, or with `resize` changes its size a cell. */
 export const arrangeKey = (album: Album, show: Show, item: string, dir: Dir, resize: boolean, lookup: MediaLookup): Outcome =>
@@ -240,7 +271,47 @@ export function putInCover(album: Album, item: string, lookup: MediaLookup, at?:
   return r.ok ? done(withWide(album, r.tiles)) : refused(r.why);
 }
 
-/** Remove from cover (or dragged to the strip): the tile leaves the cover, never its last. */
+const plural = (n: number, one: string) => `${n} ${one}${n === 1 ? '' : 's'}`;
+
+/**
+ * Items of the album's grid put in the cover (dragged onto it, or Add to cover): the first where it was dropped (or
+ * where it fits first), the rest where they fit first. Text cards and items already in it are passed over; when
+ * the cover can't take them all, those it took stay and the note says why the rest didn't go in.
+ */
+export function addToCover(album: Album, ids: readonly string[], lookup: MediaLookup, at?: { x: number; y: number }): Outcome {
+  if (ids.length === 1) return putInCover(album, ids[0], lookup, at);
+  const isMedia = (id: string) => album.items.some((i) => i.id === id && isMediaItem(i));
+  const already = new Set(coverOf(album, lookup).map((t) => t.item));
+  let now = album;
+  let added = 0;
+  let why = '';
+  for (const id of ids.filter((id) => isMedia(id) && !already.has(id))) {
+    const r = putInCover(now, id, lookup, added ? undefined : at);
+    if (!r.ok) {
+      why = r.why;
+      break;
+    }
+    if (r.album !== now) added++;
+    now = r.album;
+  }
+  if (!added) return refused(why || 'Those are already in the cover, or are text cards, which a cover can’t hold.');
+  const inCover = new Set(coverOf(now, lookup).map((t) => t.item));
+  const left = ids.filter((id) => isMedia(id) && !inCover.has(id)).length;
+  return done(now, left ? `${plural(added, 'item')} went in; ${plural(left, 'item')} didn’t: ${why}` : undefined);
+}
+
+/** Items taken out of the cover together (Remove from cover on the grid's selection): never its last tile. */
+export function takeAllOut(album: Album, ids: readonly string[], lookup: MediaLookup): Outcome {
+  let now = album;
+  for (const id of ids) {
+    const r = takeOut(now, id, lookup);
+    if (!r.ok) return now === album ? r : done(now, r.why);
+    now = r.album;
+  }
+  return done(now);
+}
+
+/** Remove from cover (or a tile dragged onto the album's grid): the tile leaves the cover, never its last. */
 export function takeOut(album: Album, item: string, lookup: MediaLookup): Outcome {
   const tiles = coverOf(album, lookup);
   if (!tiles.some((t) => t.item === item)) return done(album);

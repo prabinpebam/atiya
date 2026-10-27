@@ -6,7 +6,9 @@
  * large drop target. Given `add`, its last tile adds (a dashed square, as a photo app's "Add" is). Files dropped
  * on it show where they'll land with the drop marker (`data-drop` on a cell, or on the Add tile for the end). The
  * album editor's script selects, moves, opens and uploads through the data attributes (data-photo-grid, data-item,
- * data-open-item, data-photo-upload, data-photo-add); the grid itself draws, never decides.
+ * data-open-item, data-photo-upload, data-photo-add); the grid itself draws, never decides. While Edit cover is open
+ * (`data-cover-editing`, scripts/albumCover.ts) the items in the cover (`data-in-cover`) are marked In cover in place
+ * of the lead picture's Cover, and a tile dragged out of the cover onto the grid outlines it (`data-cover-taking`).
  * @tier kit
  * @a11y A multi-selectable listbox named by `label`: each item is an option, selected with aria-selected; the
  * days are labelled groups. One option takes the Tab stop (a roving tabindex), and the arrows move between them.
@@ -137,6 +139,7 @@ const first = cells[0]?.id;
               data-kind={c.kind}
               data-open-item=""
               data-taken={c.taken}
+              data-needs-alt={c.needsAlt ? '' : undefined}
             >
               {c.kind === 'text' ? (
                 <span class="text">
@@ -159,7 +162,8 @@ const first = cells[0]?.id;
                     <Icon name={BADGE[c.kind]!.icon} />
                   </span>
                 )}
-                {c.cover && <Tag size="sm" tone="highlight">Cover</Tag>}
+                {c.cover && <span class="lead"><Tag size="sm" tone="highlight">Cover</Tag></span>}
+                {c.kind !== 'text' && <span class="in-cover"><Tag size="sm" tone="accent">In cover</Tag></span>}
                 {c.private && <span class="plate"><Tag size="sm" icon="lock">Private</Tag></span>}
                 {c.needsAlt && <Tag size="sm" tone="negative" icon="error">Needs alt text</Tag>}
               </span>
@@ -218,7 +222,8 @@ const first = cells[0]?.id;
   }
 
   .photo-grid[data-dropping] .empty,
-  .photo-grid[data-dropping] .cells {
+  .photo-grid[data-dropping] .cells,
+  .photo-grid[data-cover-taking] .cells {
     outline: var(--border-strong) dashed var(--color-accent);
     outline-offset: var(--space-1);
   }
@@ -374,6 +379,16 @@ const first = cells[0]?.id;
     gap: var(--space-1);
     align-items: end;
     justify-content: end;
+  }
+
+  /* while Edit cover is open, what's in the cover is marked, not the lead picture */
+  .in-cover,
+  .photo-grid[data-cover-editing] .lead {
+    display: none;
+  }
+
+  .photo-grid[data-cover-editing] .cell[data-in-cover] .in-cover {
+    display: inline-flex;
   }
 
   /* the neutral tag is see-through: over a picture it needs the page behind it to be read */

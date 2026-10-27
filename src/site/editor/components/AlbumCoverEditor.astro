@@ -3,13 +3,15 @@
  * Edit cover (documentation/gallery/spec.md §9.6): the album editor's cover band turned into its arranger, in place
  * and at the column's full width. A toolbar (Wide or Phone, a preset, Close gaps, Arrange for phones or Back to
  * automatic, Use automatic cover, Cancel and Done), the band over a faint grid of its square cells (12 columns; 6 on a
- * phone), its holes hatched, the warnings that apply, the chosen tile's bar (its keys and options) and the album's
- * pictures and videos below, those in the cover marked. A tile is dragged to a cell or by its handles to a size, both
- * snapping to whole cells; an item dragged up joins the cover, a tile dragged down leaves it. Every change is saved
+ * phone), its holes hatched, the warnings that apply and the chosen tile's bar (its keys and options). Its source is
+ * the album's own grid below, never a second one: an item dragged up from it joins the cover, a tile dragged down onto
+ * it leaves, the grid marks what's in the cover, and its selection bar adds Add to cover and Remove from cover
+ * (AlbumItems). A tile is dragged to a cell or by any edge or corner to a size (the opposite edges stay put), both
+ * snapping to whole cells. Every change is saved
  * at once through the album's own queue and undone with Undo. Hidden at rest; scripts/albumCover.ts draws it from the
  * album being edited (its rules the pure model/cover.ts). A tile is only its picture, cornered as its gallery draws it
- * (square when the gallery says so); the chosen one has a ring inside its edge, and its right and bottom edges resize
- * it under the pointer with nothing drawn but the cursor. Preview hides everything of the arranger's, leaving the band
+ * (square when the gallery says so); the chosen one has a ring inside its edge, and each of its edges and corners
+ * resizes it under the pointer with nothing drawn but the cursor. Preview hides everything of the arranger's, leaving the band
  * as the gallery shows it, wide or on a phone. A tile's Background (Auto, the picture's own colours, a
  * picker, the eyedropper) is scripts/coverBackground.ts.
  * @tier editor
@@ -32,7 +34,7 @@ import Tag from '../../components/fundamentals/Tag.astro';
 import Text from '../../components/fundamentals/Text.astro';
 import TileButton from '../../components/fundamentals/TileButton.astro';
 import ButtonGroup, { type ButtonGroupOption } from '../../components/fundamentals/ButtonGroup.astro';
-import { PRESETS } from '../model/cover';
+import { EDGES, PRESETS } from '../model/cover';
 
 interface Props {
   /** Open from the start (the parts library shows it open; the album editor opens it from the cover's Edit cover). */
@@ -145,12 +147,6 @@ const SHOW: ButtonGroupOption[] = [
       <Text variant="small" tone="muted"><span data-cover-play-why=""></span></Text>
     </div>
   </section>
-  <section class="ce-strip" aria-label="The album's pictures and videos" data-cover-strip-region="">
-    <Text as="span" variant="label">The album’s items</Text>
-    <Text variant="small" tone="muted"><span data-cover-strip-hint="">Drag an item up to add it to the cover, or a tile down to take it out. Choose an item to add it where it fits first.</span></Text>
-    <div class="ce-strip-items" data-scrollbar="" data-cover-strip=""></div>
-  </section>
-
   <template data-cover-tile-template>
     <div class="ce-tile" data-cover-place="">
       <TileButton variant="bare" pressed={false} data-cover-tile="" aria-label="">
@@ -160,20 +156,10 @@ const SHOW: ButtonGroupOption[] = [
           <span data-cover-mark="phones" hidden><Tag size="sm">Not on phones</Tag></span>
         </span>
       </TileButton>
-      <span class="ce-handle" data-cover-handle="right" aria-hidden="true"></span>
-      <span class="ce-handle" data-cover-handle="bottom" aria-hidden="true"></span>
-      <span class="ce-handle" data-cover-handle="corner" aria-hidden="true"></span>
+      {EDGES.map((edge) => <span class="ce-handle" data-cover-handle={edge} aria-hidden="true"></span>)}
     </div>
   </template>
   <template data-cover-hole-template><span class="ce-hole" aria-hidden="true"></span></template>
-  <template data-cover-strip-template>
-    <div class="ce-strip-item" data-cover-strip-place="">
-      <TileButton variant="framed" data-cover-strip-item="" aria-label="">
-        <span class="ce-strip-pic"><Image src="data:," alt="" width={4} height={3} display="fill" fill rounded={false} /></span>
-        <span class="ce-marks" data-cover-mark="in" hidden><Tag size="sm" tone="accent">Cover</Tag></span>
-      </TileButton>
-    </div>
-  </template>
   <template data-cover-swatch-template>
     <span class="ce-swatch"><TileButton variant="bare" pressed={false} data-cover-bg-swatch="" aria-label="" /></span>
   </template>
@@ -364,26 +350,47 @@ const SHOW: ButtonGroupOption[] = [
     z-index: var(--layer-raised);
   }
 
-  .ce-handle[data-cover-handle='right'] {
-    inset-block: 0;
-    inset-inline-end: 0;
-    inline-size: var(--space-3);
-    cursor: ew-resize;
-  }
-
-  .ce-handle[data-cover-handle='bottom'] {
+  /* the edges: a strip along each side */
+  .ce-handle:is([data-cover-handle='top'], [data-cover-handle='bottom']) {
     inset-inline: 0;
-    inset-block-end: 0;
     block-size: var(--space-3);
     cursor: ns-resize;
   }
 
-  .ce-handle[data-cover-handle='corner'] {
-    inset-block-end: 0;
-    inset-inline-end: 0;
+  .ce-handle:is([data-cover-handle='left'], [data-cover-handle='right']) {
+    inset-block: 0;
+    inline-size: var(--space-3);
+    cursor: ew-resize;
+  }
+
+  /* the corners: drawn after the edges, so over them */
+  .ce-handle:is([data-cover-handle='top-left'], [data-cover-handle='top-right'], [data-cover-handle='bottom-left'], [data-cover-handle='bottom-right']) {
     inline-size: var(--space-5);
     block-size: var(--space-5);
+  }
+
+  .ce-handle:is([data-cover-handle='top-left'], [data-cover-handle='bottom-right']) {
     cursor: nwse-resize;
+  }
+
+  .ce-handle:is([data-cover-handle='top-right'], [data-cover-handle='bottom-left']) {
+    cursor: nesw-resize;
+  }
+
+  .ce-handle:is([data-cover-handle='top'], [data-cover-handle='top-left'], [data-cover-handle='top-right']) {
+    inset-block-start: 0;
+  }
+
+  .ce-handle:is([data-cover-handle='bottom'], [data-cover-handle='bottom-left'], [data-cover-handle='bottom-right']) {
+    inset-block-end: 0;
+  }
+
+  .ce-handle:is([data-cover-handle='left'], [data-cover-handle='top-left'], [data-cover-handle='bottom-left']) {
+    inset-inline-start: 0;
+  }
+
+  .ce-handle:is([data-cover-handle='right'], [data-cover-handle='top-right'], [data-cover-handle='bottom-right']) {
+    inset-inline-end: 0;
   }
 
   .ce-canvas:not([data-editable]) .ce-handle {
@@ -395,7 +402,7 @@ const SHOW: ButtonGroupOption[] = [
     background: none;
   }
 
-  .ce[data-preview] :is(.ce-hole, .ce-marks, .ce-live, .ce-warnings, .ce-bar, .ce-strip, .ce-toolbar [data-cover-when]) {
+  .ce[data-preview] :is(.ce-hole, .ce-marks, .ce-live, .ce-warnings, .ce-bar, .ce-toolbar [data-cover-when]) {
     display: none;
   }
 
@@ -439,8 +446,7 @@ const SHOW: ButtonGroupOption[] = [
   }
 
   .ce-bar,
-  .ce-chosen,
-  .ce-strip {
+  .ce-chosen {
     display: grid;
     align-content: start;
     gap: var(--space-2);
@@ -456,28 +462,5 @@ const SHOW: ButtonGroupOption[] = [
 
   .ce-chosen[hidden] {
     display: none;
-  }
-
-  .ce-strip-items {
-    display: grid;
-    grid-auto-flow: column;
-    grid-auto-columns: var(--c-editor-thumb);
-    gap: var(--space-2);
-    padding-block-end: var(--space-2);
-    overflow-x: auto;
-  }
-
-  .ce-strip-item {
-    position: relative;
-    touch-action: none;
-    user-select: none;
-  }
-
-  .ce-strip-pic {
-    display: block;
-    aspect-ratio: 4 / 3;
-    overflow: hidden;
-    background: var(--color-bg-sunk);
-    pointer-events: none;
   }
 </style>

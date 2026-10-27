@@ -3,7 +3,9 @@
  * The album editor's items (documentation/gallery/spec.md §9.2 to §9.4): a section under its heading, Pictures and
  * videos, with the album's order (oldest first, newest first or your own) at the head's end; then the grid of every
  * item in the order shown (the kit's PhotoGrid), ending in an Add tile; then the selection bar, shown while
- * anything is selected (moving and removing it; its details are the inspector's, AlbumSelection). Files dropped anywhere on the album editor are added: where they were dropped when that's
+ * anything is selected (moving and removing it; its details are the inspector's, AlbumSelection). While Edit cover is
+ * open the grid is the cover's source: its items are dragged up into the cover, and the bar adds Add to cover and
+ * Remove from cover for the selection (scripts/albumCover.ts). Files dropped anywhere on the album editor are added: where they were dropped when that's
  * on an item, else in their places. It hosts the album editor's script, which selects, orders, adds and saves.
  * @tier editor
  * @a11y A region named by its heading. The selection bar is a labelled group that says how many are selected (a
@@ -47,6 +49,10 @@ const ORDERS = [
     <IconButton label="Move to start" icon="arrow-up" size="sm" shape="square" variant="quiet" tooltip="top" data-album-act="start" />
     <IconButton label="Move to end" icon="arrow-down" size="sm" shape="square" variant="quiet" tooltip="top" data-album-act="end" />
     <IconButton label="Remove from album" icon="delete" size="sm" shape="square" variant="quiet" tooltip="top" data-album-act="remove" />
+    <span class="cover-acts" data-cover-acts="" hidden>
+      <span data-cover-add=""><IconButton label="Add to cover" icon="plus" size="sm" shape="square" variant="quiet" tooltip="top" /></span>
+      <span data-cover-take=""><IconButton label="Remove from cover" icon="minus" size="sm" shape="square" variant="quiet" tooltip="top" /></span>
+    </span>
     <span class="clear"><IconButton label="Clear selection" icon="close" size="sm" shape="square" variant="quiet" tooltip="top" data-album-act="clear" /></span>
   </SelectionBar>
 </section>
@@ -68,5 +74,12 @@ const ORDERS = [
   .clear {
     display: inline-flex;
     margin-inline-start: auto;
+  }
+
+  /* Edit cover's own, only while it's open (scripts/albumCover.ts) */
+  .cover-acts:not([hidden]),
+  .cover-acts > :not([hidden]) {
+    display: inline-flex;
+    gap: var(--space-1);
   }
 </style>

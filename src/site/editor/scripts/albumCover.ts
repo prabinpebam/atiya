@@ -1,14 +1,18 @@
 /**
  * Edit cover (documentation/gallery/spec.md §9.6): the album editor's cover band as its arranger. Drawn from the
  * album being edited (the album editor's own, so every change goes through its one save queue and its Undo), with the
- * items' facts the cover region carries. A tile is dragged to a cell or by its handles to a size, snapping to whole
- * cells; an item of the strip dragged onto the band joins it, a tile dragged onto the strip leaves it; the arrow keys
- * (Shift: resize), Delete and the tile bar's buttons do the same without a drag. The rules are the pure model/cover.ts.
+ * items' facts the cover region carries. A tile is dragged to a cell or by any edge or corner to a size, snapping to
+ * whole cells. The album's own grid below is where items come from: those dragged from it onto the band join it, a
+ * tile dragged onto it leaves it, and while Edit cover is open its items in the cover are marked and its selection
+ * bar has Add to cover and Remove from cover. The arrow keys (Shift: resize), Delete and the tile bar's buttons do
+ * the same without a drag. The rules are the pure model/cover.ts.
  */
 import type { Album, AlbumTile } from '../../content/schema';
 import { coverOf, displayFor, holes, readingOrder, type MediaLookup } from '../../content/album';
 import type { Outcome } from '../model/album';
 import {
+  NEW_TILE,
+  addToCover,
   arrangeForPhones,
   arrangeKey,
   canvasRows,
@@ -16,6 +20,7 @@ import {
   closeGapsIn,
   coverState,
   coverWarnings,
+  edgeRect,
   gridOf,
   leadOf,
   moveTo,
@@ -23,19 +28,20 @@ import {
   phoneToAutomatic,
   placeWords,
   playRefusal,
-  putInCover,
-  resizeTo,
+  reshapeTo,
   setBackground,
   setDisplay,
   setOnPhones,
   setPlay,
   shownTiles,
+  takeAllOut,
   takeOut,
   useAutomatic,
   usePictureFocus,
   usePreset,
   type CoverItem,
   type Dir,
+  type Edge,
   type PresetId,
   type Rect,
   type Show,
@@ -76,7 +82,8 @@ export function initAlbumCover(root: HTMLElement, signal: AbortSignal, host: Cov
     }
   };
   const factsOf = (id: string) => items.find((i) => i.id === id);
-  const labelOf = (id: string) => factsOf(id)?.label ?? id;
+  // an alt text's own full stop would double up in "…: columns 1 to 3" and "…in the cover."
+  const labelOf = (id: string) => (factsOf(id)?.label ?? id).replace(/\.+$/, '');
   const wideOf = (album: Album, id: string): AlbumTile | undefined => coverOf(album, host.lookup).find((t) => t.item === id);
 
   const say = (text: string, negative = false) => {
@@ -89,6 +96,13 @@ export function initAlbumCover(root: HTMLElement, signal: AbortSignal, host: Cov
     const t = shownTiles(a, show, host.lookup).find((x) => x.item === id);
     return t ? `${labelOf(id)}: ${placeWords(t)}.` : '';
   };
+  const addedWords = (ids: string[]) => (a: Album) =>
+    ids.length === 1
+      ? placeOf(ids[0])(a)
+      : `Added to the cover: ${ids
+          .filter((id) => wideOf(a, id))
+          .map(labelOf)
+          .join(', ')}.`;
 
   /** A change kept through the album editor (shown, saved, undoable), or its refusal said. */
   const apply = (r: Outcome, words?: (a: Album) => string) => {
@@ -143,8 +157,8 @@ export function initAlbumCover(root: HTMLElement, signal: AbortSignal, host: Cov
     const grid = gridOf(show);
     const tiles = readingOrder(shownTiles(album, show, host.lookup));
     if (chosen && !tiles.some((t) => t.item === chosen)) chosen = '';
-    const focused = (document.activeElement as HTMLElement | null)?.closest<HTMLElement>('[data-cover-tile], [data-cover-strip-item]');
-    const refocus = focused ? (focused.dataset.coverTile ? `[data-cover-tile="${CSS.escape(focused.dataset.coverTile)}"]` : `[data-cover-strip-item="${CSS.escape(focused.dataset.coverStripItem ?? '')}"]`) : '';
+    const focused = (document.activeElement as HTMLElement | null)?.closest<HTMLElement>('[data-cover-tile]');
+    const refocus = focused ? `[data-cover-tile="${CSS.escape(focused.dataset.coverTile ?? '')}"]` : '';
 
     p.dataset.show = show;
     p.toggleAttribute('data-preview', preview);
@@ -204,7 +218,7 @@ export function initAlbumCover(root: HTMLElement, signal: AbortSignal, host: Cov
     warn.hidden = !ws.length;
 
     paintBar(album, editable);
-    paintStrip(album);
+    paintGrid();
     if (refocus) $(refocus)?.focus();
   };
 
@@ -231,24 +245,35 @@ export function initAlbumCover(root: HTMLElement, signal: AbortSignal, host: Cov
     paintBackground();
   };
 
-  const paintStrip = (album: Album) => {
-    const strip = $('[data-cover-strip]')!;
-    const inCover = new Set(coverOf(album, host.lookup).map((t) => t.item));
-    const t = $<HTMLTemplateElement>('[data-cover-strip-template]')!;
-    strip.replaceChildren(
-      ...items.map((it) => {
-        const el = (t.content.firstElementChild as HTMLElement).cloneNode(true) as HTMLElement;
-        const on = inCover.has(it.id);
-        el.dataset.coverStripPlace = it.id;
-        const b = el.querySelector<HTMLElement>('[data-cover-strip-item]')!;
-        b.dataset.coverStripItem = it.id;
-        b.setAttribute('aria-label', on ? `${it.label}, in the cover: choose its tile` : `Add ${it.label} to the cover`);
-        picture(el.querySelector('img'), it, it.kind === 'drawing' ? 'fit' : 'fill', it.focus);
-        (el.querySelector('[data-cover-mark="in"]') as HTMLElement).hidden = !on;
-        return el;
-      }),
-    );
+  // ---------- the album's grid, the cover's source while editing: its items in the cover marked, its bar's actions ----------
+  const photoGrid = () => root.querySelector<HTMLElement>('[data-photo-grid]');
+  let picked: string[] = [];
+  const paintGrid = () => {
+    const g = photoGrid();
+    const inCover = new Set(open ? coverOf(host.album(), host.lookup).map((t) => t.item) : []);
+    g?.toggleAttribute('data-cover-editing', open);
+    g?.querySelectorAll<HTMLElement>('li[data-item]').forEach((c) => {
+      const on = inCover.has(c.dataset.item!);
+      c.toggleAttribute('data-in-cover', on);
+      if (on) c.setAttribute('aria-description', 'In the cover');
+      else c.removeAttribute('aria-description');
+    });
+    const acts = root.querySelector<HTMLElement>('[data-cover-acts]');
+    if (!acts) return;
+    const media = picked.filter((id) => items.some((i) => i.id === id));
+    acts.hidden = !open || preview || show !== 'wide' || !media.length;
+    root.querySelector<HTMLElement>('[data-cover-add]')!.hidden = !media.some((id) => !inCover.has(id));
+    root.querySelector<HTMLElement>('[data-cover-take]')!.hidden = !media.some((id) => inCover.has(id));
   };
+  root.addEventListener(
+    'album:picked',
+    (e) => {
+      picked = (e as CustomEvent<{ ids: string[] }>).detail.ids;
+      paintGrid();
+    },
+    { signal },
+  );
+  root.addEventListener('album:drawn', () => paintGrid(), { signal });
 
   // ---------- opening and closing ----------
   const openEditor = () => {
@@ -271,6 +296,7 @@ export function initAlbumCover(root: HTMLElement, signal: AbortSignal, host: Cov
     const p = panel();
     open = false;
     before = null;
+    paintGrid();
     if (p) p.hidden = true;
     const r = region();
     if (r) r.hidden = false;
@@ -320,7 +346,7 @@ export function initAlbumCover(root: HTMLElement, signal: AbortSignal, host: Cov
     (e) => {
       if (justDragged) return void (justDragged = false);
       const el = (e.target as Element).closest<HTMLElement>(
-        '[data-cover-show], [data-cover-preview], [data-cover-close-gaps], [data-cover-phone-arrange], [data-cover-phone-back], [data-cover-automatic], [data-cover-cancel], [data-cover-done], [data-cover-tile], [data-cover-strip-item], [data-cover-move], [data-cover-size], [data-cover-display], [data-cover-focus-reset], [data-cover-remove]',
+        '[data-cover-show], [data-cover-preview], [data-cover-close-gaps], [data-cover-phone-arrange], [data-cover-phone-back], [data-cover-automatic], [data-cover-cancel], [data-cover-done], [data-cover-tile], [data-cover-add], [data-cover-take], [data-cover-move], [data-cover-size], [data-cover-display], [data-cover-focus-reset], [data-cover-remove]',
       );
       if (!el || (el as HTMLButtonElement).disabled) return;
       const d = el.dataset;
@@ -342,15 +368,15 @@ export function initAlbumCover(root: HTMLElement, signal: AbortSignal, host: Cov
       if (d.coverPhoneBack !== undefined) return void apply(phoneToAutomatic(album), () => "The phone's cover is worked out from the wide one again.");
       if (d.coverAutomatic !== undefined) return void apply(useAutomatic(album, lead), () => 'The cover is worked out from the album again.');
       if (d.coverTile) return choose(d.coverTile);
-      if (d.coverStripItem) {
-        const id = d.coverStripItem;
-        if (coverOf(album, host.lookup).some((t) => t.item === id)) {
-          show = 'wide';
-          choose(id);
-          return $(`[data-cover-tile="${CSS.escape(id)}"]`)?.focus();
-        }
-        if (apply(putInCover(album, id, host.lookup), placeOf(id))) choose(id);
-        return;
+      if (d.coverAdd !== undefined) {
+        const ids = picked.filter((id) => !coverOf(album, host.lookup).some((t) => t.item === id));
+        if (apply(addToCover(album, ids, host.lookup), addedWords(ids))) chosen = ids.find((id) => wideOf(host.album(), id)) ?? chosen;
+        return paint();
+      }
+      if (d.coverTake !== undefined) {
+        const ids = picked.filter((id) => coverOf(album, host.lookup).some((t) => t.item === id));
+        if (apply(takeAllOut(album, ids, host.lookup), () => `Taken out of the cover: ${ids.map(labelOf).join(', ')}.`) && ids.includes(chosen)) chosen = '';
+        return paint();
       }
       if (!chosen) return;
       if (d.coverMove) return void apply(arrangeKey(album, show, chosen, d.coverMove as Dir, false, host.lookup), placeOf(chosen));
@@ -430,7 +456,7 @@ export function initAlbumCover(root: HTMLElement, signal: AbortSignal, host: Cov
     { signal },
   );
 
-  // ---------- the pointer: a tile to a cell, its handles to a size, the strip's items in and out ----------
+  // ---------- the pointer: a tile to a cell, any edge or corner to a size, a tile out onto the album's grid ----------
   const showOutline = (r: Rect | null, refused = false) => {
     const o = $('[data-cover-outline]');
     if (!o) return;
@@ -439,10 +465,18 @@ export function initAlbumCover(root: HTMLElement, signal: AbortSignal, host: Cov
     setRect(o, r);
     o.toggleAttribute('data-refused', refused);
   };
-  const over = (sel: string, x: number, y: number) => {
-    const r = $(sel)?.getBoundingClientRect();
+  const inside = (el: Element | null | undefined, x: number, y: number) => {
+    const r = el?.getBoundingClientRect();
     return !!r && x >= r.left && x <= r.right && y >= r.top && y <= r.bottom;
   };
+  /** The canvas's measures: where a point falls, cell by cell. */
+  const measure = (canvas: HTMLElement) => {
+    const box = canvas.getBoundingClientRect();
+    const cols = gridOf(show).columns;
+    const gap = parseFloat(getComputedStyle(canvas).columnGap) || 0;
+    return { box, cols, pitch: (box.width + gap) / cols };
+  };
+  const taking = (on: boolean) => photoGrid()?.toggleAttribute('data-cover-taking', on);
   root.addEventListener(
     'pointerdown',
     (e) => {
@@ -451,51 +485,36 @@ export function initAlbumCover(root: HTMLElement, signal: AbortSignal, host: Cov
       const canvas = $('[data-cover-canvas]');
       if (!canvas) return;
       const handle = t.closest<HTMLElement>('[data-cover-handle]');
-      const tile = t.closest<HTMLElement>('[data-cover-place]');
-      const strip = t.closest<HTMLElement>('[data-cover-strip-place]');
-      const el = tile ?? strip;
+      const el = t.closest<HTMLElement>('[data-cover-place]');
       if (!el || !canvas.hasAttribute('data-editable')) return;
-      if (strip && show !== 'wide') return;
-      const id = tile?.dataset.coverPlace ?? strip?.dataset.coverStripPlace ?? '';
+      const id = el.dataset.coverPlace ?? '';
       const from = shownTiles(host.album(), show, host.lookup).find((x) => x.item === id);
-      if (tile && !from) return;
+      if (!from) return;
       // a selection left by an earlier drag would turn this one into the browser's own drag (a pointercancel)
       getSelection()?.removeAllRanges();
-      const box = canvas.getBoundingClientRect();
-      const cols = gridOf(show).columns;
-      const gap = parseFloat(getComputedStyle(canvas).columnGap) || 0;
-      const pitch = (box.width + gap) / cols;
+      const { cols, pitch } = measure(canvas);
+      const edge = handle?.dataset.coverHandle as Edge | undefined;
       const sx = e.clientX;
       const sy = e.clientY;
       let moved = false;
-      let trial: { r: Outcome; words: (a: Album) => string; after?: 'out' | 'in' } | null = null;
+      let trial: { r: Outcome; words: (a: Album) => string; after?: 'out' } | null = null;
       const move = (ev: PointerEvent) => {
         if (ev.pointerId !== e.pointerId) return;
         if (!moved && Math.hypot(ev.clientX - sx, ev.clientY - sy) < DRAG_START) return;
         moved = dragging = true;
-        el.toggleAttribute(handle ? 'data-resizing' : 'data-dragging', true);
-        const inCanvas = over('[data-cover-canvas]', ev.clientX, ev.clientY);
+        el.toggleAttribute(edge ? 'data-resizing' : 'data-dragging', true);
         const album = host.album();
-        if (strip) {
-          if (!inCanvas) return void ((trial = null), showOutline(null));
-          const at = cellAt({ x: ev.clientX - box.left, y: ev.clientY - box.top }, pitch, cols);
-          const r = putInCover(album, id, host.lookup, at);
-          trial = { r, words: placeOf(id), after: 'in' };
-          const added = r.ok ? coverOf(r.album, host.lookup).find((x) => x.item === id) : null;
-          return showOutline(added ?? { ...at, w: 3, h: 2 }, !r.ok);
-        }
-        if (!handle && !inCanvas && show === 'wide' && over('[data-cover-strip-region]', ev.clientX, ev.clientY)) {
+        // a tile dragged down onto the album's grid leaves the cover
+        const out = !edge && show === 'wide' && !inside(canvas, ev.clientX, ev.clientY) && inside(photoGrid(), ev.clientX, ev.clientY);
+        taking(out);
+        if (out) {
           trial = { r: takeOut(album, id, host.lookup), words: () => `${labelOf(id)} is no longer in the cover.`, after: 'out' };
           return showOutline(null);
         }
-        if (!from) return;
         const dx = Math.round((ev.clientX - sx) / pitch);
         const dy = Math.round((ev.clientY - sy) / pitch);
-        const h = handle?.dataset.coverHandle;
-        const rect = handle
-          ? { x: from.x, y: from.y, w: h === 'bottom' ? from.w : from.w + dx, h: h === 'right' ? from.h : from.h + dy }
-          : { x: Math.max(0, Math.min(cols - from.w, from.x + dx)), y: Math.max(0, from.y + dy), w: from.w, h: from.h };
-        const r = handle ? resizeTo(album, show, id, { w: rect.w, h: rect.h }, host.lookup) : moveTo(album, show, id, { x: rect.x, y: rect.y }, host.lookup);
+        const rect = edge ? edgeRect(from, edge, dx, dy, gridOf(show)) : { x: Math.max(0, Math.min(cols - from.w, from.x + dx)), y: Math.max(0, from.y + dy), w: from.w, h: from.h };
+        const r = edge ? reshapeTo(album, show, id, rect, host.lookup) : moveTo(album, show, id, { x: rect.x, y: rect.y }, host.lookup);
         trial = { r, words: placeOf(id) };
         showOutline(rect, !r.ok);
       };
@@ -505,6 +524,7 @@ export function initAlbumCover(root: HTMLElement, signal: AbortSignal, host: Cov
         el.removeAttribute('data-dragging');
         el.removeAttribute('data-resizing');
         showOutline(null);
+        taking(false);
         dragging = false;
         if (!moved) return;
         justDragged = true;
@@ -522,15 +542,63 @@ export function initAlbumCover(root: HTMLElement, signal: AbortSignal, host: Cov
     },
     { signal },
   );
-  // the tiles and the strip's items are dragged here, never by the browser
+  // the tiles are dragged here, never by the browser
   root.addEventListener(
     'dragstart',
     (e) => {
       const el = e.target instanceof Element ? e.target : (e.target as Node | null)?.parentElement;
-      if (el?.closest('[data-cover-canvas], [data-cover-strip]')) e.preventDefault();
+      if (el?.closest('[data-cover-canvas]')) e.preventDefault();
     },
     { signal },
   );
+
+  // ---------- the album's grid: its items dragged up into the cover (the grid's own drag, scripts/albumEditor.ts) ----------
+  const ITEMS = 'application/x-album-items';
+  /** What the grid is dragging (its data can't be read until the drop): the cells it marked. */
+  const draggedIds = () => [...root.querySelectorAll<HTMLElement>('[data-photo-grid] li[data-dragging]')].map((c) => c.dataset.item ?? '').filter(Boolean);
+  /** Where the dragged items would go in the cover, tried on the album as it is. */
+  const dropTrial = (e: DragEvent) => {
+    const canvas = $('[data-cover-canvas]');
+    if (!open || preview || show !== 'wide' || !canvas?.hasAttribute('data-editable')) return null;
+    if (!e.dataTransfer?.types.includes(ITEMS) || !inside(canvas, e.clientX, e.clientY)) return null;
+    const { box, cols, pitch } = measure(canvas);
+    const at = cellAt({ x: e.clientX - box.left, y: e.clientY - box.top }, pitch, cols);
+    const ids = draggedIds();
+    return { ids, at, r: addToCover(host.album(), ids, host.lookup, at) };
+  };
+  root.addEventListener(
+    'dragover',
+    (e) => {
+      const d = dropTrial(e);
+      if (!d) return showOutline(null);
+      e.preventDefault();
+      // the grid allows a move only
+      if (e.dataTransfer) e.dataTransfer.dropEffect = 'move';
+      const first = d.r.ok ? coverOf(d.r.album, host.lookup).find((x) => d.ids.includes(x.item) && x.x === d.at.x && x.y === d.at.y) : null;
+      showOutline(first ?? { ...d.at, ...NEW_TILE }, !d.r.ok);
+    },
+    { signal },
+  );
+  root.addEventListener(
+    'drop',
+    (e) => {
+      const d = dropTrial(e);
+      showOutline(null);
+      if (!d) return;
+      e.preventDefault();
+      if (apply(d.r, addedWords(d.ids))) chosen = d.ids.find((id) => wideOf(host.album(), id)) ?? chosen;
+      paint();
+    },
+    { signal },
+  );
+  for (const type of ['dragleave', 'dragend'] as const)
+    root.addEventListener(
+      type,
+      (e) => {
+        if (type === 'dragend' || !inside($('[data-cover-canvas]'), (e as DragEvent).clientX, (e as DragEvent).clientY)) showOutline(null);
+      },
+      { signal },
+    );
 
   readItems();
 }

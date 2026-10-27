@@ -13,7 +13,7 @@
 import type { Album } from '../../content/schema';
 import type { AlbumMedia, MediaLookup } from '../../content/album';
 import { SaveQueue } from '../model/queue';
-import { addItemsAt, addText, editText, landingBefore, moveBy, moveItems, moveToEnd, moveToStart, pickRange, pickToggle, removeItems, setItemDownload, setItemPlay, setSettings, setWords, sortAlbum, type AlbumSettings } from '../model/album';
+import { addItemsAt, addText, editText, foldAltIssues, landingBefore, moveBy, moveItems, moveToEnd, moveToStart, pickRange, pickToggle, removeItems, setItemDownload, setItemPlay, setSettings, setWords, sortAlbum, type AlbumSettings } from '../model/album';
 import { isVideoFile, needsConversion, pastedName, picturesOfPaste, pictureSizeIssue, posterTime, refusedFormat, svgChoices, typeOf, videoSizeIssue } from '../model/upload';
 import { takenOf } from '../model/exif';
 import { parseSelected, SELECTED_PARAM } from '../model/albumInspector';
@@ -79,12 +79,15 @@ export function initAlbumEditor(root: HTMLElement, signal: AbortSignal) {
         dialog('album-conflict')?.showModal();
         return 'stop';
       }
-      const why = refused(r, 'The album wasn’t saved.');
+      const issues = foldAltIssues(r.data.issues);
+      const why = refused({ data: { issues } }, 'The album wasn’t saved.');
       doc = structuredClone(saved);
       undos.pop();
       saveStatus.failed(why);
       announce(why, 'negative');
       void redraw();
+      // pictures without alt text in a published album: straight to the review that fixes it
+      if (issues.some((i) => /\(V54\)/.test(i.message))) root.dispatchEvent(new CustomEvent('album:review'));
       return 'failed';
     },
   );
@@ -825,8 +828,12 @@ export function initAlbumEditor(root: HTMLElement, signal: AbortSignal) {
       if (d.albumPublish !== undefined) {
         const publishing = doc.status !== 'published';
         if (publishing && !doc.items.length) return announce('Add something to the album before publishing it.', 'negative');
+        // pictures without alt text never stop publishing (V54 is a warning): it says how many, and Review adds it
+        const missing = publishing ? cells().filter((c) => c.dataset.needsAlt !== undefined).length : 0;
         change({ ...doc, status: publishing ? 'published' : 'draft' }, publishing ? 'Published' : 'Unpublished');
-        announce(publishing ? 'Published: it’s on the site once you save to remote.' : 'Unpublished: it’s a draft again.');
+        announce(publishing
+          ? `Published: it’s on the site once you save to remote.${missing ? ` ${missing === 1 ? '1 picture has' : `${missing} pictures have`} no alt text yet: Review adds it.` : ''}`
+          : 'Unpublished: it’s a draft again.');
       }
     },
     { signal },

@@ -344,3 +344,17 @@ function orderedKeys(next: Album): Album {
   for (const [k, v] of Object.entries(next)) if (!(k in out) && v !== undefined) out[k] = v;
   return out as Album;
 }
+
+/**
+ * A refused save's problems, with every picture that needs alt text (V54) folded into one: "13 pictures need
+ * alt text", not thirteen lines. The other problems are kept as they came.
+ */
+export function foldAltIssues<T extends { path?: string; message: string }>(issues: readonly T[] | undefined): T[] {
+  const all = issues ?? [];
+  const alt = all.filter((i) => /needs alt text/.test(i.message) && /\(V54\)/.test(i.message));
+  if (alt.length < 2) return [...all];
+  const rest = all.filter((i) => !alt.includes(i));
+  const folded = { ...alt[0], message: `${alt.length} pictures need alt text: in a published album a picture is the content. Add it, then try again (V54)` };
+  delete folded.path;
+  return [folded, ...rest];
+}

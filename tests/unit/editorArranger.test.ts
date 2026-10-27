@@ -10,11 +10,13 @@ import { addText } from '../../src/site/editor/model/album';
 import {
   PHONE,
   WIDE,
+  addToCover,
   arrangeForPhones,
   arrangeKey,
   canvasRows,
   cellAt,
   closeGaps,
+  edgeRect,
   closeGapsIn,
   coverState,
   coverWarnings,
@@ -28,12 +30,14 @@ import {
   placeWords,
   playRefusal,
   putInCover,
+  reshapeTo,
   resizeTo,
   setDisplay,
   setBackground,
   setLead,
   setOnPhones,
   setPlay,
+  takeAllOut,
   takeOut,
   useAutomatic,
   usePictureFocus,
@@ -220,6 +224,64 @@ describe("the album's cover", () => {
   it('sets the lead by swapping with the lead tile', () => {
     const r = ok(setLead(arranged(tiles(['a', 0, 0, 8, 4], ['b', 8, 0, 4, 4])), 'b'));
     expect(at(r, 'b')).toMatchObject({ w: 8 });
+  });
+});
+
+describe('resizing by any edge or corner', () => {
+  const from = { x: 4, y: 2, w: 4, h: 4 };
+  it('keeps the opposite edges where they were', () => {
+    expect(edgeRect(from, 'left', -2, 0, WIDE)).toEqual({ x: 2, y: 2, w: 6, h: 4 });
+    expect(edgeRect(from, 'top', 0, -1, WIDE)).toEqual({ x: 4, y: 1, w: 4, h: 5 });
+    expect(edgeRect(from, 'right', 3, 9, WIDE)).toEqual({ x: 4, y: 2, w: 7, h: 4 });
+    expect(edgeRect(from, 'bottom', 9, 2, WIDE)).toEqual({ x: 4, y: 2, w: 4, h: 6 });
+    expect(edgeRect(from, 'top-left', 1, 1, WIDE)).toEqual({ x: 5, y: 3, w: 3, h: 3 });
+    expect(edgeRect(from, 'bottom-left', -1, 1, WIDE)).toEqual({ x: 3, y: 2, w: 5, h: 5 });
+    expect(edgeRect(from, 'top-right', 1, -1, WIDE)).toEqual({ x: 4, y: 1, w: 5, h: 5 });
+  });
+  it('stops at the grid’s sides and at the least size', () => {
+    expect(edgeRect(from, 'left', -9, 0, WIDE)).toMatchObject({ x: 0, w: 8 });
+    expect(edgeRect(from, 'left', 9, 0, WIDE)).toMatchObject({ x: 8 - WIDE.minW, w: WIDE.minW });
+    expect(edgeRect(from, 'top', 0, -9, WIDE)).toMatchObject({ y: 0, h: 6 });
+    expect(edgeRect(from, 'top', 0, 9, WIDE)).toMatchObject({ y: 6 - WIDE.minH, h: WIDE.minH });
+    expect(edgeRect(from, 'right', 20, 0, WIDE)).toMatchObject({ w: 8 });
+    expect(edgeRect(from, 'bottom-right', -9, -9, WIDE)).toMatchObject({ w: WIDE.minW, h: WIDE.minH });
+  });
+  it('places the new rect, pushing what it meets down, and refuses past 12 rows', () => {
+    const a = arranged(tiles(['a', 0, 0, 4, 4], ['b', 4, 0, 4, 4]));
+    const wider = ok(reshapeTo(a, 'wide', 'b', edgeRect(at(a, 'b')!, 'left', -2, 0, WIDE), lookup));
+    expect(at(wider, 'b')).toMatchObject({ x: 2, y: 0, w: 6, h: 4 });
+    noOverlap(coverOf(wider, lookup));
+    expect(why(reshapeTo(a, 'wide', 'b', edgeRect(at(a, 'b')!, 'bottom', 0, 9, WIDE), lookup))).toContain('12 rows');
+  });
+});
+
+describe("the album's grid as the cover's source", () => {
+  it('adds several: the first where dropped, the rest where they fit, passing over text cards and tiles already in', () => {
+    const withText = addText(arranged(tiles(['a', 0, 0, 6, 4])), 'Day two', lookup);
+    const r = ok(addToCover(withText.album, ['a', 'b', withText.id, 'c'], lookup, { x: 6, y: 0 }));
+    expect(at(r, 'a')).toMatchObject({ x: 0, y: 0 });
+    expect(at(r, 'b')).toMatchObject({ x: 6, y: 0, w: 3, h: 2 });
+    expect(at(r, 'c')).toBeDefined();
+    noOverlap(coverOf(r, lookup));
+    expect(why(addToCover(withText.album, ['a', withText.id], lookup))).toBeTruthy();
+  });
+  it('keeps what went in when the cover fills, and says why the rest did not', () => {
+    const eleven = arranged(
+      'abcdefghijk'.split('').map((k, i) => ({ item: k, x: (i % 6) * 2, y: Math.floor(i / 6) * 2, w: 2, h: 2 })),
+      14,
+    );
+    const r = addToCover(eleven, ['l', 'm', 'n'], lookup);
+    expect(r.ok).toBe(true);
+    if (!r.ok) return;
+    expect(coverOf(r.album, lookup)).toHaveLength(12);
+    expect(r.note).toMatch(/1 item went in; 2 items didn.t: .*at most 12 tiles/);
+  });
+  it('takes several out together, never the last', () => {
+    const a = arranged(tiles(['a', 0, 0, 6, 4], ['b', 6, 0, 6, 4], ['c', 0, 4, 6, 4]));
+    expect(coverOf(ok(takeAllOut(a, ['b', 'c'], lookup)), lookup).map((t) => t.item)).toEqual(['a']);
+    const all = takeAllOut(a, ['a', 'b', 'c'], lookup);
+    expect(all.ok && coverOf(all.album, lookup)).toHaveLength(1);
+    expect(all.ok && all.note).toContain('at least one tile');
   });
 });
 

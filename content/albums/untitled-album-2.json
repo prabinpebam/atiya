@@ -144,6 +144,7 @@
       }
     ]
   },
-  "summary": "Back in 2024, I was inspired to create a calendar for Studio 91 (Microsoft India Design team), using generative AI. I used SDXL models, some watercolor LoRAs and ComfyUI to create the illustrations and composed the final layout in Figma.",
-  "publishedAt": "2026-10-27"
+  "publishedAt": "2026-10-27",
+  "description": "Back in 2024, I was inspired to create a calendar for Studio 91 (Microsoft India Design team), using generative AI. I used SDXL models, some watercolor LoRAs and ComfyUI to create the illustrations and composed the final layout in Figma.",
+  "summary": "2025 Studio+91 calendar Designed by me using SDXL, watercolor LoRAs and ComfyUI. Studio+91 is the Microsoft India Design team."
 }

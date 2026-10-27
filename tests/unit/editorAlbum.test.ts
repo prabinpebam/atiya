@@ -6,6 +6,7 @@ import { describe, expect, it } from 'vitest';
 import { album as albumSchema, type Album } from '../../src/site/content/schema';
 import { albumProblems, type AlbumMedia, type MediaLookup } from '../../src/site/content/album';
 import {
+  foldAltIssues,
   addItems,
   addItemsAt,
   addText,
@@ -284,5 +285,21 @@ describe("an item's own settings in this album (§9.3 Downloads, §9.5 Play by i
     const off = setItemPlay(on, 'v', { autoplay: false }, more);
     expect(off.items.find((i) => i.id === 'v')).toEqual({ id: 'v', media: 'library/v', loop: true });
     expect(setItemPlay(off, 'y', { loop: true }, more).items.find((i) => i.id === 'y')).toEqual({ id: 'y', media: 'library/y' });
+  });
+});
+
+describe('a refused save in words (V54)', () => {
+  const alt = (n: number) => ({ path: `items.${n}.media`, message: `the picture "albums/a/${n}" needs alt text: in a published album a picture is the content, never decorative (V54)` });
+  it('folds every picture without alt text into one line, and keeps the rest', () => {
+    const other = { path: 'order', message: 'the album has a text card (V53)' };
+    const out = foldAltIssues([alt(0), other, alt(1), alt(2)]);
+    expect(out).toHaveLength(2);
+    expect(out[0].message).toMatch(/^3 pictures need alt text/);
+    expect(out[0].path).toBeUndefined();
+    expect(out[1]).toEqual(other);
+  });
+  it('leaves one alone, and nothing as nothing', () => {
+    expect(foldAltIssues([alt(4)])).toEqual([alt(4)]);
+    expect(foldAltIssues(undefined)).toEqual([]);
   });
 });

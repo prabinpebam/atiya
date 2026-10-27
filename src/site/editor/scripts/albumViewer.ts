@@ -135,6 +135,8 @@ export function initViewerHost(root: HTMLElement, signal: AbortSignal) {
 
   // ---------- what opens it, steps and closes it ----------
   root.addEventListener('album:open-item', (e) => void open((e as CustomEvent<{ id: string }>).detail.id, false), { signal });
+  // Publish with pictures still to describe (scripts/albumEditor.ts)
+  root.addEventListener('album:review', () => void open('', true), { signal });
   root.addEventListener('viewer:go', (e) => void open((e as CustomEvent<{ id: string }>).detail.id, reviewing), { signal });
   root.addEventListener(
     'viewer:done',
