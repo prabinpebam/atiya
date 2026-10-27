@@ -455,17 +455,18 @@ export function loadContent(docs: Record<string, unknown>, masters: Set<string>,
 
   // references (V3, V5): media, people; a public page never points at anything private (V25), and a
   // protected page's own `related` names open pages only (V32)
+  const checkNotes: string[] = [];
   const needMedia = (from: string, id: string, origin: Origin = 'public', orVideo = false, published = true) => {
     const rec = media.get(id) ?? (orVideo ? videos.get(id) : undefined);
     if (!rec) add(from, orVideo ? `media "${id}" doesn't exist (a picture or a video file)` : `media "${id}" doesn't exist`);
     else if (!PUBLIC.has(rec.visibility)) add(from, `media "${id}" isn't public`);
     else if (rec.origin === 'private' && origin === 'public') add(from, `media "${id}" is private (in private-pages/): an open page can't show it (V25)`);
-    // alt text may wait in the library and in drafts; anything published that shows the picture needs it (V54)
-    else if (published && rec.kind === 'image' && !rec.alt && !rec.decorative) add(from, `the picture "${id}" has no alt text: anything published that shows a picture needs it (or, in an article, marked decorative) (V54)`);
+    // alt text may wait anywhere: anything published that shows a picture without it is warned of, never refused (V54)
+    else if (published && rec.kind === 'image' && !rec.alt && !rec.decorative)
+      checkNotes.push(origin === 'private' || rec.origin === 'private' ? 'a private page shows a picture with no alt text (V54)' : `${from}: the picture "${id}" has no alt text: readers who can't see it are told nothing about it (or, in an article, mark it decorative) (V54)`);
   };
   // albums (documentation/gallery/spec.md §16): V38 to V55 for each album; V51 for the blocks that show one, below
   const lookupMedia: MediaLookup = (id) => media.get(id) ?? videos.get(id) ?? embeds.get(id);
-  const albumNotes: string[] = [];
   for (const al of albums.values()) {
     const origin = origins.get(al.id)!;
     const file = albumFile(al.id, origin);
@@ -481,7 +482,7 @@ export function loadContent(docs: Record<string, unknown>, masters: Set<string>,
       else if (origin === 'private' && rec.kind === 'video' && rec.bytes && rec.bytes > PRIVATE_VIDEO_MAX_BYTES)
         add(file, `the video "${item.media}" is ${mb(rec.bytes)}: a private album's video file is at most ${mb(PRIVATE_VIDEO_MAX_BYTES)}, as it's sealed and fetched whole (V44)`, at);
     });
-    for (const w of albumWarnings(al, lookupMedia)) albumNotes.push(origin === 'private' ? `a private album: ${w.replace(/"[^"]*"/g, 'an item')}` : `${file}: ${w}`);
+    for (const w of albumWarnings(al, lookupMedia, { published })) checkNotes.push(origin === 'private' ? `a private album: ${w.replace(/"[^"]*"/g, 'an item')}` : `${file}: ${w}`);
   }
   // a file is in the library once (V55): the same fingerprint twice is refused on the later one
   const sidecarOf = (id: string, origin: Origin) => `${origin === 'private' ? 'private' : 'content'}/media/${id}.json`;
@@ -573,7 +574,7 @@ export function loadContent(docs: Record<string, unknown>, masters: Set<string>,
 
   let routes: Route[] = [];
   const access = new Map<string, Access>();
-  const warnings: string[] = [...albumNotes];
+  const warnings: string[] = [...checkNotes];
   const OVERLAY = 'private/structures/overlay.json';
   if (structure) {
     const lookup = (type: string, id: string) => {

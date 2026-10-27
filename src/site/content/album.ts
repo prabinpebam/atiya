@@ -214,7 +214,7 @@ export function leadTile<T extends Rect>(tiles: readonly T[]): T | undefined {
 
 // ---------- checks ----------
 
-/** V38, V41's links, V49, V53 and V54: what's wrong with the album's items. Existence and access are the loader's (V38, V52). */
+/** V38, V41's links, V49 and V53: what's wrong with the album's items. Existence and access are the loader's (V38, V52). */
 export function itemProblems(album: Pick<Album, 'items' | 'order' | 'description'>, lookup: MediaLookup, opts: { published: boolean }): AlbumIssue[] {
   const out: AlbumIssue[] = [];
   if (opts.published && !album.items.some(isMediaItem)) out.push({ path: 'items', message: 'a published album has at least one picture or video: add one, or set it back to draft (V38)' });
@@ -232,8 +232,6 @@ export function itemProblems(album: Pick<Album, 'items' | 'order' | 'description
     if (m.kind === 'embed' && item.download !== undefined) out.push({ path: `${at}.download`, message: "a linked video can't be downloaded: its file is the provider's (V49)" });
     if ((item.autoplay !== undefined || item.loop !== undefined) && m.kind !== 'video')
       out.push({ path: at, message: `autoplay and loop are for a video file, not ${m.kind === 'embed' ? 'a linked video: it starts when the reader presses play' : 'a picture'} (V49)` });
-    if (opts.published && m.kind === 'image' && (m.decorative || !m.alt))
-      out.push({ path: `${at}.media`, message: `the picture "${item.media}" needs alt text: in a published album a picture is the content, never decorative (V54)` });
     if (opts.published && m.caption && m.caption.length > CAPTION_MAX) out.push({ path: `${at}.media`, message: `the caption of "${item.media}" is ${m.caption.length} characters: in an album, at most ${CAPTION_MAX} (V41)` });
   });
   const text = album.items.filter(isTextItem).length;
@@ -320,7 +318,7 @@ export function playProblems(album: Pick<Album, 'items' | 'cover'>, lookup: Medi
   return out;
 }
 
-/** Every refusal of an album's own (V38, V39, V41's links, V47, V48, V49, V53, V54). */
+/** Every refusal of an album's own (V38, V39, V41's links, V47, V48, V49, V53). */
 export const albumProblems = (album: Pick<Album, 'items' | 'cover' | 'order' | 'description'>, lookup: MediaLookup, opts: { published: boolean }): AlbumIssue[] => [
   ...itemProblems(album, lookup, opts),
   ...coverProblems(album),
@@ -328,8 +326,11 @@ export const albumProblems = (album: Pick<Album, 'items' | 'cover' | 'order' | '
   ...playProblems(album, lookup),
 ];
 
-/** V40: warnings, never refusals (a hole in the cover, a tall cover or phone cover, a heavy playing tile, a video file without captions). */
-export function albumWarnings(album: Pick<Album, 'items' | 'cover' | 'order'>, lookup: MediaLookup): string[] {
+/**
+ * V40 and V54: warnings, never refusals (a hole in the cover, a tall cover or phone cover, a heavy playing tile, a
+ * video file without captions; in a published album, a picture without alt text).
+ */
+export function albumWarnings(album: Pick<Album, 'items' | 'cover' | 'order'>, lookup: MediaLookup, opts: { published?: boolean } = {}): string[] {
   const out: string[] = [];
   const tiles = arrangedTiles(album);
   if (tiles) {
@@ -349,6 +350,7 @@ export function albumWarnings(album: Pick<Album, 'items' | 'cover' | 'order'>, l
   for (const item of album.items.filter(isMediaItem)) {
     const m = lookup(item.media);
     if (m?.kind === 'video' && !m.captions?.length) out.push(`the video "${item.media}" has no captions: a video with speech needs them (V40)`);
+    if (opts.published && m?.kind === 'image' && (m.decorative || !m.alt)) out.push(`the picture "${item.media}" has no alt text: readers who can't see it are told nothing about it (V54)`);
   }
   return out;
 }

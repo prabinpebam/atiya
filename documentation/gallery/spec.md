@@ -245,7 +245,7 @@ A picture's words belong to the picture, as they do in a photo app: written once
 | A poster's alt text | The poster's own sidecar | Not shown: the poster sits inside a link named by the video |
 
 - **One set of words per picture.** A picture in two albums has one caption. In an article, a figure block's own `caption` still overrides the picture's for that figure, as it always has; an album has no such override ([D-G24](#17-decisions)). The viewer says where else a picture is used ("Also in Monsoon walks and an article") beside its words, so a change is never a surprise.
-- **Every item needs alt text when it's published.** A picture in an album is never decorative: it's the content. Uploading never waits for it ([§9.4](#94-adding)): a picture can be in the library and in drafts without alt text, marked Needs alt text, and the content check refuses a published album or article that uses one (V54). Edit mode gathers them for review, with suggestions when the owner has an AI service set up ([§9.8](#98-suggested-alt-text)).
+- **Every item should have alt text when it's published.** A picture in an album is the content, so it's described rather than marked decorative. Alt text is never required: uploading never waits for it ([§9.4](#94-adding)), a picture without it is marked Needs alt text, and the content check warns of a published album or article that shows one, but saves and publishes it (V54; the owner's decision, 27 October 2026). Edit mode gathers them for review, with suggestions when the owner has an AI service set up ([§9.8](#98-suggested-alt-text)).
 - **Alt text and captions differ.** Alt text describes what's in the picture for someone who can't see it; the caption says something about it for everyone. Edit mode keeps them in separate fields with their own hints.
 - **A place is never read from the file.** Location data stays stripped ([media §4](../content/media.md#4-formats-and-budgets)); a place is only what the owner types, so a picture taken at home never says where home is.
 
@@ -297,7 +297,7 @@ An album adds these to the sidecars of the library ([media §3](../content/media
 
 | Sidecar field | Rule |
 |---|---|
-| `alt` | As today, but may wait: a picture uploaded without it is marked Needs alt text, allowed in the library and in drafts, refused in anything published (V54) |
+| `alt` | As today, but may wait: a picture uploaded without it is marked Needs alt text, allowed everywhere, and warned of in anything published (V54) |
 | `caption` | As today: plain text, at most 200 characters |
 | `description` | New, optional: rich text ([§3.5](#35-rich-text)), at most 4 paragraphs or lists and 1,000 characters |
 | `place` | New, optional: plain text, at most 80 characters, typed by the owner |
@@ -1069,7 +1069,7 @@ The cover band at the top of the editor is the cover as readers will see it. It 
   - **a picture's words** belong to the picture, not the album: each field has its own undo while it's being typed in, and a saved change is shown in the status line with Undo for a few seconds. They're never in the album's history, since they change the picture wherever it's used.
 - **Uploads aren't undone by Undo:** undoing an add removes the item from the album and leaves the file in the library, as Remove from album does.
 - **Live:** a change saved in another tab, or by the Media screen, is taken in; an unsaved drag or a field being typed in isn't lost.
-- **Checks:** the content check runs before anything is written, so a change that breaks a rule (V38 to V54) is refused with the reason, never saved. A warning (V40) saves and stays shown.
+- **Checks:** the content check runs before anything is written, so a change that breaks a rule (V38 to V55) is refused with the reason, never saved. A warning (V40, V54) saves and stays shown.
 - **The logic is pure,** in edit mode's model: the album's operations (`album.ts`: adding, removing, moving, the orders, text cards, selection's actions, the cover's lead) and the arranger's (moving, swapping, pushing down, closing gaps, resizing, the presets, keeping the phone's arrangement in step), unit-tested, with no framework. The page's scripts only turn gestures into those calls.
 
 ### 9.8 Suggested alt text
@@ -1231,7 +1231,7 @@ The content check holds these for every site, continuing the numbering of the [s
 | V51 | An `album` block names an existing album; never a private one, and never an unpublished one from a published page. A change that would break this (making the album private or a draft, deleting it) is refused, naming the pages |
 | V52 | An open album never uses a private library item |
 | V53 | A section's `albumOrder` is `newest`, `oldest` or `custom`, and only on a section whose view is `albums`, as is `albumCorners` (`square`, or left out for rounded). An album's `order` is `oldest`, `newest` or `custom`, and is `custom` whenever it has a text card |
-| V54 | A picture may have no alt text in the library and in drafts; anything published that shows it (an album, an article, a cover) needs it, and a picture in an album is never decorative |
+| V54 | A warning, never a refusal: anything published that shows a picture without alt text (an album, an article, a cover) is warned of, and in an album a decorative picture is warned of too; the library and drafts are never warned |
 | V55 | A sidecar's `fingerprint` is a SHA-256 in hex; no two library items have the same one |
 
 ## 17. Decisions

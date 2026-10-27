@@ -215,7 +215,6 @@ describe('the loader checks what it is given', () => {
   it('names the file and field of each problem', () => {
     const article = base['/content/articles/a.json'];
     expect(problems({ ...base, '/content/articles/a.json': { ...article, colour: 'red' } }).join('\n')).toMatch(/content\/articles\/a\.json: .*colour/);
-    expect(problems({ ...base, '/content/media/articles/a/pic.json': { kind: 'image', file: 'pic.webp', visibility: 'public' } }).join('\n')).toMatch(/content\/articles\/a\.json: .*the picture "articles\/a\/pic" has no alt text.*\(V54\)/);
     expect(problems(base, new Set()).join('\n')).toMatch(/its master content\/media\/articles\/a\/pic\.webp is missing/);
     expect(problems(base, new Set([...masters, '/content/media/articles/a/stray.webp'])).join('\n')).toMatch(/stray\.webp: a master without its sidecar/);
     expect(problems({ ...base, '/content/articles/a.json': { ...article, body: [{ type: 'figure', media: 'articles/a/nope' }] } }).join('\n')).toMatch(/media "articles\/a\/nope" doesn't exist/);
@@ -639,16 +638,20 @@ describe('albums: the content check (documentation/gallery/spec.md §16, V38 to 
     expect(problems((d) => ((section(d).albumOrder = 'oldest'), (section(d).view = 'list')))).toMatch(/an order of albums is for a section whose view is Albums \(V53\)/);
   });
 
-  it('V54: alt text may wait in the library and in drafts; a published album needs it on every picture, never decorative', () => {
+  it('V54: a picture without alt text is warned of wherever it is published, never refused; a draft is not warned', () => {
     const noAlt = (d: Docs) => delete d[`${M}two.json`].alt;
-    expect(problems(noAlt)).toMatch(/albums\/g\.json: items\.1\.media: the picture "articles\/g\/two" needs alt text.*V54/);
-    expect(problems((d) => (noAlt(d), (album(d).status = 'draft')))).toBe('');
-    expect(problems((d) => (noAlt(d), album(d).items.splice(1, 1)))).toBe('');
-    expect(problems((d) => (d[`${M}two.json`] = { kind: 'image', file: 'two.webp', decorative: true, visibility: 'public' }))).toMatch(/needs alt text.*never decorative.*V54/);
-    // a published article showing it needs it too, or marks it decorative
+    expect(problems(noAlt)).toBe('');
+    expect(warnings(noAlt)).toMatch(/albums\/g\.json: the picture "articles\/g\/two" has no alt text.*V54/);
+    expect(warnings((d) => (noAlt(d), (album(d).status = 'draft')))).not.toMatch(/V54/);
+    expect(warnings((d) => (noAlt(d), album(d).items.splice(1, 1)))).not.toMatch(/V54/);
+    const bare = (d: Docs) => (d[`${M}two.json`] = { kind: 'image', file: 'two.webp', decorative: true, visibility: 'public' });
+    expect(problems(bare)).toBe('');
+    expect(warnings(bare)).toMatch(/"articles\/g\/two" has no alt text.*V54/);
+    // a published article showing it is warned too, unless it marks it decorative
     const shown = (d: Docs) => (noAlt(d), album(d).items.splice(1, 1), (d['/content/articles/a.json'].body = [{ type: 'figure', media: 'articles/g/two' }]));
-    expect(problems(shown)).toMatch(/content\/articles\/a\.json: the picture "articles\/g\/two" has no alt text.*V54/);
-    expect(problems((d) => (shown(d), (d[`${M}two.json`].decorative = true)))).toBe('');
+    expect(problems(shown)).toBe('');
+    expect(warnings(shown)).toMatch(/content\/articles\/a\.json: the picture "articles\/g\/two" has no alt text.*V54/);
+    expect(warnings((d) => (shown(d), (d[`${M}two.json`].decorative = true)))).not.toMatch(/V54/);
   });
 
   it('V55: a file is in the library once: the same fingerprint twice is refused', () => {

@@ -378,10 +378,12 @@ describe('the checks', () => {
     expect(msgs(albumProblems(covered([item('p', 'a/photo'), item('p', 'a/tall')]), lookup, published))).toMatch(/two items have the ID "p".*V38/);
     expect(msgs(albumProblems(covered([item('p', 'a/photo'), item('q', 'a/photo')]), lookup, published))).toMatch(/in the album twice.*V38/);
   });
-  it('V54: a published album shows no picture without alt text, and none is decorative; a draft may wait', () => {
-    expect(msgs(albumProblems(covered([item('n', 'a/noalt')]), lookup, published))).toMatch(/needs alt text.*V54/);
-    expect(msgs(albumProblems(covered([item('b', 'a/bare')]), lookup, published))).toMatch(/never decorative.*V54/);
-    expect(albumProblems(covered([item('n', 'a/noalt')]), lookup, { published: false })).toEqual([]);
+  it('V54: a published album warns of a picture without alt text (or decorative), never refuses it; a draft is not warned', () => {
+    expect(albumProblems(covered([item('n', 'a/noalt')]), lookup, published)).toEqual([]);
+    expect(albumProblems(covered([item('b', 'a/bare')]), lookup, published)).toEqual([]);
+    expect(albumWarnings(covered([item('n', 'a/noalt')]), lookup, published).join('\n')).toMatch(/"a\/noalt" has no alt text.*V54/);
+    expect(albumWarnings(covered([item('b', 'a/bare')]), lookup, published).join('\n')).toMatch(/"a\/bare" has no alt text.*V54/);
+    expect(albumWarnings(covered([item('n', 'a/noalt')]), lookup, { published: false }).join('\n')).not.toMatch(/V54/);
   });
   it('V39: the lead and each tile name an item that is not a text card, once, and tiles never overlap', () => {
     const words = { ...base, items: [...base.items, text('w', 'Words.')] };
