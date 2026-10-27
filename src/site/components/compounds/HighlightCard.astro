@@ -46,7 +46,7 @@ const titleId = `highlight-${stableId(Astro, 'HighlightCard')}`;
 // the background is data: a chosen colour (the same in both modes), or the picture's own edge colours
 const behind = typeof settings.background === 'string' ? { light: settings.background } : settings.background && p.bg ? { light: p.bg, dark: p.dark?.bg } : undefined;
 ---
-<article class="highlight" aria-labelledby={href ? titleId : undefined} aria-label={href ? undefined : title} data-highlight-card>
+<article class="highlight" style={`--shape: ${PICTURE_SPECS.lead.ratio}`} aria-labelledby={href ? titleId : undefined} aria-label={href ? undefined : title} data-highlight-card>
   <figure class="picture">
     <Frame href={href ? undefined : p.full} aria-label={!href && !p.alt ? p.caption || 'Open full picture' : undefined} data-lightbox={href ? undefined : 'home-highlights'} data-caption={p.caption} data-alt={p.alt} data-thumb={p.thumb} data-full-dark={p.dark?.full} data-thumb-dark={p.dark?.thumb}>
       <Image src={p.src} srcset={p.srcset} sizes={sizes(['wide', '92vw'], 'wide')} alt={p.alt}
@@ -79,8 +79,9 @@ const behind = typeof settings.background === 'string' ? { light: settings.backg
     </div>
   )}</article>
 <style>
-  /* it lays its words out by its own width (a container): its slide's, never the screen's */
-  .highlight { container-type: inline-size; display: grid; gap: var(--space-6); align-content: start; min-inline-size: 0; }
+  /* it lays its words out by its own width (a container): its slide's, never the screen's. Its picture is never
+     taller than picture-max of the screen: on a wide, short one the card narrows round it */
+  .highlight { container-type: inline-size; display: grid; gap: var(--space-6); align-content: start; min-inline-size: 0; inline-size: min(100%, calc(var(--c-highlight-card-picture-max) * 1dvh * var(--shape))); justify-self: center; }
   .picture { display: grid; gap: var(--space-3); margin: 0; }
   .picture a { display: block; color: var(--color-text); }
   .words { display: grid; gap: var(--space-5); padding-block-end: var(--space-4); }

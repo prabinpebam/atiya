@@ -154,7 +154,7 @@ const shape = `--slide-shape: ${tallest.width} / ${tallest.height}`;
           );
           return (
             <div class="slide" role="group" aria-roledescription="slide" aria-label={`${index + 1} of ${total}`} data-carousel-slide>
-              {content ? <div class="slide-body content" data-carousel-part="body"><Fragment set:html={panels[index]} /></div> : <figure class="slide-body" data-carousel-part="body">
+              {content ? <div class="slide-body content" data-carousel-part="body" data-scrollbar><Fragment set:html={panels[index]} /></div> : <figure class="slide-body" data-carousel-part="body">
                 <div class="slide-frame">
                   {item.video ? (
                     <Video
@@ -265,7 +265,9 @@ const shape = `--slide-shape: ${tallest.width} / ${tallest.height}`;
     gap: var(--space-3);
   }
 
-  .content { min-block-size: 100%; align-content: start; }
+  /* a content slide: between the picture frame's least and most (never taller than the screen allows), its
+     content in the middle; more than fits scrolls inside it rather than being cut */
+  .content { min-block-size: max(100%, var(--c-carousel-slide-min)); max-block-size: calc(var(--c-carousel-slide-max) * 1dvh); align-content: safe center; overflow-y: auto; }
   .thumbnail-label { display: grid; place-items: center; min-block-size: var(--size-touch); padding: var(--space-2); font: var(--type-label); color: var(--color-text); }
 
   /* every slide's picture frame: the tallest picture's shape (--slide-shape), so the carousel is only as tall

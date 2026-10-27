@@ -217,6 +217,8 @@ const stats = data.stats;
     .intro { grid-template-columns: minmax(0, 1fr); gap: var(--space-6); align-items: start; }
     .dashboard { grid-template-columns: minmax(0, 1fr); }
     .stats { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    /* embedded (a highlight slide), the cards would stack under the chart: the chart alone keeps the slide short */
+    [data-embedded] .stats { display: none; }
   }
   @container contribution (width < 36.45rem) {
     canvas { block-size: var(--c-contribution-chart-height-small); }

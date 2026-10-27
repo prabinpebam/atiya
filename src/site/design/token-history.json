@@ -150,6 +150,7 @@
     "c.header.more-item-radius": {"v":"var(--radius-md)"},
     "c.header.more-radius": {"v":"var(--radius-lg)"},
     "c.highlight-card.facts": {"v":"16rem"},
+    "c.highlight-card.picture-max": {"v":"45"},
     "c.highlight-card.query-split": {"v":"40rem"},
     "c.icon.baseline-shift": {"v":"-0.15em"},
     "c.icon.secondary": {"v":"var(--color-icon-secondary)"},
@@ -512,6 +513,12 @@
           {
             "v": "26rem",
             "d": "The cover at rest is the gallery's band at the column's full width (27 October 2026): no replacement"
+          }
+        ],
+        "c.highlight-card.picture-max": [
+          null,
+          {
+            "v": "45"
           }
         ],
         "c.lightbox.play": [
