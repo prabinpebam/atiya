@@ -4,7 +4,7 @@
  * the preview's line.
  */
 import { describe, expect, it } from 'vitest';
-import { clock, describePicture, describeVideo, formatLabel, isVideoFile, keptAsIs, MAX_GIF_BYTES, MAX_PICTURE_BYTES, MAX_VIDEO_BYTES, mayHaveAlpha, megabytes, needsConversion, pastedName, pictureOfPaste, pictureSizeIssue, pngName, posterTime, typeOf, videoSizeIssue, videoTypeOf } from '../../src/site/editor/model/upload';
+import { clock, describePicture, describeVideo, formatLabel, isVideoFile, keptAsIs, MAX_GIF_BYTES, MAX_PICTURE_BYTES, MAX_VIDEO_BYTES, mayHaveAlpha, megabytes, needsConversion, pastedName, pictureOfPaste, picturesOfPaste, pictureSizeIssue, pngName, posterTime, typeOf, videoSizeIssue, videoTypeOf } from '../../src/site/editor/model/upload';
 import { APNG_NOTE, canKeepLarge, focusPercent, isApng, joinFocus, MAX_LARGE_SIDE, MAX_SIDE, refusedFormat, removedNote, svgChoices, SVG_DRAWING_MAX_BYTES, uploadOptions } from '../../src/site/editor/model/upload';
 import { exifBlock, exifDay, takenFromTiff, takenOf } from '../../src/site/editor/model/exif';
 import sharp from 'sharp';
@@ -31,6 +31,15 @@ describe('the upload form', () => {
     expect(pictureOfPaste([shot], 'A table copied from a document')).toBeNull();
     expect(pictureOfPaste([{ type: 'text/plain', name: 'a.txt' }], '')).toBeNull();
     expect(pictureOfPaste([], '')).toBeNull();
+  });
+
+  it('takes every pasted picture and video file, in order, and none with text', () => {
+    const a = { type: 'image/png', name: 'image.png' };
+    const b = { type: 'video/mp4', name: 'clip.mp4' };
+    const note = { type: 'text/plain', name: 'a.txt' };
+    expect(picturesOfPaste([a, note, b], '')).toEqual([a, b]);
+    expect(picturesOfPaste([a, b], 'words')).toEqual([]);
+    expect(picturesOfPaste([note], '')).toEqual([]);
   });
 
   it('names a pasted screenshot by its date, and keeps a real name', () => {

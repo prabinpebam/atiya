@@ -154,4 +154,30 @@ test.describe('editor: albums: adding in the grid', () => {
     await page.reload();
     await expect(page.locator('[data-album-items] li[data-item]').nth(4)).toHaveAttribute('data-item', 'words');
   });
+
+  test('a pasted picture is added as Upload adds it, and a paste into a field stays there', async ({ page }) => {
+    const file = join(FIXTURE, 'content', 'albums', 'fixture-story.json');
+    writeFileSync(file, JSON.stringify({ ...JSON.parse(readFileSync(file, 'utf8')), status: 'draft' }, null, 2) + '\n');
+    await page.goto('/_edit/albums/fixture-story/');
+    const paste = (selector: string) =>
+      page.locator(selector).first().evaluate(async (el) => {
+        // a screenshot of its own, so the library's duplicate check can't take it for one it has
+        const c = new OffscreenCanvas(64, 48);
+        const g = c.getContext('2d')!;
+        g.fillStyle = `hsl(${Date.now() % 360} 70% 50%)`;
+        g.fillRect(0, 0, 64, 48);
+        g.fillText(String(Date.now()), 2, 24);
+        const dt = new DataTransfer();
+        dt.items.add(new File([await c.convertToBlob({ type: 'image/png' })], 'image.png', { type: 'image/png' }));
+        el.dispatchEvent(new ClipboardEvent('paste', { clipboardData: dt, bubbles: true, cancelable: true }));
+      });
+    // into a field: not the album's
+    await paste('input:not([type="hidden"]), textarea');
+    await page.waitForTimeout(500);
+    await expect(page.locator('[data-album-items] li[data-upload]')).toHaveCount(0);
+    // on the page: an upload, in its place
+    await paste('[data-album-items] li[data-item="cloud"]');
+    await expect.poll(() => storyItems().length, { timeout: 30_000 }).toBe(5);
+    expect(storyItems().some((i) => /pasted-picture/.test(i.media ?? ''))).toBe(true);
+  });
 });

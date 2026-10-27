@@ -3,7 +3,8 @@
  * the grid's selection (a click, Shift for a range, Ctrl or Cmd for one more, the check circle, Ctrl+A, Escape, kept
  * in the address), moving (a drag, Alt with an arrow key, Move to start or end), the selection bar, Sort, Publish,
  * and adding: files dropped anywhere
- * on the page (where they were dropped when that's on an item, else in their places) or chosen with Upload or the
+ * on the page (where they were dropped when that's on an item, else in their places), pasted (Ctrl+V: a screenshot,
+ * a copied picture or video file, in their places) or chosen with Upload or the
  * grid's Add tile (each its own tile with its progress, two at a time, never blocking the grid),
  * items from the library (the picker), a text card or a YouTube or Vimeo link. Every change is kept at once, saved
  * through one queue (never two saves at once) and can be undone. The rules are the pure model/album.ts; this only
@@ -13,7 +14,7 @@ import type { Album } from '../../content/schema';
 import type { AlbumMedia, MediaLookup } from '../../content/album';
 import { SaveQueue } from '../model/queue';
 import { addItemsAt, addText, editText, landingBefore, moveBy, moveItems, moveToEnd, moveToStart, pickRange, pickToggle, removeItems, setItemDownload, setItemPlay, setSettings, setWords, sortAlbum, type AlbumSettings } from '../model/album';
-import { isVideoFile, needsConversion, pictureSizeIssue, posterTime, refusedFormat, svgChoices, typeOf, videoSizeIssue } from '../model/upload';
+import { isVideoFile, needsConversion, pastedName, picturesOfPaste, pictureSizeIssue, posterTime, refusedFormat, svgChoices, typeOf, videoSizeIssue } from '../model/upload';
 import { takenOf } from '../model/exif';
 import { parseSelected, SELECTED_PARAM } from '../model/albumInspector';
 import { announce, api, editorUrl, onContentChange, refused, saveStatus, startTask, swapRegions, TAB } from './client';
@@ -428,6 +429,23 @@ export function initAlbumEditor(root: HTMLElement, signal: AbortSignal) {
       const ids = dragging;
       if (at && ids.includes(at)) return;
       move((a) => moveItems(a, ids, at, lookup), `Moved ${count(ids.length, 'item')}`);
+    },
+    { signal },
+  );
+
+  // ---------- pasting: pictures and video files, as Upload adds them ----------
+  // not into a field or an open dialog (the picker's form takes its own paste)
+  document.addEventListener(
+    'paste',
+    (e) => {
+      const t = e.target instanceof Element ? e.target : null;
+      if (e.defaultPrevented || document.querySelector('dialog[open]') || t?.closest('input, textarea, select, [contenteditable]:not([contenteditable="false"])')) return;
+      const data = e.clipboardData;
+      const list = data ? picturesOfPaste([...data.files], data.getData('text/plain')) : [];
+      if (!list.length) return;
+      e.preventDefault();
+      const now = new Date();
+      upload(list.map((f) => (isVideoFile(f) ? f : new File([f], pastedName(f.name, typeOf(f), now), { type: typeOf(f) || f.type }))));
     },
     { signal },
   );

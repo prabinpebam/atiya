@@ -62,8 +62,13 @@ export function formatLabel(type: string): string {
  * was selected along with its text, and that text is what's meant. A copied video file counts too.
  */
 export function pictureOfPaste<F extends { type: string; name: string }>(files: readonly F[], text: string): F | null {
-  if (text.trim()) return null;
-  return files.find((f) => typeOf(f).startsWith('image/') || isVideoFile(f)) ?? null;
+  return picturesOfPaste(files, text)[0] ?? null;
+}
+
+/** Every picture (and video file) a paste holds, in order, by pictureOfPaste's rule: none when there's text. */
+export function picturesOfPaste<F extends { type: string; name: string }>(files: readonly F[], text: string): F[] {
+  if (text.trim()) return [];
+  return files.filter((f) => typeOf(f).startsWith('image/') || isVideoFile(f));
 }
 
 /** The name a pasted picture gets (a screenshot is often just "image.png"): pasted-picture-<date>.<ext>. */
