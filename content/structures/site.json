@@ -140,6 +140,14 @@
               "type": "album",
               "id": "untitled-album"
             }
+          },
+          {
+            "id": "untitled-album-2",
+            "kind": "item",
+            "item": {
+              "type": "album",
+              "id": "untitled-album-2"
+            }
           }
         ]
       },

@@ -2,7 +2,7 @@
   "kind": "embed",
   "provider": "vimeo",
   "id": "294956094",
-  "title": "Speaker intro - 3072x896",
+  "title": "Speaker intro 2018",
   "shape": {
     "width": 1920,
     "height": 560
@@ -11,5 +11,7 @@
   "poster": {
     "file": "speaker-intro-3072x896.poster.webp"
   },
+  "caption": "Speaker intro 2018 - Created in After Effects",
+  "credit": "Prabin Pebam",
   "visibility": "public"
 }

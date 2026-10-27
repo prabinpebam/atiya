@@ -1,0 +1,149 @@
+{
+  "id": "untitled-album-2",
+  "type": "album",
+  "slug": "untitled-album-2",
+  "title": "Studio+91 2025 Calendar",
+  "status": "published",
+  "createdAt": "2026-10-27",
+  "updatedAt": "2026-10-27",
+  "items": [
+    {
+      "id": "00-s91-cover",
+      "media": "albums/untitled-album-2/00-s91-cover"
+    },
+    {
+      "id": "01-jan",
+      "media": "albums/untitled-album-2/01-jan"
+    },
+    {
+      "id": "02-feb",
+      "media": "albums/untitled-album-2/02-feb"
+    },
+    {
+      "id": "03-mar",
+      "media": "albums/untitled-album-2/03-mar"
+    },
+    {
+      "id": "04-apr",
+      "media": "albums/untitled-album-2/04-apr"
+    },
+    {
+      "id": "05-may",
+      "media": "albums/untitled-album-2/05-may"
+    },
+    {
+      "id": "06-jun",
+      "media": "albums/untitled-album-2/06-jun"
+    },
+    {
+      "id": "07-jul",
+      "media": "albums/untitled-album-2/07-jul"
+    },
+    {
+      "id": "08-aug",
+      "media": "albums/untitled-album-2/08-aug"
+    },
+    {
+      "id": "09-sep",
+      "media": "albums/untitled-album-2/09-sep"
+    },
+    {
+      "id": "10-oct",
+      "media": "albums/untitled-album-2/10-oct"
+    },
+    {
+      "id": "11-nov",
+      "media": "albums/untitled-album-2/11-nov"
+    },
+    {
+      "id": "12-dec",
+      "media": "albums/untitled-album-2/12-dec"
+    },
+    {
+      "id": "pasted-picture-2026-10-27",
+      "media": "albums/untitled-album-2/pasted-picture-2026-10-27"
+    },
+    {
+      "id": "pasted-picture-2026-10-27-2",
+      "media": "albums/untitled-album-2/pasted-picture-2026-10-27-2"
+    }
+  ],
+  "cover": {
+    "tiles": [
+      {
+        "item": "00-s91-cover",
+        "x": 0,
+        "y": 0,
+        "w": 4,
+        "h": 6,
+        "display": "fit"
+      },
+      {
+        "item": "01-jan",
+        "x": 4,
+        "y": 0,
+        "w": 2,
+        "h": 3,
+        "display": "fit"
+      },
+      {
+        "item": "02-feb",
+        "x": 6,
+        "y": 0,
+        "w": 2,
+        "h": 3,
+        "display": "fit"
+      },
+      {
+        "item": "03-mar",
+        "x": 4,
+        "y": 3,
+        "w": 2,
+        "h": 3,
+        "display": "fit"
+      },
+      {
+        "item": "04-apr",
+        "x": 6,
+        "y": 3,
+        "w": 2,
+        "h": 3,
+        "display": "fit"
+      },
+      {
+        "item": "05-may",
+        "x": 8,
+        "y": 0,
+        "w": 2,
+        "h": 3,
+        "display": "fit"
+      },
+      {
+        "item": "06-jun",
+        "x": 8,
+        "y": 3,
+        "w": 2,
+        "h": 3,
+        "display": "fit"
+      },
+      {
+        "item": "07-jul",
+        "x": 10,
+        "y": 3,
+        "w": 2,
+        "h": 3,
+        "display": "fit"
+      },
+      {
+        "item": "08-aug",
+        "x": 10,
+        "y": 0,
+        "w": 2,
+        "h": 3,
+        "display": "fit"
+      }
+    ]
+  },
+  "summary": "Back in 2024, I was inspired to create a calendar for Studio 91 (Microsoft India Design team), using generative AI. I used SDXL models, some watercolor LoRAs and ComfyUI to create the illustrations and composed the final layout in Figma.",
+  "publishedAt": "2026-10-27"
+}

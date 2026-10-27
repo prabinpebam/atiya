@@ -13,7 +13,9 @@
     },
     {
       "id": "media10",
-      "media": "articles/my-journey-with-designup/media10"
+      "media": "articles/my-journey-with-designup/media10",
+      "autoplay": true,
+      "loop": true
     },
     {
       "id": "media8-mp4-snapshot-00-00-643-2",
@@ -21,7 +23,9 @@
     },
     {
       "id": "media9",
-      "media": "articles/my-journey-with-designup/media9"
+      "media": "articles/my-journey-with-designup/media9",
+      "loop": true,
+      "autoplay": true
     },
     {
       "id": "pasted-picture-2026-10-09",
