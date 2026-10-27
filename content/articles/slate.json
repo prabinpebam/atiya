@@ -4,12 +4,12 @@
   "kind": "note",
   "contribution": "built",
   "slug": "slate",
-  "title": "Slate: a documentation harness for work that keeps changing",
+  "title": "Slate: a documentation skill kit for work that keeps changing",
   "summary": "A portable harness that turns project notes into navigable, visual-first static docs, now powering this site's own documentation.",
   "status": "published",
   "visibility": "public",
   "publishedAt": "2026-10-01",
-  "updatedAt": "2026-10-06",
+  "updatedAt": "2026-10-28",
   "locale": "en",
   "thumbnail": "articles/slate/docs-overview-3x2",
   "thumbnails": {
@@ -19,7 +19,7 @@
   "body": [
     {
       "type": "text",
-      "markdown": "Documenting has become a constant need, so I collected all the learnings into a documentation harness. Slate is my answer to the recurring moment when a project outgrows scattered notes: the specs, plans, research, decisions and evidence are all useful, but only if they are easy to navigate later.",
+      "markdown": "Documenting has become a constant need, so I collected all the learnings into a documentation skill kit. Slate is my answer to the recurring moment when a project outgrows scattered notes: the specs, plans, research, decisions and evidence are all useful, but only if they are easy to navigate later.",
       "key": "dnef2u"
     },
     {
@@ -81,7 +81,7 @@
     {
       "type": "heading",
       "level": 2,
-      "text": "What the harness does",
+      "text": "What the kit does",
       "key": "prt1ah"
     },
     {
