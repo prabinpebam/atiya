@@ -27,6 +27,7 @@ import Icon from '../fundamentals/Icon.astro';
 import Link from '../fundamentals/Link.astro';
 import Prose from '../fundamentals/Prose.astro';
 import TextField from '../fundamentals/TextField.astro';
+import { svgOf } from '../../design/icons';
 
 interface Props {
   /** A page-unique id for the dialog. */
@@ -34,6 +35,7 @@ interface Props {
 }
 
 const { id = 'site-lightbox' } = Astro.props;
+const playIcon = svgOf('play');
 ---
 
 <dialog class="lightbox" id={id} aria-label="Image viewer" data-lightbox-dialog>
@@ -63,7 +65,9 @@ const { id = 'site-lightbox' } = Astro.props;
           <img class="stage-image" alt="" data-lightbox-image />
           <div class="player" data-lightbox-player hidden></div>
           <span class="facade" data-lightbox-facade hidden>
-            <Button variant="primary" icon="play" data-lightbox-play-embed="">Play video</Button>
+            <button class="play-mark" type="button" aria-label="Play video" data-lightbox-play-embed>
+              <svg class="play-icon" viewBox={playIcon.viewBox} aria-hidden="true" focusable="false" data-icon={playIcon.name}><Fragment set:html={playIcon.body} /></svg>
+            </button>
           </span>
           <span class="motion" data-lightbox-motion hidden>
             <span><IconButton label="Pause" icon="pause" variant="overlay" tooltip="none" data-lightbox-pause="" /></span>
@@ -100,8 +104,7 @@ const { id = 'site-lightbox' } = Astro.props;
 </dialog>
 
 <style>
-  /* the whole viewport, so the smoke has no edge; the content keeps its own width. The scrim is the
-     dialog's own background (it follows the theme there; ::backdrop only blurs the page) */
+  /* the whole viewport, all of it the media's (no max width). The scrim is the dialog's own background (::backdrop only blurs) */
   .lightbox {
     position: fixed;
     inset: 0;
@@ -115,7 +118,7 @@ const { id = 'site-lightbox' } = Astro.props;
     border: 0;
     background: var(--color-scrim);
     color: var(--color-text);
-    overflow: hidden;
+    overflow: clip;
   }
 
   .lightbox:not([open]) {
@@ -143,10 +146,9 @@ const { id = 'site-lightbox' } = Astro.props;
     position: relative;
     display: grid;
     grid-template-rows: auto minmax(0, 1fr) auto auto;
+    grid-template-columns: minmax(0, 1fr);
     gap: var(--space-4);
     height: 100%;
-    max-width: var(--size-max);
-    margin-inline: auto;
     padding: var(--space-6);
   }
 
@@ -270,12 +272,46 @@ const { id = 'site-lightbox' } = Astro.props;
     opacity: 0;
   }
 
+  /* base.css's img block beats [hidden]: else the poster (transformed for zoom) paints over the player */
+  .stage-image[hidden] { display: none; }
+
   .player:not([hidden]),
   .facade:not([hidden]) {
     display: grid;
     place-items: center;
     width: 100%;
     height: 100%;
+  }
+
+  .facade {
+    z-index: var(--layer-raised);
+  }
+
+  .play-mark {
+    display: grid;
+    place-items: center;
+    width: var(--c-lightbox-play);
+    height: var(--c-lightbox-play);
+    padding: 0;
+    border: 0;
+    border-radius: var(--radius-round);
+    background: var(--color-bg-raised);
+    color: var(--color-text);
+    box-shadow: var(--shadow-md);
+    cursor: pointer;
+    transition: transform var(--duration-fast) var(--ease-spring);
+  }
+
+  @media (hover: hover) {
+    .play-mark:hover { transform: scale(var(--scale-lift)); }
+  }
+
+  .play-mark:active { transform: scale(var(--scale-press)); }
+
+  .play-icon {
+    width: var(--c-lightbox-play-icon);
+    height: var(--c-lightbox-play-icon);
+    margin-inline-start: var(--space-1);
   }
 
   :global(.lightbox [data-lightbox-player] video),
@@ -286,10 +322,7 @@ const { id = 'site-lightbox' } = Astro.props;
     border-radius: var(--radius-md);
   }
 
-  :global(.lightbox [data-lightbox-player] iframe) {
-    width: 100%;
-    aspect-ratio: 16 / 9;
-  }
+  :global(.lightbox [data-lightbox-player] iframe) { width: var(--fit-w); height: var(--fit-h); }
 
   .motion {
     z-index: var(--layer-raised);
@@ -309,9 +342,8 @@ const { id = 'site-lightbox' } = Astro.props;
     padding: var(--space-4);
     overflow-y: auto;
     overscroll-behavior: contain;
-    border-radius: var(--radius-md);
-    background: var(--color-bg-raised);
-    box-shadow: var(--shadow-md);
+    border-block-start: var(--border-hairline) solid var(--color-rule);
+    background: var(--color-bg);
   }
 
   .panel p {
@@ -398,9 +430,15 @@ const { id = 'site-lightbox' } = Astro.props;
       grid-template-columns: minmax(0, 1fr) var(--c-lightbox-info-width);
     }
 
+    /* beside the stage, set off by a rule rather than a card */
     .panel:not([hidden]) {
       position: static;
       max-height: 100%;
+      padding-block: 0;
+      padding-inline: var(--space-5) 0;
+      border-block-start: 0;
+      border-inline-start: var(--border-hairline) solid var(--color-rule);
+      background: none;
     }
   }
 

@@ -366,6 +366,8 @@
   --c-lightbox-thumb-on: var(--color-highlight);
   --c-lightbox-info-width: 22rem;
   --c-lightbox-drawing-paper: var(--color-on-image);
+  --c-lightbox-play: 5.5rem;
+  --c-lightbox-play-icon: 2.25rem;
   --c-icon-secondary: var(--color-icon-secondary);
   --c-icon-secondary-opacity: 1;
   --c-icon-baseline-shift: -0.15em;

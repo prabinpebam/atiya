@@ -114,6 +114,13 @@ test.describe('gallery: lightbox', () => {
     await expect(info).toHaveAttribute('aria-pressed', 'true');
     const panel = dialog.getByRole('complementary', { name: 'About this item' });
     await expect(panel).toBeVisible();
+    // the media gets the whole viewport (no max width); the panel is set off by a rule, not drawn as a card
+    expect((await dialog.locator('[data-lightbox-shell]').boundingBox())!.width).toBe(1280);
+    const look = await panel.evaluate((el) => {
+      const s = getComputedStyle(el);
+      return { shadow: s.boxShadow, rule: s.borderInlineStartWidth, bg: s.backgroundColor };
+    });
+    expect(look).toEqual({ shadow: 'none', rule: '1px', bg: 'rgba(0, 0, 0, 0)' });
     await expect(panel).toContainText('Oranges, just in.');
     await expect(panel).toContainText('Imphal');
     await expect(panel).toContainText(`From the album: ${TITLE}`);
@@ -125,6 +132,12 @@ test.describe('gallery: lightbox', () => {
     await expect(panel).toContainText('The cloud sat on the water all morning.');
     await expect(panel).toContainText('Loktak Lake');
     await noSeriousViolations(page);
+    // on a phone, the top bar's tools and the stage stay inside the screen (the title gives way)
+    await page.setViewportSize({ width: 390, height: 844 });
+    for (const part of [dialog.getByRole('button', { name: 'Close' }), stage(dialog)]) {
+      const box = (await part.boundingBox())!;
+      expect(box.x + box.width).toBeLessThanOrEqual(390);
+    }
     await page.keyboard.press('i');
     await expect(panel).toBeHidden();
   });
@@ -265,6 +278,8 @@ test.describe('gallery: lightbox', () => {
     const video = dialog.locator('[data-lightbox-player] video');
     await expect(video).toHaveCount(1);
     await expect(video).toHaveJSProperty('controls', true);
+    // the poster never covers the player
+    await expect(stageImage(dialog)).toBeHidden();
     await expect(video).toHaveJSProperty('loop', true);
     await expect(video.locator('source')).toHaveAttribute('type', 'video/mp4');
     const track = video.locator('track');
@@ -307,6 +322,15 @@ test.describe('gallery: lightbox', () => {
     const frame = dialog.locator('[data-lightbox-player] iframe');
     await expect(frame).toHaveAttribute('src', /youtube-nocookie\.com\/embed\/aqz-KE-bpKQ.*autoplay=1/);
     await expect(frame).toHaveAttribute('title', /.+/);
+    // playing, the poster and the round Play are gone: nothing lies over the player
+    await expect(stageImage(dialog)).toBeHidden();
+    await expect(play).toBeHidden();
+    await expect(frame).toBeVisible();
+    // the player keeps to the stage, and the dialog never scrolls sideways (its smoke runs past the edges)
+    const [box, room] = await Promise.all([frame.boundingBox(), stage(dialog).boundingBox()]);
+    expect(box!.height).toBeLessThanOrEqual(room!.height + 1);
+    expect(box!.width).toBeLessThanOrEqual(room!.width + 1);
+    expect(await dialog.evaluate((d) => d.scrollLeft)).toBe(0);
 
     // the player has the focus: the keys are the dialog's again from its controls
     await dialog.getByRole('button', { name: 'Next image' }).focus();

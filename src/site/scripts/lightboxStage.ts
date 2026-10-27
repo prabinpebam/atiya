@@ -46,16 +46,21 @@ export function createStage(p: StageParts, reduce: boolean): Stage {
     p.image.hidden = false;
   };
 
-  // a drawing is as large as the stage allows (it's sharp at any size): its own shape, scaled to fit
+  // a drawing is as large as the stage allows (it's sharp at any size), and so is an embed's player once
+  // it's made: each its own shape (an embed's from its provider, else 16:9), scaled to fit
   const fit = () => {
-    if (!item || stageKind(item) !== 'drawing') return;
-    const w = item.width || p.image.naturalWidth;
-    const h = item.height || p.image.naturalHeight;
+    if (!item) return;
+    const kind = stageKind(item);
+    const frame = kind === 'embed' ? p.player.querySelector('iframe') : null;
+    const target = kind === 'drawing' ? p.image : frame;
+    if (!target) return;
+    const w = item.width || (frame ? 16 : p.image.naturalWidth);
+    const h = item.height || (frame ? 9 : p.image.naturalHeight);
     const room = p.stage.getBoundingClientRect();
     if (!w || !h || !room.width || !room.height) return;
     const r = Math.min(room.width / w, room.height / h);
-    p.image.style.setProperty('--fit-w', `${Math.floor(w * r)}px`);
-    p.image.style.setProperty('--fit-h', `${Math.floor(h * r)}px`);
+    target.style.setProperty('--fit-w', `${Math.floor(w * r)}px`);
+    target.style.setProperty('--fit-h', `${Math.floor(h * r)}px`);
   };
 
   const picture = () => {
@@ -120,6 +125,7 @@ export function createStage(p: StageParts, reduce: boolean): Stage {
     p.player.hidden = false;
     p.facade.hidden = true;
     p.image.hidden = true;
+    fit();
     frame.focus();
   };
 

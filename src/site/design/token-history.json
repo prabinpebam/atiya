@@ -178,6 +178,8 @@
     "c.lightbox.drawing-paper": {"v":"var(--color-on-image)"},
     "c.lightbox.drift-scale": {"v":"1.04"},
     "c.lightbox.info-width": {"v":"22rem"},
+    "c.lightbox.play": {"v":"5.5rem"},
+    "c.lightbox.play-icon": {"v":"2.25rem"},
     "c.lightbox.thumb": {"v":"4.5rem"},
     "c.lightbox.thumb-on": {"v":"var(--color-highlight)"},
     "c.link.icon-gap": {"v":"0.3em"},
@@ -510,6 +512,18 @@
           {
             "v": "26rem",
             "d": "The cover at rest is the gallery's band at the column's full width (27 October 2026): no replacement"
+          }
+        ],
+        "c.lightbox.play": [
+          null,
+          {
+            "v": "5.5rem"
+          }
+        ],
+        "c.lightbox.play-icon": [
+          null,
+          {
+            "v": "2.25rem"
           }
         ]
       }
