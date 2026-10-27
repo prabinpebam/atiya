@@ -251,6 +251,7 @@
   --c-control-height-sm: 2.5rem;
   --c-control-height-md: 3rem;
   --c-control-height-lg: 3.5rem;
+  --c-control-text-lines-max: 12;
   --c-control-pad-x: var(--space-4);
   --c-control-radius: var(--radius-md);
   --c-control-border: var(--color-border);

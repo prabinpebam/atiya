@@ -1,7 +1,8 @@
 ---
 /**
  * A labelled text entry field for forms, search and short notes. Use multiline when the answer needs
- * more than one line.
+ * more than one line: it starts at its rows and grows with what's written, up to c.control.text-lines-max
+ * lines, then scrolls.
  * @tier fundamental
  * @a11y A native input or textarea keeps platform editing, autocomplete and validation.
  * @a11y Labels are always present; hints and errors are tied with aria-describedby.
@@ -41,7 +42,7 @@ interface Props {
   autocomplete?: string;
   /** Renders a textarea instead of an input. */
   multiline?: boolean;
-  /** Textarea rows. */
+  /** Textarea rows: the lines it starts at (its least height) before it grows with what's written. */
   rows?: number;
   /** The most characters it takes. */
   maxlength?: number;
@@ -101,6 +102,7 @@ const note = required ? 'Required' : optional ? 'Optional' : undefined;
           disabled={disabled}
           autocomplete={autocomplete}
           rows={rows}
+          style={`--rows: ${rows}`}
           maxlength={maxlength}
           aria-required={required ? 'true' : undefined}
           aria-describedby={described}
@@ -187,8 +189,14 @@ const note = required ? 'Required' : optional ? 'Optional' : undefined;
       box-shadow var(--duration-instant) var(--ease-standard);
   }
 
+  /* a textarea grows with what's written: from its rows (never under two control heights) to
+     text-lines-max lines, then it scrolls */
   textarea.input {
-    min-block-size: calc(var(--c-control-height-md) * 2);
+    --line: calc(var(--text-md) * var(--leading-ui));
+    --frame: calc(var(--space-2) * 2 + var(--border-control) * 2);
+    field-sizing: content;
+    min-block-size: max(calc(var(--c-control-height-md) * 2), calc(var(--rows) * var(--line) + var(--frame)));
+    max-block-size: calc(var(--c-control-text-lines-max) * var(--line) + var(--frame));
     resize: vertical;
   }
 
@@ -249,3 +257,19 @@ const note = required ? 'Required' : optional ? 'Optional' : undefined;
     margin-block-start: var(--space-0-5);
   }
 </style>
+
+<script>
+  import { each } from '../../scripts/page';
+
+  // where the browser can't size a field to its content, it fits it as it's written (between the CSS limits)
+  if (!CSS.supports('field-sizing', 'content')) {
+    each<HTMLTextAreaElement>('.text-field textarea', (field, signal) => {
+      const fit = () => {
+        field.style.blockSize = 'auto';
+        field.style.blockSize = `${field.scrollHeight + field.offsetHeight - field.clientHeight}px`;
+      };
+      fit();
+      field.addEventListener('input', fit, { signal });
+    });
+  }
+</script>

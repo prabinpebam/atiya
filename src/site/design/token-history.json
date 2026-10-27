@@ -100,6 +100,7 @@
     "c.control.height-sm": {"v":"2.5rem"},
     "c.control.pad-x": {"v":"var(--space-4)"},
     "c.control.radius": {"v":"var(--radius-md)"},
+    "c.control.text-lines-max": {"v":"12"},
     "c.cover.feature-picture": {"v":"34rem"},
     "c.cover.feature-picture-height": {"v":"18rem"},
     "c.cover.picture": {"v":"44rem"},
@@ -495,6 +496,17 @@
     "weight.semibold": {"v":"600"}
   },
   "entries": [
+    {
+      "date": "2026-10-28",
+      "changes": {
+        "c.control.text-lines-max": [
+          null,
+          {
+            "v": "12"
+          }
+        ]
+      }
+    },
     {
       "date": "2026-10-27",
       "changes": {
