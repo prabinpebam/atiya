@@ -85,7 +85,7 @@ const reviewing = Astro.url.searchParams.get('review') === '1';
 const viewer = loaded.ok && !fragment && draw('album-viewer') && (itemAsked || reviewing) ? await viewerItem(loaded.index, album, itemAsked ?? '', reviewing) : null;
 // the inspector's Selection tab (§9.6): what the address says is selected (?selected=, kept by scripts/albumInspector.ts)
 const ids = parseSelected(Astro.url.searchParams.get('selected'), album);
-const wordsOf = (media: string) => sidecarOf(media)?.sidecar as { taken?: string; place?: string } | undefined;
+const wordsOf = (media: string) => sidecarOf(media)?.sidecar as { taken?: string; place?: string; caption?: string; description?: string; alt?: string; kind?: string } | undefined;
 let selection: SelectionView = { state: 'none' };
 if (loaded.ok && !fragment && draw('album-selection') && ids.length === 1) {
   const item = await viewerItem(loaded.index, album, ids[0], false);
@@ -98,7 +98,11 @@ if (loaded.ok && !fragment && draw('album-selection') && ids.length === 1) {
   const thumbs = await Promise.all(shown.map((m) => thumbOf(loaded.index, m)));
   const taken = shared(summary.media.map((m) => wordsOf(m)?.taken));
   const place = shared(summary.media.map((m) => wordsOf(m)?.place));
-  selection = { state: 'many', summary, thumbs, taken, place, albumDownload: settings.download };
+  const caption = shared(summary.media.map((m) => wordsOf(m)?.caption));
+  const description = shared(summary.media.map((m) => wordsOf(m)?.description));
+  // a video has no alt text of its own: only the others' count
+  const alt = shared(summary.media.filter((m) => wordsOf(m)?.kind !== 'video').map((m) => wordsOf(m)?.alt));
+  selection = { state: 'many', summary, thumbs, caption, description, alt, taken, place, albumDownload: settings.download };
 }
 // the albums list beside it (§9.2)
 const list = loaded.ok && !fragment && draw('album-list') ? await galleryList(loaded.index, section) : null;

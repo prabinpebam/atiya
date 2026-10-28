@@ -1,7 +1,8 @@
 /**
  * The album editor's inspector (documentation/gallery/spec.md §9.6): which items it describes, named in the address
  * (`?selected=`, so a reload keeps them and the server draws their details), and what several of them share: their
- * kinds, a date or a place they all have (or that they differ), and this album's downloads for them. Pure.
+ * kinds, a caption, description, alt text, date or place they all have (or that they differ), and this album's
+ * downloads for them. Pure.
  */
 import type { Album, AlbumItem } from '../../content/schema';
 import { albumCounts, countWords, isTextItem, type MediaLookup } from '../../content/album';
@@ -75,4 +76,4 @@ export const SELECTION_THUMBS = 8;
 export type SelectionView =
   | { state: 'none' }
   | { state: 'one'; item: ViewerItem; thumb?: Thumb }
-  | { state: 'many'; summary: SelectionSummary; thumbs: Thumb[]; taken: Shared; place: Shared; albumDownload: boolean };
+  | { state: 'many'; summary: SelectionSummary; thumbs: Thumb[]; caption: Shared; description: Shared; alt: Shared; taken: Shared; place: Shared; albumDownload: boolean };

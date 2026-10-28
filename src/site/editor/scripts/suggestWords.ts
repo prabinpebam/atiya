@@ -84,7 +84,7 @@ export function initSuggestWords(el: HTMLElement, signal: AbortSignal) {
     refreshRun();
   };
 
-  const open = async (next: Item[]) => {
+  const open = async (next: Item[], kinds?: string[]) => {
     const key = next.map((i) => i.media).join(',');
     dialog.showModal();
     // the drafts of the same items wait where they were left
@@ -93,6 +93,8 @@ export function initSuggestWords(el: HTMLElement, signal: AbortSignal) {
     drafted = '';
     rows.replaceChildren();
     stage('choose');
+    // a field's own Suggest ticks only its kind; otherwise the usual choice
+    for (const b of boxes()) b.checked = kinds ? kinds.includes(b.value) : b.defaultChecked;
     const n = items.length;
     line('[data-suggest-count]', `For ${n} selected ${n === 1 ? 'item' : 'items'}`);
     for (const h of el.querySelectorAll('[data-suggest-kind] [data-field-part="hint"]')) h.textContent = 'Checking…';
@@ -230,7 +232,10 @@ export function initSuggestWords(el: HTMLElement, signal: AbortSignal) {
     root.dispatchEvent(new CustomEvent('album:redraw'));
   };
 
-  root.addEventListener('words:suggest', (e) => void open((e as CustomEvent<{ items: Item[] }>).detail.items), { signal });
+  root.addEventListener('words:suggest', (e) => {
+    const { items: next, kinds } = (e as CustomEvent<{ items: Item[]; kinds?: string[] }>).detail;
+    void open(next, kinds);
+  }, { signal });
   // one picture's own Suggest words with AI… (MediaInfo, in the inspector or beside the library, which may sit outside the root)
   document.addEventListener(
     'click',

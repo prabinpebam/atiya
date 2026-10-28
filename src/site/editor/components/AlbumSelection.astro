@@ -4,9 +4,10 @@
  * selected in the album, drawn by the server from the address's `?selected=`. Nothing selected: how to select.
  * One picture or video: its kind and place in the album, its preview with View large, then its words and this
  * album's settings for it (the info slot: MediaInfo, saved as they're typed). One text card: its words, saved as
- * they're typed. Several: what they are, their thumbnails, then what they can share: the date taken and the place
- * (each picture's own words, set on all of them at once), Suggest words with AI (the batch, §9.8.2: SuggestWords
- * in the page's dialog) and this album's downloads. scripts/albumInspector.ts
+ * they're typed. Several: what they are, their thumbnails, then what they can share: the caption, description, alt
+ * text, date taken and place (each picture's own words, set on all of them at once; "Multiple values" where they
+ * differ), a Suggest button under each kind of words and Suggest words with AI (the batch, §9.8.2: SuggestWords
+ * in the page's dialog, with that kind ticked) and this album's downloads. scripts/albumInspector.ts
  * draws it again when the selection changes and saves what several share.
  * @tier editor
  * @a11y Named by its heading. Every field is labelled; a value the selected items don't share says so in its hint
@@ -21,8 +22,9 @@ import Pane from '../kit/Pane.astro';
 import PictureField from '../kit/PictureField.astro';
 import SectionHead from '../kit/SectionHead.astro';
 import StatusNote from '../kit/StatusNote.astro';
-import { ITEM_DESCRIPTION_MAX, PLACE_MAX } from '../../content/schema';
+import { CAPTION_MAX, ITEM_DESCRIPTION_MAX, PLACE_MAX } from '../../content/schema';
 import { type SelectionView, type Shared } from '../model/albumInspector';
+import { ALT_MAX } from '../model/altText';
 
 interface Props {
   /** What's selected, as the server drew it. */
@@ -41,6 +43,11 @@ const DOWNLOADS = [
   { value: 'allow', label: 'Allow' },
   { value: 'deny', label: "Don't allow" },
 ];
+const WORDS = [
+  { name: 'caption', label: 'Caption', what: 'caption', max: CAPTION_MAX, multiline: false, suggest: 'Suggest captions', hint: 'Set here, every one gets the same caption.' },
+  { name: 'description', label: 'Description', what: 'description', max: ITEM_DESCRIPTION_MAX, multiline: true, suggest: 'Suggest descriptions', hint: 'Short Markdown. Set here, every one gets the same description.' },
+  { name: 'alt', label: 'Alt text', what: 'alt text', max: ALT_MAX, multiline: true, suggest: 'Suggest alt text', hint: 'Set here, every picture gets the same alt text: describe each one where you can.' },
+] as const;
 const download = many?.summary.download;
 const more = many ? many.summary.count - many.thumbs.length : 0;
 ---
@@ -103,6 +110,16 @@ const more = many ? many.summary.count - many.thumbs.length : 0;
             <Text variant="small" tone="muted">
               Each picture's own: set here, it changes wherever the picture is shown.
             </Text>
+            {WORDS.map((w) => (
+              <Fragment>
+                <TextField label={w.label} id={`album-selection-${w.name}`} name={w.name} multiline={w.multiline} rows={w.multiline ? 2 : undefined} maxlength={w.max} value={valueOf(many[w.name])} placeholder={many[w.name].state === 'mixed' ? 'Multiple values' : undefined} hint={mixed(many[w.name], w.what) ?? w.hint} />
+                <span class="suggest">
+                  <Button variant="quiet" size="sm" icon="sparkles" data-suggest-words-open={w.name}>
+                    {w.suggest}
+                  </Button>
+                </span>
+              </Fragment>
+            ))}
             <TextField label="Date taken" type="date" id="album-selection-taken" name="taken" value={valueOf(many.taken)} hint={mixed(many.taken, 'date') ?? 'Leave it empty to use their files’ own dates.'} />
             <TextField label="Place" id="album-selection-place" name="place" maxlength={PLACE_MAX} value={valueOf(many.place)} hint={mixed(many.place, 'place') ?? 'Leave it empty to clear their places.'} />
             <span class="suggest">

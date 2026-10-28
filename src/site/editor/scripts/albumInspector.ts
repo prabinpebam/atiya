@@ -109,7 +109,8 @@ export function initAlbumInspector(root: HTMLElement, signal: AbortSignal) {
           const it = all.find((i) => i.id === id);
           return it && 'media' in it ? [{ media: it.media, cell: id }] : [];
         });
-        if (items.length) root.dispatchEvent(new CustomEvent('words:suggest', { detail: { items } }));
+        const kind = (e.target as Element).closest<HTMLElement>('[data-suggest-words-open]')?.dataset.suggestWordsOpen;
+        if (items.length) root.dispatchEvent(new CustomEvent('words:suggest', { detail: { items, kinds: kind ? [kind] : undefined } }));
       }
     },
     { signal },
@@ -122,19 +123,28 @@ export function initAlbumInspector(root: HTMLElement, signal: AbortSignal) {
     note.textContent = text;
     note.hidden = !text;
   };
+  // what several share, by its field's name: what its task says while it saves, and once it's saved
+  const SHARED: Record<string, [string, string]> = {
+    caption: ['Setting the caption…', 'Set the caption of'],
+    description: ['Setting the description…', 'Set the description of'],
+    alt: ['Setting the alt text…', 'Set the alt text of'],
+    taken: ['Setting the date…', 'Set the date of'],
+    place: ['Setting the place…', 'Set the place of'],
+  };
   inspector.addEventListener(
     'change',
     async (e) => {
       const el = e.target as HTMLInputElement;
-      if (!el.closest('[data-selection-words]') || (el.name !== 'taken' && el.name !== 'place')) return;
+      const copy = SHARED[el.name];
+      if (!el.closest('[data-selection-words]') || !copy) return;
       const media = mediaOf(ids);
-      const words = el.name === 'taken' ? { taken: el.value } : { place: el.value.trim() };
+      const words = { [el.name]: el.name === 'taken' ? el.value : el.value.trim() };
       const changes: WordsChange[] = media.map((id) => ({ id, words }));
       const problem = batchProblem(changes);
       if (problem) return say(problem);
       say('');
       const n = media.length;
-      const task = startTask(el.name === 'taken' ? 'Setting the date…' : 'Setting the place…', { el, busyLabel: 'Saving…' });
+      const task = startTask(copy[0], { el, busyLabel: 'Saving…' });
       saveStatus.saving();
       const r = await api('PUT', 'media-words', { changes });
       if (!r.ok) {
@@ -144,7 +154,7 @@ export function initAlbumInspector(root: HTMLElement, signal: AbortSignal) {
         return say(why);
       }
       void task.done();
-      saveStatus.saved(`${el.name === 'taken' ? 'Set the date of' : 'Set the place of'} ${n} ${n === 1 ? 'item' : 'items'}`);
+      saveStatus.saved(`${copy[1]} ${n} ${n === 1 ? 'item' : 'items'}`);
       root.dispatchEvent(new CustomEvent('album:redraw'));
     },
     { signal },

@@ -249,6 +249,26 @@ test.describe('editor: suggested words (§9.8.2)', () => {
     expect(albumSidecar('p02').caption).toBe('Oranges, just in.');
   });
 
+  test("several in an album: their words shown, 'Multiple values' where they differ, set on all, and a field's own Suggest", async ({ page }) => {
+    seesPictures();
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await page.goto('/_edit/albums/fixture-album/?selected=p01,p02');
+    const selection = page.locator('[data-album-selection="many"]');
+    await expect(selection.getByLabel('Caption')).toHaveAttribute('placeholder', 'Multiple values');
+    await expect(selection.getByLabel('Caption')).toHaveValue('');
+    const description = selection.getByLabel('Description');
+    await description.fill('A morning at the market.');
+    await description.press('Tab');
+    await expect.poll(() => [albumSidecar('p01').description, albumSidecar('p02').description], { timeout: 30_000 }).toEqual(['A morning at the market.', 'A morning at the market.']);
+    expect(albumSidecar('p02').caption).toBe('Oranges, just in.');
+
+    await page.locator('[data-album-selection="many"]').getByRole('button', { name: 'Suggest captions' }).click();
+    const dialog = page.getByRole('dialog', { name: 'Suggest words with AI' });
+    await expect(dialog).toBeVisible();
+    await expect(dialog.getByRole('checkbox', { name: /^Caption/ })).toBeChecked({ timeout: 30_000 });
+    for (const other of ['Description', 'Alt text', 'Date taken']) await expect(dialog.getByRole('checkbox', { name: new RegExp(`^${other}`) })).not.toBeChecked();
+  });
+
   test('one picture, on a writer never tested for pictures: Suggest words with AI… in its details tests it on the way, then runs the same batch', async ({ page }) => {
     expect(aiFile().services[0].pictures).toBeUndefined();
     await page.setViewportSize({ width: 1440, height: 900 });
