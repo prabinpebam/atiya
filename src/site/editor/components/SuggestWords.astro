@@ -1,0 +1,138 @@
+---
+/**
+ * Suggested words for several pictures at once (documentation/gallery/spec.md §9.8.2): the batch the album
+ * inspector's selection and the Media screen's selection bar open, in a dialog the page gives it. First what to
+ * suggest (caption, description, alt text, place, and the date from the files), each with how many of them lack
+ * it; only the words they don't have yet are asked for. Then the AI writer is asked one picture at a time, with a
+ * bar and a count, and Stop; each picture's drafts appear as they come, editable, under its thumbnail. Nothing is
+ * saved until Save these words, which saves every draft left (an emptied one is left out) in one change.
+ * scripts/suggestWords.ts runs it; the opener sends `words:suggest` with the items chosen.
+ * @tier editor
+ * @a11y The choices are labelled checkboxes in a named group, each with how many need it as its hint; progress is a
+ * labelled progress bar and a polite status line; each draft is a labelled field named for its picture; the
+ * actions say what they do, and Stop keeps the drafts already come.
+ */
+import Button from '../../components/fundamentals/Button.astro';
+import Checkbox from '../../components/fundamentals/Checkbox.astro';
+import Progress from '../../components/fundamentals/Progress.astro';
+import Text from '../../components/fundamentals/Text.astro';
+import TextField from '../../components/fundamentals/TextField.astro';
+import ActionBar from '../../components/compounds/ActionBar.astro';
+import StatusNote from '../kit/StatusNote.astro';
+import PlainList from '../kit/PlainList.astro';
+import { BATCH_KINDS, BATCH_LABELS, batchRunLabel, needsLine, type BatchKind } from '../model/pictureWords';
+import { ITEM_DESCRIPTION_MAX, PLACE_MAX } from '../../content/schema';
+import { ALT_MAX } from '../model/altText';
+import { CAPTION_SUGGEST_MAX } from '../model/captionText';
+import { stableId } from '../../design/stableId';
+
+interface Props {
+  /** The kinds ticked when it opens (the common jobs: a caption, alt text and the file's date). */
+  chosen?: readonly BatchKind[];
+  /** How many of the chosen items lack each kind, when known as it's drawn (the story's; the script asks the server). */
+  needs?: Partial<Record<BatchKind, number>>;
+  /** How many items are chosen, when known as it's drawn. */
+  of?: number;
+}
+
+const { chosen = ['caption', 'alt', 'taken'], needs, of } = Astro.props;
+const kindsId = `suggest-words-kinds-${stableId(Astro, 'SuggestWords')}`;
+const known = needs !== undefined && of !== undefined;
+const hint = (k: BatchKind) => (known ? needsLine(needs[k] ?? 0, of) : 'Checking…');
+// the story's count: the most any one chosen kind asks for (each picture is asked once, for all it lacks)
+const runs = known ? Math.max(0, ...chosen.map((k) => needs[k] ?? 0)) : 0;
+const MAX: Record<BatchKind, number | undefined> = { caption: CAPTION_SUGGEST_MAX, description: ITEM_DESCRIPTION_MAX, alt: ALT_MAX, place: PLACE_MAX, taken: undefined };
+---
+
+<div class="suggest-words" data-suggest-words data-stage="choose">
+  <div class="stage" data-suggest-stage="choose">
+    <Text variant="small" tone="muted"><span data-suggest-count>{of ? `For ${of} selected ${of === 1 ? 'item' : 'items'}` : 'For the selected items'}</span></Text>
+    <div class="kinds" role="group" aria-labelledby={kindsId}>
+      <Text variant="label"><span id={kindsId}>What to suggest</span></Text>
+      {BATCH_KINDS.map((k) => <Checkbox label={BATCH_LABELS[k]} name="kind" value={k} checked={chosen.includes(k)} hint={hint(k)} data-suggest-kind={k} />)}
+    </div>
+    <StatusNote live="polite" data-suggest-off="" />
+    <Text variant="small" tone="muted">Only the words they don't have yet. Nothing is saved until you save them.</Text>
+    <ActionBar align="end">
+      <Button variant="quiet" data-dialog-close="">Cancel</Button>
+      <Button variant="primary" icon="sparkles" disabled={!known} data-suggest-run="">{known ? batchRunLabel(runs) : 'Suggest'}</Button>
+    </ActionBar>
+  </div>
+
+  <div class="stage" data-suggest-stage="review" hidden>
+    <Progress label="Suggesting words" value={0} size="sm" data-suggest-progress="" />
+    <StatusNote live="polite" data-suggest-status="" />
+    <PlainList as="ol" gap="md" label="Suggested words, by picture" data-suggest-rows="" />
+    <ActionBar align="between">
+      <span data-suggest-stop-wrap><Button variant="secondary" icon="close" data-suggest-stop="">Stop</Button></span>
+      <span data-suggest-discard-wrap hidden><Button variant="quiet" data-suggest-discard="">Discard</Button></span>
+      <span data-suggest-save-wrap hidden><Button variant="primary" icon="check" data-suggest-save="">Save these words</Button></span>
+    </ActionBar>
+  </div>
+
+  <template data-suggest-row>
+    <li class="picture-words" data-suggest-media="">
+      <span class="thumb" data-suggest-thumb></span>
+      <div class="fields">
+        <Text variant="small" tone="muted"><span data-suggest-name></span></Text>
+        {
+          BATCH_KINDS.map((k) => (
+            <div data-suggest-field={k} hidden>
+              <TextField label={k === 'taken' ? 'Date taken' : BATCH_LABELS[k]} name={k} type={k === 'taken' ? 'date' : 'text'} multiline={k === 'description'} rows={2} maxlength={MAX[k]} hint={k === 'taken' ? "From the file's own date." : undefined} />
+            </div>
+          ))
+        }
+        <StatusNote live="off" data-suggest-miss="" />
+      </div>
+    </li>
+  </template>
+</div>
+
+<style>
+  .suggest-words,
+  .stage {
+    display: grid;
+    gap: var(--space-3);
+  }
+
+  .stage[hidden] {
+    display: none;
+  }
+
+  .kinds {
+    display: grid;
+    gap: var(--space-1);
+  }
+
+  .picture-words {
+    display: grid;
+    grid-template-columns: var(--size-avatar-lg) minmax(0, 1fr);
+    gap: var(--space-3);
+    align-items: start;
+  }
+
+  /* the picture's own thumbnail, the one the grid it was chosen in shows (the script passes it as --thumb) */
+  .thumb {
+    display: block;
+    inline-size: 100%;
+    aspect-ratio: 1;
+    border-radius: var(--radius-md);
+    background: var(--thumb, none) center / cover no-repeat var(--color-bg-sunk);
+  }
+
+  .fields {
+    display: grid;
+    gap: var(--space-2);
+  }
+
+  [data-suggest-field][hidden] {
+    display: none;
+  }
+</style>
+
+<script>
+  import { each } from '../../scripts/page';
+  import { initSuggestWords } from '../scripts/suggestWords';
+
+  each<HTMLElement>('[data-suggest-words]', (el, signal) => initSuggestWords(el, signal));
+</script>

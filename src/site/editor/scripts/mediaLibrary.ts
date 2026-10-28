@@ -1,8 +1,8 @@
 /**
  * The library's timeline (components/MediaLibrary.astro; documentation/gallery/spec.md §9.9): picking in the grid
  * (photoSelection), opening one item in the details beside it, the filter, the selection bar (Add to album, Set the
- * date and Set the place go to albumActions; Delete asks first, saying which albums it leaves, and is refused while
- * a page uses it) and Add link (a linked video).
+ * date and Set the place go to albumActions; Suggest words opens the batch, scripts/suggestWords.ts; Delete asks
+ * first, saying which albums it leaves, and is refused while a page uses it) and Add link (a linked video).
  */
 import { announce, api, refused, saveStatus, startTask, swapRegions } from './client';
 import { initPhotoSelection } from './photoSelection';
@@ -74,6 +74,8 @@ export function initLibraryScreen(root: HTMLElement, signal: AbortSignal) {
       const ids = sel.picked();
       if (act === 'clear') return sel.set([]);
       if (act === 'delete') return ask(ids);
+      // the batch of suggested words (§9.8.2): the library's cells are named by their items
+      if (act === 'words') return void root.dispatchEvent(new CustomEvent('words:suggest', { detail: { items: ids.map((id) => ({ media: id, cell: id })) } }));
       root.dispatchEvent(new CustomEvent('album:selection', { detail: { what: act, ids } }));
     },
     { signal },

@@ -73,6 +73,15 @@ describe('several items at once (§9.3 Set the date, Set the place; §9.5 Accept
     expect(batchProblem([{ id: 'a', words: { place: 'x'.repeat(500) } }])).toMatch(/one line/);
     expect(batchProblem([{ id: 'a', words: { alt: 'Photo of a cat' } }])).toMatch(/image of/);
     expect(batchProblem([{ id: 'a', words: { taken: '', place: 'Goa' } }])).toBeNull();
+    expect(batchProblem([{ id: 'a', words: { caption: 'x'.repeat(201) } }])).toMatch(/caption/);
+    expect(batchProblem([{ id: 'a', words: { description: 'x'.repeat(1001) } }])).toMatch(/description/);
+    expect(batchProblem([{ id: 'a', words: { caption: 'A boat.', description: 'A boat on a river.' } }])).toBeNull();
+  });
+
+  it('sets a caption and a description too (§9.8.2 Save these words)', () => {
+    const pic = { kind: 'image' as const, file: 'a.webp', caption: 'Old' };
+    expect(withBatch(pic, { caption: 'New', description: 'A boat on a river.' })).toEqual({ kind: 'image', file: 'a.webp', caption: 'New', description: 'A boat on a river.' });
+    expect(withBatch(pic, { caption: '' })).toEqual({ kind: 'image', file: 'a.webp' });
   });
 
   it('sets or clears only the fields given; alt text never on a video, and it ends decorative', () => {

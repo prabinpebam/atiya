@@ -13,7 +13,7 @@ import { readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import sharp from 'sharp';
 import { FIXTURE, reset } from '../../scripts/editor-test-server.mjs';
-import { STAND_IN_ALT, STAND_IN_CAPTION } from '../../scripts/lib/ai-stand-in.mjs';
+import { STAND_IN_ALT, STAND_IN_CAPTION, STAND_IN_DESCRIPTION } from '../../scripts/lib/ai-stand-in.mjs';
 
 const ARTICLE = 'do-what-makes-you-proud';
 const readJson = (file: string) => JSON.parse(readFileSync(file, 'utf8'));
@@ -188,5 +188,83 @@ test.describe('editor: suggested alt text', () => {
     await expect(row).toContainText("This model can't see pictures.");
     await expect(row.getByRole('switch')).toHaveCount(0);
     expect(aiFile().services[0].pictures).toBe(false);
+  });
+});
+
+const albumSidecar = (id: string) => readJson(join(FIXTURE, 'content', 'media', 'articles', 'fixture-album', `${id}.json`)) as { description?: string; caption?: string };
+
+test.describe('editor: suggested words (§9.8.2)', () => {
+  test.describe.configure({ mode: 'serial' });
+  test.setTimeout(120_000);
+  test.beforeEach(() => reset());
+  test.afterAll(() => reset());
+
+  test('one picture: Suggest description beside its empty field in the inspector; Accept saves it as its own words', async ({ page }) => {
+    seesPictures();
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await page.goto('/_edit/albums/fixture-album/?selected=p01');
+    const box = page.locator('[data-album-selection="one"] [data-alt-kind="description"]');
+    const ask = box.getByRole('button', { name: 'Suggest description' });
+    await expect(ask).toBeVisible({ timeout: 30_000 });
+    // a caption already written offers nothing
+    await expect(page.locator('[data-album-selection="one"]').getByRole('button', { name: 'Suggest caption' })).toBeHidden();
+    await ask.click();
+    await expect(box.locator('[data-alt-offer]')).toBeVisible({ timeout: 30_000 });
+    await expect(box.locator('[data-alt-said]')).toHaveText(`Suggested description: ${STAND_IN_DESCRIPTION}`);
+    expect(albumSidecar('p01').description).toBeUndefined();
+    await box.getByRole('button', { name: 'Accept' }).click();
+    await page.keyboard.press('Tab');
+    await expect.poll(() => albumSidecar('p01').description, { timeout: 30_000 }).toBe(STAND_IN_DESCRIPTION);
+  });
+
+  test('several in an album: choose what to suggest, see how many need it, run, review, and save only what was kept', async ({ page }) => {
+    seesPictures();
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await page.goto('/_edit/albums/fixture-album/?selected=p01,p02');
+    await page.locator('[data-album-selection="many"]').getByRole('button', { name: 'Suggest words with AI…' }).click();
+    const dialog = page.getByRole('dialog', { name: 'Suggest words with AI' });
+    await expect(dialog).toBeVisible();
+    const kind = (name: string) => dialog.getByRole('checkbox', { name: new RegExp(`^${name}`) });
+    // both have a caption and alt text: nothing to ask until Description is ticked
+    await expect(dialog.locator('[data-suggest-kind="caption"] [data-field-part="hint"]')).toHaveText('All have one', { timeout: 30_000 });
+    await expect(dialog.locator('[data-suggest-kind="description"] [data-field-part="hint"]')).toHaveText('2 of 2 need one');
+    const run = dialog.locator('[data-suggest-run]');
+    await expect(run).toBeDisabled();
+    await kind('Description').check();
+    await expect(run).toHaveText('Suggest for 2 pictures');
+    await run.click();
+
+    const rows = dialog.locator('[data-suggest-media]');
+    await expect(rows).toHaveCount(2, { timeout: 30_000 });
+    await expect(dialog.locator('[data-suggest-status]')).toContainText('ready to review', { timeout: 30_000 });
+    const descriptions = dialog.locator('[data-suggest-media] textarea[name="description"]');
+    await expect(descriptions.nth(0)).toHaveValue(STAND_IN_DESCRIPTION);
+    // nothing is saved before the review
+    expect(albumSidecar('p01').description).toBeUndefined();
+    await descriptions.nth(1).fill('Oranges piled high on a market stall.');
+    await dialog.getByRole('button', { name: 'Save these words' }).click();
+    await expect(dialog).toBeHidden();
+    await expect.poll(() => [albumSidecar('p01').description, albumSidecar('p02').description], { timeout: 30_000 }).toEqual([STAND_IN_DESCRIPTION, 'Oranges piled high on a market stall.']);
+    // the words it had are untouched
+    expect(albumSidecar('p02').caption).toBe('Oranges, just in.');
+  });
+
+  test("the Media screen's selection bar opens the same batch; Discard keeps nothing", async ({ page }) => {
+    seesPictures();
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await page.goto('/_edit/media/');
+    const library = page.locator('[data-media-library]');
+    await library.locator('li[data-item="articles/fixture-album/p01"]').click({ modifiers: ['Control'] });
+    await library.locator('li[data-item="articles/fixture-album/p02"]').click({ modifiers: ['Control'] });
+    await page.getByRole('group', { name: 'Selected items' }).getByRole('button', { name: 'Suggest words' }).click();
+    const dialog = page.getByRole('dialog', { name: 'Suggest words with AI' });
+    await expect(dialog.locator('[data-suggest-count]')).toHaveText('For 2 selected items');
+    await dialog.getByRole('checkbox', { name: /^Description/ }).check();
+    await dialog.locator('[data-suggest-run]').click();
+    await expect(dialog.locator('[data-suggest-media]')).toHaveCount(2, { timeout: 30_000 });
+    await expect(dialog.getByRole('button', { name: 'Discard' })).toBeVisible({ timeout: 30_000 });
+    await dialog.getByRole('button', { name: 'Discard' }).click();
+    await expect(dialog).toBeHidden();
+    expect(albumSidecar('p01').description).toBeUndefined();
   });
 });

@@ -7,7 +7,7 @@
  */
 import { announce, api, feedbackTiming, refused, saveStatus, startTask, swapRegions } from './client';
 import { openCrop } from './crop';
-import { initAltSuggest } from './altSuggest';
+import { initAltSuggest, initFileDate } from './altSuggest';
 import { showUploadOptions, sizeOf, uploadNote } from './uploadOptions';
 import { APNG_NOTE, isApng, refusedFormat, removedNote, typeOf } from '../model/upload';
 import type { ImageMedia, VideoMedia } from '../../content/schema';
@@ -130,6 +130,7 @@ export function initMediaDetails(root: HTMLElement, signal: AbortSignal) {
   // Suggest beside an empty alt text field (gallery spec §9.6)
   initAltSuggest(form, signal, { media: () => state.id });
   initAltSuggest(form, signal, { media: () => state.id }, { field: 'caption' });
+  initFileDate(form, signal, () => state.id);
   // its words saved beside it (the library's info panel): the new version, so the focus point's save isn't refused
   document.addEventListener(
     'media:saved',

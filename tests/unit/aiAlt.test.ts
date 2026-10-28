@@ -4,7 +4,8 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import sharp from 'sharp';
 import { EMPTY_SETTINGS, keyVariable, readSettings, writeSettings, type AiService, type AiSettings } from '../../src/site/editor/server/aiSettings';
-import { altRoute, pictureToSend, suggestAlt, suggestCaption, testPictures } from '../../src/site/editor/server/aiAlt';
+import { altRoute, pictureToSend, suggestAlt, suggestCaption, suggestWords, testPictures } from '../../src/site/editor/server/aiAlt';
+import { forgetPictureMeta, keepPictureMeta, pictureMeta } from '../../src/site/editor/server/pictureMeta';
 import { aiServicesRoute, testService } from '../../src/site/editor/server/aiServices';
 import { ALT_WIDTH } from '../../src/site/editor/model/altText';
 
@@ -248,6 +249,77 @@ describe('suggested captions (gallery spec §9.8.1)', () => {
   it('is reached through the AI routes', async () => {
     const res = await aiServicesRoute(['ai', 'caption'], 'GET', new Request('http://localhost/_edit/api/ai/caption?media=shared/holiday-at-home'));
     expect(await res?.json()).toEqual({ ok: true, on: true });
+  });
+});
+
+describe('suggested words: caption, description, alt text and place at once (gallery spec §9.8.2)', () => {
+  const route = (path: string, method: string, body?: BodyInit, f: typeof fetch = standIn('{"caption":"A field.","place":""}').f) =>
+    altRoute(['ai', ...path.split('?')[0].split('/')], method, new Request(`http://localhost/_edit/api/ai/${path}`, { method, body, headers: { 'content-type': 'application/json' } }), { fetch: f });
+  const pic = () => sharp({ create: { width: 10, height: 10, channels: 3, background: '#fff' } }).png().toBuffer();
+  const metaFile = () => join(dir, '.atiya', 'picture-meta.json');
+
+  it('asks for only the kinds wanted, in one question, and sends where it was taken only, rounded, when a place is asked', async () => {
+    const s = standIn('{"caption":"A field.","place":"Kyoto, Japan."}');
+    expect(await suggestWords(await pic(), false, ['caption', 'place'], { lat: 35.01163, lon: 135.76803 }, { fetch: s.f })).toEqual({ words: { caption: 'A field.', place: 'Kyoto, Japan' }, missed: {} });
+    const sent = JSON.parse(s.sent[0]) as { messages: { content: unknown }[]; response_format?: unknown };
+    expect(String(sent.messages[0].content)).toMatch(/"caption", "place"/);
+    expect(s.sent[0]).toMatch(/latitude 35\.01, longitude 135\.77/);
+    expect(s.sent[0]).not.toMatch(/35\.0116/);
+    const t = standIn('{"caption":"A field."}');
+    await suggestWords(await pic(), false, ['caption'], { lat: 35.01163, lon: 135.76803 }, { fetch: t.f });
+    expect(t.sent[0]).not.toMatch(/latitude/);
+  });
+
+  it('keeps what meets the rules, says why the rest missed, and is none with why when nothing came', async () => {
+    const s = standIn('{"caption":"A man named John Smith.","alt":"Photo of a dog on a lawn.","place":"Unknown"}');
+    expect(await suggestWords(await pic(), false, ['caption', 'alt', 'place'], null, { fetch: s.f })).toEqual({ words: { alt: 'A dog on a lawn.' }, missed: { caption: 'identifies', place: 'unplaced' } });
+    expect(await suggestWords(await pic(), false, ['place'], null, { fetch: standIn('{"place":""}').f })).toEqual({ words: {}, missed: { place: 'unplaced' }, why: 'refused' });
+    expect(await suggestWords(await pic(), false, ['caption'], null, { fetch: standIn().f, settings: { ...settingsWith(), writer: null } })).toEqual({ words: {}, missed: {}, why: 'no-writer' });
+    expect(await suggestWords(await pic(), false, ['caption'], null, { fetch: (async () => new Response('{}', { status: 500 })) as typeof fetch })).toEqual({ words: {}, missed: {}, why: 'failed' });
+  });
+
+  it('`ai/words` offers the file\u2019s date and place kept on this computer, leaves out what\u2019s filled, and writes nothing', async () => {
+    writeSettings(settingsWith());
+    rmSync(metaFile(), { force: true });
+    expect(await (await route('words?media=shared/holiday-at-home', 'GET'))!.json()).toEqual({ ok: true, on: true, located: false });
+    expect((await aiServicesRoute(['ai', 'words'], 'GET', new Request('http://localhost/_edit/api/ai/words?media=shared/holiday-at-home')))?.status).toBe(200);
+    keepPictureMeta('shared/holiday-at-home', { taken: '2026-05-01', location: { lat: 24.8, lon: 93.94 } }, metaFile());
+    expect(await (await route('words?media=shared/holiday-at-home', 'GET'))!.json()).toEqual({ ok: true, on: true, taken: '2026-05-01', located: true });
+    expect((await route('words?media=shared/nothing', 'GET'))!.status).toBe(404);
+    const before = files(dir).filter((f) => !f.includes('.atiya'));
+    const reply = await (await route('words', 'POST', JSON.stringify({ media: 'shared/holiday-at-home', want: ['caption', 'place', 'nonsense'], onlyEmpty: true })))!.json();
+    expect(reply).toEqual({ ok: true, words: { caption: 'A field.' }, missed: { place: 'unplaced' }, taken: '2026-05-01' });
+    expect(files(dir).filter((f) => !f.includes('.atiya'))).toEqual(before);
+    expect((await route('words', 'POST', JSON.stringify({ media: 'shared/holiday-at-home' })))!.status).toBe(400);
+    writeSettings(settingsWith({ privatePages: false }));
+    expect(await (await route('words', 'POST', JSON.stringify({ media: 'articles/secret/kept', want: ['caption'] })))!.json()).toEqual({ ok: true, words: {}, missed: {}, why: 'private' });
+    forgetPictureMeta('shared/holiday-at-home', metaFile());
+    expect(pictureMeta('shared/holiday-at-home', metaFile())).toBeNull();
+  });
+
+  it('`ai/words` gives a video only its file\u2019s date, never sending it', async () => {
+    writeFileSync(join(dir, 'content', 'media', 'shared', 'clip.json'), JSON.stringify({ kind: 'video', file: 'clip.mp4' }));
+    keepPictureMeta('shared/clip', { taken: '2026-04-02' }, metaFile());
+    const s = standIn();
+    expect(await (await route('words', 'POST', JSON.stringify({ media: 'shared/clip', want: ['caption'], onlyEmpty: true }), s.f))!.json()).toEqual({ ok: true, words: {}, missed: {}, taken: '2026-04-02' });
+    expect(s.sent).toHaveLength(0);
+    forgetPictureMeta('shared/clip', metaFile());
+    rmSync(join(dir, 'content', 'media', 'shared', 'clip.json'));
+  });
+
+  it('`ai/words/needs` says what each item lacks: the date only where the file kept one, the writer\u2019s words only where it can see', async () => {
+    writeFileSync(join(dir, 'content', 'media', 'shared', 'clip.json'), JSON.stringify({ kind: 'video', file: 'clip.mp4' }));
+    keepPictureMeta('shared/holiday-at-home', { taken: '2026-05-01' }, metaFile());
+    const needs = async () => (await route('words/needs', 'POST', JSON.stringify({ media: ['shared/holiday-at-home', 'shared/clip', 'articles/secret/kept', 'shared/nothing'] })))!.json();
+    writeSettings(settingsWith());
+    expect(await needs()).toEqual({ ok: true, on: true, lacks: { 'shared/holiday-at-home': ['caption', 'description', 'alt', 'place', 'taken'], 'shared/clip': [], 'articles/secret/kept': ['caption', 'description', 'alt', 'place'] } });
+    writeSettings(settingsWith({ privatePages: false }));
+    expect((await needs()).lacks['articles/secret/kept']).toEqual([]);
+    writeSettings({ ...settingsWith(), writer: null });
+    expect(await needs()).toEqual({ ok: true, on: false, why: 'no-writer', lacks: { 'shared/holiday-at-home': ['taken'], 'shared/clip': [], 'articles/secret/kept': [] } });
+    expect((await route('words/needs', 'POST', JSON.stringify({ media: 'x' })))!.status).toBe(400);
+    forgetPictureMeta('shared/holiday-at-home', metaFile());
+    rmSync(join(dir, 'content', 'media', 'shared', 'clip.json'));
   });
 });
 

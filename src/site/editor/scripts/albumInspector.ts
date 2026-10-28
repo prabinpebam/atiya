@@ -102,6 +102,15 @@ export function initAlbumInspector(root: HTMLElement, signal: AbortSignal) {
     (e) => {
       const view = (e.target as Element).closest<HTMLElement>('[data-album-view]');
       if (view) root.dispatchEvent(new CustomEvent('album:open-item', { detail: { id: view.dataset.albumView } }));
+      // the batch of suggested words (§9.8.2): the selected items that are pictures or videos, by their grid cells
+      if ((e.target as Element).closest('[data-suggest-words-open]')) {
+        const all = album()?.items ?? [];
+        const items = ids.flatMap((id) => {
+          const it = all.find((i) => i.id === id);
+          return it && 'media' in it ? [{ media: it.media, cell: id }] : [];
+        });
+        if (items.length) root.dispatchEvent(new CustomEvent('words:suggest', { detail: { items } }));
+      }
     },
     { signal },
   );

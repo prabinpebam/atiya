@@ -3,7 +3,8 @@
  * The library (documentation/gallery/spec.md §9.9): every picture, video file and linked video on one timeline,
  * by the month taken (newest first, those without a date by the month added), in the same grid as an album's (the
  * kit's PhotoGrid: click, Shift, Ctrl, the keys). A filter narrows it; a selection bar acts on what's chosen: Add
- * to album, Set the date, Set the place, Delete (which first names the albums it leaves, and is refused while a
+ * to album, Set the date, Set the place, Suggest words (with AI, reviewed before saving: SuggestWords in the page's
+ * dialog), Delete (which first names the albums it leaves, and is refused while a
  * page uses it). Add link makes a linked video. The page puts the open item's details and the bulk dialogs in its
  * slot; scripts/mediaLibrary.ts selects, opens and deletes.
  * @tier editor
@@ -56,6 +57,7 @@ const shown = `${cells.length} ${cells.length === 1 ? 'item' : 'items'}${filter 
     <Button size="sm" variant="secondary" icon="collection" data-library-act="album">Add to album</Button>
     <Button size="sm" variant="secondary" icon="calendar" data-library-act="date">Set the date</Button>
     <Button size="sm" variant="secondary" icon="location" data-library-act="place">Set the place</Button>
+    <Button size="sm" variant="secondary" icon="sparkles" data-library-act="words">Suggest words</Button>
     <Button size="sm" variant="secondary" icon="delete" data-library-act="delete">Delete</Button>
     <Button size="sm" variant="quiet" icon="close" data-library-act="clear">Clear selection</Button>
   </SelectionBar>

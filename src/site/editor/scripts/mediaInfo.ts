@@ -7,7 +7,7 @@
  */
 import { announce, api, onContentChange, refused, saveStatus, startTask, TAB } from './client';
 import { initRichFields } from './richtext';
-import { initAltSuggest } from './altSuggest';
+import { initAltSuggest, initFileDate } from './altSuggest';
 import { SaveQueue } from '../model/queue';
 import { nextToReview, withWords, wordsProblem, type Words, type WordsKind } from '../model/albumViewer';
 
@@ -162,6 +162,7 @@ export function initMediaInfo(panel: HTMLElement, signal: AbortSignal) {
   );
 
   // ---------- the tools ----------
+  const fileDate = initFileDate(panel, signal, () => state.media.id);
   panel.addEventListener(
     'click',
     async (e) => {
@@ -172,6 +173,7 @@ export function initMediaInfo(panel: HTMLElement, signal: AbortSignal) {
         if (f && f.value) {
           f.value = '';
           soon();
+          fileDate.refresh();
         }
         return;
       }
@@ -215,7 +217,7 @@ export function initMediaInfo(panel: HTMLElement, signal: AbortSignal) {
     if (v !== null) apply(v.trim());
   });
   const suggester = state.kind === 'image' ? initAltSuggest(panel, signal, { media: () => state.media.id }) : null;
-  if (state.kind === 'image') initAltSuggest(panel, signal, { media: () => state.media.id }, { field: 'caption' });
+  if (state.kind === 'image') for (const field of ['caption', 'description', 'place']) initAltSuggest(panel, signal, { media: () => state.media.id }, { field });
   if (suggester && state.review && !val('alt')) {
     const asked = { media: state.media.id, alt: undefined as string | null | undefined };
     send('viewer:known', asked);

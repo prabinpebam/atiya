@@ -18,6 +18,7 @@ import MediaInfo from '../components/MediaInfo.astro';
 import MediaGrid from '../components/MediaGrid.astro';
 import ContentIssues from '../components/ContentIssues.astro';
 import AlbumList from '../components/AlbumList.astro';
+import SuggestWords from '../components/SuggestWords.astro';
 import Dialog from '../../components/compounds/Dialog.astro';
 import IconButton from '../../components/fundamentals/IconButton.astro';
 import Button from '../../components/fundamentals/Button.astro';
@@ -184,6 +185,9 @@ const json = JSON.stringify(state).replace(/</g, '\\u003c');
           <div data-region="album-viewer">
             <AlbumViewer item={viewer} review={reviewing}>{viewer && <Fragment slot="info"><MediaInfo item={viewer} review={reviewing} /></Fragment>}</AlbumViewer>
           </div>
+        </Dialog>
+        <Dialog id="suggest-words" title="Suggest words with AI" size="lg">
+          <SuggestWords />
         </Dialog>
       </div>
       <AlbumInspector slot="inspector" open={ids.length ? 'selection' : 'album'}>

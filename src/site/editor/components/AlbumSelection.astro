@@ -5,7 +5,8 @@
  * One picture or video: its kind and place in the album, its preview with View large, then its words and this
  * album's settings for it (the info slot: MediaInfo, saved as they're typed). One text card: its words, saved as
  * they're typed. Several: what they are, their thumbnails, then what they can share: the date taken and the place
- * (each picture's own words, set on all of them at once) and this album's downloads. scripts/albumInspector.ts
+ * (each picture's own words, set on all of them at once), Suggest words with AI (the batch, §9.8.2: SuggestWords
+ * in the page's dialog) and this album's downloads. scripts/albumInspector.ts
  * draws it again when the selection changes and saves what several share.
  * @tier editor
  * @a11y Named by its heading. Every field is labelled; a value the selected items don't share says so in its hint
@@ -104,6 +105,11 @@ const more = many ? many.summary.count - many.thumbs.length : 0;
             </Text>
             <TextField label="Date taken" type="date" id="album-selection-taken" name="taken" value={valueOf(many.taken)} hint={mixed(many.taken, 'date') ?? 'Leave it empty to use their files’ own dates.'} />
             <TextField label="Place" id="album-selection-place" name="place" maxlength={PLACE_MAX} value={valueOf(many.place)} hint={mixed(many.place, 'place') ?? 'Leave it empty to clear their places.'} />
+            <span class="suggest">
+              <Button variant="secondary" size="sm" icon="sparkles" data-suggest-words-open="">
+                Suggest words with AI…
+              </Button>
+            </span>
             <StatusNote live="polite" hidden data-selection-problem="" />
           </Pane>
         ) : (
@@ -150,5 +156,9 @@ const more = many ? many.summary.count - many.thumbs.length : 0;
     aspect-ratio: 1;
     border-radius: var(--c-image-radius);
     background: var(--color-bg-sunk);
+  }
+
+  .suggest {
+    justify-self: start;
   }
 </style>

@@ -12,6 +12,7 @@ import CropDialog from '../components/CropDialog.astro';
 import MediaLibrary from '../components/MediaLibrary.astro';
 import MediaInfo from '../components/MediaInfo.astro';
 import AlbumBulk from '../components/AlbumBulk.astro';
+import SuggestWords from '../components/SuggestWords.astro';
 import Dialog from '../../components/compounds/Dialog.astro';
 import Button from '../../components/fundamentals/Button.astro';
 import { libraryCells, libraryItem } from '../server/mediaLibrary';
@@ -93,6 +94,9 @@ if (loaded.ok && drawDetails && wanted && loaded.index.media.has(wanted)) {
         </Dialog>
         <Dialog id="album-place" title="Set the place" size="sm">
           <AlbumBulk kind="place" from="library" />
+        </Dialog>
+        <Dialog id="suggest-words" title="Suggest words with AI" size="lg">
+          <SuggestWords />
         </Dialog>
       </MediaLibrary>
     )

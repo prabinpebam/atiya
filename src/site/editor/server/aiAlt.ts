@@ -12,6 +12,9 @@ import { keyFor, readSettings, writeSettings, type AiService, type AiSettings } 
 import { writeOpenAI } from './aiOpenAI';
 import { ALT_SCHEMA, ALT_WAIT_MS, ALT_WIDTH, PICTURE_TEST_COLOUR, PICTURE_TEST_SCHEMA, altMessages, altOffer, cleanAlt, pictureTestMessages, seesPicture, type AltOff, type PictureMessage } from '../model/altText';
 import { CAPTION_SCHEMA, captionMessages, captionOffer, cleanCaption, type CaptionWhy } from '../model/captionText';
+import { BATCH_KINDS, cleanWords, missingWords, wantedKinds, wordsMessages, wordsSchema, type PictureWordsNow, type WordKind, type WordMiss, type WordsAnswer } from '../model/pictureWords';
+import { pictureMeta } from './pictureMeta';
+import type { PictureLocation } from '../model/exif';
 import { MAX_PICTURE_BYTES } from '../model/upload';
 import type { ImageMedia } from '../../content/schema';
 
@@ -32,15 +35,22 @@ export interface AltOptions {
   waitMs?: number;
 }
 
-/** A picture in the library: its bytes (an animation's still poster), and whether it's a private page's. Null when there's no such picture. */
-export function libraryPicture(id: string): { bytes: Buffer; isPrivate: boolean } | null {
+/** A library item's sidecar, and whether it's a private page's. Null when there's no such item. */
+function mediaDoc(id: string): { value: ImageMedia | { kind: string; taken?: string; [k: string]: unknown }; isPrivate: boolean; base: string } | null {
   if (!MEDIA_ID.test(id)) return null;
   const isPrivate = existsSync(fileOf(`/private/media/${id}.json`));
   const base = isPrivate ? '/private/media/' : '/content/media/';
   const sc = readDoc<ImageMedia>(`${base}${id}.json`);
-  if (!sc || sc.value.kind !== 'image') return null;
+  return sc ? { value: sc.value, isPrivate, base } : null;
+}
+
+/** A picture in the library: its bytes (an animation's still poster), and whether it's a private page's. Null when there's no such picture. */
+export function libraryPicture(id: string): { bytes: Buffer; isPrivate: boolean } | null {
+  const doc = mediaDoc(id);
+  if (!doc || doc.value.kind !== 'image') return null;
+  const { value, isPrivate, base } = doc as { value: ImageMedia; isPrivate: boolean; base: string };
   const folder = `${base}${id.slice(0, id.lastIndexOf('/'))}/`;
-  const bytes = (sc.value.animation ? readFile(`${folder}${sc.value.animation.poster}`) : null) ?? readFile(`${folder}${sc.value.file}`);
+  const bytes = (value.animation ? readFile(`${folder}${value.animation.poster}`) : null) ?? readFile(`${folder}${value.file}`);
   return bytes ? { bytes, isPrivate } : null;
 }
 
@@ -73,10 +83,30 @@ export async function suggestCaption(bytes: Buffer, isPrivate: boolean, o: AltOp
   return a.text !== null ? { caption: a.text } : { caption: null, why: a.why };
 }
 
-type Asked = { text: string; why?: undefined } | { text: null; why: 'failed' | 'timeout' | 'refused' | 'unreadable' };
+type Asked<T = string> = { text: T; why?: undefined } | { text: null; why: 'failed' | 'timeout' | 'refused' | 'unreadable' };
 
-/** One question about a picture: sent as {@link pictureToSend} makes it, raced against the time limit, its answer held to `clean`'s rules. */
-async function askAbout(bytes: Buffer, s: AiService, ask: { messages: (picture: string) => PictureMessage[]; schema: Record<string, unknown>; clean: (answer: string) => string | null }, o: AltOptions): Promise<Asked> {
+/** `ai/words`' answer (§9.8.2): the suggestions that meet their rules, why each other kind asked has none, and why there are none at all. */
+export interface WordsReply {
+  words: Partial<Record<WordKind, string>>;
+  missed: Partial<Record<WordKind, WordMiss>>;
+  why?: CaptionWhy;
+}
+
+/**
+ * Asks the writer for several of a picture's words in one question (§9.8.2), on the owner's asking only. Where it was
+ * taken goes with it, rounded, only when a place is asked for.
+ */
+export async function suggestWords(bytes: Buffer, isPrivate: boolean, want: readonly WordKind[], location: PictureLocation | null | undefined, o: AltOptions = {}): Promise<WordsReply> {
+  if (!want.length) return { words: {}, missed: {} };
+  const offer = captionOffer(o.settings ?? readSettings(), isPrivate);
+  if (!offer.on) return { words: {}, missed: {}, why: offer.why };
+  const a = await askAbout<WordsAnswer>(bytes, offer.service, { messages: (p) => wordsMessages(p, want, location), schema: wordsSchema(want), clean: (t) => cleanWords(t, want) }, o);
+  if (a.text === null) return { words: {}, missed: {}, why: a.why };
+  return Object.keys(a.text.words).length ? a.text : { ...a.text, why: 'refused' };
+}
+
+/** One question about a picture: sent as {@link pictureToSend} makes it, raced against the time limit, its answer held to `clean`'s rules (null: refused). */
+export async function askAbout<T = string>(bytes: Buffer, s: AiService, ask: { messages: (picture: string) => PictureMessage[]; schema: Record<string, unknown>; clean: (answer: string) => T | null }, o: AltOptions): Promise<Asked<T>> {
   const key = await keyFor(s.id);
   if (!s.local && !key) return { text: null, why: 'failed' };
   let picture: string;
@@ -89,18 +119,18 @@ async function askAbout(bytes: Buffer, s: AiService, ask: { messages: (picture: 
   const ctl = new AbortController();
   let timer: ReturnType<typeof setTimeout> | undefined;
   // the time limit stands even when the service never answers: it's raced, and the request is stopped
-  const late = new Promise<Asked>((done) => {
+  const late = new Promise<Asked<T>>((done) => {
     timer = setTimeout(() => {
       ctl.abort();
       done({ text: null, why: 'timeout' });
     }, wait);
   });
   const asked = writeOpenAI({ base: s.base, key, model: s.model, messages: ask.messages(picture), schema: ask.schema, local: s.local, signal: ctl.signal, fetch: o.fetch, startMs: wait + 1000, stallMs: wait + 1000 }).then(
-    (w): Asked => {
+    (w): Asked<T> => {
       const text = ask.clean(w.text);
       return text ? { text } : { text: null, why: 'refused' };
     },
-    (): Asked => ({ text: null, why: ctl.signal.aborted ? 'timeout' : 'failed' }),
+    (): Asked<T> => ({ text: null, why: ctl.signal.aborted ? 'timeout' : 'failed' }),
   );
   try {
     return await Promise.race([asked, late]);
@@ -136,6 +166,8 @@ export async function altRoute(parts: string[], method: string, request: Request
     writeSettings({ ...readSettings(), alt: { suggest: b.suggest } });
     return json({ ok: true, suggest: b.suggest });
   }
+  if (parts[1] === 'words' && !parts[2]) return wordsRoute(method, request, o);
+  if (parts[1] === 'words' && parts[2] === 'needs' && !parts[3] && method === 'POST') return needsRoute(request, o);
   const what = parts[1];
   if ((what !== 'alt' && what !== 'caption') || parts[2]) return null;
   if (method === 'GET') {
@@ -170,4 +202,68 @@ export async function altRoute(parts: string[], method: string, request: Request
     if (!picture) return refuse('No such picture.', 404);
   }
   return json({ ok: true, ...(await (what === 'alt' ? suggestAlt : suggestCaption)(picture.bytes, picture.isPrivate, o)) });
+}
+
+/**
+ * `ai/words` (§9.8.2): GET `?media=<id>` says whether words can be suggested for that item, its file's date when its
+ * own was cleared (`taken`) and whether its file said where it was taken (`located`); POST `{ media, want, onlyEmpty }`
+ * asks for the kinds in `want` (caption, description, alt, place), with `onlyEmpty` leaving out those it already has.
+ * Nothing is saved: the owner saves what he keeps.
+ */
+async function wordsRoute(method: string, request: Request, o: AltOptions): Promise<Response | null> {
+  if (method === 'GET') {
+    const media = new URL(request.url).searchParams.get('media') ?? '';
+    const doc = mediaDoc(media);
+    if (!doc) return refuse('No such picture.', 404);
+    const meta = pictureMeta(media);
+    // the file's own date, whatever the sidecar says: the screen offers it while its Date taken is empty
+    const taken = meta?.taken;
+    const offer = captionOffer(o.settings ?? readSettings(), doc.isPrivate);
+    const on = doc.value.kind === 'image' && offer.on;
+    return json({ ok: true, on, ...(on ? {} : { why: offer.on ? 'unreadable' : offer.why }), ...(taken ? { taken } : {}), located: !!meta?.location });
+  }
+  if (method !== 'POST') return null;
+  const b = (await request.json().catch(() => null)) as { media?: unknown; want?: unknown; onlyEmpty?: unknown } | null;
+  if (typeof b?.media !== 'string') return refuse('Name the picture.');
+  if (!Array.isArray(b.want)) return refuse('Say which words to suggest.');
+  const doc = mediaDoc(b.media);
+  if (!doc) return refuse('No such picture.', 404);
+  const picture = libraryPicture(b.media);
+  const has = (k: WordKind) => !!String((doc.value as Record<string, unknown>)[k] ?? '').trim() || (k === 'alt' && !!(doc.value as ImageMedia).decorative);
+  const want = wantedKinds(b.want).filter((k) => !(b.onlyEmpty === true && has(k)));
+  const meta = pictureMeta(b.media);
+  const taken = !String(doc.value.taken ?? '').trim() && meta?.taken ? meta.taken : undefined;
+  // a video or a linked video is never sent: it gets only its file's date
+  const reply = picture ? await suggestWords(picture.bytes, picture.isPrivate, want, meta?.location, o) : { words: {}, missed: {} };
+  return json({ ok: true, ...reply, ...(taken ? { taken } : {}) });
+}
+
+/**
+ * `ai/words/needs` (§9.8.2): POST `{ media: [ids] }` says, for a batch, whether the writer can be asked and what each
+ * item lacks (`lacks`: the file's date only where this computer kept one). Reads only.
+ */
+async function needsRoute(request: Request, o: AltOptions): Promise<Response> {
+  const b = (await request.json().catch(() => null)) as { media?: unknown } | null;
+  if (!Array.isArray(b?.media) || !b.media.every((m) => typeof m === 'string')) return refuse('Name the pictures.');
+  const docs = (b.media as string[]).flatMap((id) => {
+    const d = mediaDoc(id);
+    return d ? [{ id, d }] : [];
+  });
+  const settings = o.settings ?? readSettings();
+  const offers = docs.filter((x) => x.d.value.kind === 'image').map((x) => captionOffer(settings, x.d.isPrivate));
+  const on = offers.some((x) => x.on);
+  const why = on ? undefined : (offers.map((x) => (x.on ? undefined : x.why)).find(Boolean) ?? 'unreadable');
+  const lacks = Object.fromEntries(
+    docs.map(({ id, d }) => {
+      const v = d.value as Record<string, unknown>;
+      const s = (k: string) => (typeof v[k] === 'string' ? (v[k] as string) : undefined);
+      // the date counts as missing only where there's a file's date to fill it with
+      const taken = s('taken') || (pictureMeta(id)?.taken ? undefined : 'none');
+      const now: PictureWordsNow = { kind: d.value.kind, caption: s('caption'), description: s('description'), alt: s('alt'), decorative: v.decorative === true, place: s('place'), taken };
+      // where the writer can't see it (off, or a private page's picture it isn't allowed), only the date can come
+      const sees = now.kind === 'image' && captionOffer(settings, d.isPrivate).on;
+      return [id, missingWords(now, BATCH_KINDS).filter((k) => k === 'taken' || sees)];
+    }),
+  );
+  return json({ ok: true, on, ...(why ? { why } : {}), lacks });
 }

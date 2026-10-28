@@ -1,0 +1,16 @@
+---
+import Example from '../../library/Example.astro';
+import SuggestWords from '../components/SuggestWords.astro';
+---
+
+<Example title="Several pictures" description="What to suggest for twelve selected items, with how many lack each: only the words they don't have yet are asked for.">
+  <SuggestWords of={12} needs={{ caption: 9, description: 12, alt: 4, place: 7, taken: 3 }} />
+</Example>
+
+<Example title="One picture" description="A single selected picture that lacks a caption and a description.">
+  <SuggestWords of={1} chosen={['caption', 'description']} needs={{ caption: 1, description: 1 }} />
+</Example>
+
+<Example title="Checking" description="As it opens, before the server says what the items lack.">
+  <SuggestWords />
+</Example>

@@ -81,6 +81,7 @@ const usesTitle = library ? 'Used in' : 'Also in';
           <TextField label="Caption" name="caption" id={`${uid}-caption`} value={str('caption')} maxlength={CAPTION_MAX} optional hint={`Under it in the album and the lightbox: ${CAPTION_MAX} characters at most.`} />
           {kind === 'image' && <AltSuggestion ask words="caption" />}
           <RichField label="Description" toolsLabel="Description: formatting" inputId={`${uid}-description`} name="description" markdown={str('description')} hint="A few lines about it, shown in the lightbox: two paragraphs at most." />
+          {kind === 'image' && <AltSuggestion ask words="description" />}
           {kind !== 'video' && (
             <Fragment>
               <TextField label="Alt text" name="alt" id={`${uid}-alt`} value={str('alt')} multiline rows={3} hint={'Say what it shows to someone who can\u2019t see it, in 250 characters at most (never \u201cimage of\u201d).'} data-viewer-focus={review ? '' : undefined} />
@@ -93,8 +94,14 @@ const usesTitle = library ? 'Used in' : 'Also in';
             <Button variant="quiet" size="sm" icon="close" data-info-clear="taken">
               Clear
             </Button>
+            <span data-file-date-wrap="" hidden>
+              <Button variant="quiet" size="sm" icon="calendar" data-file-date="">
+                Use the file's date
+              </Button>
+            </span>
           </div>
           <TextField label="Place" name="place" id={`${uid}-place`} value={str('place')} maxlength={PLACE_MAX} optional hint="Where it was taken, in your words." />
+          {kind === 'image' && <AltSuggestion ask words="place" />}
           <details class="more">
             <summary>More: credit and licence</summary>
             <div class="more-fields">

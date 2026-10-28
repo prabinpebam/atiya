@@ -145,20 +145,27 @@ export function withWords<T extends Record<string, unknown>>(sidecar: T, kind: W
   return next as T;
 }
 
-/** A batch change to several items' words (§9.3 Set the date, Set the place; §9.5 Accept all): the fields it sets, `''` to clear. */
+/**
+ * A batch change to several items' words (§9.3 Set the date, Set the place; §9.5 Accept all; §9.8.2 Save these words):
+ * the fields it sets, `''` to clear.
+ */
 export interface WordsChange {
   id: string;
-  words: { taken?: string; place?: string; alt?: string };
+  words: { taken?: string; place?: string; alt?: string; caption?: string; description?: string };
 }
 
 /** Why a batch change is refused, or null (the same rules as one item's). */
 export function batchProblem(changes: readonly WordsChange[]): string | null {
   if (!changes.length) return 'Choose what to change.';
   for (const c of changes) {
-    const { taken, place, alt } = c.words;
+    const { taken, place, alt, caption, description } = c.words;
     if (taken !== undefined && taken !== '' && !DAY.test(taken)) return 'Choose a day, or clear the date.';
     if (place !== undefined && (place.trim().length > PLACE_MAX || /[\r\n]/.test(place))) return `A place is one line of at most ${PLACE_MAX} characters.`;
     if (alt !== undefined && (alt.trim().length > 250 || START.test(alt.trim()))) return 'Alt text is at most 250 characters and never starts with “image of”.';
+    if (caption !== undefined && caption.trim().length > CAPTION_MAX) return `A caption is at most ${CAPTION_MAX} characters.`;
+    const d = description?.trim() ?? '';
+    if (d && paragraphsOf(d).length > ITEM_DESCRIPTION_PARAGRAPHS) return `A description is at most ${ITEM_DESCRIPTION_PARAGRAPHS} paragraphs.`;
+    if (d && plainText(d).length > ITEM_DESCRIPTION_MAX) return `A description is at most ${ITEM_DESCRIPTION_MAX} characters.`;
   }
   return null;
 }
@@ -166,7 +173,7 @@ export function batchProblem(changes: readonly WordsChange[]): string | null {
 /** One sidecar with a batch change applied; `''` takes the field out. Alt text goes only on a picture or a linked video. */
 export function withBatch<T extends Record<string, unknown>>(sidecar: T, words: WordsChange['words']): T {
   const next: Record<string, unknown> = { ...sidecar };
-  for (const k of ['taken', 'place', 'alt'] as const) {
+  for (const k of ['taken', 'place', 'alt', 'caption', 'description'] as const) {
     const v = words[k];
     if (v === undefined || (k === 'alt' && sidecar.kind === 'video')) continue;
     if (v.trim()) next[k] = v.trim();

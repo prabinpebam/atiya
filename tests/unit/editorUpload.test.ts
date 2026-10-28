@@ -6,7 +6,7 @@
 import { describe, expect, it } from 'vitest';
 import { clock, describePicture, describeVideo, formatLabel, isVideoFile, keptAsIs, MAX_GIF_BYTES, MAX_PICTURE_BYTES, MAX_VIDEO_BYTES, mayHaveAlpha, megabytes, needsConversion, pastedName, pictureOfPaste, picturesOfPaste, pictureSizeIssue, pngName, posterTime, typeOf, videoSizeIssue, videoTypeOf } from '../../src/site/editor/model/upload';
 import { APNG_NOTE, canKeepLarge, focusPercent, isApng, joinFocus, MAX_LARGE_SIDE, MAX_SIDE, refusedFormat, removedNote, svgChoices, SVG_DRAWING_MAX_BYTES, uploadOptions } from '../../src/site/editor/model/upload';
-import { exifBlock, exifDay, takenFromTiff, takenOf } from '../../src/site/editor/model/exif';
+import { exifBlock, exifDay, locationFromTiff, locationOf, takenFromTiff, takenOf } from '../../src/site/editor/model/exif';
 import sharp from 'sharp';
 
 describe('the upload form', () => {
@@ -265,6 +265,48 @@ describe('the date taken, read at upload (gallery spec §4)', () => {
     expect(takenOf(await base.clone().webp().withExif(both).toBuffer())).toBe('2018-09-10');
     expect(takenOf(await base.clone().jpeg().withExif({ IFD0: { DateTime: '2022:05:06 07:08:09' } }).toBuffer())).toBe('2022-05-06');
     expect(takenOf(await base.clone().jpeg().toBuffer())).toBeNull();
+  });
+});
+
+/** A TIFF block with only a GPS IFD: latitude and longitude as degrees, minutes, seconds (rationals) and their refs. */
+function gpsTiff(o: { little?: boolean; lat: [number, number, number]; latRef: string; lon: [number, number, number]; lonRef: string; den?: number }): Uint8Array {
+  const little = o.little ?? true;
+  const out: number[] = [];
+  const u16 = (v: number) => (little ? out.push(v & 255, v >> 8) : out.push(v >> 8, v & 255));
+  const u32 = (v: number) => (little ? out.push(v & 255, (v >> 8) & 255, (v >> 16) & 255, v >>> 24) : out.push(v >>> 24, (v >> 16) & 255, (v >> 8) & 255, v & 255));
+  const gpsAt = 8 + 2 + 12 + 4;
+  const ratAt = gpsAt + 2 + 4 * 12 + 4;
+  const den = o.den ?? 100;
+  out.push(...(little ? [0x49, 0x49, 0x2a, 0] : [0x4d, 0x4d, 0, 0x2a]));
+  u32(8);
+  u16(1), u16(0x8825), u16(4), u32(1), u32(gpsAt), u32(0);
+  u16(4);
+  u16(1), u16(2), u32(2), out.push(o.latRef.charCodeAt(0), 0, 0, 0);
+  u16(2), u16(5), u32(3), u32(ratAt);
+  u16(3), u16(2), u32(2), out.push(o.lonRef.charCodeAt(0), 0, 0, 0);
+  u16(4), u16(5), u32(3), u32(ratAt + 24);
+  u32(0);
+  for (const v of [...o.lat, ...o.lon]) u32(Math.round(v * den)), u32(den);
+  return new Uint8Array(out);
+}
+
+describe('where a picture was taken, read at upload and kept on this computer (gallery spec §9.8.2)', () => {
+  it('reads the GPS latitude and longitude, south and west negative, in both byte orders', () => {
+    for (const little of [true, false]) {
+      expect(locationFromTiff(gpsTiff({ little, lat: [12, 58, 19.2], latRef: 'N', lon: [77, 35, 24], lonRef: 'E' })), String(little)).toEqual({ lat: 12.972, lon: 77.59 });
+      expect(locationFromTiff(gpsTiff({ little, lat: [33, 52, 4], latRef: 'S', lon: [151, 12, 36], lonRef: 'W' }))).toEqual({ lat: -33.86778, lon: -151.21 });
+    }
+    expect(locationOf(jpeg(gpsTiff({ lat: [12, 58, 19.2], latRef: 'N', lon: [77, 35, 24], lonRef: 'E' })))).toEqual({ lat: 12.972, lon: 77.59 });
+  });
+
+  it('gives none without GPS, for a camera\'s 0,0, a broken ref or rational, or broken bytes', () => {
+    expect(locationOf(jpeg(tiff({ original: '2019:12:31 23:59:59' })))).toBeNull();
+    expect(locationFromTiff(gpsTiff({ lat: [0, 0, 0], latRef: 'N', lon: [0, 0, 0], lonRef: 'E' }))).toBeNull();
+    expect(locationFromTiff(gpsTiff({ lat: [12, 0, 0], latRef: 'X', lon: [77, 0, 0], lonRef: 'E' }))).toBeNull();
+    expect(locationFromTiff(gpsTiff({ lat: [12, 0, 0], latRef: 'N', lon: [77, 0, 0], lonRef: 'E', den: 0 }))).toBeNull();
+    expect(locationFromTiff(gpsTiff({ lat: [95, 0, 0], latRef: 'N', lon: [77, 0, 0], lonRef: 'E' }))).toBeNull();
+    expect(locationOf(gpsTiff({ lat: [12, 0, 0], latRef: 'N', lon: [77, 0, 0], lonRef: 'E' }).subarray(0, 40))).toBeNull();
+    expect(locationOf(new Uint8Array(0))).toBeNull();
   });
 });
 

@@ -1,6 +1,7 @@
 /**
  * The day a picture was taken, read from its own bytes (gallery spec §4, "Read at upload"): the EXIF
- * `DateTimeOriginal`, else `DateTime`, as YYYY-MM-DD. Pure and small, for the server (before the master is
+ * `DateTimeOriginal`, else `DateTime`, as YYYY-MM-DD; and where, from its GPS (§9.8.2: kept only on this
+ * computer, never in a sidecar). Pure and small, for the server (before the master is
  * written without its metadata) and the browser (a HEIC it turns into a PNG first, which loses the EXIF).
  * It finds the EXIF block in a JPEG (APP1), a PNG (`eXIf`), a WebP (`EXIF`), a TIFF (the file itself), and
  * in a HEIC or AVIF by its "Exif" header; every offset is checked, so a broken file gives no date, never
@@ -12,8 +13,14 @@ const EXIF_HEADER = [0x45, 0x78, 0x69, 0x66, 0x00, 0x00]; // "Exif\0\0"
 const TAG_DATE_TIME = 0x0132;
 const TAG_EXIF_IFD = 0x8769;
 const TAG_DATE_TIME_ORIGINAL = 0x9003;
+const TAG_GPS_IFD = 0x8825;
+const TAG_GPS_LATITUDE_REF = 0x0001;
+const TAG_GPS_LATITUDE = 0x0002;
+const TAG_GPS_LONGITUDE_REF = 0x0003;
+const TAG_GPS_LONGITUDE = 0x0004;
 const ASCII = 2;
 const LONG = 4;
+const RATIONAL = 5;
 
 const startsWith = (b: Uint8Array, at: number, sig: readonly number[]) => at + sig.length <= b.length && sig.every((v, i) => b[at + i] === v);
 const ascii = (b: Uint8Array, at: number, n: number) => (at + n <= b.length ? String.fromCharCode(...b.subarray(at, at + n)) : '');
@@ -97,44 +104,97 @@ export function exifDay(value: string): string | null {
   return `${m[1]}-${m[2]}-${m[3]}`;
 }
 
-/** The day a TIFF block says the picture was taken: DateTimeOriginal (in the Exif IFD), else DateTime (IFD0). */
-export function takenFromTiff(t: Uint8Array): string | null {
-  if (!isTiff(t, 0)) return null;
-  const little = t[0] === 0x49;
-  const u16 = (at: number) => (at + 2 <= t.length ? (little ? t[at] | (t[at + 1] << 8) : (t[at] << 8) | t[at + 1]) : -1);
-  const u32 = (at: number) => (at + 4 <= t.length ? (little ? (t[at] | (t[at + 1] << 8) | (t[at + 2] << 16) | (t[at + 3] << 24)) >>> 0 : ((t[at] << 24) | (t[at + 1] << 16) | (t[at + 2] << 8) | t[at + 3]) >>> 0) : -1);
+/** An IFD entry: its type, count and where its value is (inline when it fits in four bytes). */
+type Entry = { type: number; count: number; value: number };
 
-  /** The entries of the IFD at `at`: tag → [type, count, the value's offset]. */
+/** Reads a TIFF block's numbers in its byte order, and its IFDs (tag → entry); every offset is checked. */
+function tiffReader(t: Uint8Array) {
+  const little = t[0] === 0x49;
+  const u16 = (at: number) => (at >= 0 && at + 2 <= t.length ? (little ? t[at] | (t[at + 1] << 8) : (t[at] << 8) | t[at + 1]) : -1);
+  const u32 = (at: number) => (at >= 0 && at + 4 <= t.length ? (little ? (t[at] | (t[at + 1] << 8) | (t[at + 2] << 16) | (t[at + 3] << 24)) >>> 0 : ((t[at] << 24) | (t[at + 1] << 16) | (t[at + 2] << 8) | t[at + 3]) >>> 0) : -1);
   const ifd = (at: number) => {
-    const entries = new Map<number, { type: number; count: number; value: number }>();
+    const entries = new Map<number, Entry>();
     const n = u16(at);
     if (n < 0 || n > 1000 || at + 2 + n * 12 > t.length) return entries;
     for (let i = 0; i < n; i += 1) {
       const e = at + 2 + i * 12;
       const type = u16(e + 2);
       const count = u32(e + 4);
-      const size = type === ASCII ? count : type === LONG ? count * 4 : 0;
+      const size = type === ASCII ? count : type === LONG ? count * 4 : type === RATIONAL ? count * 8 : 0;
       entries.set(u16(e), { type, count, value: size > 4 ? u32(e + 8) : e + 8 });
     }
     return entries;
   };
-  const text = (e: { type: number; count: number; value: number } | undefined) => {
+  /** The IFD a pointer tag in IFD0 leads to (the Exif IFD, the GPS IFD), or an empty one. */
+  const sub = (ifd0: Map<number, Entry>, ifd0At: number, tag: number) => {
+    const p = ifd0.get(tag);
+    if (p?.type !== LONG || p.count !== 1) return new Map<number, Entry>();
+    const at = u32(p.value);
+    return at >= 8 && at !== ifd0At ? ifd(at) : new Map<number, Entry>();
+  };
+  return { u16, u32, ifd, sub };
+}
+
+/** The day a TIFF block says the picture was taken: DateTimeOriginal (in the Exif IFD), else DateTime (IFD0). */
+export function takenFromTiff(t: Uint8Array): string | null {
+  if (!isTiff(t, 0)) return null;
+  const { u32, ifd, sub } = tiffReader(t);
+  const text = (e: Entry | undefined) => {
     if (!e || e.type !== ASCII || e.count < 10 || e.value < 0 || e.value + e.count > t.length) return null;
     return exifDay(ascii(t, e.value, Math.min(e.count, 32)).replace(/\0.*$/, ''));
   };
-
   const ifd0At = u32(4);
   if (ifd0At < 8) return null;
   const ifd0 = ifd(ifd0At);
-  const exifPointer = ifd0.get(TAG_EXIF_IFD);
-  if (exifPointer?.type === LONG && exifPointer.count === 1) {
-    const exifAt = u32(exifPointer.value);
-    if (exifAt >= 8 && exifAt !== ifd0At) {
-      const original = text(ifd(exifAt).get(TAG_DATE_TIME_ORIGINAL));
-      if (original) return original;
+  return text(sub(ifd0, ifd0At, TAG_EXIF_IFD).get(TAG_DATE_TIME_ORIGINAL)) ?? text(ifd0.get(TAG_DATE_TIME));
+}
+
+/** Where a picture was taken: its GPS latitude and longitude in degrees (south and west negative). */
+export interface PictureLocation {
+  lat: number;
+  lon: number;
+}
+
+/** Where a TIFF block says the picture was taken (its GPS IFD), or null: no GPS, a broken entry, or 0,0 (cameras write it when unset). */
+export function locationFromTiff(t: Uint8Array): PictureLocation | null {
+  if (!isTiff(t, 0)) return null;
+  const { u32, ifd, sub } = tiffReader(t);
+  const ifd0At = u32(4);
+  if (ifd0At < 8) return null;
+  const gps = sub(ifd(ifd0At), ifd0At, TAG_GPS_IFD);
+  const ref = (tag: number) => {
+    const e = gps.get(tag);
+    return e?.type === ASCII && e.count >= 1 ? ascii(t, e.value, 1) : '';
+  };
+  const degrees = (tag: number) => {
+    const e = gps.get(tag);
+    if (e?.type !== RATIONAL || e.count !== 3) return null;
+    let d = 0;
+    for (let i = 0; i < 3; i += 1) {
+      const num = u32(e.value + i * 8);
+      const den = u32(e.value + i * 8 + 4);
+      if (num < 0 || den <= 0) return null;
+      d += num / den / 60 ** i;
     }
+    return d;
+  };
+  const lat = degrees(TAG_GPS_LATITUDE);
+  const lon = degrees(TAG_GPS_LONGITUDE);
+  const latRef = ref(TAG_GPS_LATITUDE_REF);
+  const lonRef = ref(TAG_GPS_LONGITUDE_REF);
+  if (lat === null || lon === null || !/^[NS]$/.test(latRef) || !/^[EW]$/.test(lonRef) || lat > 90 || lon > 180 || (lat === 0 && lon === 0)) return null;
+  const round = (v: number) => Math.round(v * 1e5) / 1e5;
+  return { lat: round(latRef === 'S' ? -lat : lat), lon: round(lonRef === 'W' ? -lon : lon) };
+}
+
+/** Where a picture file was taken, from its EXIF GPS, or null when it doesn't say. */
+export function locationOf(bytes: Uint8Array): PictureLocation | null {
+  try {
+    const block = exifBlock(bytes);
+    return block ? locationFromTiff(block) : null;
+  } catch {
+    return null;
   }
-  return text(ifd0.get(TAG_DATE_TIME));
 }
 
 /** The day a picture file was taken (YYYY-MM-DD), from its EXIF, or null when it doesn't say. */

@@ -1,10 +1,11 @@
 ---
 /**
- * The suggested alt text beside an alt text field (documentation/gallery/spec.md §9.8), or the suggested caption beside a
- * caption field (§9.8.1, words="caption", on asking only): the AI writer's draft,
- * shown in the field in the muted style (its placeholder), marked Suggested, with Accept and Edit. Until one is
- * pressed the field stays empty, so a suggestion is never saved and never counts as alt text. Optionally a Suggest
- * button for a picture already uploaded. The media screens' scripts fill it (scripts/altSuggest.ts).
+ * The suggested alt text beside an alt text field (documentation/gallery/spec.md §9.8), or the suggested caption,
+ * description or place beside its field (§9.8.1, §9.8.2: words="caption", "description" or "place", on asking only):
+ * the AI writer's draft, shown in the field in the muted style (its placeholder; a description's rich field has none, so
+ * there it's a muted preview), marked Suggested, with Accept and Edit. Until one is pressed the field stays empty, so a
+ * suggestion is never saved and never counts as alt text. Optionally a Suggest button for a picture already uploaded.
+ * The media screens' scripts fill it (scripts/altSuggest.ts).
  * @tier kit
  * @a11y The suggestion is read out politely when it comes (its words, after "Suggested"), and Accept and Edit name
  * what they do; Edit puts the focus in the field. Nothing moves the focus when a suggestion arrives.
@@ -12,11 +13,12 @@
 import Tag from '../../components/fundamentals/Tag.astro';
 import Button from '../../components/fundamentals/Button.astro';
 import ActionBar from '../../components/compounds/ActionBar.astro';
+import { WORD_NOUNS, type WordKind } from '../model/pictureWords';
 
 interface Props {
-  /** What it suggests: alt text, or a caption (its labels, what it reads aloud and the field it defaults to). */
-  words?: 'alt' | 'caption';
-  /** The name of the field it belongs to (in the same form); `alt` or `caption` by default, after `words`. */
+  /** What it suggests: alt text, a caption, a description or a place (its labels, what it reads aloud and the field it defaults to). */
+  words?: WordKind;
+  /** The name of the field it belongs to (in the same form); the same as `words` by default. */
   field?: string;
   /** Shows Suggest, which asks for a suggestion while the field is empty (the details of a picture already uploaded). */
   ask?: boolean;
@@ -28,7 +30,7 @@ interface Props {
 
 const { words = 'alt', ask = false, offered = false, suggestion } = Astro.props;
 const field = Astro.props.field ?? words;
-const noun = words === 'caption' ? 'caption' : 'alt text';
+const noun = WORD_NOUNS[words].label.toLowerCase();
 ---
 
 <div class="alt-suggestion" data-alt-suggestion={field} data-alt-kind={words} data-busy-line="">
@@ -40,6 +42,7 @@ const noun = words === 'caption' ? 'caption' : 'alt text';
     )
   }
   <div class="alt-offer" data-alt-offer="" hidden={!suggestion} data-alt-text={suggestion}>
+    {words === 'description' && <p class="alt-preview" data-alt-preview="">{suggestion}</p>}
     <Tag tone="accent" size="sm" icon="sparkles">Suggested</Tag>
     <ActionBar gap="sm">
       <Button variant="secondary" size="sm" icon="check" data-alt-accept="">Accept</Button>
@@ -64,5 +67,12 @@ const noun = words === 'caption' ? 'caption' : 'alt text';
 
   .alt-offer[hidden] {
     display: none;
+  }
+
+  .alt-preview {
+    flex-basis: 100%;
+    margin: 0;
+    color: var(--color-text-muted);
+    font: var(--type-hint);
   }
 </style>

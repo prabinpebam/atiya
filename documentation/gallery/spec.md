@@ -1116,6 +1116,63 @@ How it meets the usability heuristics (agentic-craft's H1 to H10):
 
 As built: `model/captionText.ts` (the rules), `server/aiAlt.ts` (`suggestCaption`, the `caption` route), the `AltSuggestion` kit part with `words="caption"` (its story "A suggested caption"), in `MediaDetails` and `MediaInfo`. It's checked by `tests/unit/captionText.test.ts`, `aiAlt.test.ts` ("suggested captions") and the editor E2E "a caption (§9.8.1)" in `editor-alt-text.spec.ts`.
 
+#### 9.8.2 Suggested words: every field, and several pictures at once
+
+A picture has five words the reader can see: its caption, its description, its alt text, the day it was taken and the place. Captions alone weren't enough. Wherever the owner can write one of these words, he can ask for a draft, and he can ask for a whole selection at once. The date and the place's coordinates come from the file itself, not from the AI writer.
+
+**Jobs** (what the owner is trying to get done):
+
+| ID | When | He wants to | So that |
+|---|---|---|---|
+| J1 | He's just added a batch of pictures to an album | Get drafts of the words they're missing, all at once | The album is ready to publish without writing forty captions by hand |
+| J2 | He's looking at one picture and a field is empty | Get a draft for that field, where it is | He reviews rather than writes |
+| J3 | The camera or phone recorded when and where | Have the date and the place taken from the file | The facts are right, not guessed |
+| J4 | Any of these | Keep nothing he hasn't seen | The words on his site are his |
+
+**User-can statements:**
+
+- U1: Next to every empty caption, description, alt text or place field for a picture, he can ask for a draft, and accept, edit or ignore it.
+- U2: Next to an empty Date taken, he can fill it with the date the file recorded, when it recorded one.
+- U3: With several items selected (in the album editor or on the Media screen), he can choose which words to suggest, see how many lack each, run it, watch it go, stop it, and review every draft before saving them together.
+- U4: Whatever he does, a field that has words is never overwritten, and nothing is saved until he saves.
+
+**Where it appears:**
+
+- **One picture, every field (J2, J3):** the info panel (`MediaInfo`: the album inspector with one item, the album viewer, and the Media screen's timeline) has Suggest caption, Suggest description, Suggest alt text and Suggest place beside their fields, and **Use the file's date** beside an empty Date taken. A picture's details on the Media screen's list (`MediaDetails`) have its alt text, caption and Use the file's date. Each Suggest shows only while its field is empty and the writer can see this picture (§9.8.1's rules); Use the file's date shows only while the date is empty and the file had one.
+- **Several (J1):** with two or more items selected, the album inspector's "Their words" has **Suggest words with AI…**, and the Media screen's selection bar **Suggest words**. Both open the same dialog.
+
+**The batch's flow:**
+
+1. **Choose.** The dialog opens on "What to suggest": Caption, Description, Alt text, Place and Date taken (from the file), with Caption, Alt text and the date ticked. Beside each, how many of the selection lack it ("7 of 12 need one", "All have one"). When the writer can't be asked at all, its four kinds can't be ticked, and the line above says why and what to do (choose a writer, one that sees pictures, or allow private pages), and that the dates can still come from the files. The run button counts the items it will ask about, those lacking a ticked kind: "Suggest for 9 pictures" (none: it can't be pressed).
+2. **Run.** It asks the writer one picture at a time, only for the ticked words each one lacks. A progress bar and the status line say "Suggested 3 of 9". Each picture's drafts appear as they come, under its thumbnail and name, as ordinary fields he can already edit; a picture where a kind missed says why under it, in the words of §9.8.1's misses. **Stop** ends it and keeps what came. Closing the dialog stops it too and keeps the drafts: opening it again on the same selection returns to them.
+3. **Review and save.** At the end the status line says how many are ready and that nothing is saved yet. **Save these words** saves every draft left in one change (emptying a field leaves it out), through the same save as Set the date and place (§9.3), with the status line's Saving and Saved; the grid and inspector redraw. **Discard** drops them all.
+
+**What's sent and kept (privacy):**
+
+- Each picture goes as in §9.8: 960 px wide, without its file name or its metadata. Videos and linked videos are never sent; they get only their file's date.
+- Masters are written without their metadata (§4). On upload, the date taken and the coordinates the file held are kept on this computer only, in the gitignored `.atiya/picture-meta.json`, never in `content/` or a commit. Pictures uploaded before this have no such record, so they get no file date and no coordinates.
+- The coordinates go to the writer only when a place is asked for, and only rounded to two decimals (about a kilometre). From them, the place it may answer is a town or city and its region or country, never a street or a house number. Without coordinates, it answers only when the place is written in the picture or it's a landmark nobody could mistake. A guess, a street or "unknown" is refused.
+- A private album's pictures go only when the writer may see private pages.
+
+**What's asked:** one question per picture, for the kinds wanted: the caption as §9.8.1, the alt text as §9.8, the description in two to four plain sentences about what it shows and what's interesting in it (at most 400 characters), and the place as above. Never who a person is, and never an invented date, event or name.
+
+How it meets the usability heuristics:
+
+| Heuristic | How |
+|---|---|
+| H1 Visibility of system status | The counts before it starts, a progress bar and "Suggested 3 of 9" while it runs, each picture's drafts as they come, and a closing line on what's ready and that nothing is saved |
+| H2 Match with the real world | Caption, Description, Alt text, Place and Date taken: the fields' own names, and "Use the file's date" |
+| H3 User control and freedom | Stop, Discard, and closing keeps the drafts; any draft can be edited or emptied before saving |
+| H4 Consistency and standards | The same Suggest, Suggested, Accept and Edit beside every field, and one dialog from both screens |
+| H5 Error prevention | Only empty fields are asked for and filled; nothing is saved before the review; places and people refused before they're shown |
+| H6 Recognition rather than recall | Each draft sits under its picture's thumbnail and name, in the field it'll fill |
+| H7 Flexibility and efficiency | One field at a time, or a whole selection with a choice of kinds |
+| H8 Aesthetic and minimalist design | Suggest shows only where it can help; the dialog has two stages, each with its own actions |
+| H9 Help with errors | Each picture's miss names its cause and the fix; the off line says why the writer can't help and what still can come |
+| H10 Help and documentation | This section and [AI services](../editor/ai-services.md) S13 |
+
+As built: the rules in `model/pictureWords.ts` (the question, the answer's rules, the batch's counts, lines and changes), the file's date and place in `model/exif.ts` (`locationOf`) and `server/pictureMeta.ts`, the routes `ai/words` (GET what can come for one item, POST the drafts) and `ai/words/needs` (what each of a selection lacks) in `server/aiAlt.ts`, the batch's save `media-words` (`model/albumViewer.ts` `batchProblem`). The parts: `AltSuggestion` with `words="description"` and `"place"`, `MediaInfo`, `MediaDetails`, and `SuggestWords` (its story) run by `scripts/suggestWords.ts`, opened from `AlbumSelection` and `MediaLibrary`. Checked by `tests/unit/pictureWords.test.ts`, `aiAlt.test.ts` ("suggested words") and the editor E2E "suggested words (§9.8.2)" in `editor-alt-text.spec.ts`.
+
 ### 9.9 The library
 
 The Media screen becomes the library every album is made from, as a photo app's library is:

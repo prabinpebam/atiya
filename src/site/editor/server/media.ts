@@ -29,7 +29,8 @@ import { existsSync } from 'node:fs';
 import { slugify, unique } from '../model/ids';
 import { ratioLabel, type Rect } from '../model/crop';
 import { MAX_LARGE_SIDE, MAX_PICTURE_BYTES, focusPercent, joinFocus, pictureSizeIssue, refusedFormat, videoSizeIssue } from '../model/upload';
-import { takenOf } from '../model/exif';
+import { locationOf, takenOf } from '../model/exif';
+import { forgetPictureMeta, keepPictureMeta } from './pictureMeta';
 import { sanitizeSvg } from '../model/svgSanitize';
 import { videoTakenOf } from '../model/videoDate';
 import { findByFingerprint, fingerprintOf, type LibraryMatch } from './libraryIndex';
@@ -217,6 +218,9 @@ export function takenFor(bytes: Buffer, sent?: string): string | undefined {
   return day && isRealDate(day) && day <= today() ? day : undefined;
 }
 
+/** Where a picture was taken, from its own EXIF (kept only on this computer: pictureMeta.ts). */
+const locationFor = (bytes: Buffer) => locationOf(new Uint8Array(bytes.buffer, bytes.byteOffset, bytes.length)) ?? undefined;
+
 /**
  * Where a picture's interest is (gallery spec §4, D-G16): sharp's attention measure (the region with the
  * most detail, saturated colour and skin tones), once across and once down, on a small copy of it. The
@@ -358,6 +362,7 @@ export async function upload(u: Upload): Promise<Result & { id?: string; removed
     { key: sidecarKey, bytes: jsonBytes(sidecar) },
   ];
   const r = await commit({ changes, ifMatch: { [masterKey]: null, ...(posterKey ? { [posterKey]: null } : {}), [sidecarKey]: null } });
+  if (r.ok && !drawing) keepPictureMeta(`${u.owner}/${name}`, { taken: day, location: locationFor(u.file.bytes) });
   return r.ok ? { ...r, id: `${u.owner}/${name}`, ...(master.removed?.length ? { removed: master.removed } : {}) } : r;
 }
 
@@ -619,6 +624,7 @@ export async function replaceMaster(id: string, bytes: Buffer, opts: { name?: st
     ifMatch[oldPosterKey] = versionOf(readFile(oldPosterKey));
   }
   const res = await commit({ changes, ifMatch });
+  if (res.ok) keepPictureMeta(id, drawing ? {} : { taken: takenFor(bytes), location: locationFor(bytes) });
   return res.ok && master.removed?.length ? { ...res, removed: master.removed } : res;
 }
 
@@ -898,5 +904,7 @@ export function deletionOf(id: string): { ok: true; changes: Change[]; ifMatch: 
 export async function deleteMedia(id: string): Promise<Result> {
   const d = deletionOf(id);
   if (!('changes' in d)) return d;
-  return commit({ changes: d.changes, ifMatch: d.ifMatch });
+  const r = await commit({ changes: d.changes, ifMatch: d.ifMatch });
+  if (r.ok) forgetPictureMeta(id);
+  return r;
 }
