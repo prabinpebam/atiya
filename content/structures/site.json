@@ -134,22 +134,39 @@
         "view": "albums",
         "children": [
           {
-            "id": "untitled-album",
-            "kind": "item",
-            "item": {
-              "type": "album",
-              "id": "untitled-album"
-            }
-          },
-          {
             "id": "untitled-album-2",
             "kind": "item",
             "item": {
               "type": "album",
               "id": "untitled-album-2"
             }
+          },
+          {
+            "id": "untitled-album-4",
+            "kind": "item",
+            "item": {
+              "type": "album",
+              "id": "untitled-album-4"
+            }
+          },
+          {
+            "id": "untitled-album-3",
+            "kind": "item",
+            "item": {
+              "type": "album",
+              "id": "untitled-album-3"
+            }
+          },
+          {
+            "id": "untitled-album",
+            "kind": "item",
+            "item": {
+              "type": "album",
+              "id": "untitled-album"
+            }
           }
-        ]
+        ],
+        "albumOrder": "custom"
       },
       {
         "id": "side-projects",

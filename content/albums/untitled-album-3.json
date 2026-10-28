@@ -1,0 +1,116 @@
+{
+  "id": "untitled-album-3",
+  "type": "album",
+  "slug": "untitled-album-3",
+  "title": "Window and Devices",
+  "status": "published",
+  "createdAt": "2026-10-28",
+  "updatedAt": "2026-10-28",
+  "items": [
+    {
+      "id": "lettering",
+      "media": "articles/do-what-makes-you-proud/lettering"
+    },
+    {
+      "id": "mark-clay-to-stone",
+      "media": "articles/do-what-makes-you-proud/mark-clay-to-stone"
+    },
+    {
+      "id": "mark-finishes",
+      "media": "articles/do-what-makes-you-proud/mark-finishes"
+    },
+    {
+      "id": "mark-pale-stone",
+      "media": "articles/do-what-makes-you-proud/mark-pale-stone"
+    },
+    {
+      "id": "mark-sculpted-clay",
+      "media": "articles/do-what-makes-you-proud/mark-sculpted-clay"
+    },
+    {
+      "id": "origami-002",
+      "media": "articles/do-what-makes-you-proud/origami-002"
+    },
+    {
+      "id": "slide-clay",
+      "media": "articles/do-what-makes-you-proud/slide-clay"
+    },
+    {
+      "id": "slide-clay-to-stone",
+      "media": "articles/do-what-makes-you-proud/slide-clay-to-stone"
+    },
+    {
+      "id": "slide-mark-lilac",
+      "media": "articles/do-what-makes-you-proud/slide-mark-lilac"
+    },
+    {
+      "id": "slide-mark-sage",
+      "media": "articles/do-what-makes-you-proud/slide-mark-sage"
+    },
+    {
+      "id": "slide-swan-lilac",
+      "media": "articles/do-what-makes-you-proud/slide-swan-lilac"
+    },
+    {
+      "id": "slide-swan-sage",
+      "media": "articles/do-what-makes-you-proud/slide-swan-sage"
+    },
+    {
+      "id": "slide-templates",
+      "media": "articles/do-what-makes-you-proud/slide-templates"
+    },
+    {
+      "id": "tshirt",
+      "media": "articles/do-what-makes-you-proud/tshirt"
+    },
+    {
+      "id": "wd-meadow-day",
+      "media": "articles/do-what-makes-you-proud/wd-meadow-day"
+    },
+    {
+      "id": "wd-meadow-night",
+      "media": "articles/do-what-makes-you-proud/wd-meadow-night"
+    }
+  ],
+  "summary": "The branding and concepts that I developed for the Windows Design team in India.",
+  "cover": {
+    "tiles": [
+      {
+        "item": "lettering",
+        "x": 6,
+        "y": 0,
+        "w": 3,
+        "h": 2
+      },
+      {
+        "item": "mark-sculpted-clay",
+        "x": 9,
+        "y": 2,
+        "w": 3,
+        "h": 2
+      },
+      {
+        "item": "wd-meadow-day",
+        "x": 0,
+        "y": 0,
+        "w": 6,
+        "h": 4
+      },
+      {
+        "item": "slide-swan-sage",
+        "x": 9,
+        "y": 0,
+        "w": 3,
+        "h": 2
+      },
+      {
+        "item": "slide-swan-lilac",
+        "x": 6,
+        "y": 2,
+        "w": 3,
+        "h": 2
+      }
+    ]
+  },
+  "publishedAt": "2026-10-28"
+}
