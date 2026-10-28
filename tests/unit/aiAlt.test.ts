@@ -252,6 +252,69 @@ describe('suggested captions (gallery spec §9.8.1)', () => {
   });
 });
 
+describe('a writer never tested for pictures: tested when the owner first asks (ai-services.md §7.7)', () => {
+  const pic = () => sharp({ create: { width: 10, height: 10, channels: 3, background: '#fff' } }).png().toBuffer();
+  const untested = () => writeSettings(settingsWith({ pictures: undefined }));
+  const tests = (sent: string[]) => sent.filter((b) => /picture test/.test(b)).length;
+  /** A service that refuses any request with a picture in it, as a model that can't see them does. */
+  const blind = () => {
+    const sent: string[] = [];
+    const f = (async (_u: string | URL | Request, init?: RequestInit) => {
+      sent.push(String(init?.body ?? ''));
+      return new Response('{"error":{"message":"this model does not support images"}}', { status: 400 });
+    }) as typeof fetch;
+    return { f, sent };
+  };
+
+  it('asked for a caption, it runs the picture test first, keeps that the model sees pictures, then asks', async () => {
+    untested();
+    const s = standIn('{"caption":"A field."}');
+    expect(await suggestCaption(await pic(), false, { fetch: s.f })).toEqual({ caption: 'A field.' });
+    expect(tests(s.sent)).toBe(1);
+    expect(s.sent).toHaveLength(2);
+    expect(readSettings().services[0].pictures).toBe(true);
+    // tested now: the next ask goes straight to the question
+    const t = standIn('{"caption":"A field."}');
+    await suggestCaption(await pic(), false, { fetch: t.f });
+    expect(tests(t.sent)).toBe(0);
+  });
+
+  it('a model whose service refuses the picture is kept as blind, and nothing more is asked', async () => {
+    untested();
+    const s = blind();
+    expect(await suggestWords(await pic(), false, ['caption'], null, { fetch: s.f })).toEqual({ words: {}, missed: {}, why: 'blind' });
+    expect(s.sent).toHaveLength(1);
+    expect(readSettings().services[0].pictures).toBe(false);
+  });
+
+  it("a service that doesn't answer keeps no verdict: the ask fails and the next one tests again", async () => {
+    untested();
+    const down = (async () => new Response('{}', { status: 500 })) as typeof fetch;
+    expect(await suggestCaption(await pic(), false, { fetch: down })).toEqual({ caption: null, why: 'failed' });
+    expect(readSettings().services[0].pictures).toBeUndefined();
+  });
+
+  it('asks at the same time share one test', async () => {
+    untested();
+    const s = standIn('{"caption":"A field."}');
+    await Promise.all([suggestCaption(await pic(), false, { fetch: s.f }), suggestCaption(await pic(), false, { fetch: s.f }), suggestWords(await pic(), false, ['caption'], null, { fetch: s.f })]);
+    expect(tests(s.sent)).toBe(1);
+  });
+
+  it("a new picture's own alt text never goes to an untested writer; the owner's Suggest in its details does", async () => {
+    untested();
+    const s = standIn();
+    expect(await suggestAlt(await pic(), false, { fetch: s.f })).toEqual({ alt: null, why: 'blind' });
+    expect(s.sent).toHaveLength(0);
+    const route = (path: string) => altRoute(['ai', 'alt'], 'GET', new Request(`http://localhost/_edit/api/ai/${path}`));
+    expect(await (await route('alt?owner=shared'))!.json()).toEqual({ ok: true, on: false, why: 'blind' });
+    expect(await (await route('alt?media=shared/holiday-at-home'))!.json()).toEqual({ ok: true, on: true });
+    const asked = await altRoute(['ai', 'alt'], 'POST', new Request('http://localhost/_edit/api/ai/alt', { method: 'POST', body: JSON.stringify({ media: 'shared/holiday-at-home' }), headers: { 'content-type': 'application/json' } }), { fetch: s.f });
+    expect(await asked!.json()).toEqual({ ok: true, alt: 'A green field under a pale sky.' });
+    expect(tests(s.sent)).toBe(1);
+  });
+});
+
 describe('suggested words: caption, description, alt text and place at once (gallery spec §9.8.2)', () => {
   const route = (path: string, method: string, body?: BodyInit, f: typeof fetch = standIn('{"caption":"A field.","place":""}').f) =>
     altRoute(['ai', ...path.split('?')[0].split('/')], method, new Request(`http://localhost/_edit/api/ai/${path}`, { method, body, headers: { 'content-type': 'application/json' } }), { fetch: f });

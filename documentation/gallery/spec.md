@@ -1140,6 +1140,8 @@ A picture has five words the reader can see: its caption, its description, its a
 
 - **One picture, every field (J2, J3):** the info panel (`MediaInfo`: the album inspector with one item, the album viewer, and the Media screen's timeline) has Suggest caption, Suggest description, Suggest alt text and Suggest place beside their fields, and **Use the file's date** beside an empty Date taken. A picture's details on the Media screen's list (`MediaDetails`) have its alt text, caption and Use the file's date. Each Suggest shows only while its field is empty and the writer can see this picture (§9.8.1's rules); Use the file's date shows only while the date is empty and the file had one.
 - **Several (J1):** with two or more items selected, the album inspector's "Their words" has **Suggest words with AI…**, and the Media screen's selection bar **Suggest words**. Both open the same dialog.
+- **One picture, all its words at once (J2):** the info panel in the album inspector and on the Media screen (`MediaInfo`, scope `inspector` or `library`) starts "Its words" with **Suggest words with AI…**, which opens the same dialog for that one picture ("For 1 selected item"), so its caption, description, alt text, place and date can be asked for together without selecting a second.
+- **A writer not yet tested for pictures** (one added before the Pictures check, or never Tested): every Suggest the owner presses is still offered, and the first one runs the picture test on the way (ai-services §7.7). Only a model found blind hides them. A new picture's own alt text, which isn't asked for, still waits for a tested writer.
 
 **The batch's flow:**
 

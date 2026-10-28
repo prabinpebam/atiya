@@ -137,11 +137,15 @@ export const suggestsAlt = (s: Pick<AiSettings, 'alt'>): boolean => s.alt?.sugge
 /** Why nothing is suggested: no writer, its model can't see pictures (or isn't tested), the switch is off, or the picture is a private page's and the writer mayn't get those. */
 export type AltOff = 'no-writer' | 'blind' | 'off' | 'private';
 
-/** Whether a suggestion may be asked for a picture (§9.6): the writer, when its model sees pictures and the switch is on. */
-export function altOffer(s: Pick<AiSettings, 'services' | 'writer' | 'alt'>, isPrivate: boolean): { on: true; service: AiService } | { on: false; why: AltOff } {
+/**
+ * Whether a suggestion may be asked for a picture (§9.6): the writer, when its model sees pictures and the switch is on.
+ * `asked` (the owner pressed Suggest): a writer whose picture input was never tested counts too, and is tested on the
+ * way (`server/aiAlt.ts` `seesPictures`); nothing is ever sent on its own to an untested one.
+ */
+export function altOffer(s: Pick<AiSettings, 'services' | 'writer' | 'alt'>, isPrivate: boolean, asked = false): { on: true; service: AiService } | { on: false; why: AltOff } {
   const service = s.services.find((x) => x.id === s.writer);
   if (!service) return { on: false, why: 'no-writer' };
-  if (service.pictures !== true) return { on: false, why: 'blind' };
+  if (service.pictures === false || (service.pictures !== true && !asked)) return { on: false, why: 'blind' };
   if (!suggestsAlt(s)) return { on: false, why: 'off' };
   if (isPrivate && !service.privatePages) return { on: false, why: 'private' };
   return { on: true, service };

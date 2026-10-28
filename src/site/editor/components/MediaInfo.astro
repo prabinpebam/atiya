@@ -1,8 +1,9 @@
 ---
 /**
  * The viewer's info panel (documentation/gallery/spec.md §9.5): an item's words, saved to its library item's
- * sidecar as they're typed (§4: a picture's words are the picture's, the same in every album and page): the
- * caption, the description (short rich text), the alt text with Suggest, the day it was taken and the place; for a
+ * sidecar as they're typed (§4: a picture's words are the picture's, the same in every album and page): docked in
+ * the album's inspector or the library, a picture's Suggest words with AI… first (§9.8.2: the batch dialog, for this
+ * one picture), then the caption, the description (short rich text), the alt text with Suggest, the day it was taken and the place; for a
  * video file or a linked video its title; credit and licence under More. Then what's this album's own: Downloads,
  * and a video file's Play by itself and Loop, saved with the album. Then the picture's tools (Find the focus, Make
  * it standard), where else it's used, and its file's facts. A text card's words are the album's, edited in the
@@ -77,6 +78,15 @@ const usesTitle = library ? 'Used in' : 'Also in';
     media && kind && (
       <Fragment>
         <Group {...group('words', 'Its words')}>
+          {
+            kind === 'image' && (docked || library) && (
+              <span class="ask-all">
+                <Button variant="secondary" size="sm" icon="sparkles" data-suggest-words-one={media.id} data-suggest-cell={item.id}>
+                  Suggest words with AI…
+                </Button>
+              </span>
+            )
+          }
           {kind !== 'image' && <TextField label="Title" name="title" id={`${uid}-title`} value={str('title')} maxlength={200} hint="Names the video, for everyone." />}
           <TextField label="Caption" name="caption" id={`${uid}-caption`} value={str('caption')} maxlength={CAPTION_MAX} optional hint={`Under it in the album and the lightbox: ${CAPTION_MAX} characters at most.`} />
           {kind === 'image' && <AltSuggestion ask words="caption" />}
@@ -235,5 +245,9 @@ const usesTitle = library ? 'Used in' : 'Also in';
   .part {
     display: grid;
     gap: var(--space-2);
+  }
+
+  .ask-all {
+    justify-self: start;
   }
 </style>

@@ -45,12 +45,12 @@ describe('suggested captions: the answer', () => {
 });
 
 describe('suggested captions: when one is offered', () => {
-  it('needs a writer whose model sees pictures, but not the alt text switch', () => {
+  it('needs a writer whose model sees pictures or is yet to be tested (tested when asked), but not the alt text switch', () => {
     expect(captionOffer(settings(), false).on).toBe(true);
     expect(captionOffer(settings({}, { alt: { suggest: false } }), false).on).toBe(true);
     expect(captionOffer({ ...settings(), writer: null }, false)).toEqual({ on: false, why: 'no-writer' });
     expect(captionOffer(settings({ pictures: false }), false)).toEqual({ on: false, why: 'blind' });
-    expect(captionOffer(settings({ pictures: undefined }), false)).toEqual({ on: false, why: 'blind' });
+    expect(captionOffer(settings({ pictures: undefined }), false).on).toBe(true);
   });
 
   it("offers a private page's picture only to a writer that may get private pages", () => {

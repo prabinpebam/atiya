@@ -45,11 +45,12 @@ export function cleanCaption(answer: string): CaptionAnswer {
 }
 
 /**
- * Whether a caption may be suggested for a picture: the writer, when its model sees pictures, and for a private
- * page's picture only when it may get private pages. Unlike alt text there's no switch: it's only ever asked for.
+ * Whether a caption may be suggested for a picture: the writer, when its model sees pictures or hasn't been tested
+ * yet (it's tested when first asked), and for a private page's picture only when it may get private pages. Unlike
+ * alt text there's no switch: it's only ever asked for.
  */
 export function captionOffer(s: Pick<AiSettings, 'services' | 'writer'>, isPrivate: boolean): { on: true; service: AiService } | { on: false; why: Exclude<AltOff, 'off'> } {
-  const o = altOffer({ ...s, alt: { suggest: true } }, isPrivate);
+  const o = altOffer({ ...s, alt: { suggest: true } }, isPrivate, true);
   return o.on ? o : { on: false, why: o.why as Exclude<AltOff, 'off'> };
 }
 

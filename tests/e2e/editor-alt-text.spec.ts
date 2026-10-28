@@ -249,6 +249,24 @@ test.describe('editor: suggested words (§9.8.2)', () => {
     expect(albumSidecar('p02').caption).toBe('Oranges, just in.');
   });
 
+  test('one picture, on a writer never tested for pictures: Suggest words with AI… in its details tests it on the way, then runs the same batch', async ({ page }) => {
+    expect(aiFile().services[0].pictures).toBeUndefined();
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await page.goto('/_edit/albums/fixture-album/?selected=p01');
+    await page.locator('[data-album-selection="one"]').getByRole('button', { name: 'Suggest words with AI…' }).click();
+    const dialog = page.getByRole('dialog', { name: 'Suggest words with AI' });
+    await expect(dialog.locator('[data-suggest-count]')).toHaveText('For 1 selected item');
+    await dialog.getByRole('checkbox', { name: /^Description/ }).check();
+    const run = dialog.locator('[data-suggest-run]');
+    await expect(run).toHaveText('Suggest for 1 picture');
+    await run.click();
+    await expect(dialog.locator('[data-suggest-media] textarea[name="description"]')).toHaveValue(STAND_IN_DESCRIPTION, { timeout: 30_000 });
+    expect(aiFile().services[0].pictures).toBe(true);
+    await dialog.getByRole('button', { name: 'Save these words' }).click();
+    await expect(dialog).toBeHidden();
+    await expect.poll(() => albumSidecar('p01').description, { timeout: 30_000 }).toBe(STAND_IN_DESCRIPTION);
+  });
+
   test("the Media screen's selection bar opens the same batch; Discard keeps nothing", async ({ page }) => {
     seesPictures();
     await page.setViewportSize({ width: 1440, height: 900 });

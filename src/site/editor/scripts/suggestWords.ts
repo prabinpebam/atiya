@@ -1,7 +1,7 @@
 /**
- * Suggested words for several pictures (components/SuggestWords.astro; documentation/gallery/spec.md §9.8.2). The
+ * Suggested words for several pictures, or one (components/SuggestWords.astro; documentation/gallery/spec.md §9.8.2). The
  * album inspector and the library's selection bar send `words:suggest` with the items chosen (each by its library
- * item and its grid cell); this asks what they lack, lets the owner choose what to suggest, asks the AI writer one
+ * item and its grid cell), and a picture's own Suggest words with AI… (MediaInfo) opens it for that one; this asks what they lack, lets the owner choose what to suggest, asks the AI writer one
  * picture at a time (Stop keeps what came), and shows every draft to change or empty before Save these words saves
  * them all in one change. Closing the dialog keeps the drafts: opening it again for the same items shows them.
  */
@@ -231,6 +231,15 @@ export function initSuggestWords(el: HTMLElement, signal: AbortSignal) {
   };
 
   root.addEventListener('words:suggest', (e) => void open((e as CustomEvent<{ items: Item[] }>).detail.items), { signal });
+  // one picture's own Suggest words with AI… (MediaInfo, in the inspector or beside the library, which may sit outside the root)
+  document.addEventListener(
+    'click',
+    (e) => {
+      const one = (e.target as Element).closest<HTMLElement>('[data-suggest-words-one]');
+      if (one?.dataset.suggestWordsOne) void open([{ media: one.dataset.suggestWordsOne, cell: one.dataset.suggestCell || one.dataset.suggestWordsOne }]);
+    },
+    { signal },
+  );
   el.addEventListener('change', (e) => ((e.target as HTMLInputElement).name === 'kind' ? refreshRun() : undefined), { signal });
   el.addEventListener(
     'click',

@@ -97,6 +97,9 @@ describe('suggested alt text: when it is offered', () => {
     expect(altOffer({ ...settings(), writer: null }, false)).toEqual({ on: false, why: 'no-writer' });
     expect(altOffer(settings({ pictures: false }), false)).toEqual({ on: false, why: 'blind' });
     expect(altOffer(settings({ pictures: undefined }), false)).toEqual({ on: false, why: 'blind' });
+    // the owner asking: an untested writer is tested on the way; one found blind never is
+    expect(altOffer(settings({ pictures: undefined }), false, true).on).toBe(true);
+    expect(altOffer(settings({ pictures: false }), false, true)).toEqual({ on: false, why: 'blind' });
     expect(altOffer(settings({}, { alt: { suggest: false } }), false)).toEqual({ on: false, why: 'off' });
     expect(altOffer(settings({}, { alt: { suggest: true } }), false).on).toBe(true);
   });

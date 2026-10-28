@@ -3,13 +3,15 @@
  * on the AI screen, when its model accepts pictures and the switch is on, at 960 px wide and without its file
  * name, its metadata or any page's words; a private page's picture only when that service may get private pages.
  * Given up quietly after 20 seconds. Nothing is written: a suggestion is never saved (only what the owner accepts).
- * Also the AI screen's Test of picture input (§7.7) and its switch.
+ * Also the AI screen's Test of picture input (§7.7) and its switch, and the same test run on the owner's first ask
+ * when a writer was never tested (`seesPictures`).
  */
 import { existsSync } from 'node:fs';
 import { fileOf } from '../../content/source';
 import { readDoc, readFile } from './store';
 import { keyFor, readSettings, writeSettings, type AiService, type AiSettings } from './aiSettings';
-import { writeOpenAI } from './aiOpenAI';
+import { AiError, writeOpenAI } from './aiOpenAI';
+import { updateService } from '../model/aiServices';
 import { ALT_SCHEMA, ALT_WAIT_MS, ALT_WIDTH, PICTURE_TEST_COLOUR, PICTURE_TEST_SCHEMA, altMessages, altOffer, cleanAlt, pictureTestMessages, seesPicture, type AltOff, type PictureMessage } from '../model/altText';
 import { CAPTION_SCHEMA, captionMessages, captionOffer, cleanCaption, type CaptionWhy } from '../model/captionText';
 import { BATCH_KINDS, cleanWords, missingWords, wantedKinds, wordsMessages, wordsSchema, type PictureWordsNow, type WordKind, type WordMiss, type WordsAnswer } from '../model/pictureWords';
@@ -33,6 +35,8 @@ export interface AltOptions {
   fetch?: typeof fetch;
   /** How long before it's given up (20 s). */
   waitMs?: number;
+  /** The owner pressed Suggest (never set for a new picture's own suggestion): a writer never tested for pictures is tested on the way. */
+  asked?: boolean;
 }
 
 /** A library item's sidecar, and whether it's a private page's. Null when there's no such item. */
@@ -69,7 +73,7 @@ export async function pictureToSend(bytes: Buffer): Promise<string> {
 
 /** Asks the writer for a picture's alt text. Quiet: anything but a suggestion that meets the rules is none, with why. */
 export async function suggestAlt(bytes: Buffer, isPrivate: boolean, o: AltOptions = {}): Promise<AltReply> {
-  const offer = altOffer(o.settings ?? readSettings(), isPrivate);
+  const offer = altOffer(o.settings ?? readSettings(), isPrivate, o.asked);
   if (!offer.on) return { alt: null, why: offer.why };
   const a = await askAbout(bytes, offer.service, { messages: altMessages, schema: ALT_SCHEMA, clean: (t) => cleanAlt(t).alt }, o);
   return a.text !== null ? { alt: a.text } : { alt: null, why: a.why };
@@ -83,7 +87,7 @@ export async function suggestCaption(bytes: Buffer, isPrivate: boolean, o: AltOp
   return a.text !== null ? { caption: a.text } : { caption: null, why: a.why };
 }
 
-type Asked<T = string> = { text: T; why?: undefined } | { text: null; why: 'failed' | 'timeout' | 'refused' | 'unreadable' };
+type Asked<T = string> = { text: T; why?: undefined } | { text: null; why: 'failed' | 'timeout' | 'refused' | 'unreadable' | 'blind' };
 
 /** `ai/words`' answer (§9.8.2): the suggestions that meet their rules, why each other kind asked has none, and why there are none at all. */
 export interface WordsReply {
@@ -105,10 +109,15 @@ export async function suggestWords(bytes: Buffer, isPrivate: boolean, want: read
   return Object.keys(a.text.words).length ? a.text : { ...a.text, why: 'refused' };
 }
 
-/** One question about a picture: sent as {@link pictureToSend} makes it, raced against the time limit, its answer held to `clean`'s rules (null: refused). */
+/** One question about a picture: sent as {@link pictureToSend} makes it, raced against the time limit, its answer held to `clean`'s rules (null: refused). A writer never tested for pictures is tested first ({@link seesPictures}). */
 export async function askAbout<T = string>(bytes: Buffer, s: AiService, ask: { messages: (picture: string) => PictureMessage[]; schema: Record<string, unknown>; clean: (answer: string) => T | null }, o: AltOptions): Promise<Asked<T>> {
   const key = await keyFor(s.id);
   if (!s.local && !key) return { text: null, why: 'failed' };
+  if (s.pictures !== true) {
+    const sees = await seesPictures(s, o.fetch);
+    if (sees === null) return { text: null, why: 'failed' };
+    if (!sees) return { text: null, why: 'blind' };
+  }
   let picture: string;
   try {
     picture = await pictureToSend(bytes);
@@ -141,14 +150,44 @@ export async function askAbout<T = string>(bytes: Buffer, s: AiService, ask: { m
 
 /** The AI screen's Test of picture input (§7.7): a small red picture, and whether the model said red. */
 export async function testPictures(s: AiService, key: string | undefined, f?: typeof fetch): Promise<boolean> {
+  return (await picturesAnswer(s, key, f)) === true;
+}
+
+/** The picture test's answer: whether the model said red, false when its service refused the picture, null when it didn't answer (no verdict). */
+async function picturesAnswer(s: AiService, key: string | undefined, f?: typeof fetch): Promise<boolean | null> {
   try {
     const { default: sharp } = await import('sharp');
     const png = await sharp({ create: { width: 64, height: 64, channels: 3, background: PICTURE_TEST_COLOUR } }).png().toBuffer();
     const w = await writeOpenAI({ base: s.base, key, model: s.model, messages: pictureTestMessages(`data:image/png;base64,${png.toString('base64')}`), schema: PICTURE_TEST_SCHEMA, local: s.local, fetch: f, startMs: s.local ? 120_000 : 30_000 });
     return seesPicture(w.text);
-  } catch {
-    return false;
+  } catch (e) {
+    // a service that refuses a request with a picture in it (a 4xx it names no other reason for) has a model that can't see them
+    return e instanceof AiError && e.code === 'rejected' ? false : null;
   }
+}
+
+const checking = new Map<string, Promise<boolean | null>>();
+
+/**
+ * Whether a writer never tested for pictures sees them (ai-services.md §7.7), found the first time the owner asks for
+ * words: the AI screen's picture test, run once however many ask at the same time, and kept in the settings as the
+ * screen's Test keeps it. No verdict (the service didn't answer) keeps nothing, so the next ask tries again.
+ */
+export async function seesPictures(s: AiService, f?: typeof fetch): Promise<boolean | null> {
+  if (s.pictures !== undefined) return s.pictures;
+  const at = `${s.id}\n${s.model}`;
+  let running = checking.get(at);
+  if (!running) {
+    running = (async () => {
+      const sees = await picturesAnswer(s, await keyFor(s.id), f);
+      const now = readSettings();
+      // only for the same model: it may have been changed while the test ran
+      if (sees !== null && now.services.some((x) => x.id === s.id && x.model === s.model)) writeSettings(updateService(now, s.id, { pictures: sees }));
+      return sees;
+    })().finally(() => checking.delete(at));
+    checking.set(at, running);
+  }
+  return running;
 }
 
 const json = (body: unknown, status = 200) => new Response(JSON.stringify(body), { status, headers: { 'content-type': 'application/json' } });
@@ -181,11 +220,13 @@ export async function altRoute(parts: string[], method: string, request: Request
       isPrivate = pic.isPrivate;
     } else if (OWNER.test(owner)) isPrivate = ownerIsPrivate(owner);
     else return refuse('Not a folder.');
-    const offer = (what === 'alt' ? altOffer : captionOffer)(o.settings ?? readSettings(), isPrivate);
+    // asked about a picture in the library, the owner is the one asking (its details' Suggest); about a folder, it's a new picture's own suggestion
+    const offer = what === 'alt' ? altOffer(o.settings ?? readSettings(), isPrivate, !!media) : captionOffer(o.settings ?? readSettings(), isPrivate);
     return json(offer.on ? { ok: true, on: true } : { ok: true, on: false, why: offer.why });
   }
   if (method !== 'POST') return null;
   let picture: { bytes: Buffer; isPrivate: boolean } | null;
+  let asked = what === 'caption';
   if ((request.headers.get('content-type') ?? '').startsWith('multipart/form-data')) {
     const form = await request.formData().catch(() => null);
     const file = form?.get('file');
@@ -200,8 +241,9 @@ export async function altRoute(parts: string[], method: string, request: Request
     if (typeof b?.media !== 'string') return refuse('Name the picture.');
     picture = libraryPicture(b.media);
     if (!picture) return refuse('No such picture.', 404);
+    asked = true;
   }
-  return json({ ok: true, ...(await (what === 'alt' ? suggestAlt : suggestCaption)(picture.bytes, picture.isPrivate, o)) });
+  return json({ ok: true, ...(await (what === 'alt' ? suggestAlt : suggestCaption)(picture.bytes, picture.isPrivate, { ...o, asked })) });
 }
 
 /**
