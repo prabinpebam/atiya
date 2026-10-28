@@ -1118,9 +1118,13 @@ As built: `model/captionText.ts` (the rules), `server/aiAlt.ts` (`suggestCaption
 
 #### 9.8.2 Suggested words: every field, and several pictures at once
 
-A picture has five words the reader can see: its caption, its description, its alt text, the day it was taken and the place. Captions alone weren't enough. Wherever the owner can write one of these words, he can ask for a draft, and he can ask for a whole selection at once. The date and the place's coordinates come from the file itself, not from the AI writer.
+A picture has five words the reader can see: its caption, its description, its alt text, the day it was taken and the place. Wherever the owner can write one of these words, for one picture, for several or for all of an album's, he can see what's there, write it, or ask for a draft. The date and the place's coordinates come from the file itself, not from the AI writer.
 
-**Jobs** (what the owner is trying to get done):
+The first build of this section started from the one-picture field and reached several pictures only through a dialog: the owner found the gap (28 October 2026: "When multiple images are selected, I don't get the option to generate captions and descriptions and alt text which is the main scenario"). The chain below is written so the scale of each job is decided before any screen.
+
+**Promise:** P1: *A whole album's words are written in minutes, and every word on the site is one he's seen.* Its measure: from an album of new pictures to every one with a reviewed caption and alt text, in less time than reading them one by one (an assumption, not yet timed: the writer's speed per picture decides it). What breaks it: a picture he can't reach from the place he's working (one, a selection, the whole album), a field filled or overwritten without his review, or a fact (a date, a place, a person) made up.
+
+**Jobs** (what the owner is trying to get done; all serve P1):
 
 | ID | When | He wants to | So that |
 |---|---|---|---|
@@ -1128,18 +1132,49 @@ A picture has five words the reader can see: its caption, its description, its a
 | J2 | He's looking at one picture and a field is empty | Get a draft for that field, where it is | He reviews rather than writes |
 | J3 | The camera or phone recorded when and where | Have the date and the place taken from the file | The facts are right, not guessed |
 | J4 | Any of these | Keep nothing he hasn't seen | The words on his site are his |
+| J5 | Several pictures belong together (one day, one place, one event) | See what they share and set it on all of them in one go | He writes a shared line once, not once per picture |
 
-**User-can statements:**
+**User-can statements, at each scale** (one picture; a selection of several; every picture in an album or the library):
 
-- U1: Next to every empty caption, description, alt text or place field for a picture, he can ask for a draft, and accept, edit or ignore it.
-- U2: Next to an empty Date taken, he can fill it with the date the file recorded, when it recorded one.
-- U3: With several items selected (in the album editor or on the Media screen), he can choose which words to suggest, see how many lack each, run it, watch it go, stop it, and review every draft before saving them together.
-- U4: Whatever he does, a field that has words is never overwritten, and nothing is saved until he saves.
+| | One | Several | All |
+|---|---|---|---|
+| **See the words** (J5) | U1: every field with its value | U5: each field's shared value, or that they differ ("Multiple values") | U5, after Select all |
+| **Write the words** (J5) | U1: type in the field, saved as typed | U6: type a value once, set on every one of them when the field is left; a field left alone changes nothing | U6, after Select all |
+| **Ask for drafts** (J1, J2) | U2: a Suggest beside each empty field; U3: all its words at once | U3: one kind (from beside its field) or several kinds (the dialog), only for those that lack it | U7: for the whole album, without choosing them first |
+| **Take facts from the file** (J3) | U4: Use the file's date beside an empty date | U4: the same, for those whose date is empty | U4 through U7 |
+| **Keep control** (J4) | U8: nothing overwritten, nothing saved before he saves, Stop and Discard | U8 | U8 |
+
+- U1: For one picture, he can see and write every field, as anywhere in edit mode.
+- U2: Next to every empty caption, description, alt text or place field for a picture, he can ask for a draft, and accept, edit or ignore it.
+- U3: For any set of items (one, a selection, the album), he can choose which words to suggest, see how many lack each, run it, watch it go, stop it, and review every draft before saving them together.
+- U4: Next to an empty Date taken, he can fill it with the date the file recorded, when it recorded one (for several, each its own file's).
+- U5: With several selected, wherever he works on them, he can see each of their five words: shared, none, or "Multiple values".
+- U6: With several selected, he can set any of the five on all of them at once; when that would replace words they don't share, or give several pictures one alt text, he's asked first and can keep their own.
+- U7: In an album, he can ask for drafts for every picture in it without selecting them first.
+- U8: Whatever he does, a field that has words is never overwritten by a draft, and nothing is saved until he saves.
+
+**Task flows:**
+
+1. **A new batch (J1, U7, U3).** In the album editor's Album tab, **Suggest words…** (beside the counts, while it has items) opens the dialog for every picture and video in it. Counts per kind; tick; Suggest for N; watch; review each picture's drafts; Save these words (or Discard; Stop keeps what came). Branches: no writer, a blind writer or a private album without leave (the kinds are off, and the line says why and what to do; dates still come from the files); a picture's miss (said under it, the rest go on); closing (the drafts wait for the same set).
+2. **A group that belongs together (J5, U5, U6).** Select them (click, Shift, Ctrl; Ctrl+A or Select all for every one). The inspector (album) or the side panel (Media) shows "N selected" and their five words. Type a place once, leave the field: it's set on each, with Saving and Saved in the status line. Branches: where they had different places (or it's alt text, for more than one), a question appears under the fields first, **Set on all** or **Keep their own** (which puts the field back); a field emptied over values they don't share changes nothing, while one emptied where they all had the same clears it on each; a value too long or alt text starting "image of" is refused before saving, said under the fields; a failed save says why and changes nothing.
+3. **One kind for a group (J1, U3).** Under a shared field, **Suggest captions** (descriptions, alt text, places) or **Use their files' dates** opens the dialog with only that kind ticked, then flow 1.
+4. **One picture (J2, J3, U1, U2, U4).** Its info panel: Suggest beside the empty field, or Suggest words with AI… for all its words; Accept, Edit or type over it.
+
+**Where each statement is served** (a statement with no view is a gap):
+
+| Statement | Album editor | Media screen |
+|---|---|---|
+| U1, U2, U4 (one) | Inspector with one item (`MediaInfo`), the viewer | The side panel (`MediaInfo`); the list view's details (`MediaDetails`: alt text, caption, date) |
+| U3 | Every Suggest; the dialog (`SuggestWords`) | The same dialog |
+| U5, U6 (several) | Inspector, "Their words" (`SharedWords`) | The side panel with several picked ("N selected", `SharedWords`) |
+| U7 (all) | Album tab: Suggest words… | Show: Needs alt text (or any filter), Ctrl+A, Suggest words |
+| U8 | Every one of them | Every one of them |
 
 **Where it appears:**
 
 - **One picture, every field (J2, J3):** the info panel (`MediaInfo`: the album inspector with one item, the album viewer, and the Media screen's timeline) has Suggest caption, Suggest description, Suggest alt text and Suggest place beside their fields, and **Use the file's date** beside an empty Date taken. A picture's details on the Media screen's list (`MediaDetails`) have its alt text, caption and Use the file's date. Each Suggest shows only while its field is empty and the writer can see this picture (§9.8.1's rules); Use the file's date shows only while the date is empty and the file had one.
-- **Several (J1):** with two or more items selected, the album inspector's "Their words" shows their **Caption**, **Description** and **Alt text** (with Date taken and Place), each with its value when they all share it, or **Multiple values** (the placeholder, with the hint "Mixed: each keeps its own … until you set one here") when they differ. Under each of the three, a quiet **Suggest captions**, **Suggest descriptions** or **Suggest alt text** opens the dialog with only that kind ticked; **Suggest words with AI…** below them opens it with the usual choice. The Media screen's selection bar has **Suggest words**. All open the same dialog. A value typed into a shared field is set on every selected picture when the field is left (one alt text for all: its hint says to describe each one where you can).
+- **Several (J1, J5):** with two or more items selected, the album inspector's "Their words", and the Media screen's side panel ("N selected", their kinds and thumbnails, then "Their words"), show their **Caption**, **Description**, **Alt text**, **Date taken** and **Place**, each with its value when they all share it, or **Multiple values** (the placeholder, with the hint "Mixed: each keeps its own … until you set one here") when they differ. A video's or linked video's missing alt text doesn't make the alt text mixed (it has none to have). Under each, a quiet **Suggest captions**, **Suggest descriptions**, **Suggest alt text**, **Use their files' dates** or **Suggest places** opens the dialog with only that kind ticked; **Suggest words with AI…** below them opens it with the usual choice. The Media screen's selection bar has **Suggest words** too. All open the same dialog. A value typed into a shared field is set on every selected item when the field is left, after the question in flow 2 when it would replace words they don't share or give several pictures one alt text.
+- **The whole album (J1, U7):** the Album tab's **Suggest words…**, beside its counts, opens the dialog for every picture and video in the album.
 - **One picture, all its words at once (J2):** the info panel in the album inspector and on the Media screen (`MediaInfo`, scope `inspector` or `library`) starts "Its words" with **Suggest words with AI…**, which opens the same dialog for that one picture ("For 1 selected item"), so its caption, description, alt text, place and date can be asked for together without selecting a second.
 - **A writer not yet tested for pictures** (one added before the Pictures check, or never Tested): every Suggest the owner presses is still offered, and the first one runs the picture test on the way (ai-services §7.7). Only a model found blind hides them. A new picture's own alt text, which isn't asked for, still waits for a tested writer.
 
@@ -1173,7 +1208,9 @@ How it meets the usability heuristics:
 | H9 Help with errors | Each picture's miss names its cause and the fix; the off line says why the writer can't help and what still can come |
 | H10 Help and documentation | This section and [AI services](../editor/ai-services.md) S13 |
 
-As built: the rules in `model/pictureWords.ts` (the question, the answer's rules, the batch's counts, lines and changes), the file's date and place in `model/exif.ts` (`locationOf`) and `server/pictureMeta.ts`, the routes `ai/words` (GET what can come for one item, POST the drafts) and `ai/words/needs` (what each of a selection lacks) in `server/aiAlt.ts`, the batch's save `media-words` (`model/albumViewer.ts` `batchProblem`). The parts: `AltSuggestion` with `words="description"` and `"place"`, `MediaInfo`, `MediaDetails`, and `SuggestWords` (its story) run by `scripts/suggestWords.ts`, opened from `AlbumSelection` and `MediaLibrary`. Checked by `tests/unit/pictureWords.test.ts`, `aiAlt.test.ts` ("suggested words") and the editor E2E "suggested words (§9.8.2)" in `editor-alt-text.spec.ts`.
+As built: the rules in `model/pictureWords.ts` (the question, the answer's rules, the batch's counts, lines and changes), the file's date and place in `model/exif.ts` (`locationOf`) and `server/pictureMeta.ts`, the routes `ai/words` (GET what can come for one item, POST the drafts) and `ai/words/needs` (what each of a selection lacks) in `server/aiAlt.ts`, the batch's save `media-words` (`model/albumViewer.ts` `batchProblem`). The parts: `AltSuggestion` with `words="description"` and `"place"`, `MediaInfo`, `MediaDetails`, and `SuggestWords` (its story) run by `scripts/suggestWords.ts`, opened from `AlbumSelection`, `AlbumForm` (Suggest words…, run in `scripts/albumInspector.ts`) and `MediaLibrary`. Several items' words: what they share and what a typed value does (`sharedWords`, `sharedChange`, `libraryWords`, `pickSelected` in `model/albumInspector.ts`), drawn by the kit's `SharedWords` (limits from `model/wordLimits.ts`) and `SelectionThumbs`, in `AlbumSelection` and the Media screen's `MediaSelection` (drawn from the address's `?selected=` by `pages/media.astro`, kept by `scripts/mediaLibrary.ts`), saved and confirmed by `scripts/sharedWords.ts`. Checked by `tests/unit/pictureWords.test.ts`, `aiAlt.test.ts` ("suggested words"), `editorAlbumInspector.test.ts` and the editor E2E "suggested words (§9.8.2)" in `editor-alt-text.spec.ts`.
+
+Not in this version: a run that keeps going with the dialog closed (closing stops it; the drafts wait); drafts that survive a reload; a file's date and place for pictures uploaded before they were kept (§4); and a library filter for each missing word (only Needs alt text exists).
 
 ### 9.9 The library
 

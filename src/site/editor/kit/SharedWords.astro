@@ -1,0 +1,88 @@
+---
+/**
+ * What several library items share of their five words (documentation/gallery/spec.md §9.8.2 U5, U6): their
+ * caption, description, alt text, date taken and place, each with its value when they all have it, or "Multiple
+ * values" when they differ, and under each a quiet way to fill it for each of them (Suggest captions, Use their
+ * files' dates, Suggest places…: the batch dialog with that kind ticked), then Suggest words with AI…. A value
+ * typed here is set on every one of them when the field is left; one that would replace their different values,
+ * or give every picture the same alt text, asks first (the confirm row, shown by scripts/sharedWords.ts). Used by
+ * the album inspector (AlbumSelection) and the Media screen's side panel (MediaSelection).
+ * @tier kit
+ * @a11y Every field is labelled; a value they don't share says so in its hint (never a value that isn't theirs).
+ * The confirm row is a group named by its question, and its first button takes the focus when it appears.
+ */
+import TextField from '../../components/fundamentals/TextField.astro';
+import Button from '../../components/fundamentals/Button.astro';
+import Text from '../../components/fundamentals/Text.astro';
+import ActionBar from '../../components/compounds/ActionBar.astro';
+import type { Shared, SharedWordsView } from '../model/albumInspector';
+import { WORD_MAX } from '../model/wordLimits';
+
+interface Props {
+  /** What they share of each of the five words. */
+  values: SharedWordsView;
+  /** Starts the fields' ids, so two on one page never clash. */
+  idPrefix: string;
+}
+
+const { values, idPrefix } = Astro.props;
+const mixed = (s: Shared, what: string) => (s.state === 'mixed' ? `Mixed: each keeps its own ${what} until you set one here.` : undefined);
+const valueOf = (s: Shared) => (s.state === 'same' ? s.value : '');
+const FIELDS = [
+  { name: 'caption', label: 'Caption', what: 'caption', max: WORD_MAX.caption, multiline: false, type: 'text', suggest: 'Suggest captions', hint: 'Set here, every one gets the same caption.' },
+  { name: 'description', label: 'Description', what: 'description', max: WORD_MAX.description, multiline: true, type: 'text', suggest: 'Suggest descriptions', hint: 'Short Markdown. Set here, every one gets the same description.' },
+  { name: 'alt', label: 'Alt text', what: 'alt text', max: WORD_MAX.alt, multiline: true, type: 'text', suggest: 'Suggest alt text', hint: 'Best written for each picture: Suggest alt text drafts one each.' },
+  { name: 'taken', label: 'Date taken', what: 'date', max: undefined, multiline: false, type: 'date', suggest: 'Use their files’ dates', hint: 'Empty, each shows its file’s own date when it has one.' },
+  { name: 'place', label: 'Place', what: 'place', max: WORD_MAX.place, multiline: false, type: 'text', suggest: 'Suggest places', hint: 'Set here, every one gets the same place.' },
+] as const;
+---
+
+<div class="shared-words" data-selection-words="">
+  <Text variant="small" tone="muted">Each picture's own: set here, it changes wherever the picture is shown.</Text>
+  {
+    FIELDS.map((f) => (
+      <Fragment>
+        <TextField label={f.label} type={f.type} id={`${idPrefix}-${f.name}`} name={f.name} multiline={f.multiline} rows={f.multiline ? 2 : undefined} maxlength={f.max} value={valueOf(values[f.name])} placeholder={values[f.name].state === 'mixed' && f.type === 'text' ? 'Multiple values' : undefined} hint={mixed(values[f.name], f.what) ?? f.hint} data-shared-state={values[f.name].state} />
+        <span class="shared-words-suggest">
+          <Button variant="quiet" size="sm" icon={f.name === 'taken' ? 'calendar' : 'sparkles'} data-suggest-words-open={f.name}>
+            {f.suggest}
+          </Button>
+        </span>
+      </Fragment>
+    ))
+  }
+  <div class="shared-words-confirm" role="group" aria-labelledby={`${idPrefix}-confirm-question`} hidden data-shared-confirm="">
+    <Text variant="small" id={`${idPrefix}-confirm-question`} />
+    <ActionBar gap="sm">
+      <Button variant="primary" size="sm" data-shared-apply="">Set on all</Button>
+      <Button variant="secondary" size="sm" data-shared-keep="">Keep their own</Button>
+    </ActionBar>
+  </div>
+  <span class="shared-words-suggest">
+    <Button variant="secondary" size="sm" icon="sparkles" data-suggest-words-open="">Suggest words with AI…</Button>
+  </span>
+  <slot />
+</div>
+
+<style>
+  .shared-words {
+    display: grid;
+    gap: var(--space-4);
+  }
+
+  .shared-words-suggest {
+    justify-self: start;
+  }
+
+  .shared-words-confirm {
+    display: grid;
+    gap: var(--space-2);
+    padding: var(--space-3);
+    border-radius: var(--radius-md);
+    background: var(--color-bg-sunk);
+  }
+
+  .shared-words-confirm[hidden] {
+    display: none;
+  }
+</style>

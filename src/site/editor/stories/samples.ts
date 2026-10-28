@@ -20,7 +20,7 @@ import type { BandTile } from '../../scripts/albumBandRules';
 import type { CoverItem } from '../model/cover';
 import type { PhotoCell } from '../kit/PhotoGrid.astro';
 import type { ViewerItem } from '../model/albumViewer';
-import type { SelectionView } from '../model/albumInspector';
+import type { LibrarySelection, SelectionView, SharedWordsView } from '../model/albumInspector';
 import type { Picture } from '../../content/pictures';
 import { rowLine, type AlbumRow, type Gallery } from '../model/gallery';
 import { chartData } from '../model/highlightChart';
@@ -579,4 +579,32 @@ export const SELECTION_MIXED: SelectionView = {
   taken: { state: 'mixed' },
   place: { state: 'same', value: 'The lily pond' },
   albumDownload: false,
+};
+
+/** Several pictures' words (kit/SharedWords): one they share, ones that differ, ones none has. */
+export const SHARED_WORDS_MIXED: SharedWordsView = {
+  caption: { state: 'mixed' },
+  description: { state: 'none' },
+  alt: { state: 'mixed' },
+  taken: { state: 'same', value: '2026-05-03' },
+  place: { state: 'same', value: 'The lily pond' },
+};
+/** The same, when none of them has any words yet. */
+export const SHARED_WORDS_NONE: SharedWordsView = { caption: { state: 'none' }, description: { state: 'none' }, alt: { state: 'none' }, taken: { state: 'none' }, place: { state: 'none' } };
+
+/** Several picked on the Media screen (MediaSelection). */
+export const LIBRARY_SELECTION: LibrarySelection = {
+  count: 3,
+  words: '3 pictures',
+  media: ['samples/pond', 'samples/bridge', 'samples/workshop'],
+  thumbs: [thumbOf(pond), thumbOf(bridge), thumbOf(workshop)],
+  shared: SHARED_WORDS_MIXED,
+};
+/** More picked than are shown as thumbnails, a video among them. */
+export const LIBRARY_SELECTION_MANY: LibrarySelection = {
+  count: 11,
+  words: '10 pictures, 1 video',
+  media: ['samples/pond', 'samples/bridge', 'samples/workshop', 'samples/plaza', 'samples/tour'],
+  thumbs: [thumbOf(pond), thumbOf(bridge), thumbOf(workshop), thumbOf(plaza), thumbOf(pond), thumbOf(bridge), thumbOf(workshop), thumbOf(plaza)],
+  shared: SHARED_WORDS_NONE,
 };

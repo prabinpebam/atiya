@@ -1,15 +1,20 @@
 /**
  * The library's timeline (components/MediaLibrary.astro; documentation/gallery/spec.md §9.9): picking in the grid
- * (photoSelection), opening one item in the details beside it, the filter, the selection bar (Add to album, Set the
+ * (photoSelection), opening one item in the details beside it, or, for several, their words beside it
+ * (components/MediaSelection.astro, kept in `?selected=` and saved by scripts/sharedWords.ts), the filter, the
+ * selection bar (Add to album, Set the
  * date and Set the place go to albumActions; Suggest words opens the batch, scripts/suggestWords.ts; Delete asks
  * first, saying which albums it leaves, and is refused while a page uses it) and Add link (a linked video).
  */
 import { announce, api, refused, saveStatus, startTask, swapRegions } from './client';
 import { initPhotoSelection } from './photoSelection';
+import { initSharedWords } from './sharedWords';
 import { deleteVerdict } from '../model/library';
+import { SELECTED_PARAM, selectedParam } from '../model/albumInspector';
 
 type Uses = Record<string, { albums: string[]; articles: string[] }>;
 const DETAILS = ['media-details', 'media-info'];
+const DEBOUNCE_MS = 120;
 const many = (n: number) => `${n} ${n === 1 ? 'item' : 'items'}`;
 
 export function initLibraryScreen(root: HTMLElement, signal: AbortSignal) {
@@ -23,29 +28,63 @@ export function initLibraryScreen(root: HTMLElement, signal: AbortSignal) {
     }
   };
   let opened = new URL(location.href).searchParams.get('id');
+  // several picked are shown beside the grid with their words (§9.8.2 U5): kept in the address, so a reload shows them
+  const fromAddress = (new URL(location.href).searchParams.get(SELECTED_PARAM) ?? '').split(',').filter(Boolean);
+  let shownSeveral = fromAddress.length > 1 ? selectedParam(fromAddress) : '';
+  let timer = 0;
   const address = (change: (p: URLSearchParams) => void) => {
     const url = new URL(location.href);
     change(url.searchParams);
     return url;
   };
+  const aside = root.ownerDocument.querySelector<HTMLElement>('[data-region="media-info"]')?.closest<HTMLElement>('aside') ?? null;
+  /** Someone is typing in the side panel, or answering its question: it isn't drawn again under them. */
+  const busy = () => {
+    if (aside?.querySelector('[data-shared-confirm]:not([hidden])')) return true;
+    const a = document.activeElement;
+    return !!a && !!aside?.contains(a) && !!a.closest('input, textarea, select, [role="combobox"]');
+  };
   const open = async (id: string) => {
-    if (id === opened) return;
+    if (id === opened && !shownSeveral) return;
     opened = id;
-    const url = address((p) => p.set('id', id));
+    shownSeveral = '';
+    const url = address((p) => {
+      p.set('id', id);
+      p.delete(SELECTED_PARAM);
+    });
     history.pushState(null, '', url);
-    await swapRegions(DETAILS, url.href, () => opened !== id, { label: 'Showing its details…' });
+    await swapRegions(DETAILS, url.href, () => opened !== id || !!shownSeveral, { label: 'Showing its details…' });
+  };
+  /** Shows several picked beside the grid (or, with none left, what was open), once the picking settles. */
+  const showSeveral = (picked: string[]) => {
+    const value = picked.length > 1 ? selectedParam(picked) : '';
+    if (value === shownSeveral) return;
+    shownSeveral = value;
+    const url = address((p) => (value ? p.set(SELECTED_PARAM, value) : p.delete(SELECTED_PARAM)));
+    history.replaceState(null, '', url);
+    window.clearTimeout(timer);
+    const show = () => {
+      if (location.href !== url.href) return;
+      if (busy()) return void (timer = window.setTimeout(show, DEBOUNCE_MS * 4));
+      void swapRegions(DETAILS, location.href, () => location.href !== url.href, { quiet: true });
+    };
+    timer = window.setTimeout(show, DEBOUNCE_MS);
   };
   const sel = initPhotoSelection(root, signal, {
     change(picked) {
       if (bar) bar.hidden = picked.length === 0;
       if (count) count.textContent = `${picked.length} selected`;
       if (picked.length === 1) void open(picked[0]!);
+      else showSeveral(picked);
     },
     open: (id) => void open(id),
     remove: (ids) => ask(ids),
   });
+  // what's typed is set on the ones the panel shows, as drawn (not a pick made since)
+  const shownIds = () => (aside?.querySelector<HTMLElement>('[data-media-selection]')?.dataset.mediaIds ?? '').split(',').filter(Boolean);
+  if (aside) initSharedWords(aside, signal, { target: root, items: () => shownIds().map((id) => ({ media: id, cell: id })) });
   // a redraw of the grid (here or by the details' tools) draws it unpicked: pick again what was picked
-  const repaint = () => sel.set(sel.picked().length ? sel.picked() : opened ? [opened] : []);
+  const repaint = () => sel.set(sel.picked().length ? sel.picked() : shownSeveral ? fromAddress : opened ? [opened] : []);
   repaint();
   document.addEventListener('astro:page-load', repaint, { signal });
   const redraw = async (names: string[], url = location.href, quiet = false) => {

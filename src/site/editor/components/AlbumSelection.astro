@@ -4,11 +4,10 @@
  * selected in the album, drawn by the server from the address's `?selected=`. Nothing selected: how to select.
  * One picture or video: its kind and place in the album, its preview with View large, then its words and this
  * album's settings for it (the info slot: MediaInfo, saved as they're typed). One text card: its words, saved as
- * they're typed. Several: what they are, their thumbnails, then what they can share: the caption, description, alt
- * text, date taken and place (each picture's own words, set on all of them at once; "Multiple values" where they
- * differ), a Suggest button under each kind of words and Suggest words with AI (the batch, §9.8.2: SuggestWords
- * in the page's dialog, with that kind ticked) and this album's downloads. scripts/albumInspector.ts
- * draws it again when the selection changes and saves what several share.
+ * they're typed. Several: what they are, their thumbnails (SelectionThumbs), then their words (SharedWords: each
+ * picture's own, "Multiple values" where they differ, asking before one value replaces theirs, a Suggest under each
+ * kind and Suggest words with AI, §9.8.2) and this album's downloads. scripts/albumInspector.ts draws it again
+ * when the selection changes and saves this album's part; scripts/sharedWords.ts saves their words.
  * @tier editor
  * @a11y Named by its heading. Every field is labelled; a value the selected items don't share says so in its hint
  * (never a value that isn't theirs); a refused change is said under the fields (a polite status).
@@ -16,15 +15,15 @@
 import TextField from '../../components/fundamentals/TextField.astro';
 import Select from '../../components/fundamentals/Select.astro';
 import Button from '../../components/fundamentals/Button.astro';
-import Image from '../../components/fundamentals/Image.astro';
 import Text from '../../components/fundamentals/Text.astro';
 import Pane from '../kit/Pane.astro';
 import PictureField from '../kit/PictureField.astro';
 import SectionHead from '../kit/SectionHead.astro';
+import SelectionThumbs from '../kit/SelectionThumbs.astro';
+import SharedWords from '../kit/SharedWords.astro';
 import StatusNote from '../kit/StatusNote.astro';
-import { CAPTION_MAX, ITEM_DESCRIPTION_MAX, PLACE_MAX } from '../../content/schema';
-import { type SelectionView, type Shared } from '../model/albumInspector';
-import { ALT_MAX } from '../model/altText';
+import { ITEM_DESCRIPTION_MAX } from '../../content/schema';
+import { type SelectionView } from '../model/albumInspector';
 
 interface Props {
   /** What's selected, as the server drew it. */
@@ -35,19 +34,12 @@ const { view } = Astro.props;
 const KIND: Record<string, string> = { picture: 'Picture', animated: 'Animated picture', drawing: 'Drawing', video: 'Video file', embed: 'Linked video', text: 'Text card', missing: 'Missing item' };
 const one = view.state === 'one' ? view.item : null;
 const many = view.state === 'many' ? view : null;
-const mixed = (s: Shared, what: string) => (s.state === 'mixed' ? `Mixed: each keeps its own ${what} until you set one here.` : undefined);
-const valueOf = (s: Shared) => (s.state === 'same' ? s.value : '');
 const follow = many?.albumDownload ? 'Follow the album (allowed)' : 'Follow the album (not allowed)';
 const DOWNLOADS = [
   { value: 'follow', label: follow },
   { value: 'allow', label: 'Allow' },
   { value: 'deny', label: "Don't allow" },
 ];
-const WORDS = [
-  { name: 'caption', label: 'Caption', what: 'caption', max: CAPTION_MAX, multiline: false, suggest: 'Suggest captions', hint: 'Set here, every one gets the same caption.' },
-  { name: 'description', label: 'Description', what: 'description', max: ITEM_DESCRIPTION_MAX, multiline: true, suggest: 'Suggest descriptions', hint: 'Short Markdown. Set here, every one gets the same description.' },
-  { name: 'alt', label: 'Alt text', what: 'alt text', max: ALT_MAX, multiline: true, suggest: 'Suggest alt text', hint: 'Set here, every picture gets the same alt text: describe each one where you can.' },
-] as const;
 const download = many?.summary.download;
 const more = many ? many.summary.count - many.thumbs.length : 0;
 ---
@@ -90,48 +82,17 @@ const more = many ? many.summary.count - many.thumbs.length : 0;
         <Text variant="small" tone="muted">
           {many.summary.words}
         </Text>
-        <ul class="thumbs" aria-label="Selected items">
-          {many.thumbs.map((t) => (
-            <li>
-              <Image src={t.thumb} alt={t.alt} width={t.width} height={t.height} ratio="1/1" />
-            </li>
-          ))}
-          {more > 0 && (
-            <li class="more">
-              <Text as="span" variant="small" tone="muted">
-                +{more}
-              </Text>
-            </li>
-          )}
-        </ul>
+        <SelectionThumbs thumbs={many.thumbs} more={more} />
         <div class="groups">
         {many.summary.media.length > 0 ? (
-          <Pane name="words" title="Their words" titleId="album-selection-words" group data-selection-words="">
-            <Text variant="small" tone="muted">
-              Each picture's own: set here, it changes wherever the picture is shown.
-            </Text>
-            {WORDS.map((w) => (
-              <Fragment>
-                <TextField label={w.label} id={`album-selection-${w.name}`} name={w.name} multiline={w.multiline} rows={w.multiline ? 2 : undefined} maxlength={w.max} value={valueOf(many[w.name])} placeholder={many[w.name].state === 'mixed' ? 'Multiple values' : undefined} hint={mixed(many[w.name], w.what) ?? w.hint} />
-                <span class="suggest">
-                  <Button variant="quiet" size="sm" icon="sparkles" data-suggest-words-open={w.name}>
-                    {w.suggest}
-                  </Button>
-                </span>
-              </Fragment>
-            ))}
-            <TextField label="Date taken" type="date" id="album-selection-taken" name="taken" value={valueOf(many.taken)} hint={mixed(many.taken, 'date') ?? 'Leave it empty to use their files’ own dates.'} />
-            <TextField label="Place" id="album-selection-place" name="place" maxlength={PLACE_MAX} value={valueOf(many.place)} hint={mixed(many.place, 'place') ?? 'Leave it empty to clear their places.'} />
-            <span class="suggest">
-              <Button variant="secondary" size="sm" icon="sparkles" data-suggest-words-open="">
-                Suggest words with AI…
-              </Button>
-            </span>
-            <StatusNote live="polite" hidden data-selection-problem="" />
+          <Pane name="words" title="Their words" titleId="album-selection-words" group>
+            <SharedWords values={many} idPrefix="album-selection">
+              <StatusNote live="polite" hidden data-selection-problem="" />
+            </SharedWords>
           </Pane>
         ) : (
           <Text variant="small" tone="muted">
-            Text cards have no date or place.
+            Text cards have no caption, date or place.
           </Text>
         )}
         {download && (
@@ -156,26 +117,5 @@ const more = many ? many.summary.count - many.thumbs.length : 0;
   .groups {
     display: grid;
     gap: var(--space-5);
-  }
-
-  .thumbs {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(var(--size-avatar-md), 1fr));
-    gap: var(--space-2);
-    margin: 0;
-    padding: 0;
-    list-style: none;
-  }
-
-  .more {
-    display: grid;
-    place-items: center;
-    aspect-ratio: 1;
-    border-radius: var(--c-image-radius);
-    background: var(--color-bg-sunk);
-  }
-
-  .suggest {
-    justify-self: start;
   }
 </style>

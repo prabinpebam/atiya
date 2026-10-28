@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { parseSelected, selectedParam, selectionSummary, shared, SELECTED_MAX } from '../../src/site/editor/model/albumInspector';
+import { libraryWords, parseSelected, pickSelected, selectedParam, selectionSummary, shared, sharedChange, sharedWords, SELECTED_MAX, type ItemWords } from '../../src/site/editor/model/albumInspector';
 import type { AlbumMedia } from '../../src/site/content/album';
 import type { AlbumItem } from '../../src/site/content/schema';
 
@@ -69,4 +69,63 @@ describe('a selection’s summary', () => {
   it('names items whose library item is missing by their number', () => {
     expect(selectionSummary(album, ['i7'], lookup).words).toBe('1 item');
   });
+});
+
+describe('the Media screen’s picked items in the address', () => {
+  it('keeps only those the library knows, each once, in order', () => {
+    expect(pickSelected('b, a,zz,b', (id) => id in media)).toEqual(['b', 'a']);
+    expect(pickSelected(undefined, () => true)).toEqual([]);
+  });
+});
+
+describe('several items’ words', () => {
+  const words: Record<string, ItemWords> = {
+    a: { caption: 'Pond', alt: 'A pond', taken: '2026-05-03', place: 'Goa' },
+    b: { caption: 'Bridge', alt: 'A pond', taken: '2026-05-03', place: 'Goa' },
+    v: { kind: 'video', caption: 'Pond', taken: '2026-05-03' },
+    e: { kind: 'embed' },
+  };
+  const of = (id: string) => words[id];
+  it('what they share, what differs and what none has', () => {
+    expect(sharedWords(['a', 'b'], of)).toEqual({
+      caption: { state: 'mixed' },
+      description: { state: 'none' },
+      alt: { state: 'same', value: 'A pond' },
+      taken: { state: 'same', value: '2026-05-03' },
+      place: { state: 'same', value: 'Goa' },
+    });
+  });
+  it('a video’s or a linked video’s missing alt text doesn’t count', () => {
+    expect(sharedWords(['a', 'v', 'e'], of).alt).toEqual({ state: 'same', value: 'A pond' });
+    expect(sharedWords(['a', 'v'], of).place).toEqual({ state: 'mixed' });
+  });
+  it('an item without words has none', () => expect(sharedWords(['gone', 'e'], of).caption).toEqual({ state: 'none' }));
+});
+
+describe('a value typed for several', () => {
+  it('left empty over values that differ, or none: nothing changes', () => {
+    expect(sharedChange('caption', '', 'mixed', 3)).toEqual({ act: 'skip' });
+    expect(sharedChange('caption', '', 'none', 3)).toEqual({ act: 'skip' });
+  });
+  it('emptied where they all had the same: cleared on all', () => expect(sharedChange('caption', '', 'same', 3)).toEqual({ act: 'set' }));
+  it('over values that differ: asks first', () => {
+    const r = sharedChange('place', 'Goa', 'mixed', 4);
+    expect(r.act).toBe('ask');
+    expect(r.act === 'ask' && r.question).toBe('They have different places. Set this one on all 4?');
+  });
+  it('one alt text for several: always asks, even where none had any', () => {
+    const r = sharedChange('alt', 'A pond', 'none', 2);
+    expect(r.act).toBe('ask');
+    expect(r.act === 'ask' && r.question).toMatch(/screen reader hears the same words/);
+    expect(sharedChange('alt', '', 'mixed', 2)).toEqual({ act: 'skip' });
+  });
+  it('where none had one, or all had the same: set', () => {
+    expect(sharedChange('caption', 'Pond', 'none', 3)).toEqual({ act: 'set' });
+    expect(sharedChange('taken', '2026-05-04', 'same', 3)).toEqual({ act: 'set' });
+  });
+});
+
+describe('several library items in words', () => {
+  it('counts them by kind', () => expect(libraryWords(['a', 'b', 'v'], lookup)).toMatch(/^2 pictures, 1 video$/));
+  it('names those it can’t find by their number', () => expect(libraryWords(['gone', 'zz'], lookup)).toBe('2 items'));
 });

@@ -1,0 +1,13 @@
+---
+import Example from '../../library/Example.astro';
+import SharedWords from '../kit/SharedWords.astro';
+import { SHARED_WORDS_MIXED, SHARED_WORDS_NONE } from './samples';
+---
+
+<Example title="Some shared, some that differ" description="A value they all have is shown; one they don't share says Multiple values, and each keeps its own until one is set here. A Suggest under each kind." layout="block">
+  <SharedWords values={SHARED_WORDS_MIXED} idPrefix="story-shared-mixed" />
+</Example>
+
+<Example title="None has words yet" description="Every field empty, with how setting one here works in its hint." layout="block">
+  <SharedWords values={SHARED_WORDS_NONE} idPrefix="story-shared-none" />
+</Example>

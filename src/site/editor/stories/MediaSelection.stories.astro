@@ -1,0 +1,13 @@
+---
+import Example from '../../library/Example.astro';
+import MediaSelection from '../components/MediaSelection.astro';
+import { LIBRARY_SELECTION, LIBRARY_SELECTION_MANY } from './samples';
+---
+
+<Example title="Several pictures" description="How many and what they are, their thumbnails, then their words: shared ones shown, different ones Multiple values." layout="block">
+  <MediaSelection selection={LIBRARY_SELECTION} />
+</Example>
+
+<Example title="Many, a video among them" description="The first eight thumbnails and a count; none has words yet." layout="block">
+  <MediaSelection selection={LIBRARY_SELECTION_MANY} />
+</Example>

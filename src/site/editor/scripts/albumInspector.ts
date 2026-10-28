@@ -3,12 +3,12 @@
  * Selection tab follows the grid's selection (`album:picked`, from scripts/albumEditor.ts), kept in the address
  * (`?selected=`, so a reload shows the same), and is drawn by the server for what's selected. What it holds that
  * waits to be saved is saved before it's drawn again, and it's never drawn again under someone typing in it. For
- * several selected, it saves what they share: the date taken and the place (each picture's own words, in one
- * save) and this album's downloads (sent to the album editor, so Undo takes it back).
+ * several selected, what they share: their words (scripts/sharedWords.ts) and this album's downloads (sent to the
+ * album editor, so Undo takes it back).
  */
-import { announce, api, refused, saveStatus, startTask, swapRegions } from './client';
+import { announce, swapRegions } from './client';
 import { applySections, initSections } from './inspector';
-import { batchProblem, type WordsChange } from '../model/albumViewer';
+import { initSharedWords } from './sharedWords';
 import { SELECTED_PARAM, selectedParam } from '../model/albumInspector';
 import type { Album } from '../../content/schema';
 
@@ -18,7 +18,6 @@ const DEBOUNCE_MS = 120;
 export function initAlbumInspector(root: HTMLElement, signal: AbortSignal) {
   const inspector = root.querySelector<HTMLElement>('[data-album-inspector]');
   if (!inspector) return;
-  const region = () => inspector.querySelector<HTMLElement>(`[data-region="${REGION}"]`);
   let ids: string[] = new URLSearchParams(location.search).get(SELECTED_PARAM)?.split(',').filter(Boolean) ?? [];
   let shown = ids.join(',');
   let timer = 0;
@@ -31,16 +30,9 @@ export function initAlbumInspector(root: HTMLElement, signal: AbortSignal) {
       return null;
     }
   };
-  /** The library items behind the selected album items (a text card has none). */
-  const mediaOf = (chosen: string[]) => {
-    const items = album()?.items ?? [];
-    return chosen.flatMap((id) => {
-      const it = items.find((i) => i.id === id);
-      return it && 'media' in it ? [it.media] : [];
-    });
-  };
-  /** Someone is typing or choosing in the inspector: it isn't drawn again under them. */
+  /** Someone is typing or choosing in the inspector, or answering its question: it isn't drawn again under them. */
   const busy = () => {
+    if (inspector.querySelector('[data-shared-confirm]:not([hidden])')) return true;
     const a = document.activeElement;
     return !!a && inspector.contains(a) && !!a.closest('input, textarea, select, [contenteditable="true"], [role="combobox"], [role="listbox"]');
   };
@@ -102,60 +94,28 @@ export function initAlbumInspector(root: HTMLElement, signal: AbortSignal) {
     (e) => {
       const view = (e.target as Element).closest<HTMLElement>('[data-album-view]');
       if (view) root.dispatchEvent(new CustomEvent('album:open-item', { detail: { id: view.dataset.albumView } }));
-      // the batch of suggested words (§9.8.2): the selected items that are pictures or videos, by their grid cells
-      if ((e.target as Element).closest('[data-suggest-words-open]')) {
-        const all = album()?.items ?? [];
-        const items = ids.flatMap((id) => {
-          const it = all.find((i) => i.id === id);
-          return it && 'media' in it ? [{ media: it.media, cell: id }] : [];
-        });
-        const kind = (e.target as Element).closest<HTMLElement>('[data-suggest-words-open]')?.dataset.suggestWordsOpen;
-        if (items.length) root.dispatchEvent(new CustomEvent('words:suggest', { detail: { items, kinds: kind ? [kind] : undefined } }));
-      }
     },
     { signal },
   );
 
-  // ---------- several selected: what they share ----------
-  const say = (text: string) => {
-    const note = region()?.querySelector<HTMLElement>('[data-selection-problem]');
-    if (!note) return;
-    note.textContent = text;
-    note.hidden = !text;
-  };
-  // what several share, by its field's name: what its task says while it saves, and once it's saved
-  const SHARED: Record<string, [string, string]> = {
-    caption: ['Setting the caption…', 'Set the caption of'],
-    description: ['Setting the description…', 'Set the description of'],
-    alt: ['Setting the alt text…', 'Set the alt text of'],
-    taken: ['Setting the date…', 'Set the date of'],
-    place: ['Setting the place…', 'Set the place of'],
-  };
+  // ---------- several selected: what they share (scripts/sharedWords.ts) ----------
+  initSharedWords(inspector, signal, {
+    target: root,
+    items: () => {
+      const all = album()?.items ?? [];
+      return ids.flatMap((id) => {
+        const it = all.find((i) => i.id === id);
+        return it && 'media' in it ? [{ media: it.media, cell: id }] : [];
+      });
+    },
+  });
+  // the whole album's words at once (§9.8.2 U3, all): the batch for every picture and video in it
   inspector.addEventListener(
-    'change',
-    async (e) => {
-      const el = e.target as HTMLInputElement;
-      const copy = SHARED[el.name];
-      if (!el.closest('[data-selection-words]') || !copy) return;
-      const media = mediaOf(ids);
-      const words = { [el.name]: el.name === 'taken' ? el.value : el.value.trim() };
-      const changes: WordsChange[] = media.map((id) => ({ id, words }));
-      const problem = batchProblem(changes);
-      if (problem) return say(problem);
-      say('');
-      const n = media.length;
-      const task = startTask(copy[0], { el, busyLabel: 'Saving…' });
-      saveStatus.saving();
-      const r = await api('PUT', 'media-words', { changes });
-      if (!r.ok) {
-        task.failed();
-        const why = refused(r, 'Nothing was changed.');
-        saveStatus.failed(`Not saved: ${why}`);
-        return say(why);
-      }
-      void task.done();
-      saveStatus.saved(`${copy[1]} ${n} ${n === 1 ? 'item' : 'items'}`);
-      root.dispatchEvent(new CustomEvent('album:redraw'));
+    'click',
+    (e) => {
+      if (!(e.target as Element).closest('[data-album-suggest-all]')) return;
+      const items = (album()?.items ?? []).flatMap((i) => ('media' in i ? [{ media: i.media, cell: i.id }] : []));
+      if (items.length) root.dispatchEvent(new CustomEvent('words:suggest', { detail: { items } }));
     },
     { signal },
   );

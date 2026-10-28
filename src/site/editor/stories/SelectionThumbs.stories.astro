@@ -1,0 +1,13 @@
+---
+import Example from '../../library/Example.astro';
+import SelectionThumbs from '../kit/SelectionThumbs.astro';
+import { LIBRARY_SELECTION, LIBRARY_SELECTION_MANY } from './samples';
+---
+
+<Example title="A few selected" description="Each one's thumbnail, square." layout="block">
+  <SelectionThumbs thumbs={LIBRARY_SELECTION.thumbs} />
+</Example>
+
+<Example title="More than are shown" description="The first eight, then how many more." layout="block">
+  <SelectionThumbs thumbs={LIBRARY_SELECTION_MANY.thumbs} more={LIBRARY_SELECTION_MANY.count - LIBRARY_SELECTION_MANY.thumbs.length} />
+</Example>

@@ -1,0 +1,58 @@
+---
+/**
+ * A selection's first thumbnails in a small square grid, and how many more there are (documentation/gallery/spec.md
+ * §9.6): the album inspector's and the Media screen's "N selected".
+ * @tier kit
+ * @a11y A list named "Selected items"; each thumbnail carries its picture's alt text, and the count of the rest is read as "+N".
+ */
+import Image from '../../components/fundamentals/Image.astro';
+import Text from '../../components/fundamentals/Text.astro';
+import type { Thumb } from '../model/inspectorFields';
+
+interface Props {
+  /** The thumbnails shown. */
+  thumbs: readonly Thumb[];
+  /** How many more are selected than shown. */
+  more?: number;
+}
+
+const { thumbs, more = 0 } = Astro.props;
+---
+
+<ul class="selection-thumbs" aria-label="Selected items">
+  {
+    thumbs.map((t) => (
+      <li>
+        <Image src={t.thumb} alt={t.alt} width={t.width} height={t.height} ratio="1/1" />
+      </li>
+    ))
+  }
+  {
+    more > 0 && (
+      <li class="selection-thumbs-more">
+        <Text as="span" variant="small" tone="muted">
+          +{more}
+        </Text>
+      </li>
+    )
+  }
+</ul>
+
+<style>
+  .selection-thumbs {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(var(--size-avatar-md), 1fr));
+    gap: var(--space-2);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .selection-thumbs-more {
+    display: grid;
+    place-items: center;
+    aspect-ratio: 1;
+    border-radius: var(--c-image-radius);
+    background: var(--color-bg-sunk);
+  }
+</style>

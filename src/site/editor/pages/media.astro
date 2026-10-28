@@ -11,6 +11,7 @@ import ContentIssues from '../components/ContentIssues.astro';
 import CropDialog from '../components/CropDialog.astro';
 import MediaLibrary from '../components/MediaLibrary.astro';
 import MediaInfo from '../components/MediaInfo.astro';
+import MediaSelection from '../components/MediaSelection.astro';
 import AlbumBulk from '../components/AlbumBulk.astro';
 import SuggestWords from '../components/SuggestWords.astro';
 import Dialog from '../../components/compounds/Dialog.astro';
@@ -24,6 +25,10 @@ import { picture, video as videoFile } from '../../content/pictures';
 import { fileOf } from '../../content/source';
 import { statSync } from 'node:fs';
 import { REGIONS_HEADER, regionsAsked, wants } from '../model/regions';
+import { libraryWords, pickSelected, sharedWords, SELECTION_THUMBS, type ItemWords, type LibrarySelection } from '../model/albumInspector';
+import { lookupOf } from '../server/albums';
+import { thumbOf } from '../server/albumScreens';
+import { sidecarOf } from '../server/media';
 import type { ImageMedia, VideoMedia } from '../../content/schema';
 
 export const prerender = false;
@@ -46,6 +51,15 @@ let original: { id: string; exists: boolean } | undefined;
 const cards = loaded.ok && drawGrid && list ? await mediaCards(loaded.index) : [];
 const cells = loaded.ok && drawGrid && !list ? await libraryCells(loaded.index, filter) : [];
 const info = loaded.ok && drawInfo && !list && wanted ? await libraryItem(loaded.index, wanted) : null;
+// several picked (?selected=, kept by scripts/mediaLibrary.ts): their words beside the grid (gallery spec §9.8.2 U5)
+const lookup = loaded.ok ? lookupOf(loaded.index) : () => undefined;
+const picked = loaded.ok && !list ? pickSelected(Astro.url.searchParams.get('selected'), (m) => !!lookup(m)) : [];
+let several: LibrarySelection | null = null;
+if (loaded.ok && drawInfo && picked.length > 1) {
+  const thumbs = await Promise.all(picked.slice(0, SELECTION_THUMBS).map((m) => thumbOf(loaded.index, m)));
+  const wordsOf = (m: string) => sidecarOf(m)?.sidecar as ItemWords | undefined;
+  several = { count: picked.length, words: libraryWords(picked, lookup), media: picked, thumbs, shared: sharedWords(picked, wordsOf) };
+}
 const albums = loaded.ok && !list ? [...loaded.index.albums.values()].map((a) => ({ id: a.id, title: a.title })).sort((a, b) => a.title.localeCompare(b.title)) : [];
 const listHref = withBase('/_edit/media/?view=list');
 const timelineHref = withBase('/_edit/media/');
@@ -101,7 +115,7 @@ if (loaded.ok && drawDetails && wanted && loaded.index.media.has(wanted)) {
       </MediaLibrary>
     )
   }
-  {loaded.ok && !list && <Fragment slot="aside"><div data-region="media-info">{info && <MediaInfo item={info} library />}</div></Fragment>}
-  {loaded.ok && drawDetails && <MediaDetails slot="aside" picture={details} video={video} usedIn={usedIn} copies={copies} original={original} words={list} />}
+  {loaded.ok && !list && <Fragment slot="aside"><div data-region="media-info">{several ? <MediaSelection selection={several} /> : info && <MediaInfo item={info} library />}</div></Fragment>}
+  {loaded.ok && drawDetails && <MediaDetails slot="aside" picture={several ? null : details} video={several ? null : video} usedIn={usedIn} copies={copies} original={original} words={list} hint={!several} />}
   {loaded.ok && <CropDialog />}
 </EditorLayout>

@@ -191,7 +191,7 @@ test.describe('editor: suggested alt text', () => {
   });
 });
 
-const albumSidecar = (id: string) => readJson(join(FIXTURE, 'content', 'media', 'articles', 'fixture-album', `${id}.json`)) as { description?: string; caption?: string };
+const albumSidecar = (id: string) => readJson(join(FIXTURE, 'content', 'media', 'articles', 'fixture-album', `${id}.json`)) as { description?: string; caption?: string; place?: string; alt?: string };
 
 test.describe('editor: suggested words (§9.8.2)', () => {
   test.describe.configure({ mode: 'serial' });
@@ -262,6 +262,23 @@ test.describe('editor: suggested words (§9.8.2)', () => {
     await expect.poll(() => [albumSidecar('p01').description, albumSidecar('p02').description], { timeout: 30_000 }).toEqual(['A morning at the market.', 'A morning at the market.']);
     expect(albumSidecar('p02').caption).toBe('Oranges, just in.');
 
+    // a caption over their different ones asks first: Keep their own puts the field back and saves nothing
+    const caption = selection.getByLabel('Caption', { exact: true });
+    const confirm = selection.locator('[data-shared-confirm]');
+    await caption.fill('Market day.');
+    await caption.press('Tab');
+    await expect(confirm).toBeVisible();
+    await expect(confirm).toContainText('They have different captions. Set this one on all 2?');
+    await expect(confirm.getByRole('button', { name: 'Set on all' })).toBeFocused();
+    await confirm.getByRole('button', { name: 'Keep their own' }).click();
+    await expect(confirm).toBeHidden();
+    await expect(caption).toHaveValue('');
+    expect(albumSidecar('p02').caption).toBe('Oranges, just in.');
+    // Set on all sets it on both
+    await caption.fill('Market day.');
+    await caption.press('Tab');
+    await confirm.getByRole('button', { name: 'Set on all' }).click();
+    await expect.poll(() => [albumSidecar('p01').caption, albumSidecar('p02').caption], { timeout: 30_000 }).toEqual(['Market day.', 'Market day.']);
     await page.locator('[data-album-selection="many"]').getByRole('button', { name: 'Suggest captions' }).click();
     const dialog = page.getByRole('dialog', { name: 'Suggest words with AI' });
     await expect(dialog).toBeVisible();
@@ -304,5 +321,56 @@ test.describe('editor: suggested words (§9.8.2)', () => {
     await dialog.getByRole('button', { name: 'Discard' }).click();
     await expect(dialog).toBeHidden();
     expect(albumSidecar('p01').description).toBeUndefined();
+  });
+
+  test("the Media screen with several picked: their words beside the grid, one alt text for all asks first, and a field's own Suggest", async ({ page }) => {
+    seesPictures();
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await page.goto('/_edit/media/');
+    const library = page.locator('[data-media-library]');
+    await library.locator('li[data-item="articles/fixture-album/p01"]').click();
+    await library.locator('li[data-item="articles/fixture-album/p02"]').click({ modifiers: ['Control'] });
+    const panel = page.locator('[data-media-selection]');
+    await expect(panel.getByRole('heading', { name: '2 selected' })).toBeVisible({ timeout: 30_000 });
+    await expect(page).toHaveURL(/[?&]selected=/);
+    await expect(panel.getByLabel('Place', { exact: true })).toHaveAttribute('placeholder', 'Multiple values');
+
+    // one alt text for two pictures asks, even to write it
+    const alt = panel.getByLabel('Alt text', { exact: true });
+    await alt.fill('Something seen on the way.');
+    await alt.press('Tab');
+    const confirm = panel.locator('[data-shared-confirm]');
+    await expect(confirm).toContainText('screen reader hears the same words');
+    await confirm.getByRole('button', { name: 'Keep their own' }).click();
+    expect(albumSidecar('p01').alt).toBe('A hill path at dawn.');
+
+    // a place over their different ones, confirmed, is set on both
+    const place = panel.getByLabel('Place', { exact: true });
+    await place.fill('Manipur');
+    await place.press('Tab');
+    await confirm.getByRole('button', { name: 'Set on all' }).click();
+    await expect.poll(() => [albumSidecar('p01').place, albumSidecar('p02').place], { timeout: 30_000 }).toEqual(['Manipur', 'Manipur']);
+
+    // a reload keeps the selection's panel
+    await page.reload();
+    await expect(page.locator('[data-media-selection]').getByLabel('Place', { exact: true })).toHaveValue('Manipur', { timeout: 30_000 });
+
+    await page.locator('[data-media-selection]').getByRole('button', { name: 'Suggest places' }).click();
+    const dialog = page.getByRole('dialog', { name: 'Suggest words with AI' });
+    await expect(dialog.locator('[data-suggest-count]')).toHaveText('For 2 selected items');
+    await expect(dialog.getByRole('checkbox', { name: /^Place/ })).toBeChecked({ timeout: 30_000 });
+    for (const other of ['Caption', 'Description', 'Alt text', 'Date taken']) await expect(dialog.getByRole('checkbox', { name: new RegExp(`^${other}`) })).not.toBeChecked();
+  });
+
+  test("an album's Suggest words… opens the batch for every item in it", async ({ page }) => {
+    seesPictures();
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await page.goto('/_edit/albums/fixture-album/');
+    await page.getByRole('tab', { name: 'Album' }).click();
+    await page.locator('[data-album-form]').getByRole('button', { name: 'Suggest words…' }).click();
+    const dialog = page.getByRole('dialog', { name: 'Suggest words with AI' });
+    await expect(dialog.locator('[data-suggest-count]')).toHaveText('For 21 selected items');
+    // 16 of the album's pictures have no caption yet
+    await expect(dialog.locator('[data-suggest-kind="caption"] [data-field-part="hint"]')).toContainText('need one', { timeout: 30_000 });
   });
 });

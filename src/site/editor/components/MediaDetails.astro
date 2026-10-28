@@ -87,9 +87,11 @@ interface Props {
   original?: { id: string; exists: boolean };
   /** Its words, Used in and Delete (the list view); left out beside the library's info panel, which has them. */
   words?: boolean;
+  /** With nothing open, say how to open one (left out while several are picked: their words are beside it). */
+  hint?: boolean;
 }
 
-const { picture, video, usedIn, copies = [], original, words = true } = Astro.props;
+const { picture, video, usedIn, copies = [], original, words = true, hint = true } = Astro.props;
 const media = (id: string) => withBase(`/_edit/media/?id=${id}`);
 const sc = picture?.sidecar;
 const animated = !!(sc?.animation || sc?.dark?.animation);
@@ -326,9 +328,9 @@ const videoFacts = vs ? [`${vs.width} \u00d7 ${vs.height}`, vs.duration ? clock(
         </section>)}
         <script is:inline type="application/json" data-editor-media-state set:html={state} />
       </>
-    ) : (
+    ) : hint ? (
       <Text variant="ui" tone="muted">Choose a picture or a video to see its details: a picture's alt text, caption, credit and focus point, a video's title and caption, and where each is used.</Text>
-    )
+    ) : null
   }
 </div>
 

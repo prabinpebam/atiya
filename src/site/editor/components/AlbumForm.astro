@@ -2,7 +2,7 @@
 /**
  * An album's own settings in its editor's inspector, the Album tab (documentation/gallery/spec.md §9.2, §9.2.1):
  * what's worked out from its items on top (draft or published, the counts, the span of dates, and how many pictures
- * need alt text, with Review), then its sections: its title and words (typed in place and saved as they're typed),
+ * need alt text, with Review, and Suggest words…: the batch of AI words for every picture in it, §9.8.2 U3), then its sections: its title and words (typed in place and saved as they're typed),
  * where it is (its section, its address, who can see it) and how it shows (its layout, captions, dates, downloads
  * and large uploads, each saved as it's changed; one set back to its default leaves the file). Delete album is in
  * its foot. A wide inspector shows the list of sections beside the chosen one (kit/Sections).
@@ -80,6 +80,13 @@ const shows = [settings.layout === 'story' ? 'Story' : 'Grid', settings.download
       needAlt > 0 && (
         <Button variant="quiet" size="sm" icon="sparkles" data-album-review="">
           Review
+        </Button>
+      )
+    }
+    {
+      count && (
+        <Button variant="quiet" size="sm" icon="sparkles" data-album-suggest-all="">
+          Suggest words…
         </Button>
       )
     }

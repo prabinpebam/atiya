@@ -1,0 +1,47 @@
+---
+/**
+ * The Media screen's side panel for several picked in the library (documentation/gallery/spec.md §9.8.2 U5, U6;
+ * §9.9): how many and what they are, their thumbnails, then their words (SharedWords: each one's own caption,
+ * description, alt text, date taken and place, "Multiple values" where they differ, asking before one value
+ * replaces theirs, a Suggest under each kind and Suggest words with AI). Drawn by the server from the address's
+ * `?selected=`, kept by scripts/mediaLibrary.ts; scripts/sharedWords.ts saves what's typed.
+ * @tier editor
+ * @a11y Named by its heading. Every field is labelled; a value they don't share says so in its hint; a refused
+ * change is said under the fields (a polite status).
+ */
+import Text from '../../components/fundamentals/Text.astro';
+import Pane from '../kit/Pane.astro';
+import SectionHead from '../kit/SectionHead.astro';
+import SelectionThumbs from '../kit/SelectionThumbs.astro';
+import SharedWords from '../kit/SharedWords.astro';
+import StatusNote from '../kit/StatusNote.astro';
+import type { LibrarySelection } from '../model/albumInspector';
+
+interface Props {
+  /** What's picked, as the server drew it. */
+  selection: LibrarySelection;
+}
+
+const { selection } = Astro.props;
+const more = selection.count - selection.thumbs.length;
+---
+
+<div class="media-selection" data-media-selection={selection.count} data-media-ids={selection.media.join(',')}>
+  <SectionHead title={`${selection.count} selected`} titleId="media-selection-title" />
+  <Text variant="small" tone="muted">
+    {selection.words}
+  </Text>
+  <SelectionThumbs thumbs={selection.thumbs} more={more} />
+  <Pane name="words" title="Their words" titleId="media-selection-words" group>
+    <SharedWords values={selection.shared} idPrefix="media-selection">
+      <StatusNote live="polite" hidden data-selection-problem="" />
+    </SharedWords>
+  </Pane>
+</div>
+
+<style>
+  .media-selection {
+    display: grid;
+    gap: var(--space-4);
+  }
+</style>
