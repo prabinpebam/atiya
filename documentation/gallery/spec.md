@@ -1088,6 +1088,34 @@ An album can bring in dozens of pictures at once, and each needs alt text. When 
 
 The request and its words live with the other AI tasks in edit mode's server; the rules for the answer (its length, the words it mustn't start with) are pure and tested.
 
+#### 9.8.1 Suggested captions
+
+A caption is the line a reader sees under a picture, and it's optional. When the owner wants one but has no words yet, the writer can offer a first draft. Unlike alt text, it's never suggested on its own: a caption is a matter of voice, so it's only ever asked for.
+
+- **Where:** beside the Caption field, in a picture's details (Media) and in the album viewer's info panel. **Suggest caption** shows only while the field is empty and a suggestion is possible: the writer is chosen, its model sees pictures, and, for a private picture, it may get private pages. Otherwise the button isn't there.
+- **The flow:** press Suggest caption. The button shows it's working and the status line says "Suggesting a caption". The draft then appears in the field, marked **Suggested**, in the muted style, with **Accept** and **Edit** beside it, and the status line reads it out. Accept keeps it as the caption; Edit keeps it and puts the cursor in the field; typing in the field dismisses the suggestion. Nothing is saved until one of those, and the picture's own Save saves it as any caption.
+- **What's sent:** alt text's, the picture alone at 960 px wide, never its file name, metadata or any page's words.
+- **What's asked:** at most 120 characters, about what's happening or notable rather than a description (alt text describes it); sentence case; no "image of", hashtags, emoji or quotation marks; never who a person is or anything about them that can't be seen; never a place, date, event or name unless it's written in the picture.
+- **A miss** says what happened and what to do: it took too long (try again or write it), nothing met the rules, the picture couldn't be read, no writer is chosen, the model can't see pictures, or the writer isn't allowed to see private pages' pictures.
+- **Use all suggestions** in the alt text review accepts alt text only, never a caption.
+
+How it meets the usability heuristics (agentic-craft's H1 to H10):
+
+| Heuristic | How |
+|---|---|
+| H1 Visibility of system status | The button's busy sign through the task tracker, "Suggesting a caption" in the status line, and the result read out |
+| H2 Match with the real world | "Suggest caption", "Suggested", "Accept", "Edit": the owner's words, no model or prompt jargon |
+| H3 User control and freedom | Only on asking; nothing saved until Accept or Edit; typing dismisses it; Save stays the owner's |
+| H4 Consistency and standards | The same kit part, marks and keys as suggested alt text |
+| H5 Error prevention | Offered only while the field is empty and a suggestion is possible; length capped; people and invented facts refused before showing |
+| H6 Recognition rather than recall | The draft appears in the field it's for, with its choices beside it |
+| H7 Flexibility and efficiency | One press to suggest, one to accept; the field stays free to type in |
+| H8 Aesthetic and minimalist design | A quiet text button, gone when it can't help |
+| H9 Help with errors | Each miss names its cause and the fix, and where (the AI screen) |
+| H10 Help and documentation | This section and [AI services](../editor/ai-services.md) S12 |
+
+As built: `model/captionText.ts` (the rules), `server/aiAlt.ts` (`suggestCaption`, the `caption` route), the `AltSuggestion` kit part with `words="caption"` (its story "A suggested caption"), in `MediaDetails` and `MediaInfo`. It's checked by `tests/unit/captionText.test.ts`, `aiAlt.test.ts` ("suggested captions") and the editor E2E "a caption (§9.8.1)" in `editor-alt-text.spec.ts`.
+
 ### 9.9 The library
 
 The Media screen becomes the library every album is made from, as a photo app's library is:

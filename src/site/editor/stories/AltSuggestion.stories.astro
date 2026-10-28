@@ -13,3 +13,8 @@ import AltSuggestion from '../kit/AltSuggestion.astro';
   <TextField label="Alt text" name="alt" multiline rows={2} />
   <AltSuggestion ask offered field="alt" />
 </Example>
+
+<Example title="A suggested caption" description="Beside an empty caption, Suggest caption asks for a short line on the owner's asking only (never on its own), shown and taken the same way: nothing is saved until Accept or Edit." layout="stack">
+  <TextField label="Caption" name="caption" multiline rows={2} placeholder="Cherry blossom over the gravel path" optional />
+  <AltSuggestion words="caption" suggestion="Cherry blossom over the gravel path" />
+</Example>

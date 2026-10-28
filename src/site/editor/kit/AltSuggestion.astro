@@ -1,6 +1,7 @@
 ---
 /**
- * The suggested alt text beside an alt text field (documentation/gallery/spec.md §9.6): the AI writer's draft,
+ * The suggested alt text beside an alt text field (documentation/gallery/spec.md §9.8), or the suggested caption beside a
+ * caption field (§9.8.1, words="caption", on asking only): the AI writer's draft,
  * shown in the field in the muted style (its placeholder), marked Suggested, with Accept and Edit. Until one is
  * pressed the field stays empty, so a suggestion is never saved and never counts as alt text. Optionally a Suggest
  * button for a picture already uploaded. The media screens' scripts fill it (scripts/altSuggest.ts).
@@ -13,7 +14,9 @@ import Button from '../../components/fundamentals/Button.astro';
 import ActionBar from '../../components/compounds/ActionBar.astro';
 
 interface Props {
-  /** The name of the alt text field it belongs to (in the same form). */
+  /** What it suggests: alt text, or a caption (its labels, what it reads aloud and the field it defaults to). */
+  words?: 'alt' | 'caption';
+  /** The name of the field it belongs to (in the same form); `alt` or `caption` by default, after `words`. */
   field?: string;
   /** Shows Suggest, which asks for a suggestion while the field is empty (the details of a picture already uploaded). */
   ask?: boolean;
@@ -23,14 +26,16 @@ interface Props {
   suggestion?: string;
 }
 
-const { field = 'alt', ask = false, offered = false, suggestion } = Astro.props;
+const { words = 'alt', ask = false, offered = false, suggestion } = Astro.props;
+const field = Astro.props.field ?? words;
+const noun = words === 'caption' ? 'caption' : 'alt text';
 ---
 
-<div class="alt-suggestion" data-alt-suggestion={field} data-busy-line="">
+<div class="alt-suggestion" data-alt-suggestion={field} data-alt-kind={words} data-busy-line="">
   {
     ask && (
       <span data-alt-ask-wrap="" hidden={!offered}>
-        <Button variant="quiet" size="sm" icon="sparkles" data-alt-ask="">Suggest alt text</Button>
+        <Button variant="quiet" size="sm" icon="sparkles" data-alt-ask="">Suggest {noun}</Button>
       </span>
     )
   }
@@ -41,7 +46,7 @@ const { field = 'alt', ask = false, offered = false, suggestion } = Astro.props;
       <Button variant="quiet" size="sm" icon="edit" data-alt-edit="">Edit</Button>
     </ActionBar>
   </div>
-  <p class="sr-only" aria-live="polite" data-alt-said="">{suggestion ? `Suggested alt text: ${suggestion}` : ''}</p>
+  <p class="sr-only" aria-live="polite" data-alt-said="">{suggestion ? `Suggested ${noun}: ${suggestion}` : ''}</p>
 </div>
 
 <style>

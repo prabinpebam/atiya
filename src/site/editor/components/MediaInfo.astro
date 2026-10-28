@@ -79,6 +79,7 @@ const usesTitle = library ? 'Used in' : 'Also in';
         <Group {...group('words', 'Its words')}>
           {kind !== 'image' && <TextField label="Title" name="title" id={`${uid}-title`} value={str('title')} maxlength={200} hint="Names the video, for everyone." />}
           <TextField label="Caption" name="caption" id={`${uid}-caption`} value={str('caption')} maxlength={CAPTION_MAX} optional hint={`Under it in the album and the lightbox: ${CAPTION_MAX} characters at most.`} />
+          {kind === 'image' && <AltSuggestion ask words="caption" />}
           <RichField label="Description" toolsLabel="Description: formatting" inputId={`${uid}-description`} name="description" markdown={str('description')} hint="A few lines about it, shown in the lightbox: two paragraphs at most." />
           {kind !== 'video' && (
             <Fragment>

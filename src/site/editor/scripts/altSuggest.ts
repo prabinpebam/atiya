@@ -3,10 +3,12 @@
  * (`/_edit/api/ai/alt`) for a picture about to be uploaded or already in the library, and shows it in the empty
  * alt text field as its placeholder, marked Suggested (kit/AltSuggestion.astro), with Accept and Edit. The field's
  * value is untouched until one is pressed, so an unaccepted suggestion is never saved and never counts. A wait
- * goes through the task tracker; a failure is quiet but said in the status line.
+ * goes through the task tracker; a failure is quiet but said in the status line. The same parts suggest a caption (§9.8.1,
+ * `ai/caption`, `data-alt-kind="caption"`), on asking only, a miss said with what to do about it.
  */
 import { announce, api, startTask } from './client';
 import { missedLine, wantsSuggestion } from '../model/altText';
+import { captionMissLine, type CaptionWhy } from '../model/captionText';
 
 /** What the picture is: one in the library, or a file about to be uploaded to a folder. */
 export type AltSource = { media: () => string | null } | { file: () => File | null; owner: () => string };
@@ -26,12 +28,15 @@ export interface AltSuggester {
 const OFFERS = new WeakMap<HTMLElement, AltSuggester>();
 
 /**
- * Wires the suggestion beside a form's alt text field. `scope` holds the field and its `[data-alt-suggestion]`.
- * The availability (whether the writer sees pictures, the switch, a private page's rule) is asked once per picture.
+ * Wires the suggestion beside a form's alt text field (or, with `field: 'caption'`, its caption field). `scope` holds the
+ * field and its `[data-alt-suggestion]`. The availability (whether the writer sees pictures, the switch, a private page's
+ * rule) is asked once per picture.
  */
-export function initAltSuggest(scope: HTMLElement, signal: AbortSignal, source: AltSource): AltSuggester | null {
-  const root = scope.querySelector<HTMLElement>('[data-alt-suggestion]');
-  const name = root?.dataset.altSuggestion || 'alt';
+export function initAltSuggest(scope: HTMLElement, signal: AbortSignal, source: AltSource, o: { field?: string } = {}): AltSuggester | null {
+  const name = o.field ?? 'alt';
+  const root = scope.querySelector<HTMLElement>(`[data-alt-suggestion="${name}"]`);
+  const caption = root?.dataset.altKind === 'caption';
+  const noun = caption ? 'caption' : 'alt text';
   const field = scope.querySelector<HTMLTextAreaElement | HTMLInputElement>(`textarea[name="${name}"], input[name="${name}"]`);
   if (!root || !field) return null;
   const offer = root.querySelector<HTMLElement>('[data-alt-offer]')!;
@@ -39,6 +44,8 @@ export function initAltSuggest(scope: HTMLElement, signal: AbortSignal, source: 
   const askWrap = root.querySelector<HTMLElement>('[data-alt-ask-wrap]');
   const ask = root.querySelector<HTMLElement>('[data-alt-ask]');
   const decorative = () => scope.querySelector<HTMLInputElement>('input[name="decorative"]')?.checked ?? false;
+  // alt text isn't wanted for a decorative picture; a caption only while its field is empty
+  const wanted = () => (caption ? !field.value.trim() : wantsSuggestion({ alt: field.value, decorative: decorative() }));
   const placeholder = field.placeholder;
   let suggestion: string | null = null;
   // a newer request (or a new picture) makes an older answer stale
@@ -49,8 +56,8 @@ export function initAltSuggest(scope: HTMLElement, signal: AbortSignal, source: 
     field.placeholder = text ?? placeholder;
     offer.hidden = !text;
     offer.dataset.altText = text ?? '';
-    said.textContent = text ? `Suggested alt text: ${text}` : '';
-    if (askWrap) askWrap.hidden = !!text || !askWrap.dataset.altOn || !wantsSuggestion({ alt: field.value, decorative: decorative() });
+    said.textContent = text ? `Suggested ${noun}: ${text}` : '';
+    if (askWrap) askWrap.hidden = !!text || !askWrap.dataset.altOn || !wanted();
   };
   const take = (focus: boolean) => {
     if (!suggestion) return false;
@@ -73,7 +80,6 @@ export function initAltSuggest(scope: HTMLElement, signal: AbortSignal, source: 
       const mine = ++token;
       show(null);
       const q = query();
-      const wanted = () => wantsSuggestion({ alt: field.value, decorative: decorative() });
       // Suggest asks first even beside alt text, so it can show once the field is emptied
       if (!q || (!ask && !wanted())) return false;
       if (opts.known) {
@@ -81,7 +87,7 @@ export function initAltSuggest(scope: HTMLElement, signal: AbortSignal, source: 
         show(opts.known);
         return true;
       }
-      const on = await api<{ on: boolean }>('GET', `ai/alt?${q}`);
+      const on = await api<{ on: boolean }>('GET', `ai/${caption ? 'caption' : 'alt'}?${q}`);
       if (mine !== token || !on.ok) return false;
       if (askWrap) askWrap.dataset.altOn = on.data.on ? '1' : '';
       if (!on.data.on) {
@@ -104,27 +110,28 @@ export function initAltSuggest(scope: HTMLElement, signal: AbortSignal, source: 
         form.append('owner', source.owner());
         body = form;
       }
-      const task = startTask('Suggesting alt text', { el: [root, opts.asked ? ask : null], busyLabel: 'Suggesting' });
-      const r = await api<{ alt: string | null; why?: string }>('POST', 'ai/alt', body).catch(() => null);
+      const task = startTask(caption ? 'Suggesting a caption' : 'Suggesting alt text', { el: [root, opts.asked ? ask : null], busyLabel: 'Suggesting' });
+      const r = await api<{ alt?: string | null; caption?: string | null; why?: string }>('POST', caption ? 'ai/caption' : 'ai/alt', body).catch(() => null);
+      const words = r?.ok ? (caption ? r.data.caption : r.data.alt) : null;
       if (mine !== token) {
         task.failed();
         return false;
       }
       // typed into, or marked decorative, while it was asked: the owner's words win
-      if (!wantsSuggestion({ alt: field.value, decorative: decorative() })) {
+      if (!wanted()) {
         void task.done();
         show(null);
         return false;
       }
-      if (!r?.ok || !r.data.alt) {
+      if (!words) {
         task.failed();
         show(null);
-        // quiet, but never silent: the status line says it wasn't suggested (§9.6)
-        announce(missedLine(1));
+        // quiet, but never silent: the status line says it wasn't suggested (§9.6); a caption, asked for, says why and what to do (§9.8.1)
+        announce(caption ? captionMissLine(((r?.ok && r.data.why) || 'failed') as CaptionWhy) : missedLine(1));
         return false;
       }
       void task.done();
-      show(r.data.alt);
+      show(words);
       return true;
     },
     clear() {
@@ -148,7 +155,7 @@ export function initAltSuggest(scope: HTMLElement, signal: AbortSignal, source: 
   // a word typed, or decorative ticked, puts the suggestion away: it never sits beside the owner's own words
   const settle = (e: Event) => {
     const t = e.target as HTMLInputElement;
-    if (t === field || t.name === 'decorative') show(wantsSuggestion({ alt: field.value, decorative: decorative() }) ? suggestion : null);
+    if (t === field || t.name === 'decorative') show(wanted() ? suggestion : null);
   };
   scope.addEventListener('input', settle, { signal });
   scope.addEventListener('change', settle, { signal });
@@ -156,10 +163,10 @@ export function initAltSuggest(scope: HTMLElement, signal: AbortSignal, source: 
   return suggester;
 }
 
-/** Use all suggestions (§9.6): accepts every suggestion still showing in `scope`; how many it took. */
+/** Use all suggestions (§9.6): accepts every alt text suggestion still showing in `scope` (never a caption); how many it took. */
 export function acceptAll(scope: ParentNode): number {
   let n = 0;
-  for (const el of scope.querySelectorAll<HTMLElement>('[data-alt-suggestion]')) if (OFFERS.get(el)?.accept()) n++;
+  for (const el of scope.querySelectorAll<HTMLElement>('[data-alt-kind="alt"]')) if (OFFERS.get(el)?.accept()) n++;
   return n;
 }
 

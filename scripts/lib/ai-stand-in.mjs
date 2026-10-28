@@ -3,7 +3,7 @@
  * (`/api/tags`, and the OpenAI-compatible `/v1/chat/completions`, streamed), so tests never reach a real model.
  * Its answer is canned: the block the request names, cut to its first sentence (or, asked for "longer", with a
  * sentence added); asked for a table, the block's sentences as rows; the AI screen's connection test gets `{"ok": true}`, its picture test `{"colour": "red"}`, and
- * a picture's suggested alt text `STAND_IN_ALT` (the model `blind` refuses any picture). A request that says "slowly" streams
+ * a picture's suggested alt text `STAND_IN_ALT` and caption `STAND_IN_CAPTION` (the model `blind` refuses any picture). A request that says "slowly" streams
  * slowly enough to stop. A model named after a failure fails that way (`FAILURES`), so a test can choose it on a card.
  */
 import { createServer } from 'node:http';
@@ -20,6 +20,8 @@ export const BLIND = 'blind';
 const MODELS = ['stand-in', BLIND, ...Object.keys(FAILURES)];
 /** The alt text the stand-in suggests for any picture (gallery spec §9.6). */
 export const STAND_IN_ALT = 'A small square of solid colour.';
+/** The caption the stand-in suggests for any picture (gallery spec §9.8.1). */
+export const STAND_IN_CAPTION = 'Blue from edge to edge';
 const hasPicture = (messages) => messages.some((m) => Array.isArray(m.content) && m.content.some((p) => p?.type === 'image_url'));
 
 /** The words a text block is cut to: its first sentence, or the whole of a short one. */
@@ -52,6 +54,8 @@ export function answerFor(messages) {
   if (/connection test/i.test(system)) return { ok: true };
   // the AI screen's picture test (ai-services.md §7.7) is a red square; suggested alt text is always the same words
   if (/picture test/i.test(system)) return { colour: 'red' };
+  // a suggested caption (gallery spec §9.8.1) is checked first: its rules mention alt text
+  if (/caption for a picture/i.test(system)) return { caption: STAND_IN_CAPTION };
   if (/alt text/i.test(system)) return { alt: STAND_IN_ALT };
   const user = messages.find((m) => m.role === 'user')?.content ?? '';
   const key = /\(key ([a-z0-9]{6})\)/.exec(system)?.[1];

@@ -203,8 +203,8 @@ export function initMediaInfo(panel: HTMLElement, signal: AbortSignal) {
         saveStatus.saved('Made it standard: saved again at 2560 px');
         return again();
       }
-      // the review: Accept saves the suggestion and goes on
-      if (state.review && t.closest('[data-alt-accept]')) void onward();
+      // the review: Accept saves the alt text's suggestion and goes on
+      if (state.review && t.closest('[data-alt-kind="alt"] [data-alt-accept]')) void onward();
     },
     { signal },
   );
@@ -215,13 +215,14 @@ export function initMediaInfo(panel: HTMLElement, signal: AbortSignal) {
     if (v !== null) apply(v.trim());
   });
   const suggester = state.kind === 'image' ? initAltSuggest(panel, signal, { media: () => state.media.id }) : null;
+  if (state.kind === 'image') initAltSuggest(panel, signal, { media: () => state.media.id }, { field: 'caption' });
   if (suggester && state.review && !val('alt')) {
     const asked = { media: state.media.id, alt: undefined as string | null | undefined };
     send('viewer:known', asked);
     if (asked.alt !== undefined) void suggester.suggest({ known: asked.alt });
     else
       void suggester.suggest({ asked: true }).then((ok) => {
-        const text = ok ? (panel.querySelector<HTMLElement>('[data-alt-offer]')?.dataset.altText ?? null) : null;
+        const text = ok ? (panel.querySelector<HTMLElement>('[data-alt-kind="alt"] [data-alt-offer]')?.dataset.altText ?? null) : null;
         send('viewer:suggested', { media: state.media.id, alt: text });
       });
   }

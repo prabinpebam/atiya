@@ -106,7 +106,7 @@ export async function aiServicesRoute(parts: string[], method: string, request: 
     writeSettings(setWriter(s, id!));
     return json({ ok: true });
   }
-  if (parts[1] === 'alt' || parts[1] === 'pictures') return altRoute(parts, method, request);
+  if (parts[1] === 'alt' || parts[1] === 'caption' || parts[1] === 'pictures') return altRoute(parts, method, request);
   if (parts[1] !== 'services') return null;
   if (!parts[2] && method === 'POST') return add((await request.json()) as NewService);
   const id = parts[2] ?? '';

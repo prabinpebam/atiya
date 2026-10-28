@@ -191,6 +191,7 @@ const videoFacts = vs ? [`${vs.width} \u00d7 ${vs.height}`, vs.duration ? clock(
           <AltSuggestion ask />
           <Checkbox label="It's decorative: it adds nothing a reader would miss" name="decorative" checked={!!sc.decorative} />
           <TextField label="Caption" name="caption" value={sc.caption ?? ''} multiline rows={2} optional />
+          <AltSuggestion ask words="caption" />
           <TextField label="Date taken" name="taken" type="date" value={sc.taken ?? ''} optional hint="Read from the file when it was uploaded. Clear it if it's wrong and you don't know the day." />
           <TextField label="Credit" name="credit" value={sc.credit ?? ''} optional hint="Who made it, as it should be shown." />
           <TextField label="Licence" name="licence.name" value={sc.licence?.name ?? ''} optional hint="CC BY 4.0, All rights reserved, and so on." />

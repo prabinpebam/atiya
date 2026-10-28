@@ -125,6 +125,7 @@ Which AI services edit mode uses, how each is connected and set up, and how your
 | S9 | Make a new agent token, so the old one stops working | §7.6 |
 | S10 | See open proposals from agents, and open their review | §8 |
 | S11 | Have the writer suggest alt text for the pictures I add to an album, or turn that off | §8.1; [gallery §9.8](../gallery/spec.md#98-suggested-alt-text) |
+| S12 | Ask the writer to suggest a picture's caption, then accept it, edit it or ignore it | [gallery §9.8.1](../gallery/spec.md#981-suggested-captions) |
 
 ## 2. The wishlist, one by one
 
@@ -551,3 +552,9 @@ Each phase records here what differs from this page, with its evidence. Stage by
 - **Routes** (`server/aiAlt.ts`, reached through the AI routes): `GET /_edit/api/ai/alt?media=<id>` or `?owner=<folder>` says whether a suggestion is offered (`{on, why}`: off, no writer, a model that doesn't see pictures, or a private page's picture for a service that may not get private pages); `POST /_edit/api/ai/alt` with `{media}` (a picture already uploaded) or a form with the file's bytes and its `owner` (one about to be uploaded) answers `{alt}` or `{alt: null, why}`. It writes nothing.
 - **What's sent and kept.** The picture at 960 px wide as a JPEG, without its file name, its metadata or any of the site's words; it gives up after 20 seconds. The answer goes through `cleanAlt` (`model/altText.ts`): a leading "image of" is taken off, it's cut to 250 characters at a sentence or a word, and one that names or identifies a person is refused, not edited.
 - **Tests.** The stand-in answers every picture with one sentence and its `blind` model refuses pictures; `tests/unit/aiAlt.test.ts` and `altText.test.ts` hold the rules and the routes, and the editor E2E "editor: suggested alt text" the screens.
+
+### Suggested captions (S12)
+
+- **Routes.** The same route answers captions: `GET /_edit/api/ai/caption?media=<id>` says whether one can be suggested (`captionOffer`: the writer, a model that sees pictures, and for a private page's picture a service that may get private pages; there's no switch, since it's only ever asked for), and `POST /_edit/api/ai/caption {media}` answers `{caption}` or `{caption: null, why}`. Both suggestions share one request (`askAbout` in `server/aiAlt.ts`: the 960 px JPEG, the 20-second limit, the abort). It writes nothing.
+- **The rules** (`model/captionText.ts`): at most 120 characters, a line about what's happening or notable rather than a description; alt text's tidying and its people rule (`tidyAnswer` in `model/altText.ts`); never a place, date, event or name that isn't written in the picture. A miss says what happened and what to do (`captionMissLine`).
+- **Tests.** The stand-in answers a caption request with "Blue from edge to edge"; `tests/unit/captionText.test.ts` and the "suggested captions" group of `aiAlt.test.ts` hold the rules and the route, and the editor E2E "a caption (§9.8.1)" in `editor-alt-text.spec.ts` the details screen.

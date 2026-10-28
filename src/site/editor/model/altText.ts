@@ -101,20 +101,29 @@ export type AltAnswer = { alt: string } | { alt: null; why: 'empty' | 'identifie
  * "image of" taken off, cut to 250 characters; refused when it's empty or says who a person is.
  */
 export function cleanAlt(answer: string): AltAnswer {
-  let alt: unknown;
+  const w = tidyAnswer(answer, 'alt', ALT_MAX);
+  return w.text !== null ? { alt: w.text } : { alt: null, why: w.why };
+}
+
+/**
+ * The rules every suggestion about a picture meets (alt text and captions, §9.8 and §9.8.1): the JSON's `key`, its spaces and
+ * quotes tidied, a leading "image of" taken off, cut to `max`; none when it's empty or says who a person is.
+ */
+export function tidyAnswer(answer: string, key: string, max: number): { text: string; why?: undefined } | { text: null; why: 'empty' | 'identifies' } {
+  let raw: unknown;
   try {
-    alt = (JSON.parse(answer) as { alt?: unknown }).alt;
+    raw = (JSON.parse(answer) as Record<string, unknown>)[key];
   } catch {
-    alt = null;
+    raw = null;
   }
-  if (typeof alt !== 'string') return { alt: null, why: 'empty' };
-  let text = alt.replace(/\s+/g, ' ').trim().replace(/^["'“‘]+|["'”’]+$/g, '').trim();
+  if (typeof raw !== 'string') return { text: null, why: 'empty' };
+  let text = raw.replace(/\s+/g, ' ').trim().replace(/^["'“‘]+|["'”’]+$/g, '').trim();
   for (let i = 0; i < 3 && LEAD.test(text); i++) text = text.replace(LEAD, '');
   text = text.charAt(0).toUpperCase() + text.slice(1);
-  text = cutTo(text);
-  if (!text || !/[a-z0-9]/i.test(text)) return { alt: null, why: 'empty' };
-  if (identifies(text)) return { alt: null, why: 'identifies' };
-  return { alt: text };
+  text = cutTo(text, max);
+  if (!text || !/[a-z0-9]/i.test(text)) return { text: null, why: 'empty' };
+  if (identifies(text)) return { text: null, why: 'identifies' };
+  return { text };
 }
 
 // ---------- when a suggestion is offered ----------

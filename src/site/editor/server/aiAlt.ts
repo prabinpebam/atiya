@@ -10,7 +10,8 @@ import { fileOf } from '../../content/source';
 import { readDoc, readFile } from './store';
 import { keyFor, readSettings, writeSettings, type AiService, type AiSettings } from './aiSettings';
 import { writeOpenAI } from './aiOpenAI';
-import { ALT_SCHEMA, ALT_WAIT_MS, ALT_WIDTH, PICTURE_TEST_COLOUR, PICTURE_TEST_SCHEMA, altMessages, altOffer, cleanAlt, pictureTestMessages, seesPicture, type AltOff } from '../model/altText';
+import { ALT_SCHEMA, ALT_WAIT_MS, ALT_WIDTH, PICTURE_TEST_COLOUR, PICTURE_TEST_SCHEMA, altMessages, altOffer, cleanAlt, pictureTestMessages, seesPicture, type AltOff, type PictureMessage } from '../model/altText';
+import { CAPTION_SCHEMA, captionMessages, captionOffer, cleanCaption, type CaptionWhy } from '../model/captionText';
 import { MAX_PICTURE_BYTES } from '../model/upload';
 import type { ImageMedia } from '../../content/schema';
 
@@ -21,6 +22,8 @@ const OWNER = /^(shared|site|articles\/[a-z0-9]+(?:-[a-z0-9]+)*|people\/[a-z0-9]
 export type AltWhy = AltOff | 'failed' | 'timeout' | 'refused' | 'unreadable';
 /** The route's answer: a suggestion, or none and why (quiet: the field stays as it was). */
 export type AltReply = { alt: string } | { alt: null; why: AltWhy };
+/** `ai/caption`'s answer: a suggested caption, or none and why (the status line says it, with what to do). */
+export type CaptionReply = { caption: string } | { caption: null; why: CaptionWhy };
 
 export interface AltOptions {
   settings?: AiSettings;
@@ -58,31 +61,46 @@ export async function pictureToSend(bytes: Buffer): Promise<string> {
 export async function suggestAlt(bytes: Buffer, isPrivate: boolean, o: AltOptions = {}): Promise<AltReply> {
   const offer = altOffer(o.settings ?? readSettings(), isPrivate);
   if (!offer.on) return { alt: null, why: offer.why };
-  const s = offer.service;
+  const a = await askAbout(bytes, offer.service, { messages: altMessages, schema: ALT_SCHEMA, clean: (t) => cleanAlt(t).alt }, o);
+  return a.text !== null ? { alt: a.text } : { alt: null, why: a.why };
+}
+
+/** Asks the writer for a picture's caption (§9.8.1), on the owner's asking only. Anything but one that meets the rules is none, with why. */
+export async function suggestCaption(bytes: Buffer, isPrivate: boolean, o: AltOptions = {}): Promise<CaptionReply> {
+  const offer = captionOffer(o.settings ?? readSettings(), isPrivate);
+  if (!offer.on) return { caption: null, why: offer.why };
+  const a = await askAbout(bytes, offer.service, { messages: captionMessages, schema: CAPTION_SCHEMA, clean: (t) => cleanCaption(t).caption }, o);
+  return a.text !== null ? { caption: a.text } : { caption: null, why: a.why };
+}
+
+type Asked = { text: string; why?: undefined } | { text: null; why: 'failed' | 'timeout' | 'refused' | 'unreadable' };
+
+/** One question about a picture: sent as {@link pictureToSend} makes it, raced against the time limit, its answer held to `clean`'s rules. */
+async function askAbout(bytes: Buffer, s: AiService, ask: { messages: (picture: string) => PictureMessage[]; schema: Record<string, unknown>; clean: (answer: string) => string | null }, o: AltOptions): Promise<Asked> {
   const key = await keyFor(s.id);
-  if (!s.local && !key) return { alt: null, why: 'failed' };
+  if (!s.local && !key) return { text: null, why: 'failed' };
   let picture: string;
   try {
     picture = await pictureToSend(bytes);
   } catch {
-    return { alt: null, why: 'unreadable' };
+    return { text: null, why: 'unreadable' };
   }
   const wait = o.waitMs ?? ALT_WAIT_MS;
   const ctl = new AbortController();
   let timer: ReturnType<typeof setTimeout> | undefined;
   // the time limit stands even when the service never answers: it's raced, and the request is stopped
-  const late = new Promise<AltReply>((done) => {
+  const late = new Promise<Asked>((done) => {
     timer = setTimeout(() => {
       ctl.abort();
-      done({ alt: null, why: 'timeout' });
+      done({ text: null, why: 'timeout' });
     }, wait);
   });
-  const asked = writeOpenAI({ base: s.base, key, model: s.model, messages: altMessages(picture), schema: ALT_SCHEMA, local: s.local, signal: ctl.signal, fetch: o.fetch, startMs: wait + 1000, stallMs: wait + 1000 }).then(
-    (w): AltReply => {
-      const a = cleanAlt(w.text);
-      return a.alt ? { alt: a.alt } : { alt: null, why: 'refused' };
+  const asked = writeOpenAI({ base: s.base, key, model: s.model, messages: ask.messages(picture), schema: ask.schema, local: s.local, signal: ctl.signal, fetch: o.fetch, startMs: wait + 1000, stallMs: wait + 1000 }).then(
+    (w): Asked => {
+      const text = ask.clean(w.text);
+      return text ? { text } : { text: null, why: 'refused' };
     },
-    (): AltReply => ({ alt: null, why: ctl.signal.aborted ? 'timeout' : 'failed' }),
+    (): Asked => ({ text: null, why: ctl.signal.aborted ? 'timeout' : 'failed' }),
   );
   try {
     return await Promise.race([asked, late]);
@@ -118,7 +136,8 @@ export async function altRoute(parts: string[], method: string, request: Request
     writeSettings({ ...readSettings(), alt: { suggest: b.suggest } });
     return json({ ok: true, suggest: b.suggest });
   }
-  if (parts[1] !== 'alt' || parts[2]) return null;
+  const what = parts[1];
+  if ((what !== 'alt' && what !== 'caption') || parts[2]) return null;
   if (method === 'GET') {
     const url = new URL(request.url);
     const media = url.searchParams.get('media');
@@ -130,7 +149,7 @@ export async function altRoute(parts: string[], method: string, request: Request
       isPrivate = pic.isPrivate;
     } else if (OWNER.test(owner)) isPrivate = ownerIsPrivate(owner);
     else return refuse('Not a folder.');
-    const offer = altOffer(o.settings ?? readSettings(), isPrivate);
+    const offer = (what === 'alt' ? altOffer : captionOffer)(o.settings ?? readSettings(), isPrivate);
     return json(offer.on ? { ok: true, on: true } : { ok: true, on: false, why: offer.why });
   }
   if (method !== 'POST') return null;
@@ -140,7 +159,7 @@ export async function altRoute(parts: string[], method: string, request: Request
     const file = form?.get('file');
     const owner = String(form?.get('owner') ?? 'shared');
     if (!(file instanceof Blob) || !file.size) return refuse('Send a picture.');
-    if (file.size > MAX_PICTURE_BYTES) return refuse('The picture is too big to suggest alt text for.');
+    if (file.size > MAX_PICTURE_BYTES) return refuse(`The picture is too big to suggest ${what === 'alt' ? 'alt text' : 'a caption'} for.`);
     if (!OWNER.test(owner)) return refuse('Not a folder.');
     // only the bytes are read: the file's name never goes anywhere
     picture = { bytes: Buffer.from(await file.arrayBuffer()), isPrivate: ownerIsPrivate(owner) };
@@ -150,5 +169,5 @@ export async function altRoute(parts: string[], method: string, request: Request
     picture = libraryPicture(b.media);
     if (!picture) return refuse('No such picture.', 404);
   }
-  return json({ ok: true, ...(await suggestAlt(picture.bytes, picture.isPrivate, o)) });
+  return json({ ok: true, ...(await (what === 'alt' ? suggestAlt : suggestCaption)(picture.bytes, picture.isPrivate, o)) });
 }

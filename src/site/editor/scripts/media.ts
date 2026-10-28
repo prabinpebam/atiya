@@ -129,6 +129,7 @@ export function initMediaDetails(root: HTMLElement, signal: AbortSignal) {
   };
   // Suggest beside an empty alt text field (gallery spec §9.6)
   initAltSuggest(form, signal, { media: () => state.id });
+  initAltSuggest(form, signal, { media: () => state.id }, { field: 'caption' });
   // its words saved beside it (the library's info panel): the new version, so the focus point's save isn't refused
   document.addEventListener(
     'media:saved',

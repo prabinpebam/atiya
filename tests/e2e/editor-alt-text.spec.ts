@@ -13,13 +13,13 @@ import { readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import sharp from 'sharp';
 import { FIXTURE, reset } from '../../scripts/editor-test-server.mjs';
-import { STAND_IN_ALT } from '../../scripts/lib/ai-stand-in.mjs';
+import { STAND_IN_ALT, STAND_IN_CAPTION } from '../../scripts/lib/ai-stand-in.mjs';
 
 const ARTICLE = 'do-what-makes-you-proud';
 const readJson = (file: string) => JSON.parse(readFileSync(file, 'utf8'));
 const upload = (page: Page) => page.locator('[data-editor-upload]');
 const details = (page: Page) => page.locator('[data-editor-media-details]');
-const offer = (scope: ReturnType<Page['locator']>) => scope.locator('[data-alt-offer]');
+const offer = (scope: ReturnType<Page['locator']>) => scope.locator('[data-alt-kind="alt"] [data-alt-offer]');
 const altField = (scope: ReturnType<Page['locator']>) => scope.locator('textarea[name="alt"]');
 
 type AiFile = { services: { model: string; privatePages: boolean; pictures?: boolean }[]; writer: string | null; alt?: { suggest: boolean } };
@@ -100,7 +100,7 @@ test.describe('editor: suggested alt text', () => {
     seesPictures();
     await page.goto(`/_edit/media/?view=list&id=articles/${ARTICLE}/tshirt`);
     const pane = details(page);
-    const ask = pane.locator('[data-alt-ask]');
+    const ask = pane.locator('[data-alt-kind="alt"] [data-alt-ask]');
     await expect(altField(pane)).toBeVisible();
     await altField(pane).fill('');
     await expect(ask).toBeVisible({ timeout: 30_000 });
@@ -112,6 +112,36 @@ test.describe('editor: suggested alt text', () => {
     await pane.getByRole('button', { name: 'Save the details' }).first().click();
     await expect(page.locator('[data-editor-status]')).toContainText(/Saved/i, { timeout: 30_000 });
     expect(readJson(join(FIXTURE, `content/media/articles/${ARTICLE}/tshirt.json`)).alt).toBe(STAND_IN_ALT);
+  });
+
+  test('a caption (§9.8.1): Suggest caption only on asking and only while it is empty; Edit fills and focuses it; saved with the details', async ({ page }) => {
+    seesPictures();
+    let asked = 0;
+    page.on('request', (r) => r.method() === 'POST' && /\/_edit\/api\/ai\/caption$/.test(r.url()) && asked++);
+    await page.goto(`/_edit/media/?view=list&id=articles/${ARTICLE}/tshirt`);
+    const pane = details(page);
+    const box = pane.locator('[data-alt-kind="caption"]');
+    const caption = pane.locator('textarea[name="caption"]');
+    const ask = box.getByRole('button', { name: 'Suggest caption' });
+    // beside a caption already written there's nothing to suggest, and nothing is asked for on its own
+    await expect(caption).toHaveValue('The team T-shirt, at work.');
+    await expect(ask).toBeHidden();
+    await caption.fill('');
+    await expect(ask).toBeVisible({ timeout: 30_000 });
+    expect(asked).toBe(0);
+    await ask.click();
+    await expect(box.locator('[data-alt-offer]')).toBeVisible({ timeout: 30_000 });
+    await expect(caption).toHaveAttribute('placeholder', STAND_IN_CAPTION);
+    await expect(caption).toHaveValue('');
+    await expect(box.locator('[data-alt-said]')).toHaveText(`Suggested caption: ${STAND_IN_CAPTION}`);
+    // the alt text's suggestion is untouched
+    await expect(offer(pane)).toBeHidden();
+    await box.getByRole('button', { name: 'Edit' }).click();
+    await expect(caption).toHaveValue(STAND_IN_CAPTION);
+    await expect(caption).toBeFocused();
+    await pane.getByRole('button', { name: 'Save the details' }).first().click();
+    await expect(page.locator('[data-editor-status]')).toContainText(/Saved/i, { timeout: 30_000 });
+    expect(readJson(join(FIXTURE, `content/media/articles/${ARTICLE}/tshirt.json`)).caption).toBe(STAND_IN_CAPTION);
   });
 
   test('turned off on the AI screen, nothing is suggested and no picture is sent', async ({ page }) => {

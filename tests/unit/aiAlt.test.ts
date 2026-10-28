@@ -4,7 +4,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import sharp from 'sharp';
 import { EMPTY_SETTINGS, keyVariable, readSettings, writeSettings, type AiService, type AiSettings } from '../../src/site/editor/server/aiSettings';
-import { altRoute, pictureToSend, suggestAlt, testPictures } from '../../src/site/editor/server/aiAlt';
+import { altRoute, pictureToSend, suggestAlt, suggestCaption, testPictures } from '../../src/site/editor/server/aiAlt';
 import { aiServicesRoute, testService } from '../../src/site/editor/server/aiServices';
 import { ALT_WIDTH } from '../../src/site/editor/model/altText';
 
@@ -196,6 +196,58 @@ describe('suggested alt text: the routes', () => {
     const res = await aiServicesRoute(['ai', 'pictures'], 'PUT', new Request('http://localhost/', { method: 'PUT', body: JSON.stringify({ suggest: false }) }));
     expect(res?.status).toBe(200);
     expect(readSettings().alt).toEqual({ suggest: false });
+  });
+});
+
+describe('suggested captions (gallery spec §9.8.1)', () => {
+  const route = (path: string, method: string, body?: BodyInit, f?: typeof fetch) =>
+    altRoute(['ai', ...path.split('?')[0].split('/')], method, new Request(`http://localhost/_edit/api/ai/${path}`, { method, body, headers: { 'content-type': 'application/json' } }), { fetch: f });
+  const pic = () => sharp({ create: { width: 10, height: 10, channels: 3, background: '#fff' } }).png().toBuffer();
+
+  it('asks with the caption rules and the picture alone, and keeps an answer that meets them', async () => {
+    const { f, sent } = standIn('{"caption":"Picture of a green field after rain."}');
+    expect(await suggestCaption(await pic(), false, { fetch: f })).toEqual({ caption: 'A green field after rain.' });
+    const messages = JSON.parse(sent[0]).messages as { role: string; content: unknown }[];
+    expect(messages[0].content).toMatch(/caption for a picture/);
+    expect(messages[1].content).toEqual([expect.objectContaining({ type: 'image_url' })]);
+  });
+
+  it('is offered without the alt text switch, but never without a writer that sees pictures, or for a private picture it mayn\u2019t see', async () => {
+    const { f, sent } = standIn('{"caption":"A field."}');
+    expect((await suggestCaption(await pic(), false, { fetch: f, settings: settingsWith({}, { alt: { suggest: false } }) })).caption).toBe('A field.');
+    for (const [settings, isPrivate, why] of [
+      [{ ...settingsWith(), writer: null }, false, 'no-writer'],
+      [settingsWith({ pictures: false }), false, 'blind'],
+      [settingsWith({ privatePages: false }), true, 'private'],
+    ] as const) expect(await suggestCaption(await pic(), isPrivate, { fetch: f, settings })).toEqual({ caption: null, why });
+    expect(sent).toHaveLength(1);
+  });
+
+  it('is none, with why, when the answer breaks the rules or the service fails or takes too long', async () => {
+    expect(await suggestCaption(await pic(), false, { fetch: standIn('{"caption":"A man named John Smith at his desk."}').f })).toEqual({ caption: null, why: 'refused' });
+    expect(await suggestCaption(await pic(), false, { fetch: standIn('{"alt":"A desk."}').f })).toEqual({ caption: null, why: 'refused' });
+    expect(await suggestCaption(await pic(), false, { fetch: (async () => new Response('{}', { status: 500 })) as typeof fetch })).toEqual({ caption: null, why: 'failed' });
+    expect(await suggestCaption(await pic(), false, { fetch: (() => new Promise<Response>(() => undefined)) as typeof fetch, waitMs: 60 })).toEqual({ caption: null, why: 'timeout' });
+  });
+
+  it('`ai/caption` says whether one is offered and suggests for a library picture, writing nothing', async () => {
+    writeSettings(settingsWith({}, { alt: { suggest: false } }));
+    expect(await (await route('caption?media=shared/holiday-at-home', 'GET'))!.json()).toEqual({ ok: true, on: true });
+    expect((await route('caption?media=shared/nothing', 'GET'))!.status).toBe(404);
+    const before = files(dir).filter((f) => !f.includes('.atiya'));
+    const s = standIn('{"caption":"Green, from edge to edge"}');
+    expect(await (await route('caption', 'POST', JSON.stringify({ media: 'shared/holiday-at-home' }), s.f))!.json()).toEqual({ ok: true, caption: 'Green, from edge to edge' });
+    expect(s.sent[0]).not.toMatch(/holiday/);
+    expect(files(dir).filter((f) => !f.includes('.atiya'))).toEqual(before);
+    writeSettings(settingsWith({ privatePages: false }));
+    expect(await (await route('caption?media=articles/secret/kept', 'GET'))!.json()).toEqual({ ok: true, on: false, why: 'private' });
+    expect(await (await route('caption', 'POST', JSON.stringify({ media: 'articles/secret/kept' })))!.json()).toEqual({ ok: true, caption: null, why: 'private' });
+    expect(await route('caption/more', 'GET')).toBeNull();
+  });
+
+  it('is reached through the AI routes', async () => {
+    const res = await aiServicesRoute(['ai', 'caption'], 'GET', new Request('http://localhost/_edit/api/ai/caption?media=shared/holiday-at-home'));
+    expect(await res?.json()).toEqual({ ok: true, on: true });
   });
 });
 
