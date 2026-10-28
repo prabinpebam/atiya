@@ -68,10 +68,10 @@ export function initAlbumList(root: HTMLElement, signal: AbortSignal) {
       if (!handle || e.button !== 0) return;
       const row = handle.closest<HTMLElement>('[data-album-row]')!;
       e.preventDefault();
-      handle.setPointerCapture(e.pointerId);
       const before = orderOf(list);
       row.dataset.moving = '';
       const move = (m: PointerEvent) => {
+        if (m.pointerId !== e.pointerId) return;
         const over = rowsOf(list).find((r) => {
           if (r === row) return false;
           const b = r.getBoundingClientRect();
@@ -79,17 +79,23 @@ export function initAlbumList(root: HTMLElement, signal: AbortSignal) {
         });
         if (!over) return;
         const b = over.getBoundingClientRect();
-        if (m.clientY < b.top + b.height / 2) over.before(row);
-        else over.after(row);
+        const above = m.clientY < b.top + b.height / 2;
+        // only when its place changes: moving a node, even to where it is, takes it out of the page for a moment
+        if (above && over.previousElementSibling !== row) over.before(row);
+        else if (!above && over.nextElementSibling !== row) over.after(row);
       };
-      const end = () => {
-        handle.removeEventListener('pointermove', move);
+      const end = (u: PointerEvent) => {
+        if (u.pointerId !== e.pointerId) return;
+        drag.abort();
         delete row.dataset.moving;
         void save(before, row);
       };
-      handle.addEventListener('pointermove', move, { signal });
-      handle.addEventListener('pointerup', end, { once: true, signal });
-      handle.addEventListener('pointercancel', end, { once: true, signal });
+      // the drag's own listeners, on the window: the row moving in the list drops a pointer capture on its handle
+      const drag = new AbortController();
+      signal.addEventListener('abort', () => drag.abort(), { once: true });
+      window.addEventListener('pointermove', move, { signal: drag.signal });
+      window.addEventListener('pointerup', end, { signal: drag.signal });
+      window.addEventListener('pointercancel', end, { signal: drag.signal });
     },
     { signal },
   );

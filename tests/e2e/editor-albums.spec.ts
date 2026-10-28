@@ -183,6 +183,34 @@ test.describe('editor: albums: adding in the grid', () => {
   });
 });
 
+test.describe('editor: albums: the albums list', () => {
+  test.beforeEach(() => reset());
+
+  test("an album dragged by its handle lands where it's let go, and the gallery keeps your order", async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await page.goto('/_edit/albums/?view=list');
+    const order = () => page.locator('[data-album-list-rows] > [data-album-row]').evaluateAll((els) => els.map((e) => (e as HTMLElement).dataset.albumRow));
+    const before = await order();
+    expect(before.length).toBeGreaterThan(1);
+    const handles = page.locator('[data-album-list-move]');
+    const from = (await handles.nth(0).boundingBox())!;
+    const to = (await page.locator('[data-album-list-rows] > [data-album-row]').nth(1).boundingBox())!;
+    const x = from.x + from.width / 2;
+    await page.mouse.move(x, from.y + from.height / 2);
+    await page.mouse.down();
+    // in steps, to just past the second album's middle: the first move puts the row back where it is, which mustn't end the drag
+    const y0 = from.y + from.height / 2;
+    const y1 = to.y + to.height * 0.75;
+    for (let i = 1; i <= 6; i++) await page.mouse.move(x, y0 + ((y1 - y0) * i) / 6);
+    await page.mouse.up();
+    const after = [before[1], before[0], ...before.slice(2)];
+    await expect.poll(order).toEqual(after);
+    await expect(page.locator('[data-album-list-setup]')).toContainText('Your order');
+    await page.reload();
+    expect(await order()).toEqual(after);
+  });
+});
+
 test.describe('editor: albums: save to remote', () => {
   test.beforeEach(() => reset());
 
