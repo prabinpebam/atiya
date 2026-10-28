@@ -48,6 +48,8 @@ const PAGES = [
  */
 async function open(page: Page, path: string, mode: (typeof MODES)[number], width: number) {
   await page.setViewportSize({ width, height: 900 });
+  // nothing moves by itself while it's photographed: an autoplaying carousel starts paused under reduced motion
+  await page.emulateMedia({ reducedMotion: 'reduce' });
   // init scripts run in the order they're added, so the last one sets the mode
   await page.addInitScript((m) => localStorage.setItem('site.theme', m), mode);
   const response = await page.goto(path);
@@ -99,6 +101,14 @@ const shot = { animations: 'disabled' as const, caret: 'hide' as const, maxDiffP
 const NOISY: Record<string, string> = {
   PlaceBar: "its building's name sits on a fractional pixel row (y 64.59 at 360 px)",
 };
+/**
+ * Parts of a story masked as well, each with its reason. The Carousel's trusted slide holds the contribution chart, a
+ * canvas projected by script whose drawing lands a few pixels apart between loads inside a slide; the chart's own
+ * story (ContributionHero) keeps it unmasked.
+ */
+const MASKED: Record<string, string> = {
+  Carousel: '[data-contribution-canvas]',
+};
 /** A whole page: long pages show a little anti-aliasing noise; a real layout change moves far more than 1%. */
 const page_ = { ...shot, fullPage: true, maxDiffPixelRatio: 0.01 };
 
@@ -130,7 +140,7 @@ test.describe('visual: stories', () => {
             await snap(canvas);
             await page.evaluate(() => new Promise((done) => requestAnimationFrame(() => requestAnimationFrame(done))));
             // remote and moving media are masked: a YouTube frame or a playing video is never the same twice
-            await expect.soft(canvas).toHaveScreenshot(`${slug(s.name)}-${i + 1}-${mode}-${width}.png`, { ...shot, ...(NOISY[s.name] ? { maxDiffPixelRatio: 0.015 } : {}), mask: [canvas.locator('iframe, video')] });
+            await expect.soft(canvas).toHaveScreenshot(`${slug(s.name)}-${i + 1}-${mode}-${width}.png`, { ...shot, ...(NOISY[s.name] ? { maxDiffPixelRatio: 0.015 } : {}), mask: [canvas.locator(['iframe, video', MASKED[s.name]].filter(Boolean).join(', '))] });
           }
         }
       }

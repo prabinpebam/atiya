@@ -73,11 +73,15 @@ export const highlightSource = (item: HighlightItem): string =>
 /** Legacy sites are unchanged; an explicit empty/disabled configuration never restores legacy content. */
 export function defaultHighlights(index: Pick<Index, 'github' | 'highlights'>): Highlights {
   return index.highlights ?? {
-    label: 'Highlights', enabled: true, peek: false, arrows: true, pager: 'dots',
+    label: 'Highlights', enabled: true, peek: false, arrows: true, pager: 'dots', loop: true, autoplay: true,
     display: 'fill', background: false, rounded: true, shadow: false,
     items: index.github ? [{ id: 'github', type: 'custom', custom: 'github' }] : [],
   };
 }
+
+/** The home's highlights go round and play by themselves unless their settings turn it off (highlights spec §2.4). */
+export const highlightMotion = (settings: Pick<Highlights, 'loop' | 'autoplay' | 'interval'>): { loop: boolean; autoplay: boolean; interval?: number } =>
+  ({ loop: settings.loop ?? true, autoplay: settings.autoplay ?? true, interval: settings.interval });
 
 const publicImage = (index: Index, media: string) => {
   const image = index.media.get(media);

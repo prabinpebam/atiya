@@ -1,6 +1,57 @@
-/** The carousel's rules (src/site/scripts/media.ts): its keys, its slides' shape, and a peek's inset and shading. */
+/** The carousel's rules (src/site/scripts/media.ts): its keys, its slides' shape, a loop, autoplay, and a peek's inset and shading. */
 import { describe, expect, it } from 'vitest';
-import { arrowStep, HAZE_REACH, hazeLevels, hazeOf, hazePlan, peekInset, peekOf, slideShape } from '../../src/site/scripts/media';
+import { arrowStep, autoplayRuns, HAZE_REACH, hazeLevels, hazeOf, hazePlan, loopOrder, peekInset, peekOf, slideIndex, SLIDE_SECONDS, slideSeconds, slideShape, type AutoplayHold } from '../../src/site/scripts/media';
+
+describe('carousel: a loop', () => {
+  it('without loop, the ends are real; with it, past either end is the other', () => {
+    expect([-1, 0, 6, 7].map((i) => slideIndex(i, 7, false))).toEqual([0, 0, 6, 6]);
+    expect([-1, 0, 6, 7].map((i) => slideIndex(i, 7, true))).toEqual([6, 0, 6, 0]);
+  });
+
+  it('the slide shown sits in the middle of the row, with the ones before it on its left and after it on its right', () => {
+    // 7 slides, the first shown: the last is just before it and the second just after
+    const order = loopOrder(0, 7);
+    expect(order[0]).toBe(3);
+    expect(order[6]).toBe(2);
+    expect(order[1]).toBe(4);
+    expect([...order].sort()).toEqual([0, 1, 2, 3, 4, 5, 6]);
+    // the last shown: the first comes right after it
+    const last = loopOrder(6, 7);
+    expect(last[0] - last[6]).toBe(1);
+  });
+
+  it('every slide has a neighbour each way from 3 slides; 2 slides keep the other one after; 1 stays put', () => {
+    for (let n = 3; n <= 8; n++) {
+      for (let c = 0; c < n; c++) {
+        const o = loopOrder(c, n);
+        expect(o[c]).toBeGreaterThan(0);
+        expect(o[c]).toBeLessThan(n - 1);
+        expect(o[(c + 1) % n]).toBe(o[c] + 1);
+        expect(o[(c - 1 + n) % n]).toBe(o[c] - 1);
+      }
+    }
+    expect(loopOrder(0, 2)).toEqual([0, 1]);
+    expect(loopOrder(1, 2)).toEqual([1, 0]);
+    expect(loopOrder(0, 1)).toEqual([0]);
+  });
+});
+
+describe('carousel: autoplay', () => {
+  it('runs only while nothing holds it', () => {
+    expect(autoplayRuns(new Set())).toBe(true);
+    for (const why of ['stopped', 'moving', 'hidden', 'away', 'drag'] as AutoplayHold[]) expect(autoplayRuns(new Set([why]))).toBe(false);
+  });
+
+  it("a slide's time is 4 seconds by default, held between 2 and 30", () => {
+    expect(SLIDE_SECONDS.default).toBe(4);
+    expect(slideSeconds(undefined)).toBe(4);
+    expect(slideSeconds(Number.NaN)).toBe(4);
+    expect(slideSeconds(Number.POSITIVE_INFINITY)).toBe(4);
+    expect(slideSeconds(1)).toBe(2);
+    expect(slideSeconds(6.5)).toBe(6.5);
+    expect(slideSeconds(90)).toBe(30);
+  });
+});
 
 describe('carousel: keys', () => {
   it('Left is previous, Right is next, nothing else moves', () => {

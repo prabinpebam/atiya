@@ -484,6 +484,93 @@ test.describe('site design system', () => {
     await expect(wrapped.locator('[data-carousel-counter]')).toHaveText('14 of 14');
   });
 
+  test('a carousel that loops and plays by itself: the first follows the last, the pill grows in place and fills, and it pauses', async ({ page, browser }) => {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await page.goto('/design/compounds/carousel/');
+    const example = (name: string) => page.locator('.example', { has: page.getByRole('heading', { name, exact: true }) }).locator('[data-carousel]');
+    const shown = (car: import('@playwright/test').Locator, n: number) => car.locator('[data-carousel-slide]').nth(n).evaluate((slide) => {
+      const t = slide.closest('[data-carousel-track]')!.getBoundingClientRect();
+      const r = slide.getBoundingClientRect();
+      return Math.abs(r.left + r.width / 2 - (t.left + t.width / 2)) < 4;
+    });
+
+    // a loop: no end is disabled; back from the first is the last, on from the last is the first
+    const looped = example('Looping');
+    await looped.evaluate((el) => el.scrollIntoView({ block: 'center' }));
+    const counter = looped.locator('[data-carousel-counter]');
+    await expect(counter).toHaveText('1 of 5');
+    await expect(looped.getByRole('button', { name: 'Previous slide' })).toBeEnabled();
+    const dotsAt = () => looped.locator('.dot').evaluateAll((ds) => ds.map((d) => Math.round(d.getBoundingClientRect().left)));
+    const before = await dotsAt();
+    const pill = (n: number) => looped.locator('.dot').nth(n).evaluate((d) => parseFloat(getComputedStyle(d, '::before').width));
+    expect(await pill(0)).toBeGreaterThan(await pill(1));
+    await looped.getByRole('button', { name: 'Previous slide' }).click();
+    await expect(counter).toHaveText('5 of 5');
+    await expect.poll(() => shown(looped, 4)).toBe(true);
+    await looped.getByRole('button', { name: 'Next slide' }).click();
+    await expect(counter).toHaveText('1 of 5');
+    await expect.poll(() => shown(looped, 0)).toBe(true);
+    await looped.getByRole('button', { name: 'Next slide' }).click();
+    await expect(counter).toHaveText('2 of 5');
+    // the active dot draws out into a pill inside its own target: no other dot moves
+    await expect.poll(() => pill(1)).toBeGreaterThan(await pill(0));
+    expect(await dotsAt()).toEqual(before);
+
+    // autoplay: on after its time, the pill filling; Pause slides holds it, Play slides goes on
+    const playing = example('Playing by itself');
+    await playing.evaluate((el) => el.scrollIntoView({ block: 'center' }));
+    await page.mouse.move(0, 0);
+    const clock = playing.locator('[data-carousel-counter]');
+    await expect(clock).toHaveText('1 of 5');
+    await expect(playing).not.toHaveAttribute('data-paused');
+    expect(await playing.locator('.dot[aria-current="true"]').evaluate((d) => getComputedStyle(d, '::after').animationName)).toBe('carousel-fill');
+    await expect(clock).toHaveText('2 of 5', { timeout: 6000 });
+    // the mouse moving over the slides holds it, the pill drawn in into a pause sign (two bars, the slide's
+    // time not running); moving over the controls doesn't; still for 6 s, it goes on, the slide's time whole again
+    const mark = (part: '::before' | '::after') => playing.locator('.dot[aria-current="true"]').evaluate((d, p) => {
+      const s = getComputedStyle(d, p);
+      return { w: Math.round(parseFloat(s.width)), h: Math.round(parseFloat(s.height)), animation: s.animationName };
+    }, part);
+    await playing.getByRole('button', { name: 'Next slide' }).hover();
+    await page.waitForTimeout(300);
+    await expect(playing).not.toHaveAttribute('data-paused');
+    const box = (await playing.locator('[data-carousel-track]').boundingBox())!;
+    await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+    await page.mouse.move(box.x + box.width / 2 + 20, box.y + box.height / 2 + 10, { steps: 4 });
+    await expect(playing).toHaveAttribute('data-moving', '');
+    await expect(playing).toHaveAttribute('data-paused', '');
+    await expect.poll(() => mark('::before')).toEqual({ w: 4, h: 16, animation: 'none' });
+    await expect.poll(() => mark('::after')).toEqual({ w: 4, h: 16, animation: 'none' });
+    const waiting = await clock.textContent();
+    await page.waitForTimeout(5000);
+    await expect(clock).toHaveText(waiting!);
+    await expect(playing).not.toHaveAttribute('data-moving', { timeout: 3000 });
+    await expect(playing).not.toHaveAttribute('data-paused');
+    expect((await mark('::after')).animation).toBe('carousel-fill');
+    await expect(clock).not.toHaveText(waiting!, { timeout: 6000 });
+    await page.mouse.move(0, 0);
+    const pause = playing.getByRole('button', { name: 'Pause slides' });
+    await pause.click();
+    await page.mouse.move(0, 0);
+    await expect(playing.getByRole('button', { name: 'Play slides' })).toBeVisible();
+    await expect(playing).toHaveAttribute('data-stopped', '');
+    const held = await clock.textContent();
+    await page.waitForTimeout(5000);
+    await expect(clock).toHaveText(held!);
+    await playing.getByRole('button', { name: 'Play slides' }).click();
+    await page.mouse.move(0, 0);
+    await expect(playing).not.toHaveAttribute('data-stopped');
+    await expect(clock).not.toHaveText(held!, { timeout: 6000 });
+
+    // under reduced motion it starts stopped, its button ready to play
+    const still = await browser.newPage({ reducedMotion: 'reduce' });
+    await still.goto('/design/compounds/carousel/');
+    const quiet = still.locator('.example', { has: still.getByRole('heading', { name: 'Playing by itself', exact: true }) }).locator('[data-carousel]');
+    await expect(quiet).toHaveAttribute('data-stopped', '');
+    await expect(quiet.getByRole('button', { name: 'Play slides' })).toBeVisible();
+    await still.close();
+  });
+
   test('a carousel with a peek: neighbours smaller under the carousel\'s own fade, reaching beside it where there is room, and a neighbour brings itself to the middle', async ({ page }) => {
     await page.setViewportSize({ width: 1440, height: 900 });
     await page.goto('/design/demo/article-layout/');

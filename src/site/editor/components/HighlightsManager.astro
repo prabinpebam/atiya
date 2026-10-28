@@ -15,6 +15,7 @@ import Button from '../../components/fundamentals/Button.astro';
 import Checkbox from '../../components/fundamentals/Checkbox.astro';
 import Heading from '../../components/fundamentals/Heading.astro';
 import Select from '../../components/fundamentals/Select.astro';
+import Slider from '../../components/fundamentals/Slider.astro';
 import Switch from '../../components/fundamentals/Switch.astro';
 import Text from '../../components/fundamentals/Text.astro';
 import TextField from '../../components/fundamentals/TextField.astro';
@@ -29,6 +30,7 @@ import IssueNote from '../kit/IssueNote.astro';
 import SlidePicture from '../kit/SlidePicture.astro';
 import type { Thumb } from '../model/inspectorFields';
 import type { BandTile } from '../../scripts/albumBandRules';
+import { SLIDE_SECONDS, slideSeconds } from '../../scripts/media';
 import { HIGHLIGHT_MAX, settingsLine, slideIcon, slideLine, type Highlights, type HighlightChoice, type HighlightDetail, type HighlightItem } from '../model/highlights';
 
 interface Props {
@@ -103,6 +105,9 @@ const state = JSON.stringify({ highlights: h, version, choices, selected: slide?
               <Heading level={3} size="h4" id="highlights-moving">Moving between slides</Heading>
               <Checkbox label="Peek at neighbours" name="peek" checked={h.peek} />
               <Checkbox label="Show arrow buttons" name="arrows" checked={h.arrows} />
+              <Checkbox label="Loop slides" name="loop" checked={h.loop !== false} />
+              <Checkbox label="Play slides automatically" name="autoplay" checked={h.autoplay !== false} />
+              <Slider label="Time per slide" name="interval" min={SLIDE_SECONDS.min} max={SLIDE_SECONDS.max} value={slideSeconds(h.interval)} disabled={h.autoplay === false} unit=" seconds" hint="How long each slide shows when it plays automatically. It pauses while the mouse is over it, and stops when a keyboard user reaches it." />
               <Select label="Pager" name="pager" value={h.pager} options={[{ value: 'dots', label: 'Dots' }, { value: 'filmstrip', label: 'Filmstrip' }, { value: 'filmstrip-wrap', label: 'Wrapping filmstrip' }]} />
             </section>
             <section class="part" aria-labelledby="highlights-pictures">

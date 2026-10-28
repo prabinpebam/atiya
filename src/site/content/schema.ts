@@ -10,6 +10,7 @@ import { PROVIDER_IDS, isProviderId } from './providers';
 import { illustrationProblems } from '../scripts/illustration';
 import { SEARCH_DESCRIPTION_MAX, SUMMARY_MAX } from './limits';
 import { SHAPES, embedHost } from '../services/services';
+import { SLIDE_SECONDS } from '../scripts/media';
 import { COLOR_ROLES, CORNERS, FONT_REF, NEUTRALS, SPACINGS, TYPE_RANGE, type Corners, type Neutral, type Spacing } from '../theme/model';
 import { FONT_CATEGORIES, type FontCategory } from '../theme/fonts';
 import { LIMITS as REC_LIMITS, RECOMMENDATION_LAYOUTS, RECOMMENDATION_OPENINGS, RECOMMENDATION_PLACES, type RecommendationSettings } from './recommendations';
@@ -49,6 +50,12 @@ export const carouselPresentation = {
   background: background.optional(),
   rounded: rounded.optional(),
   shadow: shadow.optional(),
+  /** Goes round: the first slide follows the last. Off unless set (the home's highlights: on unless set off). */
+  loop: z.boolean().optional(),
+  /** Moves on by itself after each slide's time. Off unless set (the home's highlights: on unless set off). */
+  autoplay: z.boolean().optional(),
+  /** Each slide's time before an autoplaying carousel moves on, in seconds (4 when left out). */
+  interval: z.number().min(SLIDE_SECONDS.min).max(SLIDE_SECONDS.max).optional(),
 };
 /** How a page's cards show its picture (documentation/content/media.md §9.1). */
 export const pictureStyle = z.strictObject({ display: display.optional(), background: background.optional(), rounded: rounded.optional(), shadow: shadow.optional() });

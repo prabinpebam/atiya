@@ -5,7 +5,7 @@ import ContributionHero from '../components/compounds/ContributionHero.astro';
 import HighlightCard from '../components/compounds/HighlightCard.astro';
 import { content, getPlacement, tagsOf } from './repository';
 import { albumMeasureOf, measureOf } from './opening';
-import { CUSTOM_SLIDES, defaultHighlights, highlightPresentation, showsCover, visibleHighlights, type HighlightItem } from './highlights';
+import { CUSTOM_SLIDES, defaultHighlights, highlightMotion, highlightPresentation, showsCover, visibleHighlights, type HighlightItem } from './highlights';
 import type { Picture } from './pictures';
 import { slidePicture } from './highlightPictures';
 import { bandOf } from './bands';
@@ -41,7 +41,7 @@ const [width, height] = PICTURE_SPECS.wide.ratio.split('/').map(Number);
 const items: CarouselItem[] = slides.map((s) => s.picture ? { ...s.picture, caption: '', alt: s.title }
   : { src: '', alt: s.title, caption: '', width, height, thumbnailLabel: s.item.type === 'custom' ? CUSTOM_SLIDES[s.item.custom].label : s.title });
 ---
-{slides.length > 0 && <Carousel {...settings} items={items} content id="home-highlights">
+{slides.length > 0 && <Carousel {...settings} {...highlightMotion(settings)} items={items} content id="home-highlights">
   {(n: number) => {
     const slide = slides[n];
     return slide.item.type === 'custom' && index.github

@@ -6,7 +6,7 @@
  * redraw after the save (the outline and inspector regions swapped in, the canvas loaded behind the old
  * one and swapped in when ready) only confirms it. It talks to the canvas by postMessage (same origin only).
  */
-import { announce, api, describeIssue, type Issue, onContentChange, refreshPending, refused, saveStatus, startTask, swapRegions, type Task } from './client';
+import { announce, api, describeIssue, type Issue, onContentChange, refreshPending, refused, saveStatus, startTask, swapRegions, type Task, timeFollows } from './client';
 import { fillPicker } from './picker';
 import { isStructural, originsOf, renameTree, targetsOf, type Origin } from '../model/optimistic';
 import * as ops from '../model/ops';
@@ -970,6 +970,8 @@ export function initEditor(root: HTMLElement, signal: AbortSignal) {
     const bad = (msg: string) => showIssues([{ file: state.key, path: t.name, message: msg }]);
     let value: unknown;
     // a topic ticked or cleared: the page's own order is kept, a new one goes last (spec §3.8)
+    // a carousel's Time per slide only means something while its slides play by themselves
+    if (t.type === 'checkbox' && /^body\.\d+\.autoplay$/.test(t.name)) timeFollows(t, document.querySelector<HTMLInputElement>(`input[name="${CSS.escape(t.name.replace(/autoplay$/, 'interval'))}"]`));
     if (kind === 'topic') return change(ops.setPath(doc, 'topics', pickTopic(doc.topics, t.value, t.checked)), { canvas: true });
     if (t.type === 'checkbox') value = kind === 'bool-default-true' ? (t.checked ? undefined : false) : t.checked ? true : undefined;
     else if (kind === 'number') value = t.value === '' ? undefined : Number(t.value);

@@ -390,6 +390,14 @@
   --c-carousel-slide-min: 300px;
   --c-carousel-slide-max: 80;
   --c-carousel-query-narrow: 36.45rem;
+  --c-carousel-pill: var(--space-6);
+  --c-carousel-pill-rest: var(--color-accent-soft);
+  --c-carousel-pill-ring: var(--border-control);
+  --c-carousel-pause-bar: var(--space-1);
+  --c-carousel-pause-height: var(--space-4);
+  --c-carousel-pause-spread: var(--space-2);
+  --c-carousel-pill-fill: var(--color-accent);
+  --c-carousel-progress: var(--space-1);
   --c-video-play: 4.5rem;
   --c-video-play-icon: 1.75rem;
   --c-contact-panel-frame: 40rem;

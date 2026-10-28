@@ -3,15 +3,24 @@ import AxeBuilder from '@axe-core/playwright';
 import { readFileSync } from 'node:fs';
 
 const homeSummary: string = JSON.parse(readFileSync(new URL('../../content/structures/site.json', import.meta.url), 'utf8')).home.summary;
+const configured: { items?: unknown[]; loop?: boolean; autoplay?: boolean } = JSON.parse(readFileSync(new URL('../../content/highlights.json', import.meta.url), 'utf8'));
 const [introduction, ...supportingNotes] = homeSummary.split(/\n+/).map((line) => line.trim()).filter(Boolean);
 
 test.describe('home highlights', () => {
-  test('a single configured GitHub slide has no fake controls and retains the home introduction', async ({ page }) => {
+  test('the configured highlights loop and play by themselves unless turned off, and keep the home introduction', async ({ page }) => {
     await page.goto('/');
     const carousel = page.locator('#home-highlights');
     await expect(carousel).toHaveAttribute('data-ready', '');
-    await expect(carousel.locator('[data-carousel-slide]')).toHaveCount(1);
-    await expect(carousel.getByRole('button', { name: /slide/ })).toHaveCount(0);
+    const slides = configured.items?.length ?? 1;
+    await expect(carousel.locator('[data-carousel-slide]')).toHaveCount(slides);
+    if (slides > 1) {
+      // the home's own defaults: a loop that plays by itself (content/highlights.json may turn either off)
+            expect(await carousel.evaluate((el) => el.hasAttribute('data-loop'))).toBe(configured.loop !== false);
+      expect(await carousel.evaluate((el) => el.hasAttribute('data-autoplay'))).toBe(configured.autoplay !== false);
+      await expect(carousel.getByRole('button', { name: 'Pause slides' })).toHaveCount(configured.autoplay === false ? 0 : 1);
+    } else {
+      await expect(carousel.getByRole('button', { name: /slide/ })).toHaveCount(0);
+    }
     await expect(page.locator('h1')).toHaveText('Prabin Pebam');
     await expect(page.getByRole('link', { name: 'Read the site', exact: true })).toHaveCount(1);
     await expect(page.locator('[data-contributions]')).toHaveAttribute('data-embedded', '');

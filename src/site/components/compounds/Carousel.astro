@@ -1,9 +1,13 @@
 ---
 /**
- * A non-rotating carousel: a scroll-snap row of captioned pictures (or video files, which play in their
+ * A carousel: a scroll-snap row of captioned pictures (or video files, which play in their
  * slides: muted by themselves while in view when set to autoplay) with previous and next buttons and
  * a counter (which can be left out), and dots or a filmstrip of thumbnails to pick a slide. The
- * filmstrip scrolls sideways in one row, or wraps onto more rows. It never moves unless the reader asks.
+ * filmstrip scrolls sideways in one row, or wraps onto more rows. The dot of the slide shown draws out
+ * into a pill inside its own target, so the others never move. By default it moves only when the reader
+ * asks and stops at its ends; with loop, the first slide follows the last (and the last precedes the
+ * first); with autoplay, it moves on by itself after each slide's time, its pill (or the filmstrip frame's
+ * bar) filling as the time runs, with a button to pause it.
  * With peek, the neighbouring slides show a little smaller across a wide gap, and the carousel fades and
  * blurs them beside the slide being shown: blurred first (easing from sharp across the gap to a little
  * blur at a neighbour's near edge, growing to the most at its far end, spreading past the slides' edges
@@ -12,8 +16,9 @@
  * it reaches out into it (up to the page's main region, or a box marked data-bleed-bounds); where it has
  * less, the fade and blur end at the edge, so nothing is cut off.
  * @tier compound
- * @a11y Follows the APG carousel pattern without rotation; every slide is a named group.
- * @a11y The previous and next buttons stop at the ends instead of wrapping.
+ * @a11y Follows the APG carousel pattern; every slide is a named group.
+ * @a11y The previous and next buttons stop at the ends, or with loop on wrap round them (and so do the arrow keys).
+ * @a11y Autoplay (off by default) has a Pause slides / Play slides button; it holds while the mouse is over the carousel, the page is hidden or the carousel is out of view, and stops for good when keyboard focus comes in or the reader pauses it. It starts paused under reduced motion. While it runs, the counter isn't announced.
  * @a11y A peeking slide is only a hint: choosing it (a click or tap) brings it to the middle rather than opening it.
  * @a11y Arrow keys work when the slide track has focus; dots or thumbnails are buttons for direct slide choice, named after the slide they show.
  * @a11y Without the buttons the counter stays for screen readers (announced as the slide changes); the dots or filmstrip remain the visible way to move.
@@ -24,7 +29,8 @@ import Image from '../fundamentals/Image.astro';
 import Video from '../fundamentals/Video.astro';
 import Caption from '../fundamentals/Caption.astro';
 import IconButton from '../fundamentals/IconButton.astro';
-import { slideShape, videoSources } from '../../scripts/media';
+import { slideSeconds, slideShape, videoSources } from '../../scripts/media';
+import { svgOf } from '../../design/icons';
 import type { PictureSource } from '../../design/pictures';
 
 export interface CarouselItem {
@@ -100,6 +106,12 @@ interface Props {
   shadow?: boolean;
   /** Trusted content supplied by the default render-function slot, called with its slide index. Uses the same chrome and track, without a picture frame. */
   content?: boolean;
+  /** Goes round: the first slide follows the last, and previous from the first shows the last. */
+  loop?: boolean;
+  /** Moves on by itself after each slide's time, with a button to pause it (it starts paused under reduced motion). */
+  autoplay?: boolean;
+  /** How long each slide shows before an autoplaying carousel moves on, in seconds (2 to 30; 4 by default). */
+  interval?: number;
 }
 
 const {
@@ -117,6 +129,9 @@ const {
   rounded = true,
   shadow = false,
   content = false,
+  loop = false,
+  autoplay = false,
+  interval,
 } = Astro.props;
 const panels = content ? await Promise.all(items.map((_, index) => Astro.slots.render('default', [index]))) : [];
 const total = items.length;
@@ -124,10 +139,12 @@ const status = total > 0 ? `1 of ${total}` : '0 of 0';
 // every slide's picture frame is the tallest picture's shape: data, set here and read by the stylesheet (which
 // keeps it between the slide-min and slide-max tokens)
 const tallest = slideShape(items);
-const shape = `--slide-shape: ${tallest.width} / ${tallest.height}`;
+const seconds = slideSeconds(interval);
+const plays = autoplay && total > 1;
+const shape = `--slide-shape: ${tallest.width} / ${tallest.height}${plays ? `; --carousel-interval: ${seconds}s` : ''}`;
 ---
 
-<section class="carousel" id={id} data-carousel data-breakout={width} data-peek={peek && total > 1 ? '' : undefined} data-shadow={shadow ? '' : undefined} aria-roledescription="carousel" aria-label={label} style={shape}>
+<section class="carousel" id={id} data-carousel data-breakout={width} data-peek={peek && total > 1 ? '' : undefined} data-shadow={shadow ? '' : undefined} data-loop={loop && total > 1 ? '' : undefined} data-autoplay={plays ? '' : undefined} data-interval={plays ? String(seconds) : undefined} aria-roledescription="carousel" aria-label={label} style={shape}>
   <div class="viewport">
     <div class="track" tabindex="0" role="group" aria-label="Slides" data-carousel-track>
       {
@@ -203,8 +220,11 @@ const shape = `--slide-shape: ${tallest.width} / ${tallest.height}`;
       </p>
     )
   }
+  {total > 1 && <div class="pager">
+  {plays && <IconButton label="Pause slides" icon="pause" variant="secondary" data-carousel-play="" />}
+  {plays && <template data-carousel-glyphs>{(['play', 'pause'] as const).map((name) => { const g = svgOf(name); return <svg viewBox={g.viewBox} data-icon={g.name} data-glyph={name}><Fragment set:html={g.body} /></svg>; })}</template>}
   {
-    total > 1 && (pager === 'dots' ? (
+    (pager === 'dots' ? (
       <div class="dots" role="group" aria-label="Choose slide">
         {items.map((_, index) => (
           <button class="dot" type="button" aria-label={`Show slide ${index + 1}`} aria-current={index === 0 ? 'true' : undefined} data-carousel-dot={String(index)}>
@@ -222,6 +242,7 @@ const shape = `--slide-shape: ${tallest.width} / ${tallest.height}`;
       </div>
     ))
   }
+  </div>}
 </section>
 
 <style>
@@ -233,37 +254,17 @@ const shape = `--slide-shape: ${tallest.width} / ${tallest.height}`;
     gap: var(--space-4);
   }
 
-  .viewport {
-    min-width: 0;
-    overflow: clip;
-  }
+  .viewport { min-width: 0; overflow: clip; }
 
-  .track {
-    display: flex;
-    gap: var(--slide-gap);
-    overflow-x: auto;
-    overscroll-behavior-x: contain;
-    scroll-snap-type: x mandatory;
-    scroll-behavior: smooth;
-    scrollbar-width: none;
-  }
+  .track { display: flex; gap: var(--slide-gap); overflow-x: auto; overscroll-behavior-x: contain; scroll-snap-type: x mandatory; scroll-behavior: smooth; scrollbar-width: none; }
 
   /* the slide is what snaps (never transformed: a snap is measured as drawn); its figure is what peeks */
-  .slide {
-    flex: 0 0 100%;
-    min-width: 0;
-    scroll-snap-align: center;
-  }
+  .slide { flex: 0 0 100%; min-width: 0; scroll-snap-align: center; }
 
   /* the track scrolls sideways, which would cut the shadows off: room for them under the slides */
-  .carousel[data-shadow] .track {
-    padding-block-end: var(--c-image-shadow-room);
-  }
+  .carousel[data-shadow] .track { padding-block-end: var(--c-image-shadow-room); }
 
-  .slide-body {
-    display: grid;
-    gap: var(--space-3);
-  }
+  .slide-body { display: grid; gap: var(--space-3); }
 
   /* a content slide: between the picture frame's least and most (never taller than the screen allows), its
      content in the middle; more than fits scrolls inside it rather than being cut */
@@ -336,102 +337,58 @@ const shape = `--slide-shape: ${tallest.width} / ${tallest.height}`;
 
   /* a neighbour (--peek 1; 0 in the middle, from the script as it scrolls) is a little smaller, drawn from
      its edge nearest the slide shown; its fade is the carousel's */
-  .carousel[data-peek] .slide {
-    --peek: 0;
-  }
+  .carousel[data-peek] .slide { --peek: 0; }
 
-  .carousel[data-peek] .slide-body {
-    transform: scale(calc(1 - var(--peek) * (1 - var(--c-carousel-peek-scale))));
-  }
+  .carousel[data-peek] .slide-body { transform: scale(calc(1 - var(--peek) * (1 - var(--c-carousel-peek-scale)))); }
 
-  .carousel[data-peek] .slide[data-side='before'] .slide-body {
-    transform-origin: 100% 50%;
-  }
+  .carousel[data-peek] .slide[data-side='before'] .slide-body { transform-origin: 100% 50%; }
 
-  .carousel[data-peek] .slide[data-side='after'] .slide-body {
-    transform-origin: 0 50%;
-  }
+  .carousel[data-peek] .slide[data-side='after'] .slide-body { transform-origin: 0 50%; }
 
-  .slide-link {
-    display: block;
-    height: 100%;
-    color: inherit;
-    text-decoration: none;
-  }
+  .slide-link { display: block; height: 100%; color: inherit; text-decoration: none; }
 
-  .controls {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: var(--space-3);
-  }
+  .controls { display: flex; align-items: center; justify-content: center; gap: var(--space-3); }
 
-  .status {
-    min-width: var(--c-control-height-lg);
-    margin: 0;
-    color: var(--color-text-muted);
-    font-family: var(--font-ui);
-    font-size: var(--text-sm);
-    font-weight: var(--weight-semibold);
-    line-height: var(--leading-ui);
-    text-align: center;
-  }
+  .status { min-width: var(--c-control-height-lg); margin: 0; color: var(--color-text-muted); font-family: var(--font-ui); font-size: var(--text-sm); font-weight: var(--weight-semibold); line-height: var(--leading-ui); text-align: center; }
 
-  .dots {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: center;
-    gap: var(--space-1);
-  }
+  /* the pager: an autoplaying carousel's play button, then the dots or the filmstrip */
+  .pager { display: flex; align-items: center; justify-content: center; gap: var(--space-2); min-width: 0; }
 
-  .dot {
-    display: grid;
-    place-items: center;
-    width: var(--size-touch);
-    height: var(--size-touch);
-    padding: var(--space-0);
-    border: 0;
-    border-radius: var(--radius-round);
-    background: transparent;
-    color: var(--color-border);
-    cursor: pointer;
-  }
+  .dots { display: flex; flex-wrap: wrap; justify-content: center; gap: var(--space-1); }
 
-  .dot::before {
-    content: '';
-    width: var(--space-2);
-    height: var(--space-2);
-    border-radius: var(--radius-round);
-    background: currentColor;
-  }
-
-  .dot[aria-current='true'] {
-    color: var(--color-accent);
-  }
+  /* each dot's mark is drawn in its own 44 px target: the shown slide's grows into a pill (narrower than the
+     target), so the others never move */
+  .dot { display: grid; place-items: center; width: var(--size-touch); height: var(--size-touch); padding: var(--space-0); border: 0; border-radius: var(--radius-round); background: transparent; color: var(--color-border); cursor: pointer; }
+  .dot::before, .dot::after { content: ''; grid-area: 1 / 1; width: var(--space-2); height: var(--space-2); border-radius: var(--radius-round); background: currentColor; transition-property: width, height, margin-inline, background-color, box-shadow; transition-duration: var(--duration-base); transition-timing-function: var(--ease-standard); }
+  .dot::after { display: none; }
+  .dot[aria-current='true'] { color: var(--color-accent); }
+  .dot[aria-current='true']::before { width: var(--c-carousel-pill); }
 
   @media (hover: hover) {
-    .dot:hover {
-      color: var(--color-accent);
-    }
+    .dot:hover { color: var(--color-accent); }
   }
+
+  .dot:active { color: var(--color-accent); }
+
+  /* autoplay: the pill fills from its start as the slide's time runs (paused with the clock; under reduced
+     motion, which ends every animation at once, a whole pill) */
+  .carousel[data-ready][data-autoplay]:not([data-stopped]) .dot[aria-current='true']::before { background: var(--c-carousel-pill-rest); box-shadow: inset 0 0 0 var(--c-carousel-pill-ring) var(--c-carousel-pill-fill); }
+  .carousel[data-ready][data-autoplay]:not([data-stopped]) .dot[aria-current='true']::after { display: block; width: var(--c-carousel-pill); background: var(--c-carousel-pill-fill); animation: carousel-fill var(--carousel-interval) linear forwards; }
+  .carousel[data-paused] .dot::after, .carousel[data-paused] .thumb::after { animation-play-state: paused; }
+  /* the mouse moving over the slides holds it: the pill draws in into a pause sign, its two halves the two bars,
+     and draws out again, filling from the start, once the mouse has been still a while */
+  .carousel[data-ready][data-autoplay][data-moving]:not([data-stopped]) .dot[aria-current='true']::before,
+  .carousel[data-ready][data-autoplay][data-moving]:not([data-stopped]) .dot[aria-current='true']::after { width: var(--c-carousel-pause-bar); height: var(--c-carousel-pause-height); background: var(--c-carousel-pill-fill); box-shadow: none; animation: none; }
+  .carousel[data-ready][data-autoplay][data-moving]:not([data-stopped]) .dot[aria-current='true']::before { margin-inline-end: var(--c-carousel-pause-spread); }
+  .carousel[data-ready][data-autoplay][data-moving]:not([data-stopped]) .dot[aria-current='true']::after { margin-inline-start: var(--c-carousel-pause-spread); }
+  @keyframes carousel-fill { from { clip-path: inset(0 calc(var(--c-carousel-pill) - var(--space-2)) 0 0 round var(--radius-round)); } to { clip-path: inset(0 0 0 0 round var(--radius-round)); } }
 
   /* the filmstrip: one row that scrolls sideways (centred while it fits), or rows that wrap */
-  .strip {
-    display: flex;
-    justify-content: safe center;
-    gap: var(--space-2);
-    padding: var(--space-1);
-    overflow-x: auto;
-    overscroll-behavior-x: contain;
-    scroll-behavior: smooth;
-  }
-
-  .strip[data-wrap] {
-    flex-wrap: wrap;
-    overflow: visible;
-  }
+  .strip { flex: 0 1 auto; display: flex; justify-content: safe center; gap: var(--space-2); min-width: 0; padding: var(--space-1); overflow-x: auto; overscroll-behavior-x: contain; scroll-behavior: smooth; }
+  .strip[data-wrap] { flex-wrap: wrap; overflow: visible; }
 
   .thumb {
+    position: relative;
     flex: none;
     width: var(--c-carousel-thumb);
     padding: var(--space-0);
@@ -441,25 +398,20 @@ const shape = `--slide-shape: ${tallest.width} / ${tallest.height}`;
     overflow: hidden;
     opacity: var(--c-carousel-thumb-rest);
     cursor: pointer;
-    transition:
-      opacity var(--duration-fast) var(--ease-standard),
-      border-color var(--duration-fast) var(--ease-standard);
+    transition: opacity var(--duration-fast) var(--ease-standard), border-color var(--duration-fast) var(--ease-standard);
   }
 
-  .thumb[aria-current='true'] {
-    border-color: var(--c-carousel-thumb-on);
-    opacity: 1;
-  }
+  .thumb[aria-current='true'] { border-color: var(--c-carousel-thumb-on); opacity: 1; }
 
   @media (hover: hover) {
-    .thumb:hover {
-      opacity: 1;
-    }
+    .thumb:hover { opacity: 1; }
   }
 
-  .thumb:active {
-    opacity: 1;
-  }
+  .thumb:active { opacity: 1; }
+
+  /* autoplay on a filmstrip: a bar along the foot of the frame shown, filling as the slide's time runs */
+  .carousel[data-ready][data-autoplay]:not([data-stopped]) .thumb[aria-current='true']::after { content: ''; position: absolute; inset-inline: 0; inset-block-end: 0; height: var(--c-carousel-progress); background: var(--c-carousel-pill-fill); transform-origin: 0 50%; animation: carousel-progress var(--carousel-interval) linear forwards; }
+  @keyframes carousel-progress { from { transform: scaleX(0); } to { transform: scaleX(1); } }
 
   /* narrower than c.carousel.query-narrow (its column at the sm window, a phone's): one slide at a time */
   @container (width < 36.45rem) {
@@ -477,6 +429,16 @@ const shape = `--slide-shape: ${tallest.width} / ${tallest.height}`;
     .strip {
       scroll-behavior: auto;
     }
+  }
+
+  /* forced colours paint a pseudo-element's fill as the page: the dots, the pill and its fill take system colours */
+  @media (forced-colors: active) {
+    .dot::before, .dot::after, .thumb::after { forced-color-adjust: none; background: ButtonText; }
+    .dot[aria-current='true']::before { background: Highlight; }
+    .carousel[data-ready][data-autoplay]:not([data-stopped]) .dot[aria-current='true']::before { background: GrayText; box-shadow: inset 0 0 0 var(--c-carousel-pill-ring) Highlight; }
+    .carousel[data-ready][data-autoplay][data-moving]:not([data-stopped]) .dot[aria-current='true']::before { background: Highlight; box-shadow: none; }
+    .carousel[data-ready][data-autoplay]:not([data-stopped]) .dot[aria-current='true']::after,
+    .carousel[data-ready][data-autoplay]:not([data-stopped]) .thumb[aria-current='true']::after { background: Highlight; }
   }
 </style>
 

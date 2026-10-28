@@ -214,6 +214,13 @@ function clearNote() {
  * Says something in the top bar's status (a live region), optionally as a problem: a note that shows for
  * a few seconds (a problem for longer), then gives way to the save state again.
  */
+/** A field that only means something while a switch is on (a carousel's Time per slide): disabled while it's off, its value kept. */
+export function timeFollows(on: HTMLInputElement, field: HTMLInputElement | null) {
+  if (!field) return;
+  field.disabled = !on.checked;
+  field.closest('[data-slider]')?.toggleAttribute('data-disabled', !on.checked);
+}
+
 export function announce(text: string, tone: 'default' | 'negative' = 'default') {
   clearTimeout(status.noteTimer);
   status.note = text;

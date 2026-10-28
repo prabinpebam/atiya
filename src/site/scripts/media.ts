@@ -33,8 +33,44 @@ export function nearest(scrollLeft: number, offsets: number[]): number {
 /** "3 of 7": a counter's text (1-based). */
 export const counter = (i: number, n: number): string => `${i + 1} of ${n}`;
 
-/** Clamp to the slides that exist (a carousel doesn't wrap: its ends are real). */
+/** Clamp to the slides that exist (a carousel that doesn't loop: its ends are real). */
 export const clampIndex = (i: number, n: number): number => Math.max(0, Math.min(n - 1, i));
+
+/** The slide a carousel goes to: clamped at the ends, or with loop on, wrapped round them. */
+export const slideIndex = (i: number, n: number, loop: boolean): number => (loop ? wrap(i, n) : clampIndex(i, n));
+
+/**
+ * A looping carousel's visual order (CSS `order`, by slide): the slide shown sits in the middle, the ones after
+ * it to its right and the ones before it to its left, wrapping round, so there's always a neighbour each way to
+ * glide or swipe to and the first comes after the last. The slides' DOM order never changes.
+ */
+export function loopOrder(current: number, n: number): number[] {
+  const middle = Math.floor((n - 1) / 2);
+  return Array.from({ length: n }, (_, k) => wrap(k - current + middle, n));
+}
+
+/**
+ * Why an autoplaying carousel waits. Stopped holds until the reader presses Play: they paused it, keyboard focus
+ * came in (APG), it reached a last slide that doesn't loop, or it started paused under reduced motion. The others
+ * let go by themselves: the mouse moving over the slides (until it has been still for MOVING_HOLD_SECONDS), the
+ * page hidden, the carousel out of view, a finger dragging it.
+ */
+export type AutoplayHold = 'stopped' | 'moving' | 'hidden' | 'away' | 'drag';
+
+/** How long the mouse must be still (or gone) after moving over the slides before autoplay goes on, in seconds: then
+ * the slide gets its whole time again, so the next move comes this plus a slide's time after the last. Moving over
+ * the controls, or off the carousel, never holds it. */
+export const MOVING_HOLD_SECONDS = 6;
+
+/** Whether an autoplaying carousel runs: only while nothing holds it. */
+export const autoplayRuns = (holds: ReadonlySet<AutoplayHold>): boolean => holds.size === 0;
+
+/** The time each slide shows, in seconds: the default (4), and the least and most an author can set. */
+export const SLIDE_SECONDS = { default: 4, min: 2, max: 30 } as const;
+
+/** A slide's time in seconds, held between the least and the most (a missing or broken one is the default). */
+export const slideSeconds = (s: number | undefined): number =>
+  typeof s === 'number' && Number.isFinite(s) ? Math.min(SLIDE_SECONDS.max, Math.max(SLIDE_SECONDS.min, s)) : SLIDE_SECONDS.default;
 
 /** A video file as the Video fundamental takes it: an MP4 as its src, a WebM as its webm (a carousel's slide, a gallery's cell). */
 export function videoSources(video: { src: string; type: string }): { src?: string; webm?: string } {

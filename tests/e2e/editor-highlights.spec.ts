@@ -217,13 +217,18 @@ test.describe('editor: home highlights', () => {
     await screen(page).getByRole('checkbox', { name: 'Use automatic background' }).check();
     await screen(page).getByRole('checkbox', { name: 'Round picture corners' }).uncheck();
     await screen(page).getByRole('checkbox', { name: 'Show picture shadow' }).check();
+    // the home loops and plays by itself unless told otherwise; a slide's time is 2 to 30 seconds
+    await expect(screen(page).getByRole('checkbox', { name: 'Loop slides' })).toBeChecked();
+    await expect(screen(page).getByRole('checkbox', { name: 'Play slides automatically' })).toBeChecked();
+    await screen(page).getByRole('checkbox', { name: 'Loop slides' }).uncheck();
+    await screen(page).getByRole('slider', { name: 'Time per slide' }).fill('6');
     await select(page, 'Pager', 'Wrapping filmstrip');
     await select(page, 'Picture display', 'Tile');
     await screen(page).getByRole('button', { name: 'Save carousel settings', exact: true }).click();
     await said(page, 'Saved carousel settings');
     expect(saved()).toMatchObject({
       label: 'From the fixture', enabled: false, peek: true, arrows: false, pager: 'filmstrip-wrap',
-      display: 'tile', background: true, rounded: false, shadow: true,
+      display: 'tile', background: true, rounded: false, shadow: true, loop: false, autoplay: true, interval: 6,
     });
     expect(saved().items.map((i) => i.id)).toEqual([added[0], added[3], added[1], added[2]]);
     expect(saved().items[2]).toMatchObject({ type: 'article', text: 'A few words before the pictures.' });
@@ -235,6 +240,8 @@ test.describe('editor: home highlights', () => {
     await page.goto('/_edit/highlights/?slide=settings');
     await expect(screen(page).getByRole('textbox', { name: 'Carousel label' })).toHaveValue('From the fixture');
     await expect(screen(page).getByRole('combobox', { name: 'Pager', exact: true })).toContainText('Wrapping filmstrip');
+    await expect(screen(page).getByRole('checkbox', { name: 'Loop slides' })).not.toBeChecked();
+    await expect(screen(page).getByRole('slider', { name: 'Time per slide' })).toHaveValue('6');
 
     // removing takes two presses, chooses the slide that took its place, and never deletes the source
     await choose(page, added[2]);

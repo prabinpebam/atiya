@@ -165,7 +165,7 @@ const linesOf = (text: string) => text.split('\n').map((l, k) => (k ? `\n${l}` :
     if ('ps' in v && v.b.type === 'carousel') {
       const { b, ps } = v;
       const items = ps.map((p, n) => ({ ...p, caption: b.showCaption === false ? '' : (b.items[n].caption ?? p.caption ?? '') }));
-      return <Carousel items={items} label={b.label} peek={b.peek} pager={b.pager} arrows={b.arrows} display={b.display} background={!!b.background} rounded={b.rounded !== false} shadow={!!b.shadow} sizes={SIZES.wide} lightbox={b.lightbox ? `${lightbox}-carousel-${i}` : undefined} />;
+      return <Carousel items={items} label={b.label} peek={b.peek} pager={b.pager} arrows={b.arrows} loop={!!b.loop} autoplay={!!b.autoplay} interval={b.interval} display={b.display} background={!!b.background} rounded={b.rounded !== false} shadow={!!b.shadow} sizes={SIZES.wide} lightbox={b.lightbox ? `${lightbox}-carousel-${i}` : undefined} />;
     }
     if (v.b.type === 'video' && 'v' in v && v.v) {
       const { b, v: f } = v;

@@ -13,6 +13,7 @@ import Button from '../../components/fundamentals/Button.astro';
 import IconButton from '../../components/fundamentals/IconButton.astro';
 import Image from '../../components/fundamentals/Image.astro';
 import Select from '../../components/fundamentals/Select.astro';
+import Slider from '../../components/fundamentals/Slider.astro';
 import Switch from '../../components/fundamentals/Switch.astro';
 import TextField from '../../components/fundamentals/TextField.astro';
 import Sections from '../kit/Sections.astro';
@@ -25,6 +26,7 @@ import ActionBar from '../../components/compounds/ActionBar.astro';
 import type { Block } from '../../content/schema';
 import { kindOf } from '../model/ops';
 import { DISPLAYS, WIDTHS, fieldId as id, type Thumb } from '../model/inspectorFields';
+import { SLIDE_SECONDS, slideSeconds } from '../../scripts/media';
 
 interface Props {
   /** The gallery or carousel. */
@@ -91,6 +93,9 @@ const thumbOf = (m?: string) => (m ? media[m] : undefined);
         <Switch label="Show the neighbours (peek)" name={`body.${i}.peek`} id={id(i, 'peek')} checked={!!b.peek} data-type="bool" />
         <Select label="Pager" name={`body.${i}.pager`} id={id(i, 'pager')} value={b.pager ?? 'dots'} options={[{ value: 'dots', label: 'Dots' }, { value: 'filmstrip', label: 'Filmstrip' }, { value: 'filmstrip-wrap', label: 'Filmstrip, wrapping' }]} />
         <Switch label="Previous and next buttons" name={`body.${i}.arrows`} id={id(i, 'arrows')} checked={b.arrows !== false} data-type="bool-default-true" />
+        <Switch label="Loop slides" name={`body.${i}.loop`} id={id(i, 'loop')} checked={!!b.loop} data-type="bool" />
+        <Switch label="Play slides automatically" name={`body.${i}.autoplay`} id={id(i, 'autoplay')} checked={!!b.autoplay} data-type="bool" />
+        <Slider label="Time per slide" name={`body.${i}.interval`} id={id(i, 'interval')} min={SLIDE_SECONDS.min} max={SLIDE_SECONDS.max} value={slideSeconds(b.interval)} disabled={!b.autoplay} unit=" seconds" hint="How long each slide shows when it plays automatically." data-type="number" />
       </Pane>
     )
   }

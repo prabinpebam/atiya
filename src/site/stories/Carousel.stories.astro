@@ -17,7 +17,7 @@ const WITH_VIDEO = [SAMPLES[0], TOUR, SAMPLES[5]];
 const HIGHLIGHTS = [{ src: '', alt: 'A year on GitHub', caption: '', width: 21, height: 9, thumbnailLabel: 'GitHub' }, ...SAMPLES.slice(1, 4)];
 ---
 
-<Example title="A quiet carousel" layout="block" description="There is no rotation: the reader moves slide by slide.">
+<Example title="A quiet carousel" layout="block" description="By default it moves only when the reader asks, slide by slide: loop and autoplay are off, and its ends are real.">
   <Carousel items={SAMPLES.slice(0, 5)} label="Painted planet tour" lightbox="carousel-quiet" />
 </Example>
 
@@ -61,10 +61,22 @@ const HIGHLIGHTS = [{ src: '', alt: 'A year on GitHub', caption: '', width: 21, 
   <Carousel items={WITH_VIDEO} label="Scenes and a tour" display="fit" lightbox="carousel-video" />
 </Example>
 
-<Example title="Trusted mixed highlights" layout="block" description="The same track, peek and controls carry a custom interactive chart, a page excerpt, an album cover and a single picture. No automatic rotation.">
+<Example title="Trusted mixed highlights" layout="block" description="The same track, peek and controls carry a custom interactive chart, a page excerpt, an album cover and a single picture. Here it holds still (the home turns on loop and autoplay: Playing by itself).">
   <Carousel items={HIGHLIGHTS} label="Mixed home highlights" content peek>
     {(n: number) => n === 0
       ? <ContributionHero embedded data={{ ...CONTRIBUTION_SAMPLE, stats: contributionStats(CONTRIBUTION_SAMPLE) }} />
       : <HighlightCard title={n === 1 ? 'Finding a shared direction' : n === 2 ? 'An afternoon outdoors' : 'A waterfall'} text={n === 1 ? 'A small team tried three approaches together.' : n === 2 ? 'A few scenes from the same walk.' : undefined} href={n < 3 ? `#example-${n === 1 ? 'page' : 'album'}` : undefined} picture={SAMPLES[n]} settings={{ display: 'fit' }} />}
   </Carousel>
+</Example>
+
+<Example title="Looping" layout="block" description="loop: the first slide follows the last, so previous and next never stop and a swipe always has a slide to go to. The slides keep their order in the page (and in the dots and the lightbox); the one shown always has a neighbour each way.">
+  <Carousel items={SAMPLES.slice(0, 5)} label="Planet scenes in a loop" loop peek />
+</Example>
+
+<Example title="Playing by itself" layout="block" description="autoplay (with loop): after each slide's time (interval, 4 seconds by default) it moves on, the dot drawn out into a pill that fills as the time runs. Pause slides stops it; it also holds while the mouse moves over the slides (its pill turns into a pause sign, and goes on with a full slide's time 6 seconds after the mouse is still), while the page is hidden or it's out of view, and stops when keyboard focus comes in. It starts paused under reduced motion. Without loop, it stops at the last slide.">
+  <Carousel items={SAMPLES.slice(0, 5)} label="Planet scenes playing by themselves" loop autoplay />
+</Example>
+
+<Example title="Playing with a filmstrip" layout="block" description="autoplay with a filmstrip and interval={6}: a bar along the foot of the frame shown fills as the slide's time runs.">
+  <Carousel items={SAMPLES} label="Planet scenes playing with a filmstrip" pager="filmstrip" loop autoplay interval={6} />
 </Example>

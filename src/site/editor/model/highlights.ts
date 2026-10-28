@@ -2,7 +2,7 @@
  * Home highlights' editor rules: trusted source choices, stable slide IDs and immutable list operations.
  * The content contract owns eligibility and validation; the editor never copies source titles or pictures.
  */
-import { defaultHighlights, highlightCandidates, highlightSource, highlightState, HIGHLIGHT_MAX, slidePictureStyle, type Highlights, type HighlightItem, type SlidePictureStyle } from '../../content/highlights';
+import { defaultHighlights, highlightCandidates, highlightMotion, highlightSource, highlightState, HIGHLIGHT_MAX, slidePictureStyle, type Highlights, type HighlightItem, type SlidePictureStyle } from '../../content/highlights';
 import { mediaId } from '../../content/schema';
 import type { ContentIndex } from '../../content/load';
 import type { Picture } from '../../content/pictures';
@@ -150,7 +150,7 @@ export function previewPicture(item: HighlightItem, params: URLSearchParams): { 
 export function highlightsView(index: ContentIndex): { highlights: Highlights; choices: HighlightChoice[]; details: Record<string, HighlightDetail> } {
   const effective = defaultHighlights(index);
   const highlights: Highlights = {
-    ...effective, peek: effective.peek ?? false, arrows: effective.arrows ?? true, pager: effective.pager ?? 'dots',
+    ...effective, peek: effective.peek ?? false, arrows: effective.arrows ?? true, pager: effective.pager ?? 'dots', ...highlightMotion(effective),
     display: effective.display ?? 'fill', background: effective.background ?? false, rounded: effective.rounded ?? true, shadow: effective.shadow ?? false,
   };
   const items: HighlightItem[] = [{ id: 'choice-github', type: 'custom', custom: 'github' }];

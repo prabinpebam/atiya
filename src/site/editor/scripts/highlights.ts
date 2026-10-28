@@ -7,10 +7,11 @@
  * the screen shows it. A refused save keeps what was typed and says why in the form. A change made elsewhere
  * redraws the screen, unless something here is unsaved.
  */
-import { api, onContentChange, refused, saveStatus, swapRegions, track } from './client';
+import { api, onContentChange, refused, saveStatus, swapRegions, timeFollows, track } from './client';
 import { underWay } from '../model/feedback';
 import { addHighlight, coverHighlight, excerptHighlight, HIGHLIGHT_MAX, moveHighlight, pictureHighlight, removeHighlight, slideBackground, SLIDE_PICTURE_REGION, type Highlights, type HighlightChoice, type HighlightItem, type SlidePictureStyle } from '../model/highlights';
 import { fillPicker } from './picker';
+import { slideSeconds } from '../../scripts/media';
 
 interface State {
   highlights: Highlights;
@@ -230,6 +231,11 @@ export function initHighlights(root: HTMLElement, signal: AbortSignal) {
     following(false);
     void updatePreview();
   }, { signal });
+  // Time per slide only means something while the slides play by themselves
+  form.addEventListener('change', (e) => {
+    const t = e.target as HTMLInputElement;
+    if (t.name === 'autoplay') timeFollows(t, field('interval'));
+  }, { signal });
   // an album slide's Show: its arranged cover, or one picture with its choices
   form.addEventListener('change', (e) => {
     if ((e.target as HTMLInputElement).name !== 'slideShow') return;
@@ -254,6 +260,9 @@ export function initHighlights(root: HTMLElement, signal: AbortSignal) {
           label: field('label')?.value ?? h.label,
           peek: checked('peek'),
           arrows: checked('arrows'),
+          loop: checked('loop'),
+          autoplay: checked('autoplay'),
+          interval: slideSeconds(Number(field('interval')?.value)),
           pager: (field('pager')?.value || h.pager) as Highlights['pager'],
           display: (field('display')?.value || h.display) as Highlights['display'],
           background: checked('background'),

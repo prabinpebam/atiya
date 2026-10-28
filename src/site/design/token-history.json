@@ -45,6 +45,9 @@
     "c.button.secondary-border": {"v":"var(--color-text)"},
     "c.button.secondary-text": {"v":"var(--color-text)"},
     "c.carousel.gap": {"v":"var(--space-8)"},
+    "c.carousel.pause-bar": {"v":"var(--space-1)"},
+    "c.carousel.pause-height": {"v":"var(--space-4)"},
+    "c.carousel.pause-spread": {"v":"var(--space-2)"},
     "c.carousel.peek-blur": {"v":"20px"},
     "c.carousel.peek-blur-near": {"v":"4px"},
     "c.carousel.peek-far": {"v":"0.1"},
@@ -52,6 +55,11 @@
     "c.carousel.peek-min": {"v":"2rem"},
     "c.carousel.peek-near": {"v":"0.8"},
     "c.carousel.peek-scale": {"v":"0.88"},
+    "c.carousel.pill": {"v":"var(--space-6)"},
+    "c.carousel.pill-fill": {"v":"var(--color-accent)"},
+    "c.carousel.pill-rest": {"v":"var(--color-accent-soft)"},
+    "c.carousel.pill-ring": {"v":"var(--border-control)"},
+    "c.carousel.progress": {"v":"var(--space-1)"},
     "c.carousel.query-narrow": {"v":"36.45rem"},
     "c.carousel.slide-max": {"v":"80"},
     "c.carousel.slide-min": {"v":"300px"},
@@ -505,6 +513,54 @@
     {
       "date": "2026-10-28",
       "changes": {
+        "c.carousel.pause-bar": [
+          null,
+          {
+            "v": "var(--space-1)"
+          }
+        ],
+        "c.carousel.pause-height": [
+          null,
+          {
+            "v": "var(--space-4)"
+          }
+        ],
+        "c.carousel.pause-spread": [
+          null,
+          {
+            "v": "var(--space-2)"
+          }
+        ],
+        "c.carousel.pill": [
+          null,
+          {
+            "v": "var(--space-6)"
+          }
+        ],
+        "c.carousel.pill-fill": [
+          null,
+          {
+            "v": "var(--color-accent)"
+          }
+        ],
+        "c.carousel.pill-rest": [
+          null,
+          {
+            "v": "var(--color-accent-soft)"
+          }
+        ],
+        "c.carousel.pill-ring": [
+          null,
+          {
+            "v": "var(--border-control)"
+          }
+        ],
+        "c.carousel.progress": [
+          null,
+          {
+            "v": "var(--space-1)"
+          }
+        ],
         "c.control.text-lines-max": [
           null,
           {
