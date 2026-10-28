@@ -5,7 +5,7 @@
  * TypeScript compiler), the tokens its styles read, what it uses and what uses it, and its story.
  * Nothing here is hand-kept: add a component and a story, and the library has its page.
  */
-import { readFileSync, readdirSync, existsSync } from 'node:fs';
+import { readFileSync, readdirSync, existsSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import ts from 'typescript';
 import { smart } from '../design/typography';
@@ -203,11 +203,31 @@ export function dedent(s: string): string {
 }
 
 let cache: Entry[] | null = null;
+let cacheKey = '';
+let checkedAt = 0;
+/** How long a check that the sources are unchanged holds: one page's many calls share it (each check stats ~170 files). */
+const RECHECK_MS = 500;
+
+/** What the catalogue is read from (every component, layout and story, with when each last changed), as one string. */
+function sourcesKey(): string {
+  const parts: string[] = [];
+  for (const dir of [...TIERS.map((t) => t.dir), 'src/site/stories']) {
+    const abs = join(ROOT, dir);
+    if (!existsSync(abs)) continue;
+    for (const f of readdirSync(abs).filter((x) => x.endsWith('.astro')).sort()) parts.push(`${dir}/${f}:${statSync(join(abs, f)).mtimeMs}`);
+  }
+  return parts.join('|');
+}
 
 /** Every component and layout, in tier order, then by name. */
 export function catalog(): Entry[] {
-  // cached for the build; in dev, read afresh so a new component shows up without a restart
+  // cached for the build; in dev, kept until a component, layout or story changes, so a new one shows up without a
+  // restart, while a page that asks many times (every link it draws, the side nav) reads and parses them only once
   if (cache && import.meta.env?.PROD) return cache;
+  if (cache && performance.now() - checkedAt < RECHECK_MS) return cache;
+  const key = sourcesKey();
+  checkedAt = performance.now();
+  if (cache && key === cacheKey) return cache;
   const entries: Entry[] = [];
   for (const t of TIERS) {
     const dir = join(ROOT, t.dir);
@@ -242,6 +262,7 @@ export function catalog(): Entry[] {
   }
   for (const e of entries) e.usedBy = entries.filter((x) => x.uses.includes(e.name)).map((x) => x.name);
   cache = entries;
+  cacheKey = key;
   return entries;
 }
 
