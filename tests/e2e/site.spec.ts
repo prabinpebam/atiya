@@ -516,7 +516,8 @@ test.describe('site design system', () => {
     await expect.poll(() => pill(1)).toBeGreaterThan(await pill(0));
     expect(await dotsAt()).toEqual(before);
 
-    // autoplay: on after its time, the pill filling; Pause slides holds it, Play slides goes on
+    // autoplay: on after its time, the pill filling; the pill is the pause control (no button of its own), Pause
+    // slides holds it, Play slides goes on
     const playing = example('Playing by itself');
     await playing.evaluate((el) => el.scrollIntoView({ block: 'center' }));
     await page.mouse.move(0, 0);
@@ -524,6 +525,9 @@ test.describe('site design system', () => {
     await expect(clock).toHaveText('1 of 5');
     await expect(playing).not.toHaveAttribute('data-paused');
     expect(await playing.locator('.dot[aria-current="true"]').evaluate((d) => getComputedStyle(d, '::after').animationName)).toBe('carousel-fill');
+    await expect(playing.locator('.pager button:not(.dot)')).toHaveCount(0);
+    await expect(playing.locator('.dot[aria-current="true"]')).toHaveAttribute('aria-label', 'Pause slides');
+    await expect(playing.locator('.dot:not([aria-current])').first()).toHaveAttribute('aria-label', /^Show slide \d$/);
     await expect(clock).toHaveText('2 of 5', { timeout: 6000 });
     // the mouse moving over the slides holds it, the pill drawn in into a pause sign (two bars, the slide's
     // time not running); moving over the controls doesn't; still for 6 s, it goes on, the slide's time whole again
@@ -549,9 +553,17 @@ test.describe('site design system', () => {
     expect((await mark('::after')).animation).toBe('carousel-fill');
     await expect(clock).not.toHaveText(waiting!, { timeout: 6000 });
     await page.mouse.move(0, 0);
+    // the mouse on the pill holds it and shows the pause sign; pressed, it stops and offers a play sign
     const pause = playing.getByRole('button', { name: 'Pause slides' });
+    await pause.hover();
+    await expect(playing).toHaveAttribute('data-sign', 'pause');
+    await expect(playing).toHaveAttribute('data-paused', '');
+    await expect.poll(() => mark('::before')).toEqual({ w: 4, h: 16, animation: 'none' });
     await pause.click();
+    await expect(playing).toHaveAttribute('data-sign', 'play');
+    expect(await playing.locator('.dot[aria-current="true"]').evaluate((d) => getComputedStyle(d, '::before').clipPath)).toContain('polygon');
     await page.mouse.move(0, 0);
+    await expect(playing).not.toHaveAttribute('data-sign');
     await expect(playing.getByRole('button', { name: 'Play slides' })).toBeVisible();
     await expect(playing).toHaveAttribute('data-stopped', '');
     const held = await clock.textContent();
@@ -562,7 +574,7 @@ test.describe('site design system', () => {
     await expect(playing).not.toHaveAttribute('data-stopped');
     await expect(clock).not.toHaveText(held!, { timeout: 6000 });
 
-    // under reduced motion it starts stopped, its button ready to play
+    // under reduced motion it starts stopped, its pill ready to play
     const still = await browser.newPage({ reducedMotion: 'reduce' });
     await still.goto('/design/compounds/carousel/');
     const quiet = still.locator('.example', { has: still.getByRole('heading', { name: 'Playing by itself', exact: true }) }).locator('[data-carousel]');

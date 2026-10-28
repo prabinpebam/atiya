@@ -18,7 +18,7 @@
  * @tier compound
  * @a11y Follows the APG carousel pattern; every slide is a named group.
  * @a11y The previous and next buttons stop at the ends, or with loop on wrap round them (and so do the arrow keys).
- * @a11y Autoplay (off by default) has a Pause slides / Play slides button; it holds while the mouse is over the carousel, the page is hidden or the carousel is out of view, and stops for good when keyboard focus comes in or the reader pauses it. It starts paused under reduced motion. While it runs, the counter isn't announced.
+ * @a11y Autoplay (off by default) is paused and played again by the shown slide's dot, named Pause slides / Play slides (its pill shows a pause sign, or a play sign when stopped, as the mouse comes to it); it holds while the mouse moves over the slides or rests on that pill, the page is hidden or the carousel is out of view, and stops for good when keyboard focus comes in or the reader pauses it. It starts paused under reduced motion. While it runs, the counter isn't announced.
  * @a11y A peeking slide is only a hint: choosing it (a click or tap) brings it to the middle rather than opening it.
  * @a11y Arrow keys work when the slide track has focus; dots or thumbnails are buttons for direct slide choice, named after the slide they show.
  * @a11y Without the buttons the counter stays for screen readers (announced as the slide changes); the dots or filmstrip remain the visible way to move.
@@ -30,7 +30,6 @@ import Video from '../fundamentals/Video.astro';
 import Caption from '../fundamentals/Caption.astro';
 import IconButton from '../fundamentals/IconButton.astro';
 import { slideSeconds, slideShape, videoSources } from '../../scripts/media';
-import { svgOf } from '../../design/icons';
 import type { PictureSource } from '../../design/pictures';
 
 export interface CarouselItem {
@@ -221,8 +220,6 @@ const shape = `--slide-shape: ${tallest.width} / ${tallest.height}${plays ? `; -
     )
   }
   {total > 1 && <div class="pager">
-  {plays && <IconButton label="Pause slides" icon="pause" variant="secondary" data-carousel-play="" />}
-  {plays && <template data-carousel-glyphs>{(['play', 'pause'] as const).map((name) => { const g = svgOf(name); return <svg viewBox={g.viewBox} data-icon={g.name} data-glyph={name}><Fragment set:html={g.body} /></svg>; })}</template>}
   {
     (pager === 'dots' ? (
       <div class="dots" role="group" aria-label="Choose slide">
@@ -351,7 +348,7 @@ const shape = `--slide-shape: ${tallest.width} / ${tallest.height}${plays ? `; -
 
   .status { min-width: var(--c-control-height-lg); margin: 0; color: var(--color-text-muted); font-family: var(--font-ui); font-size: var(--text-sm); font-weight: var(--weight-semibold); line-height: var(--leading-ui); text-align: center; }
 
-  /* the pager: an autoplaying carousel's play button, then the dots or the filmstrip */
+  /* the pager: the dots or the filmstrip */
   .pager { display: flex; align-items: center; justify-content: center; gap: var(--space-2); min-width: 0; }
 
   .dots { display: flex; flex-wrap: wrap; justify-content: center; gap: var(--space-1); }
@@ -375,12 +372,15 @@ const shape = `--slide-shape: ${tallest.width} / ${tallest.height}${plays ? `; -
   .carousel[data-ready][data-autoplay]:not([data-stopped]) .dot[aria-current='true']::before { background: var(--c-carousel-pill-rest); box-shadow: inset 0 0 0 var(--c-carousel-pill-ring) var(--c-carousel-pill-fill); }
   .carousel[data-ready][data-autoplay]:not([data-stopped]) .dot[aria-current='true']::after { display: block; width: var(--c-carousel-pill); background: var(--c-carousel-pill-fill); animation: carousel-fill var(--carousel-interval) linear forwards; }
   .carousel[data-paused] .dot::after, .carousel[data-paused] .thumb::after { animation-play-state: paused; }
-  /* the mouse moving over the slides holds it: the pill draws in into a pause sign, its two halves the two bars,
-     and draws out again, filling from the start, once the mouse has been still a while */
-  .carousel[data-ready][data-autoplay][data-moving]:not([data-stopped]) .dot[aria-current='true']::before,
-  .carousel[data-ready][data-autoplay][data-moving]:not([data-stopped]) .dot[aria-current='true']::after { width: var(--c-carousel-pause-bar); height: var(--c-carousel-pause-height); background: var(--c-carousel-pill-fill); box-shadow: none; animation: none; }
-  .carousel[data-ready][data-autoplay][data-moving]:not([data-stopped]) .dot[aria-current='true']::before { margin-inline-end: var(--c-carousel-pause-spread); }
-  .carousel[data-ready][data-autoplay][data-moving]:not([data-stopped]) .dot[aria-current='true']::after { margin-inline-start: var(--c-carousel-pause-spread); }
+  /* the shown slide's pill is the pause control. Held by the mouse (moving over the slides, or on the pill) it
+     draws in into a pause sign, its two halves the two bars, and draws out again, filling from the start, once
+     the mouse has been still a while or has left the pill; stopped, the mouse or keyboard focus on it turns it into
+     a play sign */
+  .carousel[data-ready][data-autoplay][data-sign='pause'] .dot[aria-current='true']::before,
+  .carousel[data-ready][data-autoplay][data-sign='pause'] .dot[aria-current='true']::after { width: var(--c-carousel-pause-bar); height: var(--c-carousel-pause-height); background: var(--c-carousel-pill-fill); box-shadow: none; animation: none; }
+  .carousel[data-ready][data-autoplay][data-sign='pause'] .dot[aria-current='true']::before { margin-inline-end: var(--c-carousel-pause-spread); }
+  .carousel[data-ready][data-autoplay][data-sign='pause'] .dot[aria-current='true']::after { margin-inline-start: var(--c-carousel-pause-spread); }
+  .carousel[data-ready][data-autoplay][data-sign='play'] .dot[aria-current='true']::before { width: var(--c-carousel-pause-height); height: var(--c-carousel-pause-height); border-radius: var(--radius-none); clip-path: polygon(15% 0, 100% 50%, 15% 100%); }
   @keyframes carousel-fill { from { clip-path: inset(0 calc(var(--c-carousel-pill) - var(--space-2)) 0 0 round var(--radius-round)); } to { clip-path: inset(0 0 0 0 round var(--radius-round)); } }
 
   /* the filmstrip: one row that scrolls sideways (centred while it fits), or rows that wrap */
@@ -436,7 +436,7 @@ const shape = `--slide-shape: ${tallest.width} / ${tallest.height}${plays ? `; -
     .dot::before, .dot::after, .thumb::after { forced-color-adjust: none; background: ButtonText; }
     .dot[aria-current='true']::before { background: Highlight; }
     .carousel[data-ready][data-autoplay]:not([data-stopped]) .dot[aria-current='true']::before { background: GrayText; box-shadow: inset 0 0 0 var(--c-carousel-pill-ring) Highlight; }
-    .carousel[data-ready][data-autoplay][data-moving]:not([data-stopped]) .dot[aria-current='true']::before { background: Highlight; box-shadow: none; }
+    .carousel[data-ready][data-autoplay][data-sign='pause'] .dot[aria-current='true']::before { background: Highlight; box-shadow: none; }
     .carousel[data-ready][data-autoplay]:not([data-stopped]) .dot[aria-current='true']::after,
     .carousel[data-ready][data-autoplay]:not([data-stopped]) .thumb[aria-current='true']::after { background: Highlight; }
   }

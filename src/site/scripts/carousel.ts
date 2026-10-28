@@ -105,8 +105,9 @@ export function setupCarousel(root: HTMLElement, signal: AbortSignal, tokens: Ca
       const by = reveal(r.left, r.right, s.left, s.right, on.offsetWidth / 2);
       if (by) strip.scrollTo({ left: strip.scrollLeft + by, behavior: motion.matches ? 'auto' : 'smooth' });
     }
-    // a new slide gets its whole time
+    // a new slide gets its whole time (and its pill is the one that pauses)
     if (moved) clock.restart(false);
+    clock.paint();
   };
 
   const go = (i: number) => {
@@ -124,10 +125,11 @@ export function setupCarousel(root: HTMLElement, signal: AbortSignal, tokens: Ca
   // step with it: a CSS animation the attributes paint sets pause and show), held while anything in
   // AutoplayHold holds it. Its time is the script's (reduced motion cuts every animation to nothing)
   function autoplay(strip: HTMLElement, live: HTMLElement) {
-    const off = { restart: (_again: boolean) => {}, start: () => {}, stop: () => {} };
+    const off = { restart: (_again: boolean) => {}, paint: () => {}, toggle: () => {}, start: () => {}, stop: () => {} };
     if (!auto) return off;
-    const play = root.querySelector<HTMLButtonElement>('[data-carousel-play]');
-    const glyphs = root.querySelector<HTMLTemplateElement>('[data-carousel-glyphs]');
+    // the shown slide's dot is the pause control: its own name kept for when it isn't
+    const names = dots.map((dot) => dot.getAttribute('aria-label') ?? '');
+    let over = -1;
     const ms = slideSeconds(Number(root.dataset.interval)) * 1000;
     const holds = new Set<AutoplayHold>(motion.matches ? ['stopped'] : []);
     let timer = 0;
@@ -160,24 +162,22 @@ export function setupCarousel(root: HTMLElement, signal: AbortSignal, tokens: Ca
       }
       schedule();
     }
-    const paint = () => {
+    // the pill's sign says what pressing it does: a pause sign while it's held by the mouse (moving over the slides,
+    // or on the pill), a play sign on a stopped pill the mouse or keyboard focus is on; otherwise the pill itself
+    function paint() {
       const stopped = holds.has('stopped');
+      const on = dots[current];
+      const sign = stopped
+        ? (over === current || on?.matches(':focus-visible') ? 'play' : '')
+        : (holds.has('moving') || holds.has('pointing') ? 'pause' : '');
       root.toggleAttribute('data-paused', !runs());
       root.toggleAttribute('data-stopped', stopped);
       root.toggleAttribute('data-moving', holds.has('moving'));
+      if (sign) root.dataset.sign = sign;
+      else delete root.dataset.sign;
       live.setAttribute('aria-live', runs() ? 'off' : 'polite');
-      if (!play) return;
-      const label = stopped ? 'Play slides' : 'Pause slides';
-      play.setAttribute('aria-label', label);
-      play.dataset.label = label;
-      const from = glyphs?.content.querySelector(`[data-glyph="${stopped ? 'play' : 'pause'}"]`);
-      const to = play.querySelector('svg');
-      if (from && to) {
-        to.setAttribute('viewBox', from.getAttribute('viewBox') ?? '');
-        to.dataset.icon = from.getAttribute('data-icon') ?? '';
-        to.innerHTML = from.innerHTML;
-      }
-    };
+      dots.forEach((dot, n) => dot.setAttribute('aria-label', n === current ? (stopped ? 'Play slides' : 'Pause slides') : names[n]));
+    }
     function hold(why: AutoplayHold, on: boolean) {
       if (holds.has(why) === on) return;
       const was = runs();
@@ -192,18 +192,39 @@ export function setupCarousel(root: HTMLElement, signal: AbortSignal, tokens: Ca
       }
       paint();
     }
-    play?.addEventListener('click', () => {
+    // the mouse resting on a dot that becomes the shown one holds it too, and one that stops being it lets go
+    const sync = () => {
+      const pointing = over >= 0 && over === current;
+      if (holds.has('pointing') !== pointing) hold('pointing', pointing);
+      else paint();
+    };
+    const toggle = () => {
       if (!holds.has('stopped')) return hold('stopped', true);
       // played again from a last slide that doesn't loop: from the first
       if (!loop && current === slides.length - 1) go(0);
       left = ms;
       hold('stopped', false);
-    }, { signal });
-    // keyboard focus coming in stops it for good (APG); the play button itself doesn't
+    };
+    // the mouse on the shown slide's pill holds it (its pause sign is then true); leaving, the slide's time starts again
+    dots.forEach((dot, n) => {
+      dot.addEventListener('pointerenter', (e) => {
+        if (e.pointerType !== 'mouse') return;
+        over = n;
+        sync();
+      }, { signal });
+      dot.addEventListener('pointerleave', () => {
+        over = -1;
+        if (!holds.has('pointing')) return paint();
+        hold('pointing', false);
+        restart(true);
+      }, { signal });
+    });
+    // keyboard focus coming in stops it for good (APG); on the shown slide's pill it then offers to play
     root.addEventListener('focusin', (event) => {
-      const target = event.target as HTMLElement;
-      if (target !== play && target.matches(':focus-visible')) hold('stopped', true);
+      if ((event.target as HTMLElement).matches(':focus-visible')) hold('stopped', true);
+      paint();
     }, { signal });
+    root.addEventListener('focusout', () => queueMicrotask(paint), { signal });
     // the mouse moving over the slides (someone looking, reading, about to click): held, its pill a pause sign,
     // until it has been still a while; then the slide gets its whole time again
     let still = 0;
@@ -226,6 +247,8 @@ export function setupCarousel(root: HTMLElement, signal: AbortSignal, tokens: Ca
     const seen = new IntersectionObserver(([entry]) => hold('away', !entry || entry.intersectionRatio < 0.25), { threshold: [0, 0.25] });
     return {
       restart,
+      paint: sync,
+      toggle,
       start: () => {
         hold('hidden', document.hidden);
         seen.observe(root);
@@ -241,7 +264,8 @@ export function setupCarousel(root: HTMLElement, signal: AbortSignal, tokens: Ca
 
   prev?.addEventListener('click', () => go(current - 1), { signal });
   next?.addEventListener('click', () => go(current + 1), { signal });
-  dots.forEach((dot, i) => dot.addEventListener('click', () => go(i), { signal }));
+  // the shown slide's dot, while it plays by itself, pauses it (and plays it again)
+  dots.forEach((dot, i) => dot.addEventListener('click', () => (auto && i === current ? clock.toggle() : go(i)), { signal }));
   track.addEventListener('keydown', (event) => {
     if (event.target !== track) return;
     const step = arrowStep(event.key);

@@ -50,12 +50,13 @@ export function loopOrder(current: number, n: number): number[] {
 }
 
 /**
- * Why an autoplaying carousel waits. Stopped holds until the reader presses Play: they paused it, keyboard focus
- * came in (APG), it reached a last slide that doesn't loop, or it started paused under reduced motion. The others
- * let go by themselves: the mouse moving over the slides (until it has been still for MOVING_HOLD_SECONDS), the
- * page hidden, the carousel out of view, a finger dragging it.
+ * Why an autoplaying carousel waits. Stopped holds until the reader plays it again (pressing the shown slide's pill):
+ * they paused it there, keyboard focus came in (APG), it reached a last slide that doesn't loop, or it started paused
+ * under reduced motion. The others let go by themselves: the mouse moving over the slides (until it has been still
+ * for MOVING_HOLD_SECONDS), the mouse on the pill itself (about to press it), the page hidden, the carousel out of
+ * view, a finger dragging it.
  */
-export type AutoplayHold = 'stopped' | 'moving' | 'hidden' | 'away' | 'drag';
+export type AutoplayHold = 'stopped' | 'moving' | 'pointing' | 'hidden' | 'away' | 'drag';
 
 /** How long the mouse must be still (or gone) after moving over the slides before autoplay goes on, in seconds: then
  * the slide gets its whole time again, so the next move comes this plus a slide's time after the last. Moving over

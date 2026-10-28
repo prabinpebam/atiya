@@ -102,12 +102,12 @@ const NOISY: Record<string, string> = {
   PlaceBar: "its building's name sits on a fractional pixel row (y 64.59 at 360 px)",
 };
 /**
- * Parts of a story masked as well, each with its reason. The Carousel's trusted slide holds the contribution chart, a
- * canvas projected by script whose drawing lands a few pixels apart between loads inside a slide; the chart's own
- * story (ContributionHero) keeps it unmasked.
+ * Parts of a story masked as well, each with its reason. The Carousel's trusted slide holds the contribution chart, laid
+ * out and projected by script: inside a slide the whole chart (its heading, canvas, legend and box) lands a few pixels apart
+ * between loads, so its slide, whose box the carousel fixes, is masked. The chart's own story (ContributionHero) keeps it unmasked.
  */
 const MASKED: Record<string, string> = {
-  Carousel: '[data-contribution-canvas]',
+  Carousel: '[data-carousel-slide]:has([data-contributions])',
 };
 /** A whole page: long pages show a little anti-aliasing noise; a real layout change moves far more than 1%. */
 const page_ = { ...shot, fullPage: true, maxDiffPixelRatio: 0.01 };
