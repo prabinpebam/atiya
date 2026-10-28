@@ -10,6 +10,12 @@
   "shadow": false,
   "items": [
     {
+      "id": "slide-1b44a4b5-9b3b-49fb-93fb-45aeec160cab",
+      "type": "album",
+      "album": "untitled-album-4",
+      "show": "cover"
+    },
+    {
       "id": "github",
       "type": "custom",
       "custom": "github"
@@ -41,6 +47,12 @@
         "rounded": true,
         "shadow": false
       }
+    },
+    {
+      "id": "slide-48532938-4ee5-4335-baf5-ba5713c9d0a2",
+      "type": "album",
+      "album": "untitled-album-2",
+      "show": "cover"
     }
   ]
 }
