@@ -9,7 +9,7 @@
  */
 import { api, onContentChange, refused, saveStatus, swapRegions, track } from './client';
 import { underWay } from '../model/feedback';
-import { addHighlight, excerptHighlight, HIGHLIGHT_MAX, moveHighlight, pictureHighlight, removeHighlight, slideBackground, SLIDE_PICTURE_REGION, type Highlights, type HighlightChoice, type HighlightItem, type SlidePictureStyle } from '../model/highlights';
+import { addHighlight, coverHighlight, excerptHighlight, HIGHLIGHT_MAX, moveHighlight, pictureHighlight, removeHighlight, slideBackground, SLIDE_PICTURE_REGION, type Highlights, type HighlightChoice, type HighlightItem, type SlidePictureStyle } from '../model/highlights';
 import { fillPicker } from './picker';
 
 interface State {
@@ -68,6 +68,8 @@ export function initHighlights(root: HTMLElement, signal: AbortSignal) {
     pictureField.querySelector<HTMLElement>('[data-slide-picture-pick]')?.focus();
   };
   const inheriting = () => field('pictureInherit')?.value !== 'false';
+  /** An album slide showing its arranged cover (§2.3), as its Show choice says. */
+  const showCover = () => (form?.elements.namedItem('slideShow') as RadioNodeList | null)?.value === 'cover';
   /** The slide's own look, as the always-shown fields say it. */
   const lookOf = (): SlidePictureStyle => ({
     display: (field('pictureDisplay')?.value || 'fill') as SlidePictureStyle['display'],
@@ -75,7 +77,7 @@ export function initHighlights(root: HTMLElement, signal: AbortSignal) {
     rounded: !!field('pictureRounded')?.checked,
     shadow: !!field('pictureShadow')?.checked,
   });
-  const pictureOf = (item: HighlightItem) => pictureHighlight(item, field('picture')?.value ?? '', inheriting() ? undefined : lookOf());
+  const pictureOf = (item: HighlightItem) => showCover() ? coverHighlight(item) : pictureHighlight(item, field('picture')?.value ?? '', inheriting() ? undefined : lookOf());
   /** Whether the slide follows the carousel, said in the line and on Use carousel settings. */
   const following = (inherit: boolean) => {
     const input = field('pictureInherit');
@@ -99,6 +101,8 @@ export function initHighlights(root: HTMLElement, signal: AbortSignal) {
     url.searchParams.set('draftBackground', String(look.background));
     url.searchParams.set('draftRounded', String(look.rounded));
     url.searchParams.set('draftShadow', String(look.shadow));
+    if (showCover()) url.searchParams.set('draftShow', 'cover');
+    else url.searchParams.delete('draftShow');
     const regions = form?.hasAttribute('data-highlights-new') ? ['highlight-preview', SLIDE_PICTURE_REGION] : [SLIDE_PICTURE_REGION];
     await swapRegions(regions, url.href, () => generation !== previewGeneration || !root.isConnected, { label: 'Updating slide preview…' });
   };
@@ -224,6 +228,16 @@ export function initHighlights(root: HTMLElement, signal: AbortSignal) {
   form.addEventListener('change', (e) => {
     if (!LOOK.has((e.target as HTMLInputElement).name)) return;
     following(false);
+    void updatePreview();
+  }, { signal });
+  // an album slide's Show: its arranged cover, or one picture with its choices
+  form.addEventListener('change', (e) => {
+    if ((e.target as HTMLInputElement).name !== 'slideShow') return;
+    const cover = showCover();
+    const one = pictureField?.querySelector<HTMLElement>('[data-slide-picture-one]');
+    const arranged = pictureField?.querySelector<HTMLElement>('[data-slide-picture-cover]');
+    if (one) one.hidden = cover;
+    if (arranged) arranged.hidden = !cover;
     void updatePreview();
   }, { signal });
 

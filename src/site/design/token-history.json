@@ -150,6 +150,9 @@
     "c.header.height-compact": {"v":"var(--size-chrome-block-compact)"},
     "c.header.more-item-radius": {"v":"var(--radius-md)"},
     "c.header.more-radius": {"v":"var(--radius-lg)"},
+    "c.highlight-card.cover-gap": {"v":"var(--space-2)"},
+    "c.highlight-card.cover-radius-narrow": {"v":"var(--radius-sm)"},
+    "c.highlight-card.drawing-paper": {"v":"var(--color-on-image)"},
     "c.highlight-card.facts": {"v":"16rem"},
     "c.highlight-card.picture-max": {"v":"45"},
     "c.highlight-card.query-split": {"v":"40rem"},
@@ -506,6 +509,24 @@
           null,
           {
             "v": "12"
+          }
+        ],
+        "c.highlight-card.cover-gap": [
+          null,
+          {
+            "v": "var(--space-2)"
+          }
+        ],
+        "c.highlight-card.cover-radius-narrow": [
+          null,
+          {
+            "v": "var(--radius-sm)"
+          }
+        ],
+        "c.highlight-card.drawing-paper": [
+          null,
+          {
+            "v": "var(--color-on-image)"
           }
         ],
         "c.icon.new-tab-gap": [

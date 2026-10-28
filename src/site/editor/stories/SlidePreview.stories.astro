@@ -1,7 +1,7 @@
 ---
 import Example from '../../library/Example.astro';
 import SlidePreview from '../components/SlidePreview.astro';
-import { HIGHLIGHTS, SLIDE_PREVIEW_ALBUM, SLIDE_PREVIEW_CHART, SLIDE_PREVIEW_CHART_WAITING, SLIDE_PREVIEW_FAILED, SLIDE_PREVIEW_PAGE, SLIDE_PREVIEW_PICTURE, SLIDE_PREVIEW_WAITING } from './samples';
+import { HIGHLIGHTS, SLIDE_PREVIEW_ALBUM, SLIDE_PREVIEW_CHART, SLIDE_PREVIEW_CHART_WAITING, SLIDE_PREVIEW_COVER, SLIDE_PREVIEW_FAILED, SLIDE_PREVIEW_PAGE, SLIDE_PREVIEW_PICTURE, SLIDE_PREVIEW_WAITING } from './samples';
 ---
 
 <Example title="A page, ready" description="Drawn with the carousel's own card and settings, then what the slide uses, an optional excerpt and Add slide." layout="block">
@@ -12,6 +12,9 @@ import { HIGHLIGHTS, SLIDE_PREVIEW_ALBUM, SLIDE_PREVIEW_CHART, SLIDE_PREVIEW_CHA
 </Example>
 <Example title="An album, waiting" description="Its cover drawn as the slide would show it, why it waits, and the album to publish." layout="block">
   <SlidePreview {...SLIDE_PREVIEW_ALBUM} settings={HIGHLIGHTS} labelledby="story-preview-album" />
+</Example>
+<Example title="An album by its cover" description="Show is Album cover: the slide draws the cover arranged in the album, its tiles on the album's grid, and the picture's look gives way to the album's." layout="block">
+  <SlidePreview {...SLIDE_PREVIEW_COVER} settings={HIGHLIGHTS} labelledby="story-preview-cover" />
 </Example>
 <Example title="A picture" description="The picture as the slide shows it, with its caption, and no excerpt to write." layout="block">
   <SlidePreview {...SLIDE_PREVIEW_PICTURE} settings={HIGHLIGHTS} labelledby="story-preview-picture" />

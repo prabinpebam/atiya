@@ -13,10 +13,11 @@ import { readDoc } from '../server/store';
 import { HIGHLIGHTS_KEY } from '../server/highlights';
 import { thumbOf } from '../server/albumScreens';
 import { chartData } from '../model/highlightChart';
-import { chosenKind, chosenSlide, chosenSource, fixPlace, HIGHLIGHT_REGIONS, highlightsView, previewPicture, SLIDE_PICTURE_REGION, sourceFacts, sourceTiles, type SlidePreviewData } from '../model/highlights';
+import { chosenKind, chosenSlide, chosenSource, fixPlace, HIGHLIGHT_REGIONS, highlightsView, previewPicture, showsCover, SLIDE_PICTURE_REGION, sourceFacts, sourceTiles, type HighlightItem, type SlidePreviewData } from '../model/highlights';
 import { regionsAsked, wants } from '../model/regions';
 import { checkHighlights, highlightImages, highlightState } from '../../content/highlights';
 import { slidePicture } from '../../content/highlightPictures';
+import { bandOf } from '../../content/bands';
 import { timedAsync } from '../../content/timing';
 import { withBase } from '../../design/meta';
 
@@ -36,9 +37,17 @@ const savedItem = view?.highlights.items.find((i) => i.id === selected);
 // a saved slide's unsaved picture choices, checked as a saved slide is, redraw its picture's preview
 const draftItem = savedItem ? previewPicture(savedItem, params) : undefined;
 const selectedItem = draftItem && !draftItem.issue && loaded.ok && view && !checkHighlights({ ...loaded.index, highlights: { ...view.highlights, items: [draftItem.item] } }).length ? draftItem.item : savedItem;
-const selectedMedia = loaded.ok && selectedItem ? highlightState(loaded.index, selectedItem).media : undefined;
+const selectedState = loaded.ok && selectedItem ? highlightState(loaded.index, selectedItem) : undefined;
+const selectedMedia = selectedState?.media;
 const selectedPicture = loaded.ok && selectedMedia ? await timedAsync('highlights:picture', () => slidePicture(loaded.index, selectedMedia)) : undefined;
 const thumb = selectedPicture ? { thumb: selectedPicture.thumb, alt: selectedPicture.alt, width: selectedPicture.width, height: selectedPicture.height, bg: selectedPicture.bg, focus: selectedPicture.focus } : undefined;
+// an album slide that shows its arranged cover: the album's own tiles, as the home draws them (§2.3)
+const coverOf = async (item: HighlightItem, href: string | undefined, title: string) => {
+  if (!showsCover(item)) return undefined;
+  const band = await timedAsync('highlights:cover', () => bandOf(item.album, href ? withBase(href) : '#'));
+  return band ? { title, tiles: band.tiles.map(({ motion: _, ...t }) => t), square: band.square } : undefined;
+};
+const selectedCover = selectedItem && selectedState && wants(asked, ...HIGHLIGHT_REGIONS, SLIDE_PICTURE_REGION) ? await coverOf(selectedItem, selectedState.href, selectedState.title) : undefined;
 const publicImages = loaded.ok ? highlightImages(loaded.index) : new Set<string>();
 const PICKER_PAGE = 40;
 const pickerAt = Math.max(0, Math.floor(Number(params.get('picker') ?? 0)) || 0);
@@ -65,6 +74,7 @@ const preview = await (async (): Promise<SlidePreviewData | null> => {
   const state = highlightState(index, draft.item);
   const media = state.media;
   const picture = !invalid && media ? await timedAsync('highlights:preview', () => slidePicture(index, media)) : undefined;
+  const cover = !invalid && media ? await coverOf(draft.item, state.href, state.title) : undefined;
   const chart = source.item.type === 'custom' && index.github ? chartData(index.github) : undefined;
   const caption = source.item.type === 'image' ? index.media.get(source.item.media)?.caption : undefined;
   const place = fixPlace(source.item);
@@ -74,6 +84,7 @@ const preview = await (async (): Promise<SlidePreviewData | null> => {
     facts: sourceFacts(draft.item, { text: state.text, href: state.href, media: invalid ? undefined : state.media, caption }, view.highlights.items.length + 1),
     words: { title: state.title, text: state.text, href: state.href ? withBase(state.href) : undefined },
     picture,
+    cover: cover && { tiles: cover.tiles, square: cover.square },
     pictureFailed: !!state.media && !picture,
     chart,
     fix: place ? { href: withBase(`/_edit/${place.path}`), label: place.label } : undefined,
@@ -85,7 +96,7 @@ const preview = await (async (): Promise<SlidePreviewData | null> => {
 <EditorLayout title="Home highlights" screen="highlights" heading="Home highlights" intro="Choose what the classic home shows below its introduction. Slides stay linked to their pages and pictures. Each change saves here; save to remote to put it on the site.">
   {
     view ? (
-      <HighlightsManager {...view} version={version} selected={selected} thumb={thumb} pictureItem={selectedItem}>
+      <HighlightsManager {...view} version={version} selected={selected} thumb={thumb} pictureItem={selectedItem} cover={selectedCover}>
         <Fragment slot="new">
           {preview ? (
             <SlidePreview {...preview} settings={view.highlights} labelledby="highlights-detail-title" />

@@ -2,9 +2,11 @@
 /**
  * A highlight's independent picture and its look, on Add slide and a saved slide's details. The look (display,
  * background, corners, shadow) is always shown, for the automatic picture and a chosen one alike: it starts on the
- * carousel's settings, a change gives the slide its own, and Use carousel settings goes back to following them.
+ * carousel's settings, a change gives the slide its own, and Use carousel settings goes back to following them. An
+ * album's slide first chooses what it shows (highlights spec §2.3): its arranged cover, which keeps the album's own
+ * looks and links to the album editor to change it, or one picture with the choices above.
  * @tier kit
- * @a11y Labelled fields; choosing uses the page's modal library; the preview is decorative (the name says what it is).
+ * @a11y Labelled fields; Show is a radio group; choosing uses the page's modal library; the preview is decorative (the name says what it is).
  */
 import Button from '../../components/fundamentals/Button.astro';
 import Checkbox from '../../components/fundamentals/Checkbox.astro';
@@ -15,9 +17,13 @@ import Image from '../../components/fundamentals/Image.astro';
 import Select from '../../components/fundamentals/Select.astro';
 import Text from '../../components/fundamentals/Text.astro';
 import ActionBar from '../../components/compounds/ActionBar.astro';
+import ChoiceGroup from '../../components/compounds/ChoiceGroup.astro';
+import HighlightCard from '../../components/compounds/HighlightCard.astro';
 import { stableId } from '../../design/stableId';
+import { withBase } from '../../design/meta';
 import type { Thumb } from '../model/inspectorFields';
-import { backgroundColour, backgroundKind, BACKGROUNDS, highlightPresentation, SLIDE_DISPLAYS, SLIDE_PICTURE_REGION, type Highlights, type HighlightItem } from '../model/highlights';
+import type { BandTile } from '../../scripts/albumBandRules';
+import { backgroundColour, backgroundKind, BACKGROUNDS, highlightPresentation, SLIDE_DISPLAYS, SLIDE_PICTURE_REGION, SLIDE_SHOWS, type Highlights, type HighlightItem } from '../model/highlights';
 
 interface Props {
   /** The slide being added or edited (with its unsaved picture choices, when the preview is drawn again). */
@@ -26,9 +32,15 @@ interface Props {
   settings: Highlights;
   /** The resolved picture, with its edge colour (`rgb(r g b)`) and focus point, if one is available. */
   thumb?: Thumb & { bg?: string; focus?: string };
+  /** An album slide showing its cover: the slide's title and the album's tiles, drawn here as the home would. Left out, the cover is described (Add slide draws it above). */
+  cover?: { title: string; tiles: BandTile[]; square?: boolean };
+  /** The album's cover is already drawn above this part (Add slide's preview), so it isn't repeated here. */
+  coverAbove?: boolean;
 }
-const { item, settings, thumb } = Astro.props;
+const { item, settings, thumb, cover, coverAbove = false } = Astro.props;
 const custom = item.type === 'custom';
+const album = item.type === 'album';
+const showsCover = item.type === 'album' && item.show === 'cover';
 const media = custom ? '' : item.type === 'image' ? item.media : item.picture ?? '';
 const inherited = custom || !item.pictureStyle;
 const style = highlightPresentation(settings, item);
@@ -39,12 +51,32 @@ const titleId = `slide-picture-${stableId(Astro, 'SlidePicture')}`;
 {!custom && (
   <section class="slide-picture" data-slide-picture aria-labelledby={titleId}>
     <Heading level={3} size="h4" id={titleId}>Slide picture</Heading>
-    <Text variant="small" tone="muted">{item.type === 'image' ? 'Choose a library picture or upload one.' : 'Automatic uses a page picture or album cover. Choose another without changing the source.'}</Text>
+    {album && <ChoiceGroup legend="Show" name="slideShow" options={SLIDE_SHOWS} value={showsCover ? 'cover' : 'one'} variant="cards" orientation="horizontal" data-slide-show="" />}
     <div class="preview" data-region={SLIDE_PICTURE_REGION} data-slide-picture-preview data-manual={media ? '' : undefined}>
-      {thumb && <Image src={thumb.thumb} alt="" width={thumb.width} height={thumb.height} ratio="21/9" display={style.display ?? 'fill'} focus={thumb.focus} bg={behind} rounded={style.rounded !== false} shadow={style.shadow} />}
-      <div data-slide-picture-name><Text variant="small">{media ? thumb?.alt || 'Chosen picture' : thumb ? 'Automatic picture' : 'No automatic picture yet. Choose one below.'}</Text></div>
+      {showsCover ? (
+        cover?.tiles.length ? (
+          <div inert><HighlightCard title={cover.title} href="#" cover={cover.tiles} square={cover.square} settings={style} /></div>
+        ) : !coverAbove && (
+          <Text variant="small">No pictures in the album yet. Add some to show its cover.</Text>
+        )
+      ) : (
+        <>
+          {thumb && <Image src={thumb.thumb} alt="" width={thumb.width} height={thumb.height} ratio="21/9" display={style.display ?? 'fill'} focus={thumb.focus} bg={behind} rounded={style.rounded !== false} shadow={style.shadow} />}
+          <div data-slide-picture-name><Text variant="small">{media ? thumb?.alt || 'Chosen picture' : thumb ? 'Automatic picture' : 'No automatic picture yet. Choose one below.'}</Text></div>
+        </>
+      )}
     </div>
     <HiddenField name="picture" value={media} />
+    {album && (
+      <div class="group" data-slide-picture-cover hidden={!showsCover}>
+        <Text variant="small" tone="muted">Shown as arranged in the album: its tiles, displays and corners. To change it, arrange the cover in the album.</Text>
+        <ActionBar gap="sm">
+          <Button variant="secondary" size="sm" icon="edit" href={withBase(`/_edit/albums/${item.album}/`)} data-slide-cover-arrange="">Arrange album cover</Button>
+        </ActionBar>
+      </div>
+    )}
+    <div class="group" data-slide-picture-one hidden={showsCover}>
+    <Text variant="small" tone="muted">{item.type === 'image' ? 'Choose a library picture or upload one.' : album ? "Automatic uses the album's lead picture. Choose another without changing the album." : 'Automatic uses a page picture. Choose another without changing the page.'}</Text>
     <ActionBar gap="sm">
       <Button variant="secondary" size="sm" icon="image" data-slide-picture-pick="">Choose picture</Button>
       {item.type !== 'image' && <Button variant="quiet" size="sm" disabled={!media} data-slide-picture-auto="">Use automatic</Button>}
@@ -63,11 +95,14 @@ const titleId = `slide-picture-${stableId(Astro, 'SlidePicture')}`;
         <Button variant="quiet" size="sm" icon="undo" disabled={inherited} data-slide-picture-reset="">Use carousel settings</Button>
       </ActionBar>
     </div>
+    </div>
   </section>
 )}
 <style>
-  .slide-picture, .look { display: grid; gap: var(--space-4); }
-  .colour[hidden] { display: none; }
+  .slide-picture, .look, .group { display: grid; gap: var(--space-4); }
+  .colour[hidden], .group[hidden] { display: none; }
   /* room below for the picture's shadow */
   .preview { display: grid; gap: var(--space-2); max-inline-size: var(--size-measure); padding-block-end: var(--c-image-shadow-room); }
+  /* an album's cover already drawn above leaves it empty: it takes no room */
+  .preview:empty { display: none; }
 </style>

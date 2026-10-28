@@ -244,6 +244,53 @@ test.describe('editor: home highlights', () => {
     expect(JSON.parse(readFileSync(join(FIXTURE, 'content', 'albums', 'fixture-album.json'), 'utf8')).id).toBe('fixture-album');
   });
 
+  test("shows an album slide by its arranged cover, on add and edit, and switches back to one picture (§2.3, HC12)", async ({ page }) => {
+    const album = JSON.parse(readFileSync(join(FIXTURE, 'content', 'albums', 'fixture-album.json'), 'utf8'));
+    writeFileSync(join(FIXTURE, 'content', 'albums', 'fixture-album.json.tmp'), `${JSON.stringify({ ...album, status: 'published' }, null, 2)}\n`);
+    renameSync(join(FIXTURE, 'content', 'albums', 'fixture-album.json.tmp'), join(FIXTURE, 'content', 'albums', 'fixture-album.json'));
+    await page.goto('/_edit/highlights/?slide=new&kind=album&source=album%3Afixture-album');
+    const preview = screen(page).locator('[data-highlight-preview="album:fixture-album"]');
+    await expect(preview).toBeVisible();
+    const show = preview.getByRole('radiogroup', { name: 'Show' }).or(preview.getByRole('group', { name: 'Show' }));
+    await expect(show.getByRole('radio', { name: /^One picture/ })).toBeChecked();
+    await expect(preview.locator('[data-highlight-cover]')).toHaveCount(0);
+    await show.getByText('Album cover', { exact: true }).click();
+    await expect(preview.locator('.stage [data-highlight-cover] li').first()).toBeVisible();
+    await expect(preview.locator('[data-slide-picture-one]')).toBeHidden();
+    await expect(preview.getByRole('link', { name: 'Arrange album cover' })).toHaveAttribute('href', /\/_edit\/albums\/fixture-album\/$/);
+    await screen(page).locator('[data-highlights-new]').getByRole('button', { name: 'Add slide', exact: true }).click();
+    await said(page, 'Added slide');
+    const item = saved().items[0]!;
+    expect(item).toMatchObject({ type: 'album', album: 'fixture-album', show: 'cover' });
+    expect(item).not.toHaveProperty('picture');
+    expect(item).not.toHaveProperty('pictureStyle');
+
+    // the saved slide: its cover in the part, one picture back, and the cover again on reload
+    const part = screen(page).locator('[data-slide-picture]');
+    await expect(part.locator('[data-highlight-cover] li').first()).toBeVisible();
+    await expect(part.getByRole('radio', { name: /^Album cover/ })).toBeChecked();
+    await part.getByText('One picture', { exact: true }).click();
+    await expect(part.locator('[data-slide-picture-cover]')).toBeHidden();
+    await expect(part.getByRole('button', { name: 'Choose picture' })).toBeVisible();
+    await screen(page).getByRole('button', { name: 'Save slide', exact: true }).click();
+    await said(page, 'Saved slide');
+    expect(saved().items[0]).not.toHaveProperty('show');
+    await part.getByText('Album cover', { exact: true }).click();
+    await screen(page).getByRole('button', { name: 'Save slide', exact: true }).click();
+    await said(page, 'Saved slide');
+    expect(saved().items[0]).toMatchObject({ show: 'cover' });
+    await page.reload();
+    await expect(screen(page).locator('[data-slide-picture] [data-highlight-cover] li').first()).toBeVisible();
+
+    // the home draws the same cover, its tiles named, none a link but the title
+    await page.goto('/');
+    const slide = page.locator('#home-highlights [data-carousel-slide]').first();
+    await expect(slide.locator('[data-highlight-cover] li').first()).toBeVisible();
+    await expect(slide.getByRole('link', { name: album.title, exact: true })).toBeVisible();
+    await expect(slide.locator('[data-highlight-cover] a')).toHaveCount(0);
+    await expect.poll(() => slide.locator('[data-highlight-cover] img').first().evaluate((el) => (el as HTMLImageElement).naturalWidth)).toBeGreaterThan(0);
+  });
+
   test('refuses an invented excerpt with failed-save feedback, keeps the input, and saves intentional empty highlights', async ({ page }) => {
     await page.goto('/_edit/highlights/');
     // refused as it's added: the preview stays, with what was typed

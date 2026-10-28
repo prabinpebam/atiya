@@ -7,11 +7,12 @@ import { mediaId } from '../../content/schema';
 import type { ContentIndex } from '../../content/load';
 import type { Picture } from '../../content/pictures';
 import type { ContributionData } from '../../scripts/contributionRules';
+import type { BandTile } from '../../scripts/albumBandRules';
 import { DISPLAYS, type Choice } from './inspectorFields';
 
 export { HIGHLIGHT_MAX };
 export type { Highlights, HighlightItem, SlidePictureStyle };
-export { highlightPresentation } from '../../content/highlights';
+export { highlightPresentation, showsCover } from '../../content/highlights';
 
 /** Both the layout's whole-screen live update and this form's own region must render its content. */
 export const HIGHLIGHT_REGIONS = ['screen', 'highlights'] as const;
@@ -97,17 +98,35 @@ export function excerptHighlight(items: HighlightItem[], id: string, text: strin
   });
 }
 
-/** The slide's picture choices, not edits to its source or the shared image sidecar. */
+/** The slide's picture choices, not edits to its source or the shared image sidecar. Choosing one picture ends showing an album's cover. */
 export function pictureHighlight(item: HighlightItem, media: string, style?: SlidePictureStyle): HighlightItem {
   if (item.type === 'custom') return item;
   const { pictureStyle: _, ...rest } = item;
   if (rest.type === 'image') return { ...rest, media, ...(style ? { pictureStyle: style } : {}) };
+  if (rest.type === 'album') {
+    const { picture: previous, show: cover, ...source } = rest;
+    return { ...source, ...(media ? { picture: media } : {}), ...(style ? { pictureStyle: style } : {}) };
+  }
   const { picture: previous, ...source } = rest;
   return { ...source, ...(media ? { picture: media } : {}), ...(style ? { pictureStyle: style } : {}) };
 }
 
+/** An album slide shows its arranged cover or one picture (highlights spec §2.3); one picture is the default. */
+export const SLIDE_SHOWS: { value: 'cover' | 'one'; label: string; hint: string }[] = [
+  { value: 'cover', label: 'Album cover', hint: 'The pictures you arranged in the album\'s cover' },
+  { value: 'one', label: 'One picture', hint: 'Its lead picture, or one you choose' },
+];
+
+/** An album slide that shows its arranged cover (highlights spec §2.3): no picture or look of its own. Other kinds are unchanged. */
+export function coverHighlight(item: HighlightItem): HighlightItem {
+  if (item.type !== 'album') return item;
+  const { picture: _, pictureStyle: __, ...source } = item;
+  return { ...source, show: 'cover' };
+}
+
 /** A pending picture preview is checked before it is rendered, just as a saved slide is. */
 export function previewPicture(item: HighlightItem, params: URLSearchParams): { item: HighlightItem; issue?: string } {
+  if (item.type === 'album' && params.get('draftShow') === 'cover') return { item: coverHighlight(item) };
   if (item.type === 'custom' || !params.has('draftPicture')) return { item };
   const media = params.get('draftPicture') ?? '';
   if ((media && !mediaId.safeParse(media).success) || (!media && item.type === 'image')) {
@@ -170,7 +189,7 @@ export const SOURCE_KINDS: readonly SourceKind[] = ['chart', 'page', 'album', 'p
 export const SLIDE_KIND: Record<HighlightItem['type'], { label: string; plural: string; kind: SourceKind; icon: 'code' | 'article' | 'gallery' | 'image'; what: string }> = {
   custom: { label: 'Chart', plural: 'Charts', kind: 'chart', icon: 'code', what: 'A live chart drawn from your public data, with its own controls.' },
   article: { label: 'Page', plural: 'Pages', kind: 'page', icon: 'article', what: "A page's picture and title, with its summary or a line you choose. Opens the page." },
-  album: { label: 'Album', plural: 'Albums', kind: 'album', icon: 'gallery', what: "An album's cover, title and summary. Opens the album." },
+  album: { label: 'Album', plural: 'Albums', kind: 'album', icon: 'gallery', what: "An album's cover, title and summary: its arranged cover or one picture. Opens the album." },
   image: { label: 'Picture', plural: 'Pictures', kind: 'picture', icon: 'image', what: 'One library picture with its caption. Opens it full size.' },
 };
 
@@ -305,7 +324,7 @@ export function sourceFacts(item: HighlightItem, state: { text?: string; href?: 
   const address = (what: string) => (state.href ? `${what} at ${state.href}` : `${what}, once it's placed in a section`);
   if (item.type === 'custom') return facts('Nothing: its controls work in place', 'Your public contributions and their totals', 'None: the chart draws itself');
   if (item.type === 'image') return facts('The picture full size', state.caption ? `Its caption: ${state.caption}` : 'None: it has no caption', 'This picture');
-  if (item.type === 'album') return facts(address('The album'), state.text ? 'Its title and summary' : 'Its title (it has no summary)', item.picture ? 'A picture chosen for this slide' : state.media ? 'Its cover' : 'None yet: choose a cover');
+  if (item.type === 'album') return facts(address('The album'), state.text ? 'Its title and summary' : 'Its title (it has no summary)', item.show === 'cover' ? (state.media ? 'Its cover, as arranged in the album' : 'None yet: add a picture to the album') : item.picture ? 'A picture chosen for this slide' : state.media ? 'Its lead picture' : 'None yet: choose a picture');
   return facts(address('The page'), state.text ? 'Its title, and its summary or the excerpt below' : 'Its title, and the excerpt below', item.picture ? 'A picture chosen for this slide' : state.media ? 'Its automatic page picture' : 'None yet: choose a slide picture');
 }
 
@@ -319,6 +338,8 @@ export interface SlidePreviewData {
   words: { title: string; text?: string; href?: string };
   /** Its picture at the slide's shape, if it has one that can be drawn. */
   picture?: Picture;
+  /** An album shown by its arranged cover: its band's tiles, and whether its pictures have square corners. */
+  cover?: { tiles: BandTile[]; square?: boolean };
   /** It has a picture, but drawing it here failed. */
   pictureFailed?: boolean;
   /** The GitHub snapshot with its totals, for the chart. */

@@ -31,7 +31,7 @@ interface Props extends SlidePreviewData {
   labelledby: string;
 }
 
-const { source, facts, settings, words, picture, pictureFailed, chart, fix, back, labelledby } = Astro.props;
+const { source, facts, settings, words, picture, cover, pictureFailed, chart, fix, back, labelledby } = Astro.props;
 const missing = pictureFailed ? "The picture couldn't be drawn here. Reload to try again." : source.reason ? 'No picture yet.' : 'No picture to show.';
 ---
 
@@ -46,6 +46,8 @@ const missing = pictureFailed ? "The picture couldn't be drawn here. Reload to t
       {
         chart ? (
           <ContributionHero data={chart} embedded />
+        ) : cover && words.href ? (
+          <HighlightCard title={words.title} text={words.text} href={words.href} cover={cover.tiles} square={cover.square} settings={highlightPresentation(settings, source.item)} />
         ) : picture ? (
           <HighlightCard title={words.title} text={words.text} href={words.href} picture={picture} settings={highlightPresentation(settings, source.item)} />
         ) : (
@@ -56,7 +58,7 @@ const missing = pictureFailed ? "The picture couldn't be drawn here. Reload to t
         )
       }
     </div>
-    <figcaption><Text as="span" variant="small" tone="muted">How the home would show it, with this slide's picture settings.</Text></figcaption>
+    <figcaption><Text as="span" variant="small" tone="muted">{cover ? 'How the home would show it, with the cover arranged in the album.' : "How the home would show it, with this slide's picture settings."}</Text></figcaption>
   </figure>
   <dl class="facts">
     <div class="fact">
@@ -85,7 +87,7 @@ const missing = pictureFailed ? "The picture couldn't be drawn here. Reload to t
   <Form gap="lg" data-highlights-new="" labelledby={labelledby}>
     <HiddenField name="source" value={source.key} />
     {source.item.type === 'article' && <TextField label="Page excerpt" name="excerpt" multiline optional maxlength={280} hint="Copy up to 280 characters word for word from the page. Leave it empty to use its summary." />}
-    <SlidePicture item={source.item} settings={settings} thumb={picture ? { thumb: picture.thumb, alt: picture.alt, width: picture.width, height: picture.height, bg: picture.bg, focus: picture.focus } : undefined} />
+    <SlidePicture item={source.item} settings={settings} thumb={picture ? { thumb: picture.thumb, alt: picture.alt, width: picture.width, height: picture.height, bg: picture.bg,     focus: picture.focus } : undefined} coverAbove={!!cover?.tiles.length} />
     <IssueNote data-editor-form-issue="" />
     <ActionBar>
       <Button variant="primary" type="submit" icon="plus">Add slide</Button>

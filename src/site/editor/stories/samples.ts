@@ -544,6 +544,15 @@ export const SLIDE_PREVIEW_ALBUM: SlidePreviewData = {
   back: '?slide=new&kind=album',
 };
 
+/** An album previewed in Add slide by its arranged cover (highlights spec §2.3): the album's own tiles, not one picture. */
+export const SLIDE_PREVIEW_COVER: SlidePreviewData = {
+  source: { ...HIGHLIGHT_CHOICES[4], item: { ...HIGHLIGHT_CHOICES[4].item, show: 'cover' } as HighlightChoice['item'], reason: undefined },
+  facts: sourceFacts({ id: 'choice-by-the-pond', type: 'album', album: 'by-the-pond', show: 'cover' }, { text: 'Stones, water and a bridge.', href: '/gallery/by-the-pond/', media: 'samples/bridge' }, 4),
+  words: { title: 'By the pond', text: 'Stones, water and a bridge.', href: '#by-the-pond' },
+  cover: { tiles: COVER_BAND.tiles },
+  back: '?slide=new&kind=album',
+};
+
 /** A picture previewed in Add slide: shown whole, with its caption. */
 export const SLIDE_PREVIEW_PICTURE: SlidePreviewData = {
   source: HIGHLIGHT_CHOICES[6],

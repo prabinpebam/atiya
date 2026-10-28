@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { ContentError, loadContent, loadContentLeavingOut, type ContentIndex } from '../../src/site/content/load';
-import { checkHighlights, defaultHighlights, highlightCandidates, highlightImages, highlightMedia, highlightPicture, highlightPresentation, highlightState, highlightsFile, HIGHLIGHT_MAX, visibleHighlights, type HighlightItem } from '../../src/site/content/highlights';
+import { checkHighlights, defaultHighlights, highlightCandidates, highlightImages, highlightMedia, highlightPicture, highlightPresentation, highlightState, highlightsFile, HIGHLIGHT_MAX, showsCover, visibleHighlights, type HighlightItem } from '../../src/site/content/highlights';
 import { article, album } from '../../src/site/content/schema';
 
 const pic = 'library/picture';
@@ -87,6 +87,26 @@ describe('home highlights contract', () => {
     c.albums.set('album', album.parse({ ...c.albums.get('album'), items: [] }));
     expect(highlightState(c, picks[2]).reason).toMatch(/cover picture/);
     expect(c.highlights!.items.map((i) => i.id)).toEqual(picks.map((i) => i.id));
+  });
+  it('shows an album by its arranged cover alone: never with a picture or look of its own (§2.3)', () => {
+    const cover: HighlightItem = { id: 'album', type: 'album', album: 'album', show: 'cover' };
+    expect(highlightsFile.safeParse(config([cover])).success).toBe(true);
+    expect(showsCover(cover)).toBe(true);
+    expect(showsCover(picks[2])).toBe(false);
+    expect(showsCover(picks[1])).toBe(false);
+    for (const extra of [{ picture: pic }, { pictureStyle: { rounded: false } }]) {
+      const parsed = highlightsFile.safeParse(config([{ ...cover, ...extra } as HighlightItem]));
+      expect(parsed.success).toBe(false);
+      expect(parsed.error?.issues[0]?.path).toEqual(['items', 0, 'show']);
+    }
+    expect(highlightsFile.safeParse(config([{ ...cover, show: 'band' } as unknown as HighlightItem])).success).toBe(false);
+    expect(highlightsFile.safeParse(config([{ id: 'page', type: 'article', article: 'page', show: 'cover' } as unknown as HighlightItem])).success).toBe(false);
+    const c = index();
+    c.routes.find((r) => r.node.id === 'album')!.published = true;
+    expect(highlightState(c, cover).media).toBe(pic);
+    expect(highlightState(c, cover).reason).toBeUndefined();
+    c.albums.set('album', album.parse({ ...c.albums.get('album'), items: [] }));
+    expect(highlightState(c, cover).reason).toBe('Add a picture to the album to show its cover.');
   });
   it('shows only the slides that are ready, in order, and none while turned off', () => {
     const c = index();

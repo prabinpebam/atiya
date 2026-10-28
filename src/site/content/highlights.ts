@@ -26,7 +26,7 @@ export type SlidePictureStyle = z.infer<typeof slidePictureStyle>;
 const highlightItem = z.discriminatedUnion('type', [
   z.strictObject({ id, type: z.literal('custom'), custom: z.literal('github') }),
   z.strictObject({ id, type: z.literal('article'), article: id, text: z.string().trim().min(1).max(280).optional(), picture: mediaId.optional(), pictureStyle: slidePictureStyle.optional() }),
-  z.strictObject({ id, type: z.literal('album'), album: id, picture: mediaId.optional(), pictureStyle: slidePictureStyle.optional() }),
+  z.strictObject({ id, type: z.literal('album'), album: id, show: z.literal('cover').optional(), picture: mediaId.optional(), pictureStyle: slidePictureStyle.optional() }),
   z.strictObject({ id, type: z.literal('image'), media: mediaId, pictureStyle: slidePictureStyle.optional() }),
 ]);
 
@@ -42,6 +42,9 @@ export const highlightsFile = z.strictObject({
     const source = highlightSource(item);
     if (sources.has(source)) context.addIssue({ code: 'custom', path: ['items', n], message: 'This source is already highlighted. Choose it once.' });
     ids.add(item.id); sources.add(source);
+    if (item.type === 'album' && item.show === 'cover' && (item.picture || item.pictureStyle)) {
+      context.addIssue({ code: 'custom', path: ['items', n, 'show'], message: "A slide that shows the album's cover has no picture or look of its own. Remove them, or show one picture." });
+    }
   });
 });
 export type Highlights = z.infer<typeof highlightsFile>;
@@ -110,6 +113,10 @@ export function highlightPicture(index: Index, item: HighlightItem): string | un
   });
 }
 
+/** An album slide that shows its arranged cover rather than one picture (highlights spec §2.3). */
+export const showsCover = (item: HighlightItem): item is Extract<HighlightItem, { type: 'album' }> =>
+  item.type === 'album' && item.show === 'cover';
+
 /** Explicit false values stay explicit; absent slide values inherit the carousel. */
 export function highlightPresentation(settings: Pick<Highlights, 'display' | 'background' | 'rounded' | 'shadow'>, item: HighlightItem): SlidePictureStyle {
   return { display: settings.display, background: settings.background, rounded: settings.rounded, shadow: settings.shadow, ...(item.type === 'custom' ? {} : item.pictureStyle) };
@@ -139,7 +146,7 @@ export function highlightState(index: Index, item: HighlightItem): HighlightStat
   let reason: string | undefined;
   if (!route) reason = 'Place it in a section to show it.';
   else if (!route.published || route.access !== 'open') reason = 'Publish it to show it.';
-  else if (!media) reason = item.type === 'article' ? 'Choose a slide picture or add a picture to the page.' : 'Choose a slide picture or add a cover picture.';
+  else if (!media) reason = item.type === 'article' ? 'Choose a slide picture or add a picture to the page.' : showsCover(item) ? 'Add a picture to the album to show its cover.' : 'Choose a slide picture or add a cover picture.';
   else if (!publicImage(index, media) && !publicPoster(index, media)) reason = 'Choose a public cover picture to show it.';
   return { title: source.title, text, media, href: route?.path, ...(reason ? { reason } : {}) };
 }

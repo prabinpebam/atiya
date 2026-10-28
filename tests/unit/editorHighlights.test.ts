@@ -5,7 +5,7 @@ import { randomUUID } from 'node:crypto';
 import { dirname, join } from 'node:path';
 import sharp from 'sharp';
 import { loadContent } from '../../src/site/content/load';
-import { addHighlight, backgroundColour, backgroundKind, BACKGROUNDS, slideBackground, SLIDE_DISPLAYS, chosenKind, chosenSlide, chosenSource, excerptHighlight, fixPlace, freeChoices, highlightsView, highlightSource, HIGHLIGHT_MAX, HIGHLIGHT_REGIONS, kindLine, matchesSource, moveHighlight, pictureHighlight, previewPicture, removeHighlight, settingsLine, shownSources, SLIDE_KIND, slideIcon, slideLine, sourceCounts, sourcesLine, sourceFacts, sourceTiles, type HighlightChoice, type Highlights, type HighlightItem } from '../../src/site/editor/model/highlights';
+import { addHighlight, backgroundColour, backgroundKind, BACKGROUNDS, coverHighlight, slideBackground, SLIDE_DISPLAYS, SLIDE_SHOWS, chosenKind, chosenSlide, chosenSource, excerptHighlight, fixPlace, freeChoices, highlightsView, highlightSource, HIGHLIGHT_MAX, HIGHLIGHT_REGIONS, kindLine, matchesSource, moveHighlight, pictureHighlight, previewPicture, removeHighlight, settingsLine, shownSources, SLIDE_KIND, slideIcon, slideLine, sourceCounts, sourcesLine, sourceFacts, sourceTiles, type HighlightChoice, type Highlights, type HighlightItem } from '../../src/site/editor/model/highlights';
 import { liveRegions } from '../../src/site/editor/model/live';
 import { regionsAsked, regionsHeader, wants } from '../../src/site/editor/model/regions';
 import { references } from '../../src/site/editor/model/references';
@@ -137,6 +137,24 @@ describe('home highlights curation', () => {
     expect(previewPicture(mixed[1], params).issue).toMatch(/settings/);
     expect(previewPicture(mixed[0], params).item).toBe(mixed[0]);
     expect(previewPicture(mixed[1], new URLSearchParams()).item).toBe(mixed[1]);
+  });
+  it('shows an album by its arranged cover, dropping its own picture and look, and back to one picture (§2.3)', () => {
+    const album = { ...mixed[2], picture: 'shared/picture', pictureStyle: { display: 'fit' as const } } as HighlightItem;
+    const cover = coverHighlight(album);
+    expect(cover).toEqual({ id: mixed[2].id, type: 'album', album: (mixed[2] as { album: string }).album, show: 'cover' });
+    expect(coverHighlight(mixed[1])).toBe(mixed[1]);
+    expect(pictureHighlight(cover, '')).toEqual(mixed[2]);
+    expect(pictureHighlight(cover, 'shared/picture')).toEqual({ ...mixed[2], picture: 'shared/picture' });
+    const params = new URLSearchParams({ draftShow: 'cover', draftPicture: 'shared/picture', draftInherit: 'false', draftDisplay: 'tile', draftBackground: 'false', draftRounded: 'true', draftShadow: 'false' });
+    expect(previewPicture(album, params)).toEqual({ item: cover });
+    expect(previewPicture(mixed[1], params).item).toMatchObject({ picture: 'shared/picture' });
+    expect(previewPicture(mixed[1], params).item).not.toHaveProperty('show');
+    params.delete('draftShow');
+    expect(previewPicture(cover, params).item).not.toHaveProperty('show');
+    expect(SLIDE_SHOWS.map((s) => s.value)).toEqual(['cover', 'one']);
+    const facts = (item: HighlightItem, media?: string) => sourceFacts(item, { media }, 1).find((f) => f.term === 'Picture')?.detail;
+    expect(facts(cover, 'shared/picture')).toBe('Its cover, as arranged in the album');
+    expect(facts(cover)).toMatch(/add a picture to the album/);
   });
   it('offers stretch and a chosen background colour for a slide, starting the colour from the picture edge', () => {
     expect(SLIDE_DISPLAYS.map((d) => d.value)).toEqual(['fill', 'fit', 'actual', 'tile', 'stretch']);
@@ -351,7 +369,7 @@ describe('adding a slide: choosing by seeing (§2.1)', () => {
     expect(detail(sourceFacts({ id: 'x', type: 'article', article: 'a' }, { text: 'Sum', href: '/work/a/', media: 'm' }, 3))).toEqual({
       Kind: 'Page', Opens: 'The page at /work/a/', Words: 'Its title, and its summary or the excerpt below', Picture: 'Its automatic page picture', Place: 'Slide 3, at the end',
     });
-    expect(detail(sourceFacts({ id: 'x', type: 'album', album: 't' }, {}, 1))).toMatchObject({ Opens: "The album, once it's placed in a section", Words: 'Its title (it has no summary)', Picture: 'None yet: choose a cover', Place: 'Slide 1' });
+    expect(detail(sourceFacts({ id: 'x', type: 'album', album: 't' }, {}, 1))).toMatchObject({ Opens: "The album, once it's placed in a section", Words: 'Its title (it has no summary)', Picture: 'None yet: choose a picture', Place: 'Slide 1' });
     expect(detail(sourceFacts({ id: 'x', type: 'image', media: 'm' }, { caption: 'At dusk' }, 2))).toMatchObject({ Opens: 'The picture full size', Words: 'Its caption: At dusk', Picture: 'This picture' });
     expect(detail(sourceFacts({ id: 'x', type: 'custom', custom: 'github' }, {}, 2)).Picture).toBe('None: the chart draws itself');
   });

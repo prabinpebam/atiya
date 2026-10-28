@@ -1,14 +1,29 @@
 ---
 import Example from '../library/Example.astro';
 import HighlightCard from '../components/compounds/HighlightCard.astro';
-import { SAMPLES } from '../design/samples';
+import { SAMPLES, sample } from '../design/samples';
+import type { BandTile } from '../scripts/albumBandRules';
 const settings = { display: 'fill' as const };
+// a made-up album's arranged cover, from the library's sample paintings
+const tile = (id: string, slug: string, place: BandTile['place'], phone: BandTile['phone']): BandTile => {
+  const s = sample(slug);
+  return { id, kind: 'picture', name: s.alt, href: `#item-${id}`, place, phone, still: { src: s.src, srcset: s.srcset, width: s.width, height: s.height, bg: 'rgb(124 170 120)' } };
+};
+const cover: BandTile[] = [
+  tile('plaza', 'plaza', { x: 0, y: 0, w: 6, h: 4 }, { x: 0, y: 0, w: 6, h: 4 }),
+  tile('pond', 'pond', { x: 6, y: 0, w: 3, h: 2 }, { x: 0, y: 4, w: 3, h: 2 }),
+  tile('bridge', 'bridge', { x: 9, y: 0, w: 3, h: 2 }, { x: 3, y: 4, w: 3, h: 2 }),
+  tile('waterfall', 'waterfall', { x: 6, y: 2, w: 6, h: 2 }, undefined),
+];
 ---
 <Example title="A page and its excerpt" layout="block" description="The page supplies its lead picture, title and a short verbatim passage; its section above the title, then its facts: how long it takes to read and what it's about, beside its words on a wide slide.">
   <HighlightCard title="Finding a shared direction" text="A small team tried three approaches, then chose the one they could explain together." href="#example-page" picture={SAMPLES[1]} settings={settings} section="Leadership" meta="6 min read" topics={[{ label: 'Craft', href: '#topic-craft' }, { label: 'Storytelling', href: '#topic-storytelling' }]} />
 </Example>
 <Example title="An album and its cover" layout="block" description="The album's cover and current summary, its section and counts above the title, with a link to the whole album.">
   <HighlightCard title="An afternoon outdoors" text="A few scenes from the same walk." href="#example-album" picture={SAMPLES[2]} settings={{ display: 'fit', background: true }} section="Gallery" meta="18 pictures" metaIcon="gallery" />
+</Example>
+<Example title="An album's arranged cover" layout="block" description="The album's cover as its owner arranged it, on the album's square cells, 12 columns across at every width (scaled down whole on a narrow slide, never restacked). Its tiles keep the album's own displays and corners.">
+  <HighlightCard title="A walk round the planet" text="A few scenes from the same walk." href="#example-album" picture={SAMPLES[2]} cover={cover} settings={settings} section="Gallery" meta="18 pictures" metaIcon="gallery" />
 </Example>
 <Example title="A picture on its own" layout="block" description="The library's picture and caption, with its full-size file as the link fallback.">
   <HighlightCard title="The bridge" picture={SAMPLES[4]} settings={settings} />

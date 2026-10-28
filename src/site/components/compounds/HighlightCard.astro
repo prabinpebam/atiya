@@ -3,9 +3,12 @@
  * A home highlight backed by a page, album or library picture. The picture keeps its source's alt,
  * dark version and focus. Page and album titles link to the source; a lone picture opens the lightbox. A page or an
  * album says where it sits above its title; its facts (its reading time or counts, and a page's topics) follow its words,
- * or, on a wide slide, stand in their own column beside them.
+ * or, on a wide slide, stand in their own column beside them. An album can show its arranged cover instead of one
+ * picture (highlights spec §2.3): its tiles as arranged on the album's grid of square cells, 12 columns at every width
+ * (a slide stays as short as the cover's shape), with the album's displays, focus points, backgrounds and corners. Stills only.
  * @tier compound
- * @a11y An article named by its title (its heading, or the picture's caption); one descriptive source link, or a full-picture link with its image alt.
+ * @a11y An article named by its title (its heading, or the picture's caption); one descriptive source link, or a full-picture link with its image alt. A cover's tiles are a list of pictures, each named, none a link.
+ * @key Enter: on the title, opens the page or album; on a lone picture, its full picture
  */
 import Heading from '../fundamentals/Heading.astro';
 import Text from '../fundamentals/Text.astro';
@@ -16,6 +19,7 @@ import Icon from '../fundamentals/Icon.astro';
 import { PICTURE_SPECS, type PictureSource } from '../../design/pictures';
 import { sizes } from '../../design/responsive';
 import { stableId } from '../../design/stableId';
+import { placeStyle, tileSizes, type BandTile } from '../../scripts/albumBandRules';
 import type { IconName } from '../../design/icons';
 
 interface Props {
@@ -25,8 +29,12 @@ interface Props {
   text?: string;
   /** The current canonical page/album address, with the base; absent opens the full picture. */
   href?: string;
-  /** The library picture/poster, including its theme version. */
-  picture: PictureSource & { alt: string; full: string; thumb: string; caption?: string; focus?: string; drawing?: boolean; dark?: PictureSource & { full?: string; thumb?: string } };
+  /** The library picture/poster, including its theme version. Needed unless the slide shows an album's cover. */
+  picture?: PictureSource & { alt: string; full: string; thumb: string; caption?: string; focus?: string; drawing?: boolean; dark?: PictureSource & { full?: string; thumb?: string } };
+  /** An album's arranged cover, shown instead of one picture: its band's tiles (content/bands.ts), stills only. Needs `href`. */
+  cover?: BandTile[];
+  /** The cover's album draws its pictures with square corners; left out, softly rounded. */
+  square?: boolean;
   /** The slide's picture look: carousel defaults with the slide's own on top. A string background is a chosen #RRGGBB colour; true, the picture's edge colour. */
   settings: { display?: 'fill' | 'fit' | 'actual' | 'tile' | 'stretch'; background?: boolean | string; rounded?: boolean; shadow?: boolean };
   /** Where the page or album sits: its section, said above the title. */
@@ -40,13 +48,37 @@ interface Props {
   /** Loads the first slide picture without waiting for lazy visibility. */
   priority?: boolean;
 }
-const { title, text, href, picture: p, settings, section, meta, metaIcon = 'duration', topics = [], priority = false } = Astro.props;
+const { title, text, href, picture: p, cover, square = false, settings, section, meta, metaIcon = 'duration', topics = [], priority = false } = Astro.props;
 const Frame = href ? 'div' : 'a';
 const titleId = `highlight-${stableId(Astro, 'HighlightCard')}`;
 // the background is data: a chosen colour (the same in both modes), or the picture's own edge colours
-const behind = typeof settings.background === 'string' ? { light: settings.background } : settings.background && p.bg ? { light: p.bg, dark: p.dark?.bg } : undefined;
+const behind = typeof settings.background === 'string' ? { light: settings.background } : settings.background && p?.bg ? { light: p.bg, dark: p.dark?.bg } : undefined;
+const tiles = href && cover?.length ? cover : undefined;
+// a cover is as wide as its 12 columns and as tall as its rows: the shape the card's height rule reads
+const shape = tiles ? `12 / ${Math.max(...tiles.map((t) => t.place.y + t.place.h))}` : PICTURE_SPECS.lead.ratio;
+const largest = tiles && priority ? tiles.reduce((best, t, i) => (t.place.w * t.place.h > tiles[best]!.place.w * tiles[best]!.place.h ? i : best), 0) : -1;
+// as the album's band: the tile's own colour, else the still's edge colours; a drawing without a dark version on paper
+const bgOf = (t: BandTile) => {
+  if (t.bg) return { light: t.bg, dark: t.bg };
+  const light = t.still?.bg;
+  const dark = t.still?.dark?.bg ?? (t.kind === 'drawing' ? 'var(--c-highlight-card-drawing-paper)' : light);
+  return light && dark ? { light, dark } : undefined;
+};
 ---
-<article class="highlight" style={`--shape: ${PICTURE_SPECS.lead.ratio}`} aria-labelledby={href ? titleId : undefined} aria-label={href ? undefined : title} data-highlight-card>
+<article class="highlight" style={`--shape: ${shape}`} aria-labelledby={href ? titleId : undefined} aria-label={href ? undefined : title} data-highlight-card data-square={tiles && square ? '' : undefined}>
+  {tiles ? (
+    <ul class="cover" aria-label={`${title}: its cover`} data-highlight-cover>
+      {tiles.map((t, i) => (
+        <li class="tile" style={placeStyle(t.place)} data-kind={t.kind}>
+          {t.still ? (
+            <Image src={t.still.src} srcset={t.still.srcset} alt={t.name} width={t.still.width} height={t.still.height} sizes={tileSizes(t.place.w, t.place.w / 2)} fill display={t.display ?? (t.kind === 'drawing' ? 'fit' : 'fill')} focus={t.focus} dark={t.still.dark} bg={bgOf(t)} drawing={t.kind === 'drawing'} rounded={false} priority={i === largest} />
+          ) : (
+            <span class="blank" role="img" aria-label={t.name} />
+          )}
+        </li>
+      ))}
+    </ul>
+  ) : p && (
   <figure class="picture">
     <Frame href={href ? undefined : p.full} aria-label={!href && !p.alt ? p.caption || 'Open full picture' : undefined} data-lightbox={href ? undefined : 'home-highlights'} data-caption={p.caption} data-alt={p.alt} data-thumb={p.thumb} data-full-dark={p.dark?.full} data-thumb-dark={p.dark?.thumb}>
       <Image src={p.src} srcset={p.srcset} sizes={sizes(['wide', '92vw'], 'wide')} alt={p.alt}
@@ -56,6 +88,7 @@ const behind = typeof settings.background === 'string' ? { light: settings.backg
     </Frame>
     {!href && p.caption && <Caption>{p.caption}</Caption>}
   </figure>
+  )}
   {href && (
     <div class="words">
       <div class="story">
@@ -84,6 +117,16 @@ const behind = typeof settings.background === 'string' ? { light: settings.backg
   .highlight { container-type: inline-size; display: grid; gap: var(--space-6); align-content: start; min-inline-size: 0; inline-size: min(100%, calc(var(--c-highlight-card-picture-max) * 1dvh * var(--shape))); justify-self: center; }
   .picture { display: grid; gap: var(--space-3); margin: 0; }
   .picture a { display: block; color: var(--color-text); }
+  /* an album's cover: 12 columns of square cells, as its band has them (a row is exactly one column's width), at every
+     width: the phone's stack is for the album's own page, and a slide never grows taller than the cover's shape */
+  .cover { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); grid-auto-rows: calc((100cqi - 11 * var(--c-highlight-card-cover-gap)) / 12); gap: var(--c-highlight-card-cover-gap); margin: 0; padding: 0; list-style: none; }
+  .cover .tile { grid-area: var(--y) / var(--x) / span var(--h) / span var(--w); min-inline-size: 0; overflow: hidden; border-radius: var(--c-image-radius); background: var(--c-image-placeholder); }
+  .highlight[data-square] .cover .tile { border-radius: var(--radius-none); }
+  /* narrower than query-split the cover is scaled down whole: its tiles take a smaller corner (the wrapper clips) */
+  @container (width < 40rem) {
+    .highlight:not([data-square]) .cover .tile { border-radius: var(--c-highlight-card-cover-radius-narrow); }
+  }
+  .blank { display: block; block-size: 100%; }
   .words { display: grid; gap: var(--space-5); padding-block-end: var(--space-4); }
   .story { display: grid; gap: var(--space-3); align-content: start; }
   /* a heading is never underlined: its link says so by its colour when it's pointed at or pressed */

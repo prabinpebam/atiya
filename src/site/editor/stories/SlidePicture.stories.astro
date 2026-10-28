@@ -1,9 +1,15 @@
 ---
 import Example from '../../library/Example.astro';
 import SlidePicture from '../kit/SlidePicture.astro';
-import { HIGHLIGHTS, SOURCE_THUMBS } from './samples';
+import { COVER_BAND, HIGHLIGHTS, SOURCE_THUMBS } from './samples';
 const pond = { ...SOURCE_THUMBS['article:a-walk-round-the-pond'], alt: 'A pond in a meadow', bg: 'rgb(124 170 120)' };
 ---
+<Example title="An album: one picture" description="An album's slide first chooses what it shows. One picture is the default: its lead picture, or one chosen from the library, with its own look.">
+  <SlidePicture item={{ id: 'album', type: 'album', album: 'by-the-pond' }} settings={HIGHLIGHTS} thumb={pond} />
+</Example>
+<Example title="An album: its cover" description="Album cover: the cover as arranged in the album, drawn as the slide shows it. The picture's look is hidden (the album's own applies) and Arrange album cover opens the album to change it.">
+  <SlidePicture item={{ id: 'album', type: 'album', album: 'by-the-pond', show: 'cover' }} settings={HIGHLIGHTS} thumb={pond} cover={{ title: 'By the pond', tiles: COVER_BAND.tiles }} />
+</Example>
 <Example title="Automatic picture" description="A page without a lead picture can still use a body picture, or an independent library picture. Its look follows the carousel until one is changed.">
   <SlidePicture item={{ id: 'page', type: 'article', article: 'sample' }} settings={HIGHLIGHTS} thumb={pond} />
 </Example>
