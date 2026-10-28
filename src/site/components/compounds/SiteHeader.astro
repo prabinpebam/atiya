@@ -20,7 +20,7 @@ import Button from '../fundamentals/Button.astro';
 import IconButton from '../fundamentals/IconButton.astro';
 import Select from '../fundamentals/Select.astro';
 import { SITE_NAME, withBase } from '../../design/meta';
-import { linkAttrs, NEW_TAB_NOTE } from '../../design/links';
+import { linkAttrs, newTabSign } from '../../design/links';
 import { svgOf, type IconName } from '../../design/icons';
 import { THEME_OPTIONS } from '../../scripts/theme';
 
@@ -86,7 +86,7 @@ const navPolicy = (item: NavItem) => linkAttrs(item.href, Astro.url.hostname, it
               return (
                 <li data-nav-item>
                   <a href={n.href} target={policy.target} rel={policy.rel} aria-current={n.current ? 'page' : undefined} data-is-current={n.current ? '' : undefined}>
-                    {n.label}{policy.newTab && <span class="sr-only">{NEW_TAB_NOTE}</span>}
+                    {n.label}{policy.newTab && <Fragment set:html={newTabSign()} />}
                   </a>
                 </li>
               );
@@ -101,7 +101,7 @@ const navPolicy = (item: NavItem) => linkAttrs(item.href, Astro.url.hostname, it
                     return (
                       <li data-more-item hidden>
                         <a href={n.href} target={policy.target} rel={policy.rel} data-is-current={n.current ? '' : undefined}>
-                          {n.label}{policy.newTab && <span class="sr-only">{NEW_TAB_NOTE}</span>}
+                          {n.label}{policy.newTab && <Fragment set:html={newTabSign()} />}
                         </a>
                       </li>
                     );

@@ -8,7 +8,7 @@
  */
 import Heading from '../fundamentals/Heading.astro';
 import Text from '../fundamentals/Text.astro';
-import { linkAttrs, NEW_TAB_NOTE } from '../../design/links';
+import { linkAttrs, newTabSign } from '../../design/links';
 
 export interface ContentsEntry {
   href: string;
@@ -45,7 +45,7 @@ const pad = (n: number) => String(n).padStart(2, '0');
         <div class="words">
           <Heading level={headingLevel} size="h2">
             <a class="title" href={e.href} target={policy.target} rel={policy.rel} data-card-link>
-              {e.title}{policy.newTab && <span class="sr-only">{NEW_TAB_NOTE}</span>}
+              {e.title}{policy.newTab && <Fragment set:html={newTabSign()} />}
             </a>
           </Heading>
           {e.kicker && <Text variant="label" tone="muted">{e.kicker}</Text>}

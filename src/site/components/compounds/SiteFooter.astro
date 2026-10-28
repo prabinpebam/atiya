@@ -6,7 +6,7 @@
  * @a11y A contentinfo landmark; the link list is labelled.
  */
 import { SITE_FEATURES, SITE_NAME, withBase } from '../../design/meta';
-import { linkAttrs, NEW_TAB_NOTE } from '../../design/links';
+import { linkAttrs, newTabSign } from '../../design/links';
 
 interface Props {
   /** Links to show; the defaults are the site's ways around (each only if the site has it). */
@@ -40,7 +40,7 @@ const year = new Date().getFullYear();
             const policy = linkAttrs(l.href, Astro.url.hostname);
             return (
               <li>
-                <a href={l.href} target={policy.target} rel={policy.rel}>{l.label}{policy.newTab && <span class="sr-only">{NEW_TAB_NOTE}</span>}</a>
+                <a href={l.href} target={policy.target} rel={policy.rel}>{l.label}{policy.newTab && <Fragment set:html={newTabSign()} />}</a>
               </li>
             );
           })

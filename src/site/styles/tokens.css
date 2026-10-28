@@ -372,6 +372,9 @@
   --c-icon-secondary: var(--color-icon-secondary);
   --c-icon-secondary-opacity: 1;
   --c-icon-baseline-shift: -0.15em;
+  --c-icon-new-tab-size: 1em;
+  --c-icon-new-tab-gap: 0.2em;
+  --c-icon-new-tab-shift: -0.1em;
   --c-icon-tonal-opacity: 0.4;
   --c-carousel-thumb: 5rem;
   --c-carousel-thumb-on: var(--color-accent);

@@ -9,7 +9,7 @@
  * @key Enter: follows it
  */
 import { svgOf } from '../../design/icons';
-import { linkAttrs, NEW_TAB_NOTE } from '../../design/links';
+import { linkAttrs, newTabSign } from '../../design/links';
 
 interface Props {
   /** Where it goes (root-relative paths go through withBase). */
@@ -27,7 +27,7 @@ interface Props {
 
 const { href, variant = 'inline', external = false, current = false, download = false, ...rest } = Astro.props;
 const policy = linkAttrs(href, Astro.url.hostname, external);
-const end = policy.newTab ? svgOf('external') : variant === 'standalone' ? svgOf('arrow-right') : null;
+const end = !policy.newTab && variant === 'standalone' ? svgOf('arrow-right') : null;
 ---
 
 <a
@@ -45,7 +45,7 @@ const end = policy.newTab ? svgOf('external') : variant === 'standalone' ? svgOf
         <Fragment set:html={end.body} />
       </svg>
     )
-  }{policy.newTab && <span class="sr-only">{NEW_TAB_NOTE}</span>}</a
+  }{policy.newTab && <Fragment set:html={newTabSign()} />}</a
 >
 
 <style>
@@ -66,15 +66,6 @@ const end = policy.newTab ? svgOf('external') : variant === 'standalone' ? svgOf
     }
   }
 
-  .icon {
-    display: inline-block;
-    width: var(--c-link-icon-size);
-    height: var(--c-link-icon-size);
-    margin-inline-start: var(--c-link-icon-gap);
-    vertical-align: var(--c-link-icon-shift);
-    transition: transform var(--duration-fast) var(--ease-spring);
-  }
-
   .link[data-variant='standalone'] {
     display: inline-flex;
     align-items: center;
@@ -90,6 +81,7 @@ const end = policy.newTab ? svgOf('external') : variant === 'standalone' ? svgOf
     width: var(--text-sm);
     height: var(--text-sm);
     margin-inline-start: var(--space-2);
+    transition: transform var(--duration-fast) var(--ease-spring);
   }
 
   @media (hover: hover) {

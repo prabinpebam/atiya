@@ -209,6 +209,27 @@ html::-webkit-scrollbar,
   }
 }
 
+/* the arrow after a link that opens a new tab (links.ts newTabSign), sized by the text it follows; its
+   span doesn't wrap and word joiners at its edges keep the arrow with the last word and the punctuation
+   after the link (generated, so they're never in the link's text) */
+[data-new-tab] {
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+[data-new-tab]::before,
+[data-new-tab]::after {
+  content: "\2060";
+}
+
+[data-new-tab] > svg {
+  display: inline-block;
+  width: auto;
+  height: var(--c-icon-new-tab-size);
+  margin-inline-start: var(--c-icon-new-tab-gap);
+  vertical-align: var(--c-icon-new-tab-shift);
+}
+
 input,
 button,
 textarea,

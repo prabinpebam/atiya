@@ -13,7 +13,7 @@
  *
  * Everything else is text: HTML is escaped, so raw markup can never reach a page.
  */
-import { linkAttrs, NEW_TAB_NOTE } from '../design/links';
+import { linkAttrs, newTabSign } from '../design/links';
 
 export type Inline =
   | { t: 'text'; v: string }
@@ -353,7 +353,7 @@ function renderInline(nodes: Inline[], opts: MarkdownOptions): string {
           const written = opts.annotate ? ` data-md-href="${escapeHtml(n.href)}"` : '';
           const policy = linkAttrs(target);
           const tab = policy.newTab ? ` target="${policy.target}" rel="${policy.rel}"` : '';
-          const note = policy.newTab ? `<span class="sr-only">${NEW_TAB_NOTE}</span>` : '';
+          const note = policy.newTab ? newTabSign() : '';
           return `<a href="${escapeHtml(target)}"${written}${tab}>${renderInline(n.c, opts)}${note}</a>`;
         }
       }

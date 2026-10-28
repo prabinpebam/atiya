@@ -154,6 +154,9 @@
     "c.highlight-card.picture-max": {"v":"45"},
     "c.highlight-card.query-split": {"v":"40rem"},
     "c.icon.baseline-shift": {"v":"-0.15em"},
+    "c.icon.new-tab-gap": {"v":"0.2em"},
+    "c.icon.new-tab-shift": {"v":"-0.1em"},
+    "c.icon.new-tab-size": {"v":"1em"},
     "c.icon.secondary": {"v":"var(--color-icon-secondary)"},
     "c.icon.secondary-opacity": {"v":"1"},
     "c.icon.tonal-opacity": {"v":"0.4"},
@@ -184,9 +187,9 @@
     "c.lightbox.play-icon": {"v":"2.25rem"},
     "c.lightbox.thumb": {"v":"4.5rem"},
     "c.lightbox.thumb-on": {"v":"var(--color-highlight)"},
-    "c.link.icon-gap": {"v":"0.3em"},
-    "c.link.icon-shift": {"v":"-0.05em"},
-    "c.link.icon-size": {"v":"0.8em"},
+    "c.link.icon-gap": {"v":"0.3em","d":"Use --c-icon-new-tab-gap"},
+    "c.link.icon-shift": {"v":"-0.05em","d":"Use --c-icon-new-tab-shift"},
+    "c.link.icon-size": {"v":"0.8em","d":"Use --c-icon-new-tab-size"},
     "c.list.item-gap": {"v":"var(--space-1)"},
     "c.listbox.max-height": {"v":"18rem"},
     "c.listbox.option-radius": {"v":"var(--radius-md)"},
@@ -503,6 +506,51 @@
           null,
           {
             "v": "12"
+          }
+        ],
+        "c.icon.new-tab-gap": [
+          null,
+          {
+            "v": "0.2em"
+          }
+        ],
+        "c.icon.new-tab-shift": [
+          null,
+          {
+            "v": "-0.1em"
+          }
+        ],
+        "c.icon.new-tab-size": [
+          null,
+          {
+            "v": "1em"
+          }
+        ],
+        "c.link.icon-gap": [
+          {
+            "v": "0.3em"
+          },
+          {
+            "v": "0.3em",
+            "d": "Use --c-icon-new-tab-gap"
+          }
+        ],
+        "c.link.icon-shift": [
+          {
+            "v": "-0.05em"
+          },
+          {
+            "v": "-0.05em",
+            "d": "Use --c-icon-new-tab-shift"
+          }
+        ],
+        "c.link.icon-size": [
+          {
+            "v": "0.8em"
+          },
+          {
+            "v": "0.8em",
+            "d": "Use --c-icon-new-tab-size"
           }
         ]
       }

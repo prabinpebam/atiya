@@ -5,7 +5,7 @@
  * @a11y A tag that's a link says where it goes by its words; a status tag isn't colour alone (its word carries it).
  */
 import { svgOf, type IconName } from '../../design/icons';
-import { linkAttrs, NEW_TAB_NOTE } from '../../design/links';
+import { linkAttrs, newTabSign } from '../../design/links';
 
 interface Props {
   /** neutral: a topic; accent: the one that matters here; highlight: new or featured; positive, negative: a status. */
@@ -33,7 +33,7 @@ const policy = linkAttrs(href, Astro.url.hostname);
     )
   }
   <slot />
-  {policy.newTab && <span class="sr-only">{NEW_TAB_NOTE}</span>}
+  {policy.newTab && <Fragment set:html={newTabSign()} />}
 </Tag>
 
 <style>

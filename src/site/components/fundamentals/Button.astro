@@ -10,7 +10,7 @@
  * @key Space: activates a button
  */
 import { svgOf, type IconName } from '../../design/icons';
-import { linkAttrs, NEW_TAB_NOTE } from '../../design/links';
+import { linkAttrs, newTabSign } from '../../design/links';
 
 interface Props {
   /** primary: the one main action; secondary: an outlined alternative; quiet: a light, text-weight action. */
@@ -53,7 +53,7 @@ const policy = linkAttrs(isLink ? href : undefined, Astro.url.hostname, external
 const start = icon ? svgOf(icon) : null;
 // on the accent fill an indigo second layer would sink into it: the icon is tonal there
 const tonal = variant === 'primary' ? 'tonal' : undefined;
-const end = policy.newTab ? svgOf('external') : iconEnd ? svgOf(iconEnd) : null;
+const end = !policy.newTab && iconEnd ? svgOf(iconEnd) : null;
 ---
 
 <Tag
@@ -87,7 +87,7 @@ const end = policy.newTab ? svgOf('external') : iconEnd ? svgOf(iconEnd) : null;
       </svg>
     )
   }
-  {policy.newTab && <span class="sr-only">{NEW_TAB_NOTE}</span>}
+  {policy.newTab && <Fragment set:html={newTabSign()} />}
 </Tag>
 
 <style>
