@@ -1,0 +1,173 @@
+{
+  "id": "untitled-album-4",
+  "type": "album",
+  "slug": "untitled-album-4",
+  "title": "Product renders for team",
+  "status": "published",
+  "createdAt": "2026-10-28",
+  "updatedAt": "2026-10-28",
+  "order": "custom",
+  "items": [
+    {
+      "id": "visio-4-1",
+      "media": "albums/untitled-album-4/visio-4-1"
+    },
+    {
+      "id": "voice-1",
+      "media": "albums/untitled-album-4/voice-1"
+    },
+    {
+      "id": "whiteboard-002-1",
+      "media": "albums/untitled-album-4/whiteboard-002-1"
+    },
+    {
+      "id": "word-crop-1",
+      "media": "albums/untitled-album-4/word-crop-1"
+    },
+    {
+      "id": "word-intelligent-outline0010-1",
+      "media": "albums/untitled-album-4/word-intelligent-outline0010-1"
+    },
+    {
+      "id": "word-table-border-1",
+      "media": "albums/untitled-album-4/word-table-border-1"
+    },
+    {
+      "id": "word-table-border-option-b-1",
+      "media": "albums/untitled-album-4/word-table-border-option-b-1"
+    },
+    {
+      "id": "word-to-powerpoint-2",
+      "media": "albums/untitled-album-4/word-to-powerpoint-2"
+    },
+    {
+      "id": "wxp-dark-mode0010-1",
+      "media": "albums/untitled-album-4/wxp-dark-mode0010-1"
+    },
+    {
+      "id": "studio-91-nh44-1",
+      "media": "albums/untitled-album-4/studio-91-nh44-1"
+    },
+    {
+      "id": "edu-1",
+      "media": "albums/untitled-album-4/edu-1"
+    },
+    {
+      "id": "end-image-night-time0010-1",
+      "media": "albums/untitled-album-4/end-image-night-time0010-1"
+    },
+    {
+      "id": "end-image0010-1",
+      "media": "albums/untitled-album-4/end-image0010-1"
+    },
+    {
+      "id": "excel-in-team0010-1",
+      "media": "albums/untitled-album-4/excel-in-team0010-1"
+    },
+    {
+      "id": "family-safety-3-1",
+      "media": "albums/untitled-album-4/family-safety-3-1"
+    },
+    {
+      "id": "fluid-in-team0010-1",
+      "media": "albums/untitled-album-4/fluid-in-team0010-1"
+    },
+    {
+      "id": "powerpoint-ausio-in-ppt0010-1",
+      "media": "albums/untitled-album-4/powerpoint-ausio-in-ppt0010-1"
+    },
+    {
+      "id": "powerpoint-dark-mode-1",
+      "media": "albums/untitled-album-4/powerpoint-dark-mode-1"
+    },
+    {
+      "id": "powerpoint-intelligent-1-0010-1",
+      "media": "albums/untitled-album-4/powerpoint-intelligent-1-0010-1"
+    },
+    {
+      "id": "powerpoint-intelligent0010-1",
+      "media": "albums/untitled-album-4/powerpoint-intelligent0010-1"
+    },
+    {
+      "id": "project-2-1",
+      "media": "albums/untitled-album-4/project-2-1"
+    },
+    {
+      "id": "stream0010-1",
+      "media": "albums/untitled-album-4/stream0010-1"
+    },
+    {
+      "id": "visio-3-1",
+      "media": "albums/untitled-album-4/visio-3-1"
+    }
+  ],
+  "cover": {
+    "tiles": [
+      {
+        "item": "visio-4-1",
+        "x": 3,
+        "y": 2,
+        "w": 4,
+        "h": 2
+      },
+      {
+        "item": "voice-1",
+        "x": 5,
+        "y": 0,
+        "w": 3,
+        "h": 2
+      },
+      {
+        "item": "whiteboard-002-1",
+        "x": 8,
+        "y": 0,
+        "w": 4,
+        "h": 2
+      },
+      {
+        "item": "word-table-border-option-b-1",
+        "x": 0,
+        "y": 0,
+        "w": 5,
+        "h": 2
+      },
+      {
+        "item": "powerpoint-intelligent-1-0010-1",
+        "x": 7,
+        "y": 2,
+        "w": 5,
+        "h": 2
+      },
+      {
+        "item": "family-safety-3-1",
+        "x": 0,
+        "y": 4,
+        "w": 6,
+        "h": 2
+      },
+      {
+        "item": "wxp-dark-mode0010-1",
+        "x": 0,
+        "y": 2,
+        "w": 3,
+        "h": 2
+      },
+      {
+        "item": "word-to-powerpoint-2",
+        "x": 6,
+        "y": 4,
+        "w": 4,
+        "h": 2
+      },
+      {
+        "item": "studio-91-nh44-1",
+        "x": 10,
+        "y": 4,
+        "w": 2,
+        "h": 2
+      }
+    ]
+  },
+  "publishedAt": "2026-10-28",
+  "summary": "Collection of renders I create using C4D and octane render for various Microsoft products and the work done by our team."
+}

@@ -1,0 +1,13 @@
+{
+  "kind": "image",
+  "file": "end-image-night-time0010-1.webp",
+  "focus": "75% 56%",
+  "facts": {
+    "width": 2000,
+    "height": 1000,
+    "bg": "rgb(105 106 94)",
+    "bytes": 104992
+  },
+  "fingerprint": "0a6082952bc76ebd70dcdbadbfbe7efdfbd3700095dfc60266665b9fe7d9ae33",
+  "visibility": "public"
+}

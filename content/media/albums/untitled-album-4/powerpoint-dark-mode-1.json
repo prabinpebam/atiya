@@ -1,0 +1,13 @@
+{
+  "kind": "image",
+  "file": "powerpoint-dark-mode-1.webp",
+  "focus": "44% 25%",
+  "facts": {
+    "width": 2000,
+    "height": 800,
+    "bg": "rgb(100 84 86)",
+    "bytes": 1442494
+  },
+  "fingerprint": "66076d19db7117cc2d190f7837915d397b5d066cefa3f617bbb19f14d9148f67",
+  "visibility": "public"
+}

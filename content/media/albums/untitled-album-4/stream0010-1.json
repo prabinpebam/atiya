@@ -1,0 +1,13 @@
+{
+  "kind": "image",
+  "file": "stream0010-1.webp",
+  "focus": "75% 75%",
+  "facts": {
+    "width": 2000,
+    "height": 800,
+    "bg": "rgb(230 214 212)",
+    "bytes": 1456234
+  },
+  "fingerprint": "9cdb009ce9eee84c397b57ae7f5fa9afbaaf9b4e6b9273d83b958400c7deb372",
+  "visibility": "public"
+}

@@ -1,0 +1,13 @@
+{
+  "kind": "image",
+  "file": "project-2-1.webp",
+  "focus": "25% 25%",
+  "facts": {
+    "width": 2000,
+    "height": 800,
+    "bg": "rgb(224 228 222)",
+    "bytes": 1300948
+  },
+  "fingerprint": "ff63eaff2d930cc4bd77345b642f1dd511ae11287c786eb12e9bb9d33bb4779f",
+  "visibility": "public"
+}

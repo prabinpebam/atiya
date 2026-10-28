@@ -1,0 +1,13 @@
+{
+  "kind": "image",
+  "file": "end-image0010-1.webp",
+  "focus": "75% 50%",
+  "facts": {
+    "width": 2000,
+    "height": 1000,
+    "bg": "rgb(197 192 175)",
+    "bytes": 125334
+  },
+  "fingerprint": "a0fa73688e4a808addbb3ca9017aa7cfb36a7c4fef34106e93976f57647d632a",
+  "visibility": "public"
+}

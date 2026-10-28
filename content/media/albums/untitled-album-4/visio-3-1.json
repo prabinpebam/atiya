@@ -1,0 +1,13 @@
+{
+  "kind": "image",
+  "file": "visio-3-1.webp",
+  "focus": "25% 37%",
+  "facts": {
+    "width": 2000,
+    "height": 800,
+    "bg": "rgb(150 170 173)",
+    "bytes": 79786
+  },
+  "fingerprint": "2264f5aaf8143fac5b06cd8d1ece475e6f848af856a82aac98b6bcd8cdab32b2",
+  "visibility": "public"
+}

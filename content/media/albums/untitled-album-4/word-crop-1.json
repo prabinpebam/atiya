@@ -1,0 +1,13 @@
+{
+  "kind": "image",
+  "file": "word-crop-1.webp",
+  "focus": "25% 59%",
+  "facts": {
+    "width": 2000,
+    "height": 800,
+    "bg": "rgb(199 199 186)",
+    "bytes": 1461300
+  },
+  "fingerprint": "3bc9cfdf1003d346ba2654fff635dcc06c7aa8432dda80bff605281904832047",
+  "visibility": "public"
+}

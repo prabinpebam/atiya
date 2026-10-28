@@ -1,0 +1,13 @@
+{
+  "kind": "image",
+  "file": "family-safety-3-1.webp",
+  "focus": "25% 75%",
+  "facts": {
+    "width": 2000,
+    "height": 800,
+    "bg": "rgb(148 156 141)",
+    "bytes": 108354
+  },
+  "fingerprint": "49a1a215adcefee575cbabc94067770940f30bd78d1f7b8df85a46db505f52f2",
+  "visibility": "public"
+}

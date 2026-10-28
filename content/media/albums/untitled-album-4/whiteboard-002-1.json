@@ -1,0 +1,13 @@
+{
+  "kind": "image",
+  "file": "whiteboard-002-1.webp",
+  "focus": "72% 25%",
+  "facts": {
+    "width": 2000,
+    "height": 800,
+    "bg": "rgb(207 209 211)",
+    "bytes": 1495288
+  },
+  "fingerprint": "a453743334881a3864fece7ba701257f3f0abaad9dcbbff3b2afd932dfe12cd1",
+  "visibility": "public"
+}

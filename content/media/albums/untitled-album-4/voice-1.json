@@ -1,0 +1,13 @@
+{
+  "kind": "image",
+  "file": "voice-1.webp",
+  "focus": "59% 25%",
+  "facts": {
+    "width": 2000,
+    "height": 800,
+    "bg": "rgb(209 212 211)",
+    "bytes": 1548444
+  },
+  "fingerprint": "8ab37e19e448a8ac9165a5da988f5f80ad8e5100089e519a7b1d7618c4932a5f",
+  "visibility": "public"
+}

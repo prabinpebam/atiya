@@ -1,0 +1,13 @@
+{
+  "kind": "image",
+  "file": "powerpoint-intelligent0010-1.webp",
+  "focus": "75% 25%",
+  "facts": {
+    "width": 2000,
+    "height": 800,
+    "bg": "rgb(200 191 188)",
+    "bytes": 103722
+  },
+  "fingerprint": "64f173df3bdb84df1ba409f38561e44d1e2d64b7ea6b9ef2c99b386d4e7bc38c",
+  "visibility": "public"
+}

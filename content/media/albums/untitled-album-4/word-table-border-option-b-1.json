@@ -1,0 +1,13 @@
+{
+  "kind": "image",
+  "file": "word-table-border-option-b-1.webp",
+  "focus": "25% 75%",
+  "facts": {
+    "width": 2000,
+    "height": 800,
+    "bg": "rgb(216 216 215)",
+    "bytes": 1473410
+  },
+  "fingerprint": "9b9c3cbce48b98679d7e8e2e48a7e0fd73351feaefa8a939f61ce9a07576ae33",
+  "visibility": "public"
+}

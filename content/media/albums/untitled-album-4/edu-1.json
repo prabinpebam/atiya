@@ -1,0 +1,13 @@
+{
+  "kind": "image",
+  "file": "edu-1.webp",
+  "focus": "25% 28%",
+  "facts": {
+    "width": 2000,
+    "height": 911,
+    "bg": "rgb(170 171 173)",
+    "bytes": 1471018
+  },
+  "fingerprint": "483221f3daaa96cec00284e15a62fca8bffba4e584a0ce723287886e412d0f4c",
+  "visibility": "public"
+}
