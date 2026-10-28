@@ -1,0 +1,23 @@
+{
+  "kind": "image",
+  "file": "catalog.webp",
+  "dark": {
+    "file": "catalog.dark.webp",
+    "facts": {
+      "width": 1920,
+      "height": 1200,
+      "bg": "rgb(27 31 34)",
+      "bytes": 118478
+    }
+  },
+  "alt": "The catalog filtered to the job Product and planning: filters for type, job and agent on the left, and 28 cards on the right, each marked kit, stack or skill, with a one-line summary, its area and the date it was updated.",
+  "caption": "The catalog, narrowed by the job to be done rather than by kind of thing.",
+  "fingerprint": "f675bf862c120fa6972d9b5ada196f014878a84bc8f65c0b37bb5bec4d353354",
+  "visibility": "public",
+  "facts": {
+    "width": 1920,
+    "height": 1200,
+    "bg": "rgb(227 229 233)",
+    "bytes": 131012
+  }
+}

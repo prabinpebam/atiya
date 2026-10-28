@@ -1,0 +1,23 @@
+{
+  "kind": "image",
+  "file": "get-it.webp",
+  "dark": {
+    "file": "get-it.dark.webp",
+    "facts": {
+      "width": 732,
+      "height": 999,
+      "bg": "rgb(17 20 22)",
+      "bytes": 39160
+    }
+  },
+  "alt": "The Get it panel on the craft skill: choose your agent and where it goes, then Git, Ask your agent, Download or Command. Ask your agent shows a prompt asking the agent to show the files first and copy them only after you agree.",
+  "caption": "Get it, with Ask your agent: a prompt that pins the commit and asks the agent to show its plan first.",
+  "fingerprint": "04e7027f7cd958fd3ff0a126572b5d8120d8931e018ab6de197db0814318132d",
+  "visibility": "public",
+  "facts": {
+    "width": 732,
+    "height": 999,
+    "bg": "rgb(215 218 223)",
+    "bytes": 43926
+  }
+}

@@ -1,0 +1,23 @@
+{
+  "kind": "image",
+  "file": "adds.webp",
+  "dark": {
+    "file": "adds.dark.webp",
+    "facts": {
+      "width": 1230,
+      "height": 1326,
+      "bg": "rgb(25 28 31)",
+      "bytes": 78168
+    }
+  },
+  "alt": "The craft skill's What it adds section: a file tree with the one folder it adds, .github/skills/craft/, and a panel saying it's only instructions (no scripts, network or credentials), what it needs, its licence and its pinned commit.",
+  "caption": "What it adds, and what it can do, in plain words: the part I want to read before I let anything into a project.",
+  "fingerprint": "60e34771fbb7f1911408d6fb79732cc2a7edc2ff10b0fbad0f24422d9fba08db",
+  "visibility": "public",
+  "facts": {
+    "width": 1230,
+    "height": 1326,
+    "bg": "rgb(246 247 250)",
+    "bytes": 76436
+  }
+}

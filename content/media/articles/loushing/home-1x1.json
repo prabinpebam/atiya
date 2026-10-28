@@ -1,0 +1,30 @@
+{
+  "kind": "image",
+  "file": "home-1x1.webp",
+  "dark": {
+    "file": "home-1x1.dark.webp",
+    "facts": {
+      "width": 1200,
+      "height": 1200,
+      "bg": "rgb(25 29 33)",
+      "bytes": 60410
+    }
+  },
+  "alt": "Loushing's home page: \"The skills and kits I work with\", a search box, four areas to browse, and tiles counting 20 skills, 3 kits, 1 stack and 49 parts inside kits. A drawing of Chopper peeks over the last tile.",
+  "caption": "The home page: what I use, counted, and a search that starts from the task.",
+  "fingerprint": "74e4072bb971bb6e24041d75923cef541e671ae84fc36f072806fbf8590b7dbd",
+  "visibility": "public",
+  "crop": {
+    "from": "articles/loushing/home",
+    "x": 0,
+    "y": 0,
+    "width": 1200,
+    "height": 1200
+  },
+  "facts": {
+    "width": 1200,
+    "height": 1200,
+    "bg": "rgb(227 230 235)",
+    "bytes": 63904
+  }
+}

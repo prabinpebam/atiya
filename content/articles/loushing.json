@@ -1,0 +1,252 @@
+{
+  "id": "loushing",
+  "type": "article",
+  "kind": "note",
+  "contribution": "built",
+  "slug": "loushing",
+  "title": "Loushing: the AI agent skills and kits I use, explained plainly",
+  "summary": "A personal catalog of the AI agent skills and kits I use: each explained in a minute, with what it adds and can touch, and one step to put it in your agent.",
+  "status": "draft",
+  "visibility": "public",
+  "publishedAt": "2026-10-28",
+  "updatedAt": "2026-10-28",
+  "locale": "en",
+  "thumbnail": "articles/loushing/home-3x2",
+  "thumbnails": {
+    "wide": "articles/loushing/home-21x9",
+    "square": "articles/loushing/home-1x1"
+  },
+  "thumbnailStyle": {
+    "shadow": true
+  },
+  "topics": [
+    "side-project",
+    "ai",
+    "tools",
+    "craft"
+  ],
+  "body": [
+    {
+      "type": "text",
+      "markdown": "I use a handful of AI agent skills and kits every day: the ones that plan a product, run the work, document it and design the interface. Loushing is where I keep them, each explained plainly. If you want to use one yourself, you can understand it in a minute and have it working in your agent in one step.",
+      "key": "4imx74"
+    },
+    {
+      "type": "text",
+      "markdown": "It is a personal collection, not a store. Everything in it is something I made or use, and every page says what the thing does, what it adds to your project and what it can and can't touch, before it asks you to install anything.",
+      "key": "pw3uf3"
+    },
+    {
+      "type": "figure",
+      "media": "articles/loushing/home",
+      "width": "wide",
+      "lightbox": true,
+      "shadow": true,
+      "key": "6css6m"
+    },
+    {
+      "type": "heading",
+      "level": 2,
+      "text": "Why I made it",
+      "key": "541pys"
+    },
+    {
+      "type": "text",
+      "markdown": "Skills are just folders of instructions, scripts and templates, and they are easy to share as a link to a repository. They are hard to judge that way. You have to read the files to learn what one does, where it should go for your agent, and whether it runs anything on your machine.",
+      "key": "yzrj80"
+    },
+    {
+      "type": "text",
+      "markdown": "I kept explaining the same kits to people, and pointing agents at the same files. I wanted one place that answers those questions for a person in a minute, and gives an agent everything it needs to install a skill without guessing.",
+      "key": "b9dtvd"
+    },
+    {
+      "type": "collection",
+      "layout": "columns",
+      "items": [
+        {
+          "heading": "Type",
+          "subtext": "A catalog of AI agent skills and kits, for people and agents"
+        },
+        {
+          "heading": "Contents",
+          "subtext": "20 skills, 3 kits and 1 stack: 73 items in all"
+        },
+        {
+          "heading": "Built",
+          "subtext": "In three days, 22 to 24 October 2026"
+        },
+        {
+          "heading": "Built with",
+          "subtext": "A dependency-free Node static generator, on GitHub Pages"
+        },
+        {
+          "heading": "Repository",
+          "subtext": "prabinpebam/loushing on GitHub"
+        }
+      ],
+      "key": "wc3b8v"
+    },
+    {
+      "type": "heading",
+      "level": 2,
+      "text": "What's inside",
+      "key": "k8huia"
+    },
+    {
+      "type": "text",
+      "markdown": "The catalog is sorted into four areas: product and planning, running agent work, documentation, and interface design. You can filter by area or by kind, and every card says in a line what the item is for.",
+      "key": "unjb0e"
+    },
+    {
+      "type": "figure",
+      "media": "articles/loushing/catalog",
+      "width": "wide",
+      "lightbox": true,
+      "shadow": true,
+      "key": "v6zilz"
+    },
+    {
+      "type": "text",
+      "markdown": "A kit is a set of parts that work together. Its page lists each part, skills, agents, templates and tools, and shows how they hand work to each other. There are three: [agentic-craft](https://prabinpebam.github.io/loushing/items/agentic-craft), which decides what is worth building and what success means; agent-orchestration, which carries the work out, checks it and adapts; and [Slate](ref:article/slate), which writes and publishes the documentation.",
+      "key": "qmbfce"
+    },
+    {
+      "type": "figure",
+      "media": "articles/loushing/kit",
+      "width": "wide",
+      "lightbox": true,
+      "shadow": true,
+      "key": "a7java"
+    },
+    {
+      "type": "text",
+      "markdown": "A stack puts kits together for one job. The one stack so far, Plan, build and document a product, shows the hand-offs: agentic-craft writes the spec, agent-orchestration runs each stage, and Slate publishes what was learned. Each kit still works on its own.",
+      "key": "e8b9di"
+    },
+    {
+      "type": "figure",
+      "media": "articles/loushing/stack",
+      "width": "wide",
+      "lightbox": true,
+      "shadow": true,
+      "key": "c9w27x"
+    },
+    {
+      "type": "heading",
+      "level": 2,
+      "text": "Using one yourself",
+      "key": "qu6zmf"
+    },
+    {
+      "type": "text",
+      "markdown": "Every item has a Get it panel. You choose your agent and where the skill goes, this project or all your projects, and it gives you the exact way in: the git commands, a prompt to give your agent, or a ZIP of the repository at the pinned commit. The prompt asks your agent to show you the files first and copy them only after you agree.",
+      "key": "zeo1fk"
+    },
+    {
+      "type": "figure",
+      "media": "articles/loushing/get-it",
+      "width": "wide",
+      "lightbox": true,
+      "shadow": true,
+      "key": "ucjt4j"
+    },
+    {
+      "type": "text",
+      "markdown": "Before that, the page shows what it adds as a file tree, and a trust panel: what it can do (for most skills, only instructions: no scripts, network or credentials), what it needs, its licence, the commit it is pinned at and what Loushing checked. A source viewer shows every file. Agent support is honest too: tested means I use it with that agent; expected means it follows the shared skill format and should work, but I haven't tried it there.",
+      "key": "2aqidv"
+    },
+    {
+      "type": "figure",
+      "media": "articles/loushing/adds",
+      "width": "wide",
+      "lightbox": true,
+      "shadow": true,
+      "key": "8q38b4"
+    },
+    {
+      "type": "heading",
+      "level": 2,
+      "text": "Agents read it too",
+      "key": "i0y2ip"
+    },
+    {
+      "type": "text",
+      "markdown": "Half the audience is an agent, so everything on a page is also data. There is a catalog.json, a JSON and a Markdown file for each item (its files with their sizes and SHA-256 hashes, and an install plan for every agent and scope), plus llms.txt and a feed. The rule for agents is install with consent: show the person the plan before changing anything.",
+      "key": "4s1j7c"
+    },
+    {
+      "type": "figure",
+      "media": "articles/loushing/for-agents",
+      "width": "wide",
+      "lightbox": true,
+      "shadow": true,
+      "key": "84s4oo"
+    },
+    {
+      "type": "heading",
+      "level": 2,
+      "text": "How I built it",
+      "key": "7wc690"
+    },
+    {
+      "type": "text",
+      "markdown": "I built Loushing with the kits it lists. agentic-craft gave it a customer promise, jobs to be done and user-can statements before any screen existed, and agent-orchestration ran the stages, checked each and kept a log. Slate documents it. About 22 commits over three days took it from an empty repository to the published site.",
+      "key": "5a025q"
+    },
+    {
+      "type": "collection",
+      "layout": "tiles",
+      "items": [
+        {
+          "heading": "Personal, not a pitch",
+          "text": "It speaks as me, about things I use. A copy test fails the build on pitch words, so a page can't drift into selling."
+        },
+        {
+          "heading": "Trust before install",
+          "text": "What it adds, what it can touch and the pinned commit come before the Get it buttons. Every build checks each item, including a scan for secrets and internal hosts before anything is published."
+        },
+        {
+          "heading": "No dependencies",
+          "text": "The site is a small Node static generator: no framework, no package installs, and one small client script. A design-system test keeps every page on its tokens."
+        },
+        {
+          "heading": "Visual first",
+          "text": "A ladder picks a picture only when it is faster to grasp than words. Nineteen view blocks cover the diagrams, trees and hand-offs the pages need."
+        },
+        {
+          "heading": "Light and shadow",
+          "text": "One shared calculation works out how much of an area light each raised surface hides, which gives soft, long shadows. The pages show them from the first visit, a Long shadows switch turns them off, and I published it as the ui-lighting skill."
+        },
+        {
+          "heading": "Chopper",
+          "text": "My late dog Chopper keeps the pages company in small hand-drawn cameos at their edges. He never carries information, and a setting hides him."
+        }
+      ],
+      "width": "wide",
+      "key": "l9uak6"
+    },
+    {
+      "type": "heading",
+      "level": 2,
+      "text": "What isn't done yet",
+      "key": "966ktt"
+    },
+    {
+      "type": "text",
+      "markdown": "The Command tab is marked coming soon: the npx loushing command isn't built. There's no custom domain yet, and the accessibility and performance runs are still to do. The two assumptions that matter most are untested: that one install step can reach every agent, and that people want a curated catalog at all. Only people using it can answer them.",
+      "key": "u50y7p"
+    },
+    {
+      "type": "heading",
+      "level": 2,
+      "text": "Try it",
+      "key": "e5gw3g"
+    },
+    {
+      "type": "text",
+      "markdown": "Browse the catalog at [prabinpebam.github.io/loushing](https://prabinpebam.github.io/loushing/), or read the source and the spec in the [loushing repository](https://github.com/prabinpebam/loushing) on GitHub. If you try a skill with an agent I haven't tested, I'd like to hear how it went.",
+      "key": "jpdld7"
+    }
+  ]
+}

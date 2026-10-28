@@ -1,0 +1,23 @@
+{
+  "kind": "image",
+  "file": "kit.webp",
+  "dark": {
+    "file": "kit.dark.webp",
+    "facts": {
+      "width": 1920,
+      "height": 1200,
+      "bg": "rgb(27 31 34)",
+      "bytes": 117292
+    }
+  },
+  "alt": "The agentic-craft kit's page: its one-line purpose, version, tags, and the agents it works with (VS Code marked tested, the others expected), a Runs scripts label, a What it does section, and the Get it panel on the right.",
+  "caption": "A kit page says what it does, who it works with and what it can do to your project, before anything about installing it.",
+  "fingerprint": "91268e71027ee9838abda7d994cd3b5d7ace1d470ed51e3493d2af1162c9fb80",
+  "visibility": "public",
+  "facts": {
+    "width": 1920,
+    "height": 1200,
+    "bg": "rgb(227 230 234)",
+    "bytes": 123368
+  }
+}

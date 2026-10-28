@@ -1,0 +1,23 @@
+{
+  "kind": "image",
+  "file": "for-agents.webp",
+  "dark": {
+    "file": "for-agents.dark.webp",
+    "facts": {
+      "width": 1920,
+      "height": 1200,
+      "bg": "rgb(24 28 31)",
+      "bytes": 124714
+    }
+  },
+  "alt": "The For agents page: a table of the plain files an agent can read (catalog.json, each item's JSON and Markdown, llms.txt and a feed), then Install with consent: show the person the plan before changing anything, and install only after they agree.",
+  "caption": "For agents: the same catalog as plain files, and the rule that an agent asks before it installs.",
+  "fingerprint": "23f019a82b4e8345d0c2bfbc77f82d48fbbb4b85870dc27508b28b2a2eae5057",
+  "visibility": "public",
+  "facts": {
+    "width": 1920,
+    "height": 1200,
+    "bg": "rgb(229 231 236)",
+    "bytes": 128966
+  }
+}

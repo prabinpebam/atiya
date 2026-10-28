@@ -1,0 +1,23 @@
+{
+  "kind": "image",
+  "file": "stack.webp",
+  "dark": {
+    "file": "stack.dark.webp",
+    "facts": {
+      "width": 1920,
+      "height": 2133,
+      "bg": "rgb(24 28 31)",
+      "bytes": 186146
+    }
+  },
+  "alt": "The stack Plan, build and document a product: agentic-craft, agent-orchestration and Slate as numbered steps, a table of how they hand off, and a Get it panel with one set of commands for all three.",
+  "caption": "A stack: three kits that each work alone, in the order they hand work to each other.",
+  "fingerprint": "82581631787fd32116491385eef72bf3d9e4781450cf71e981a55aced27dea2b",
+  "visibility": "public",
+  "facts": {
+    "width": 1920,
+    "height": 2133,
+    "bg": "rgb(231 233 237)",
+    "bytes": 200128
+  }
+}
