@@ -421,6 +421,8 @@ export const album = z
 export const COLLECTION_LAYOUTS = ['rows', 'columns', 'tiles', 'masonry', 'carousel', 'timeline', 'timeline-scroll', 'stats'] as const;
 export type CollectionLayout = (typeof COLLECTION_LAYOUTS)[number];
 export const COLLECTION_HEADINGS = ['label', 'title'] as const;
+/** A timeline's two styles: its times and marks in a column before the words (inset), or hung in the margin, the words the whole column (margin). */
+export const TIMELINE_STYLES = ['inset', 'margin'] as const;
 export const COLLECTION_MAX = 24;
 /** A table's most columns and rows: past these, it's a spreadsheet, not a story's table. */
 export const TABLE_MAX_COLUMNS = 8;
@@ -567,6 +569,12 @@ export const block = z.discriminatedUnion('type', [
     prominent: z.boolean().optional(),
     /** How the items' headings read: small capitals over the words (labels, the default) or titles. */
     headings: z.enum(COLLECTION_HEADINGS).optional(),
+    /**
+     * The Timeline layout only: inset (the default) sets the times and marks in a column before the words;
+     * margin gives the words the whole column, set as the article's paragraphs, and hangs the times and
+     * marks in the margin before it where there's room (its width is the column's).
+     */
+    timelineStyle: z.enum(TIMELINE_STYLES).optional(),
     /** Names a carousel or a scrolling timeline for assistive tech; left out, "Carousel" or "Timeline". */
     label: z.string().min(1).optional(),
     /**

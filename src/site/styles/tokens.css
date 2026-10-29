@@ -318,6 +318,7 @@
   --c-collection-timeline-when: var(--color-highlight-ink);
   --c-collection-query-narrow: 36.45rem;
   --c-collection-query-two-up: 49.5rem;
+  --c-collection-query-hang: 56rem;
   --c-table-cell-min: 8rem;
   --c-table-row-heading-min: 10rem;
   --c-table-cell-max: 16rem;

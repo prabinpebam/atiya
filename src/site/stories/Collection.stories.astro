@@ -1,6 +1,7 @@
 ---
 import Example from '../library/Example.astro';
 import Collection from '../components/compounds/Collection.astro';
+import Prose from '../components/fundamentals/Prose.astro';
 import { SAMPLES } from '../design/samples';
 
 const brief = [
@@ -77,7 +78,13 @@ const drawn = [
 </Example>
 
 <Example title="Timeline: a career" layout="block" description="Down a line, each item's time in a column before its mark, in deep marigold; the line breaks a little either side of each mark. On a phone, the line runs down the start and each time sits over its words.">
-  <Collection layout="timeline" items={career} />
+  <Collection layout="timeline" timelineStyle="inset" items={career} />
+</Example>
+
+<Example title="Timeline in the margin" layout="block" bleed description="timelineStyle margin, in an article's breakout grid: the words take the whole column at the article's size, as its paragraphs, and the times, marks and line hang in the margin before it, as a heading's mark does. Without that room (a narrower window), they come inside the column as the inset timeline's, and on a phone the line runs down the start.">
+  <Prose breakout>
+    <Collection layout="timeline" timelineStyle="margin" headings="title" items={career} />
+  </Prose>
 </Example>
 
 <Example title="Timeline, with titles and pictures" layout="block" description="Titles set the marks level with their first line; a picture shows under its words, never wider than the column allows.">

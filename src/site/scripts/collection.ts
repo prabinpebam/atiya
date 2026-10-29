@@ -70,6 +70,7 @@ export interface CollectionOptions {
   peek?: boolean;
   ratio?: string;
   display?: 'fill' | 'fit' | 'actual' | 'tile';
+  timelineStyle?: 'inset' | 'margin';
 }
 
 export interface CollectionView {
@@ -81,6 +82,8 @@ export interface CollectionView {
   strip: boolean;
   /** Sets each item by its time on a line. */
   timeline: boolean;
+  /** A timeline in the margin style: its words the whole column, its times and marks hung before it (its width is the column's). */
+  hang: boolean;
   /** A strip's accessible name. */
   label: string;
   width: CollectionWidth;
@@ -126,7 +129,8 @@ export function collectionView(o: CollectionOptions): CollectionView {
   const columns = o.columns ?? defaultColumns(o.count);
   const strip = o.layout === 'carousel' || o.layout === 'timeline-scroll';
   // only a strip spans the viewport (a grid of cards or a list of rows that wide reads badly); a peek needs room beside it
-  const width = o.width === 'full' && !strip ? 'wide' : (o.width ?? 'content');
+  const hang = o.layout === 'timeline' && o.timelineStyle === 'margin';
+  const width = hang ? 'content' : o.width === 'full' && !strip ? 'wide' : (o.width ?? 'content');
   const place = width === 'content' ? 'measure' : width === 'full' ? 'wide' : width;
   const across = o.layout === 'tiles' || o.layout === 'masonry' || o.layout === 'stats' ? columns : 1;
   return {
@@ -135,6 +139,7 @@ export function collectionView(o: CollectionOptions): CollectionView {
     shown: o.display ?? (o.ratio ? 'fill' : 'fit'),
     strip,
     timeline: o.layout === 'timeline' || o.layout === 'timeline-scroll',
+    hang,
     label: o.label ?? (o.layout === 'carousel' ? 'Carousel' : 'Timeline'),
     width,
     peek: strip && !!o.peek && width !== 'full',

@@ -1,18 +1,9 @@
 ---
 /**
- * A collection: items of the same shape (when it was, a heading, a picture or an illustration, a subtext and a few words, each
- * optional), laid out one of seven ways (the eighth, figures, is StatTiles). Any layout shows the same items, so a collection can change layout
- * at any time: rows (one under another, a picture beside its words), columns (side by side in a row between
- * two hairlines, wrapping when they don't fit: the scan layer before a story's first paragraph), tiles (an
- * even grid of cards, one to four to a row, prominent on the accent's soft surface if asked), masonry (cards in balanced columns, with shorter columns stretching their cards to end level), a carousel (cards in a strip that
- * scrolls sideways, with previous and next buttons), a timeline (down a line, each item's time in a column
- * before its mark: a career, a project's story) or a sideways timeline (along a line in a strip that
- * scrolls sideways, with the carousel's buttons). An item's time sits by its mark in a timeline, and over
- * its heading in the other layouts. Headings read as small capitals over the words (labels) or as titles.
- * The pictures take every picture option: a frame shape, how each sits in it, the colour behind it,
- * rounded corners and a drop shadow; an illustration (an SVG in the site's colour roles) stands in a picture's place. The strips (the carousel and the sideways timeline) can span the viewport's
- * width (full), centred inside the page's gutters, their items shrinking a little so the row fits; and with peek, a strip reaches out beside its column into the room the page has there
- * (up to its main region, or a box marked data-bleed-bounds; at most an item's width) and fades to nothing across it, so what's next shows as a hint while the column stays the strip's own.
+ * A collection: items of the same shape (when it was, a heading, a picture or an illustration, a subtext and a few words, each optional), laid out one of seven ways (the eighth, figures, is StatTiles); any layout shows the same items, so a collection can change layout at any time.
+ * Rows (one under another, a picture beside its words); columns (side by side between two hairlines, wrapping when they don't fit: the scan layer before a story's first paragraph); tiles (an even grid of cards, one to four to a row, prominent on the accent's soft surface if asked); masonry (cards in balanced columns, shorter columns stretching their cards to end level); a carousel (cards in a strip that scrolls sideways, with previous and next buttons); a timeline (down a line: a career, a project's story), inset (each item's time in a column before its mark) or margin (the words the whole column at the article's size, the times and marks hung in the margin where there's room); or a sideways timeline (along a line in a strip that scrolls sideways, with the carousel's buttons).
+ * An item's time sits by its mark in a timeline, and over its heading in the other layouts. Headings read as small capitals over the words (labels) or as titles. The pictures take every picture option (a frame shape, how each sits in it, the colour behind it, rounded corners, a drop shadow); an illustration (an SVG in the site's colour roles) stands in a picture's place.
+ * The strips can span the viewport's width (full), centred inside the page's gutters, their items shrinking a little so the row fits; and with peek, a strip reaches out beside its column into the room the page has there (up to its main region, or a box marked data-bleed-bounds; at most an item's width) and fades to nothing across it, so what's next shows as a hint while the column stays the strip's own.
  * @tier compound
  * @a11y A list (role list, not a ul, so the article's list styles stay off it): each item is a list item, read in order whatever the layout (masonry's columns and the strips included); a timeline's item reads its time first.
  * @a11y The strips (the carousel and the sideways timeline) are named regions (the carousel with aria-roledescription carousel) whose list scrolls with the keyboard; their buttons are named and disabled at the ends, and with nothing to scroll the buttons are hidden and the list leaves the tab order.
@@ -45,6 +36,8 @@ interface Props {
   prominent?: boolean;
   /** How the headings read: small capitals over the words (label) or titles. */
   headings?: 'label' | 'title';
+  /** The timeline only: inset (its times and marks in a column before the words), or margin (the words the whole column at the article's size, the times and marks hung in the margin where there's room: in an article's breakout grid, it spans from the page's edge to the column's end). */
+  timelineStyle?: 'inset' | 'margin';
   /** Names a strip (the carousel or the sideways timeline) for assistive tech. Left out, "Carousel" or "Timeline". */
   label?: string;
   /** Where the article layout places it: in the column (the default), a little wider, wide, or (a strip) the viewport's width; other layouts show full as wide (shown in ArticleLayout). */
@@ -65,7 +58,7 @@ interface Props {
 
 const { items, layout = 'tiles', headings = 'label', ratio, background = false, rounded = true, shadow = false } = Astro.props;
 // its width is always declared (content too), as a figure's is: the article spaces it apart as a block, not a line of text
-const { columns, prominent, shown, strip, timeline, label, width, peek, pictureSizes } = collectionView({ ...Astro.props, count: items.length, layout });
+const { columns, prominent, shown, strip, timeline, hang, label, width, peek, pictureSizes } = collectionView({ ...Astro.props, count: items.length, layout });
 const heading = Astro.props.showHeading !== false ? Astro.props.heading?.trim() : undefined;
 ---
 
@@ -74,7 +67,7 @@ const heading = Astro.props.showHeading !== false ? Astro.props.heading?.trim() 
   data-layout={layout}
   data-columns={String(columns)}
   data-headings={headings}
-  data-breakout={width}
+  data-breakout={hang ? 'hang' : width}
   style={`--columns: ${columns}`}
   role={strip ? 'region' : undefined}
   aria-roledescription={layout === 'carousel' ? 'carousel' : undefined}
@@ -103,7 +96,7 @@ const heading = Astro.props.showHeading !== false ? Astro.props.heading?.trim() 
             {item.subtext && <p class="subtext">{item.subtext}</p>}
             {body && (
               <div class="texts">
-                <Prose size="compact">
+                <Prose size={hang ? 'body' : 'compact'}>
                   <Fragment set:html={body} />
                 </Prose>
               </div>
@@ -128,14 +121,12 @@ const heading = Astro.props.showHeading !== false ? Astro.props.heading?.trim() 
       })
     }
   </div>
-  {
-    strip && (
-      <div class="controls">
-        <IconButton label="Previous" icon="chevron-left" variant="secondary" disabled data-collection-prev="" />
-        <IconButton label="Next" icon="chevron-right" variant="secondary" disabled={items.length <= 1} data-collection-next="" />
-      </div>
-    )
-  }
+  {strip && (
+    <div class="controls">
+      <IconButton label="Previous" icon="chevron-left" variant="secondary" disabled data-collection-prev="" />
+      <IconButton label="Next" icon="chevron-right" variant="secondary" disabled={items.length <= 1} data-collection-next="" />
+    </div>
+  )}
 </div>
 
 <style>
@@ -148,9 +139,7 @@ const heading = Astro.props.showHeading !== false ? Astro.props.heading?.trim() 
     margin-bottom: var(--space-6);
   }
 
-  .item,
-  .words,
-  .body {
+  :is(.item, .words, .body) {
     display: grid;
     align-content: start;
     gap: var(--space-3);
@@ -243,9 +232,7 @@ const heading = Astro.props.showHeading !== false ? Astro.props.heading?.trim() 
     gap: var(--space-4);
   }
 
-  [data-layout='tiles'] .item,
-  [data-layout='masonry'] .item,
-  [data-layout='carousel'] .item {
+  :is([data-layout='tiles'], [data-layout='masonry'], [data-layout='carousel']) .item {
     padding: var(--space-5) var(--space-6);
     border: var(--border-hairline) solid var(--color-rule);
     border-radius: var(--radius-lg);
@@ -330,8 +317,7 @@ const heading = Astro.props.showHeading !== false ? Astro.props.heading?.trim() 
     padding-inline: var(--space-gutter);
   }
 
-  /* peek: the list reaches out by --bleed-start / --bleed-end (the script's; none on a phone) and fades out
-     there, the fade the strip's. It would hide the list's ring, so the strip draws it (data-focus-ring) */
+  /* peek: the list reaches out by --bleed-start / --bleed-end (the script's; none on a phone) and fades out there; the strip draws its ring (data-focus-ring) */
   [data-peek] .items {
     margin-inline: calc(var(--bleed-start, 0px) * -1) calc(var(--bleed-end, 0px) * -1);
     padding-inline: var(--bleed-start, 0px) var(--bleed-end, 0px);
@@ -417,6 +403,19 @@ const heading = Astro.props.showHeading !== false ? Astro.props.heading?.trim() 
 
   [data-layout='timeline'] .picture {
     max-inline-size: var(--c-collection-timeline-picture);
+  }
+
+  /* margin: from the page's edge to the column's end, padded so the words are exactly the column; the list is its items' container */
+  [data-breakout='hang'] .items {
+    container-type: inline-size;
+    padding-inline-start: calc(100% - var(--size-measure) - var(--c-collection-timeline-when-width) - var(--c-collection-timeline-gutter) - var(--space-4) * 2);
+  }
+
+  /* without c.collection.query-hang's room, they go inside the column, as the inset timeline's (on a phone, the line down its start) */
+  @container (width < 56rem) {
+    [data-breakout='hang'] .items {
+      padding-inline-start: max(var(--space-gutter), 100% - var(--size-measure));
+    }
   }
 
   /* sideways: times over the line, words under it; the space between items is theirs, so the line runs on */

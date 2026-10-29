@@ -106,6 +106,11 @@ const { breakout = false, size = 'body', id } = Astro.props;
     grid-column: full;
   }
 
+  /* hang: a block whose marks hang in the margin (a margin-style timeline) spans from the page's edge to the column's end, and keeps its words in the column itself */
+  .prose[data-breakout] > :global([data-breakout='hang']) {
+    grid-column: full-start / content-end;
+  }
+
   /* ---------- flow: space between blocks, more before a heading or a picture ---------- */
   .prose > :global(* + *) {
     margin-block-start: var(--space-5);

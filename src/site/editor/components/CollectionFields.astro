@@ -26,7 +26,7 @@ import Grip from '../kit/Grip.astro';
 import RichField from '../kit/RichField.astro';
 import ActionBar from '../../components/compounds/ActionBar.astro';
 import { COLLECTION_MAX, type Block } from '../../content/schema';
-import { HEADING_CHOICES, LAYOUT_CHOICES, TAKES_COLUMNS, TAKES_LABEL, TAKES_PROMINENT, TIMELINES, itemName } from '../model/collection';
+import { HEADING_CHOICES, LAYOUT_CHOICES, TIMELINE_STYLE_CHOICES, TAKES_COLUMNS, TAKES_LABEL, TAKES_PROMINENT, TIMELINES, itemName } from '../model/collection';
 import { itemKey } from '../model/inspector';
 
 import { DISPLAYS, SHAPES, WIDTHS, fieldId as id, type Thumb } from '../model/inspectorFields';
@@ -124,8 +124,8 @@ const full = b.items.length >= COLLECTION_MAX;
     {TAKES_LABEL.has(b.layout) && <TextField label="Label" name={`body.${i}.label`} id={id(i, 'label')} value={b.label ?? ''} optional hint={`Names the strip for assistive tech. Left empty, “${b.layout === 'carousel' ? 'Carousel' : 'Timeline'}”.`} />}
     {TAKES_PROMINENT.has(b.layout) && <Switch label="Prominent tiles" name={`body.${i}.prominent`} id={id(i, 'prominent')} checked={!!b.prominent} data-type="bool" />}
     <Select label="Headings" name={`body.${i}.headings`} id={id(i, 'headings')} value={b.headings ?? 'label'} options={HEADING_CHOICES} />
-    <Select label="Width" name={`body.${i}.width`} id={id(i, 'width')} value={b.width === 'full' && !TAKES_LABEL.has(b.layout) ? 'wide' : (b.width ?? 'content')} options={TAKES_LABEL.has(b.layout) ? WIDTHS : WIDTHS.filter((w) => w.value !== 'full')} hint={TAKES_LABEL.has(b.layout) ? 'Full bleed spans the window, centred on the page.' : undefined} data-refresh="" />
-    {TAKES_LABEL.has(b.layout) && b.width !== 'full' && <Switch label="Peek beside the column" name={`body.${i}.peek`} id={id(i, 'peek')} checked={!!b.peek} data-type="bool" />}
+    {b.layout === 'timeline' && <Select label="Timeline style" name={`body.${i}.timelineStyle`} id={id(i, 'timeline-style')} value={b.timelineStyle ?? 'inset'} options={TIMELINE_STYLE_CHOICES} hint="In the margin, the width is the column’s; where there’s no room beside it, the times come inside." data-refresh="" />}
+    {!(b.layout === 'timeline' && b.timelineStyle === 'margin') && <Select label="Width" name={`body.${i}.width`} id={id(i, 'width')} value={b.width === 'full' && !TAKES_LABEL.has(b.layout) ? 'wide' : (b.width ?? 'content')} options={TAKES_LABEL.has(b.layout) ? WIDTHS : WIDTHS.filter((w) => w.value !== 'full')} hint={TAKES_LABEL.has(b.layout) ?     'Full bleed spans the window, centred on the page.' : undefined} data-refresh="" />}    {TAKES_LABEL.has(b.layout) && b.width !== 'full' && <Switch label="Peek beside the column" name={`body.${i}.peek`} id={id(i, 'peek')} checked={!!b.peek} data-type="bool" />}
     <ActionBar gap="sm">
       <Button variant="secondary" size="sm" icon="convert" data-editor-turn-open={String(i)}>Turn into…</Button>
     </ActionBar>

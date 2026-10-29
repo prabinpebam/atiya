@@ -75,6 +75,7 @@
     "c.collection.prominent-bg": {"v":"var(--color-accent-soft)"},
     "c.collection.prominent-edge": {"v":"var(--color-accent)"},
     "c.collection.prominent-ink": {"v":"var(--color-on-accent-soft)"},
+    "c.collection.query-hang": {"v":"56rem"},
     "c.collection.query-narrow": {"v":"36.45rem"},
     "c.collection.query-two-up": {"v":"49.5rem"},
     "c.collection.row-picture": {"v":"11rem"},
@@ -510,6 +511,17 @@
     "weight.semibold": {"v":"600"}
   },
   "entries": [
+    {
+      "date": "2026-10-29",
+      "changes": {
+        "c.collection.query-hang": [
+          null,
+          {
+            "v": "56rem"
+          }
+        ]
+      }
+    },
     {
       "date": "2026-10-28",
       "changes": {

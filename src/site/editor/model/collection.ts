@@ -3,7 +3,7 @@
  * how its headings read, each with a line on what it does. The contract's lists (schema.ts) say which
  * there are; these say them in words, in the same order.
  */
-import type { Block, COLLECTION_HEADINGS, CollectionLayout } from '../../content/schema';
+import type { Block, COLLECTION_HEADINGS, CollectionLayout, TIMELINE_STYLES } from '../../content/schema';
 import { plainText } from '../../content/markdown';
 
 export const LAYOUT_CHOICES: { value: CollectionLayout; label: string; description: string }[] = [
@@ -20,6 +20,12 @@ export const LAYOUT_CHOICES: { value: CollectionLayout; label: string; descripti
 export const HEADING_CHOICES: { value: (typeof COLLECTION_HEADINGS)[number]; label: string; description: string }[] = [
   { value: 'label', label: 'Labels', description: 'Small capitals over the words' },
   { value: 'title', label: 'Titles', description: 'Set larger, as a title' },
+];
+
+/** A timeline's two styles (the Timeline layout only). */
+export const TIMELINE_STYLE_CHOICES: { value: (typeof TIMELINE_STYLES)[number]; label: string; description: string }[] = [
+  { value: 'inset', label: 'Times beside the words', description: 'Times and marks in a column before the words, inside the page’s column' },
+  { value: 'margin', label: 'Times in the margin', description: 'The words take the whole column, as paragraphs; times and marks hang in the margin' },
 ];
 
 /** The layouts that take a number of columns. */
