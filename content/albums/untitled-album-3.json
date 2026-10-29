@@ -5,7 +5,7 @@
   "title": "Window and Devices",
   "status": "published",
   "createdAt": "2026-10-28",
-  "updatedAt": "2026-10-28",
+  "updatedAt": "2026-10-29",
   "items": [
     {
       "id": "lettering",
@@ -70,6 +70,10 @@
     {
       "id": "wd-meadow-night",
       "media": "articles/do-what-makes-you-proud/wd-meadow-night"
+    },
+    {
+      "id": "wd-jun-2023-team-video",
+      "media": "albums/untitled-album-3/wd-jun-2023-team-video"
     }
   ],
   "summary": "The branding and concepts that I developed for the Windows Design team in India.",

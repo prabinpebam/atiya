@@ -1,0 +1,15 @@
+{
+  "kind": "embed",
+  "provider": "youtube",
+  "id": "vIVX-KVUWAE",
+  "title": "WD Jun 2023 team video",
+  "shape": {
+    "width": 1920,
+    "height": 1080
+  },
+  "poster": {
+    "file": "wd-jun-2023-team-video.poster.webp"
+  },
+  "caption": "WD Jun 2023 team video",
+  "visibility": "public"
+}
