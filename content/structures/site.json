@@ -22,6 +22,14 @@
               "type": "article",
               "id": "defining-microsoft-family"
             }
+          },
+          {
+            "id": "my-journey-with-designup",
+            "kind": "item",
+            "item": {
+              "type": "article",
+              "id": "my-journey-with-designup"
+            }
           }
         ]
       },
@@ -30,7 +38,7 @@
         "kind": "hub",
         "slug": "about",
         "title": "About",
-        "summary": "Who I am, and how I lead and grow design teams.",
+        "summary": "Who I am, what drives me and what I’m passionate about.",
         "view": "features",
         "children": [
           {
@@ -42,19 +50,19 @@
             }
           },
           {
-            "id": "my-journey-with-designup",
-            "kind": "item",
-            "item": {
-              "type": "article",
-              "id": "my-journey-with-designup"
-            }
-          },
-          {
             "id": "scaling-ai-impact-2",
             "kind": "item",
             "item": {
               "type": "article",
               "id": "scaling-ai-impact-2"
+            }
+          },
+          {
+            "id": "resume",
+            "kind": "item",
+            "item": {
+              "type": "article",
+              "id": "resume"
             }
           }
         ],
@@ -263,17 +271,9 @@
         "kind": "hub",
         "slug": "contact",
         "title": "Contact",
-        "summary": "Ways to get in touch, and my résumé.",
+        "summary": "Ways to get in touch.",
         "view": "list",
         "children": [
-          {
-            "id": "resume",
-            "kind": "item",
-            "item": {
-              "type": "article",
-              "id": "resume"
-            }
-          },
           {
             "id": "privacy",
             "kind": "item",
