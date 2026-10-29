@@ -1,0 +1,104 @@
+{
+  "style": "ink-sketch",
+  "article": "senior-vs-junior-designers-wrong-question",
+  "theme": "The climbing guide: a guide who takes in or lets out the rope by the climb in front of each climber, never by the medals on their chest, and whose quiet aim is to be needed less. Taken from the essay's own line, \"Manage by Task-Relevant Maturity, not seniority.\"",
+  "castAnchor": "two-ropes",
+  "cast": "THE GUIDE, the recurring hero: a small, round, fuzzy creature with huge, slightly mismatched round eyes, a knitted bobble hat with a long floppy tassel, a big coil of rope slung over one shoulder, a whistle on a string round the neck and a jangle of carabiners on the belt; kind, watchful and quietly amused. THE ELDER: a tall, lanky, very old creature with a long white beard down to the knees, little round spectacles and a sash across his chest covered in shiny medals and badges; dignified and a little proud of the medals. THE SPROUT: a tiny, springy young creature with a single sprouting curl on her head, enormous brand-new climbing boots with the price tag still dangling from one, and a tiny backpack; eager and bright. THE CRAGS: quirky cartoon rock faces and mountains drawn in the same loose ink. NEW CLIMBERS (only where the subject names them): little soft creatures in the same style.",
+  "images": [
+    {
+      "name": "two-ropes",
+      "use": "hero",
+      "format": "hero",
+      "subject": "A simple, uncluttered scene with lots of empty white paper around it. The Guide, large and clearly visible from the front, stands at the foot of two crags holding two ropes. LEFT: the medal-covered Elder clings to a strange, twisting overhang he has clearly never seen before, eyes wide behind his spectacles, beard swinging; his rope is pulled taut and the Guide leans back bracing it, one foot planted, calling up to him. RIGHT: the tiny Sprout scampers up a familiar, well-worn wall with chalked handholds, waving cheerfully; her rope hangs in a big, loose, slack loop held lightly in the Guide's other hand. Only these elements; no crowd, no background.",
+      "alt": "A fuzzy creature in a bobble hat holds two ropes: one taut for a bearded elder in medals clinging to a strange overhang, one slack for a tiny climber scampering up a familiar wall."
+    },
+    {
+      "name": "by-the-badge",
+      "use": "figure",
+      "format": "figure",
+      "width": "popout",
+      "after": "So why should their titles determine",
+      "subject": "At a wooden gear counter, the Guide reads from a clipboard and hands out kit by the medals each climber wears. The tiny Sprout is buried under an enormous pile of helmets, ropes, knee pads, a mattress and a parachute, only her eyes peeking out, all to step up onto a rock barely knee-high. Beside her, the medal-covered Elder is sent off with nothing but a cheerful pat on the back, towards a towering, jagged cliff with a storm cloud over its top.",
+      "alt": "At a gear counter, a tiny climber is buried under helmets and ropes to step onto a knee-high rock, while a bearded elder in medals is sent off with nothing towards a stormy cliff."
+    },
+    {
+      "name": "same-climber-two-walls",
+      "use": "figure",
+      "format": "figure",
+      "width": "wide",
+      "after": "The same person can need close guidance",
+      "subject": "Two scenes side by side, divided by a loose ink line, the Elder in both. LEFT: on a gentle, familiar route he has climbed a hundred times, his own initials carved into the rock and the footholds worn smooth, he climbs one-handed while reading a newspaper, perfectly relaxed; the Guide is a tiny figure far below, napping against a boulder. RIGHT: on a bizarre, glittering ice wall he has never seen, he clings with enormous eyes, his beard frozen stiff like an icicle, while the Guide climbs right beside him on a short rope, pointing to the next hold.",
+      "alt": "The same bearded elder twice: relaxed on a familiar rock, climbing one-handed with a newspaper, and clinging wide-eyed to a strange ice wall while a guide climbs beside him, pointing."
+    },
+    {
+      "name": "the-wrong-ledge",
+      "use": "figure",
+      "format": "figure",
+      "width": "popout",
+      "after": "You want someone who can identify when they",
+      "subject": "High on a crag, the tiny Sprout has climbed alone onto a ledge that ends in a dead end; she studies her own little hand-drawn map, a small lightbulb over her head, and is already turning confidently back towards a better route. Far below, the Guide sits on a folding camp stool with a flask of tea and a pair of binoculars, watching with a gentle smile, both hands off the rope.",
+      "alt": "A tiny climber at a dead-end ledge checks her own map and turns back towards a better route, while far below a guide in a bobble hat watches through binoculars with a flask of tea."
+    },
+    {
+      "name": "letting-out-the-rope",
+      "use": "figure",
+      "format": "comic",
+      "width": "wide",
+      "after": "The nature of your involvement changes",
+      "subject": "PANEL 1: the Guide climbs right beside the Sprout on the same small wall, one hand steadying her boot, the other pointing to the exact next hold. PANEL 2: the Guide stands at the bottom holding the rope, one hand cupped to his mouth asking her a question, while the Sprout, halfway up, taps her chin and picks her own hold. PANEL 3: the Sprout plants a little flag on the top they had agreed on, arms raised; the Guide below lies in a hammock strung between two trees, the rope slack, glancing up over a walkie-talkie with a thumbs-up.",
+      "alt": "A three-panel comic: a guide climbs beside a tiny climber pointing to each hold, then coaches her from below, then relaxes in a hammock as she plants a flag on the top."
+    },
+    {
+      "name": "two-mistakes",
+      "use": "figure",
+      "format": "figure",
+      "width": "wide",
+      "after": "Both mistakes come from failing to calibrate",
+      "subject": "Two scenes side by side, divided by a loose ink line. LEFT: the Guide strolls away whistling with his hands in his pockets, his rope coiled unused on his shoulder, leaving the tiny Sprout dangling by one hand from a huge overhang, eyes enormous. RIGHT: the Guide holds the Elder on a very short rope like a lead, pointing at every single step, on a gentle grassy slope with a little staircase built into it; the Elder rolls his eyes, holding a teacup and saucer, utterly bored.",
+      "alt": "On one side a guide strolls off whistling as a tiny climber dangles from an overhang; on the other he holds a bored elder on a short rope, pointing at each step of a gentle slope."
+    },
+    {
+      "name": "the-rope-team",
+      "use": "figure",
+      "format": "figure",
+      "width": "popout",
+      "after": "Agency isn't isolation.",
+      "subject": "On a long snowy ridge, a whole team roped together on one shared rope heads for a single flag on the summit. The tiny Sprout leads at the front, choosing the way with her map; the Elder in the middle coils rope and passes a snack back to a small new climber; the Guide brings up the rear, relaxed. Each moves on their own feet, but they're joined by one rope.",
+      "alt": "A team roped together crosses a snowy ridge towards one summit flag: a tiny climber leads with a map, a bearded elder helps a new climber, and a guide in a bobble hat follows."
+    },
+    {
+      "name": "reading-the-rock",
+      "use": "figure",
+      "format": "figure",
+      "width": "popout",
+      "after": "- What are they trying to accomplish?",
+      "subject": "The Elder and the Sprout stand side by side puffing out their chests, the Elder showing off his sash of medals and the Sprout her one shiny sticker. The Guide ignores them entirely: he has his nose to the rock face beside them, studying a handhold through a huge magnifying glass and measuring it with a little tape measure, his tongue poking out in concentration.",
+      "alt": "A bearded elder shows off his medals and a tiny climber her one sticker, while a guide in a bobble hat ignores them, studying the rock face through a huge magnifying glass."
+    },
+    {
+      "name": "needed-less",
+      "use": "figure",
+      "format": "figure",
+      "width": "popout",
+      "after": "It's how well you develop people",
+      "subject": "At the foot of the mountains, the Guide sits at a little café table with a cup of tea and a book, his coil of rope resting unused beside him. High up on two different peaks, the Elder and the Sprout each lead their own small roped party of new little climbers, planting flags. The Guide looks up at them from his book, beaming with pride.",
+      "alt": "A guide in a bobble hat sits at a café table with tea and a book, his rope unused, beaming up at two peaks where a bearded elder and a tiny climber each lead their own little party."
+    },
+    {
+      "name": "two-ropes-thumbnail",
+      "use": "thumbnail",
+      "format": "thumbnail",
+      "basis": "two-ropes",
+      "subject": "The Guide at the foot of two crags holding two ropes: one pulled taut for the medal-covered Elder clinging to a strange overhang, one hanging in a big slack loop for the tiny Sprout scampering up a familiar wall. Only these elements, large in the frame.",
+      "alt": "A guide holds a taut rope for a bearded elder on a strange overhang and a slack one for a tiny climber on a familiar wall."
+    },
+    {
+      "name": "two-ropes-square",
+      "use": "square",
+      "format": "square",
+      "basis": "two-ropes",
+      "subject": "The Guide, large and centred, holding one rope in each hand, one pulled taut and one hanging in a big slack loop, looking up with a knowing smile. Nothing else; leave out the climbers.",
+      "alt": "A fuzzy guide in a bobble hat holds two ropes, one taut and one slack, smiling."
+    }
+  ]
+}

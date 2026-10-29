@@ -1,0 +1,445 @@
+{
+  "id": "senior-vs-junior-designers-wrong-question",
+  "type": "article",
+  "kind": "note",
+  "slug": "senior-vs-junior-designers-wrong-question",
+  "title": "How do you manage senior vs. junior designers? Wrong question.",
+  "summary": "The answer isn't in their title. It's in the task at hand.",
+  "status": "published",
+  "visibility": "public",
+  "updatedAt": "2026-10-29",
+  "locale": "en",
+  "topics": [
+    "leadership"
+  ],
+  "body": [
+    {
+      "type": "text",
+      "markdown": "Ask a Design Manager how they manage a Senior Designer differently from a Junior Designer, and you'll probably get a familiar answer.",
+      "key": "zgfj6j"
+    },
+    {
+      "type": "text",
+      "markdown": "Juniors need more guidance. Seniors need more autonomy.",
+      "key": "3fstma"
+    },
+    {
+      "type": "text",
+      "markdown": "It sounds reasonable. Experience matters, after all. But there's a problem with this way of thinking.",
+      "key": "2cl9lw"
+    },
+    {
+      "type": "quote",
+      "variant": "pull",
+      "text": "Seniority tells you how long someone has been doing the work. It doesn't tell you how much guidance they need for the work in front of them.",
+      "key": "pal5ym"
+    },
+    {
+      "type": "text",
+      "markdown": "A Senior Designer might be highly capable of leading a familiar product redesign but need considerable guidance when navigating an unfamiliar problem. A Junior Designer might be perfectly capable of independently delivering a well-understood task.",
+      "key": "vm4wot"
+    },
+    {
+      "type": "text",
+      "markdown": "So why should their titles determine how we manage them?",
+      "key": "8lbsym"
+    },
+    {
+      "type": "figure",
+      "media": "articles/senior-vs-junior-designers-wrong-question/by-the-badge",
+      "width": "popout",
+      "lightbox": true,
+      "display": "fit",
+      "background": false,
+      "rounded": false,
+      "showCaption": false,
+      "key": "v0d7k9"
+    },
+    {
+      "type": "text",
+      "markdown": "We're asking the wrong question.",
+      "key": "97z3hy"
+    },
+    {
+      "type": "heading",
+      "level": 2,
+      "text": "Manage the task, not the title.",
+      "key": "bz8z32"
+    },
+    {
+      "type": "text",
+      "markdown": "In *High Output Management*, Andy Grove introduced the concept of Task-Relevant Maturity (TRM).",
+      "key": "a216h6"
+    },
+    {
+      "type": "text",
+      "markdown": "The premise is simple: the appropriate management style depends on a person's maturity in the specific task at hand.",
+      "key": "544aio"
+    },
+    {
+      "type": "text",
+      "markdown": "Not their job title. Not their years of experience. Not even their overall competence.",
+      "key": "vgodnd"
+    },
+    {
+      "type": "quote",
+      "variant": "pull",
+      "text": "The same person can need close guidance on one task and complete autonomy on another.",
+      "key": "2ba3lm"
+    },
+    {
+      "type": "figure",
+      "media": "articles/senior-vs-junior-designers-wrong-question/same-climber-two-walls",
+      "width": "wide",
+      "lightbox": true,
+      "display": "fit",
+      "background": false,
+      "rounded": false,
+      "showCaption": false,
+      "key": "j0bqy3"
+    },
+    {
+      "type": "text",
+      "markdown": "Consider a Senior Designer tackling a problem they've never encountered before. They might need help understanding the problem space, challenging their assumptions, or identifying a productive direction.",
+      "key": "ip26qq"
+    },
+    {
+      "type": "text",
+      "markdown": "Now consider a Junior Designer working on a task they've mastered. They might need nothing more than an agreed objective and a clear understanding of the expected outcome.",
+      "key": "uebsuq"
+    },
+    {
+      "type": "text",
+      "markdown": "Managing the Senior Designer more hands-on isn't a demotion. Giving the Junior Designer autonomy isn't an act of misplaced trust.",
+      "key": "u2gpf4"
+    },
+    {
+      "type": "text",
+      "markdown": "Both are responses to the maturity required by the task.",
+      "key": "vxj5bo"
+    },
+    {
+      "type": "quote",
+      "variant": "block",
+      "text": "The question isn't, \"How senior is this Designer?\" It's \"How mature are they at this task?\"",
+      "key": "5u59by"
+    },
+    {
+      "type": "heading",
+      "level": 2,
+      "text": "But why are we managing them in the first place?",
+      "key": "sfdvbo"
+    },
+    {
+      "type": "text",
+      "markdown": "This is where I think we need to look beyond the mechanics of TRM.",
+      "key": "ksq0nx"
+    },
+    {
+      "type": "text",
+      "markdown": "It's easy to interpret management as the act of directing work, reviewing deliverables, resolving blockers, and ensuring quality. These are all necessary activities. But they're not the ultimate goal.",
+      "key": "0s3nfx"
+    },
+    {
+      "type": "quote",
+      "variant": "block",
+      "text": "The goal is to develop people who can independently deliver impact.",
+      "key": "faq60w"
+    },
+    {
+      "type": "text",
+      "markdown": "Think about what that means for a Design Manager.",
+      "key": "qj9ubo"
+    },
+    {
+      "type": "text",
+      "markdown": "You don't want a Designer who needs you to validate every decision. You want someone who understands the intended outcome, can reason through the problem, makes sound decisions, and can drive the work toward that outcome.",
+      "key": "2bpxej"
+    },
+    {
+      "type": "text",
+      "markdown": "You want someone who can identify when they're on the wrong path, course-correct, and make progress without waiting for you to intervene.",
+      "key": "1zw9wp"
+    },
+    {
+      "type": "figure",
+      "media": "articles/senior-vs-junior-designers-wrong-question/the-wrong-ledge",
+      "width": "popout",
+      "lightbox": true,
+      "display": "fit",
+      "background": false,
+      "rounded": false,
+      "showCaption": false,
+      "key": "dbiwxb"
+    },
+    {
+      "type": "text",
+      "markdown": "You want to give them agency.",
+      "key": "daybnn"
+    },
+    {
+      "type": "text",
+      "markdown": "And agency isn't something you grant simply by stepping away. It requires the maturity to exercise it successfully.",
+      "key": "k1578m"
+    },
+    {
+      "type": "text",
+      "markdown": "That's why the relationship between maturity and management matters.",
+      "key": "s8vjq8"
+    },
+    {
+      "type": "heading",
+      "level": 2,
+      "text": "Your job is to make yourself less necessary.",
+      "key": "zmcfrm"
+    },
+    {
+      "type": "text",
+      "markdown": "When someone lacks the maturity required for a task, the manager needs to provide more structure and direction.",
+      "key": "8ffv86"
+    },
+    {
+      "type": "text",
+      "markdown": "As the person develops, the manager can shift toward coaching, discussion, and helping them reason through decisions.",
+      "key": "7aypew"
+    },
+    {
+      "type": "text",
+      "markdown": "When the person has sufficient maturity, the manager can agree on the desired outcomes, give them room to work, and monitor progress without directing every detail.",
+      "key": "8krsva"
+    },
+    {
+      "type": "text",
+      "markdown": "The nature of your involvement changes as their maturity changes.",
+      "key": "ixnd0q"
+    },
+    {
+      "type": "figure",
+      "media": "articles/senior-vs-junior-designers-wrong-question/letting-out-the-rope",
+      "width": "wide",
+      "lightbox": true,
+      "display": "fit",
+      "background": false,
+      "rounded": false,
+      "showCaption": false,
+      "key": "wsiqtu"
+    },
+    {
+      "type": "text",
+      "markdown": "This is not a rigid progression in which every Designer must pass through the same stages. The appropriate level of involvement depends on the task and the person doing it. When either changes, your approach may need to change too.",
+      "key": "44oca0"
+    },
+    {
+      "type": "text",
+      "markdown": "But the direction is important.",
+      "key": "gn4tys"
+    },
+    {
+      "type": "quote",
+      "variant": "pull",
+      "text": "You're not trying to become better at managing every decision. You're trying to develop people who can make more of those decisions themselves.",
+      "key": "f42w2c"
+    },
+    {
+      "type": "text",
+      "markdown": "That's a different way to think about your responsibility as a manager.",
+      "key": "lmdnn6"
+    },
+    {
+      "type": "text",
+      "markdown": "Instead of asking how to keep work moving through your involvement, ask how to develop the capability that makes your involvement less necessary.",
+      "key": "poktwk"
+    },
+    {
+      "type": "text",
+      "markdown": "Instead of becoming the person who always knows the answer, help people develop the judgment to find the answer themselves.",
+      "key": "3ith53"
+    },
+    {
+      "type": "text",
+      "markdown": "Instead of optimizing for your ability to direct work, optimize for their ability to deliver impact.",
+      "key": "fek3xq"
+    },
+    {
+      "type": "heading",
+      "level": 2,
+      "text": "Autonomy isn't the absence of management.",
+      "key": "ci3unj"
+    },
+    {
+      "type": "text",
+      "markdown": "There's an easy way to misunderstand this argument: conclude that good management means leaving people alone.",
+      "key": "9nspcn"
+    },
+    {
+      "type": "text",
+      "markdown": "It doesn't.",
+      "key": "6iqpax"
+    },
+    {
+      "type": "text",
+      "markdown": "Giving someone autonomy when they lack the maturity to handle a task isn't empowerment. It can simply be setting them up to fail.",
+      "key": "owemwn"
+    },
+    {
+      "type": "text",
+      "markdown": "Equally, continuing to prescribe every detail to someone who can handle the task independently creates unnecessary dependence.",
+      "key": "up30dr"
+    },
+    {
+      "type": "text",
+      "markdown": "Both mistakes come from failing to calibrate your involvement to the task.",
+      "key": "jwr8tp"
+    },
+    {
+      "type": "figure",
+      "media": "articles/senior-vs-junior-designers-wrong-question/two-mistakes",
+      "width": "wide",
+      "lightbox": true,
+      "display": "fit",
+      "background": false,
+      "rounded": false,
+      "showCaption": false,
+      "key": "jxrb17"
+    },
+    {
+      "type": "text",
+      "markdown": "Andy Grove's framework offers a useful way to think about this: management isn't a fixed style you apply to everyone. It's a response to the maturity of the person relative to the work.",
+      "key": "kauerk"
+    },
+    {
+      "type": "text",
+      "markdown": "Sometimes that means giving explicit direction. Sometimes it means coaching. Sometimes it means agreeing on outcomes and getting out of the way.",
+      "key": "898rwq"
+    },
+    {
+      "type": "quote",
+      "variant": "pull",
+      "text": "The point isn't to manage less. It's to intervene where your involvement creates value—and avoid creating dependence where it doesn't.",
+      "key": "45mve1"
+    },
+    {
+      "type": "text",
+      "markdown": "You remain accountable for the output. Delegation doesn't mean abandoning oversight. But oversight doesn't require controlling every decision, either.",
+      "key": "okktfi"
+    },
+    {
+      "type": "text",
+      "markdown": "A Designer can have full ownership of a task while remaining accountable to shared goals, collaborating with others, and operating within the team's constraints.",
+      "key": "b5u795"
+    },
+    {
+      "type": "quote",
+      "variant": "block",
+      "text": "Agency isn't isolation. It's the ability to drive work forward without depending on your manager for continuous direction.",
+      "key": "v6oyzq"
+    },
+    {
+      "type": "figure",
+      "media": "articles/senior-vs-junior-designers-wrong-question/the-rope-team",
+      "width": "popout",
+      "lightbox": true,
+      "display": "fit",
+      "background": false,
+      "rounded": false,
+      "showCaption": false,
+      "key": "cgv9c8"
+    },
+    {
+      "type": "heading",
+      "level": 2,
+      "text": "So, how should you manage a Senior Designer vs. a Junior Designer?",
+      "key": "rgp8i9"
+    },
+    {
+      "type": "text",
+      "markdown": "Stop starting with their titles.",
+      "key": "kvlikk"
+    },
+    {
+      "type": "text",
+      "markdown": "Start with the task.",
+      "key": "sgq283"
+    },
+    {
+      "type": "text",
+      "markdown": "Ask yourself:",
+      "key": "bj0v8j"
+    },
+    {
+      "type": "text",
+      "markdown": "- What are they trying to accomplish?\n- What maturity does this task require?\n- What maturity have they demonstrated in this context?\n- What level of direction or support will help them succeed?\n- How can I help them develop the maturity to handle this task more independently?",
+      "key": "impu04"
+    },
+    {
+      "type": "figure",
+      "media": "articles/senior-vs-junior-designers-wrong-question/reading-the-rock",
+      "width": "popout",
+      "lightbox": true,
+      "display": "fit",
+      "background": false,
+      "rounded": false,
+      "showCaption": false,
+      "key": "7uicxo"
+    },
+    {
+      "type": "text",
+      "markdown": "Then adjust your management approach accordingly.",
+      "key": "owegdg"
+    },
+    {
+      "type": "text",
+      "markdown": "You might be highly involved with a Senior Designer on one task and largely hands-off with a Junior Designer on another. That's not inconsistency. It's management calibrated to the actual situation.",
+      "key": "1jifzj"
+    },
+    {
+      "type": "text",
+      "markdown": "And as people grow, keep recalibrating. Don't lock someone into a management style because of their title, their past performance, or your experience working with them.",
+      "key": "3oiki1"
+    },
+    {
+      "type": "text",
+      "markdown": "The objective isn't to make everyone independent at everything. It's to develop the maturity required for people to exercise agency and deliver impact across the work they do.",
+      "key": "u8b2ut"
+    },
+    {
+      "type": "quote",
+      "variant": "pull",
+      "text": "Manage by Task-Relevant Maturity, not seniority.",
+      "key": "bgfs6t"
+    },
+    {
+      "type": "text",
+      "markdown": "Because the measure of good management isn't how well you direct people.",
+      "key": "rhh75z"
+    },
+    {
+      "type": "text",
+      "markdown": "It's how well you develop people who can deliver impact without needing you to direct them.",
+      "key": "2vd690"
+    },
+    {
+      "type": "figure",
+      "media": "articles/senior-vs-junior-designers-wrong-question/needed-less",
+      "width": "popout",
+      "lightbox": true,
+      "display": "fit",
+      "background": false,
+      "rounded": false,
+      "showCaption": false,
+      "key": "6xamtd"
+    }
+  ],
+  "publishedAt": "2026-10-29",
+  "hero": {
+    "media": "articles/senior-vs-junior-designers-wrong-question/two-ropes",
+    "display": "fit",
+    "background": false,
+    "rounded": false,
+    "showCaption": false
+  },
+  "thumbnail": "articles/senior-vs-junior-designers-wrong-question/two-ropes-thumbnail",
+  "thumbnails": {
+    "square": "articles/senior-vs-junior-designers-wrong-question/two-ropes-square"
+  }
+}

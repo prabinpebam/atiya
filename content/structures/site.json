@@ -78,7 +78,7 @@
         "kind": "hub",
         "slug": "leadership",
         "title": "Leadership",
-        "summary": "How teams, culture and design influence are built. The first story is up, and more are on their way.",
+        "summary": "How teams, culture and design influence are built. More stories are on their way.",
         "view": "features",
         "children": [
           {
@@ -87,6 +87,14 @@
             "item": {
               "type": "article",
               "id": "do-what-makes-you-proud"
+            }
+          },
+          {
+            "id": "senior-vs-junior-designers-wrong-question",
+            "kind": "item",
+            "item": {
+              "type": "article",
+              "id": "senior-vs-junior-designers-wrong-question"
             }
           }
         ]
