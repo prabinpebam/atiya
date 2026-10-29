@@ -6,7 +6,7 @@
  * server passes the current snapshot.
  */
 import { createHash } from 'node:crypto';
-import { mediaUsed, videosUsed, type ContentIndex } from '../../content/load';
+import { mediaLinked, mediaUsed, videosUsed, type ContentIndex } from '../../content/load';
 import { readSnapshot } from '../../content/source';
 
 /** A library item's kind: a picture (an animation or a drawing included), a video file or a linked video. */
@@ -78,7 +78,7 @@ export function usesOf(index: Pick<ContentIndex, 'albums' | 'articles' | 'origin
   }
   const articles: LibraryUse[] = [];
   for (const a of index.articles.values()) {
-    if (mediaUsed(a).includes(mediaId) || videosUsed(a).includes(mediaId)) articles.push({ id: a.id, title: a.title, status: a.status, origin: origin(a.id) });
+    if (mediaUsed(a).includes(mediaId) || videosUsed(a).includes(mediaId) || mediaLinked(a).includes(mediaId)) articles.push({ id: a.id, title: a.title, status: a.status, origin: origin(a.id) });
   }
   return { albums: albums.sort(byTitle), articles: articles.sort(byTitle) };
 }

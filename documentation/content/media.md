@@ -345,7 +345,22 @@ A PDF (the résumé's) is a media item of `kind: "document"`: the file and its s
 - **Where it's published:** at `<base>/media/<id>.pdf` (the résumé: `/media/people/prabin/prabin-pebam-resume.pdf`), so the file keeps its own name when it's saved. The `content-files` integration ([`integrations/content-files.mjs`](https://github.com/prabinpebam/atiya/blob/main/integrations/content-files.mjs)) serves public documents from the dev server and copies them into `dist/media/` at build; nothing else of `content/` is published as a file.
 - **How a page links to it:** a Markdown link with the `ref:` scheme, `[Download the résumé (PDF)](ref:media/people/prabin/prabin-pebam-resume)`, resolved with the base path ([model §5](model.md#5-references-and-targets)). The content check refuses a link to a document that doesn't exist or isn't public, and a sidecar whose file is missing or doesn't share its name.
 - **Budget:** a PDF of at most 2 MB ([§4](#4-formats-and-budgets)); the check holds it.
-- **Edit mode** doesn't manage documents yet: the library lists pictures and videos only. A document is added by putting its file and sidecar in its owner's folder.
+- **Edit mode** links to a document from the link dialog's Or a file list (the public documents, by title), but doesn't upload or list them yet: a document is added by putting its file and sidecar in its owner's folder.
+
+### 11.1 Links to the library
+
+Any item of the library can be the target of a link in text, written the same way: `[the lettering](ref:media/articles/do-what-makes-you-proud/lettering)`. What the link does follows the item's kind (the pure rules are [`src/site/content/mediaLinks.ts`](https://github.com/prabinpebam/atiya/blob/main/src/site/content/mediaLinks.ts)):
+
+| Kind | The link goes to | On the page |
+|---|---|---|
+| A document | Its file, `<base>/media/<id>.pdf` | Opens or downloads the PDF |
+| A picture | Its largest size (its dark version too) | Opens it in the page's lightbox (`data-lightbox="link:<id>"`, with its alt text and caption) |
+| A video file | Its file, `<base>/media/<id>.<ext>` | Plays it in the lightbox |
+| A linked video | Its YouTube or Vimeo address | Plays it in the lightbox |
+
+- **Without the lightbox's script** (or on a page without one) the link still works: it opens the file or the address.
+- **The content check** refuses a link to an item that isn't in the library, isn't public, or is a private page's (in `private-pages/`): a link's address is never sealed, so it can only go to an open item. An item a link goes to counts as used, so Media won't delete it.
+- **In edit mode** the link dialog (Ctrl or Cmd + K) offers an address, an article, a file (Or a file) or a picture or video from Media (Choose a picture or video, through the same picker as a block's picture). Opened again on a link, it shows what the link goes to.
 
 ## 12. Video files
 

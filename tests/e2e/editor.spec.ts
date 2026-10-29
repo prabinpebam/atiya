@@ -215,6 +215,58 @@ test.describe('editor', () => {
     expect(await site.evaluate(() => (window as unknown as { __kept?: number }).__kept)).toBeUndefined();
   });
 
+  test('a link to a picture from Media: chosen in the link dialog, saved as ref:media, and opened in the lightbox on the page (media §11.1)', async ({ page }) => {
+    await openArticle(page);
+    const para = frame(page).locator('[data-editor-editable="rich"]').first();
+    await para.click();
+    await page.keyboard.press('Control+End');
+    await page.keyboard.type(' See the picture');
+    for (let i = 0; i < 'the picture'.length; i++) await page.keyboard.press('Shift+ArrowLeft');
+    await page.keyboard.press('Control+k');
+    const dialog = page.locator('#editor-insert-link');
+    await expect(dialog).toBeVisible();
+    await dialog.getByRole('button', { name: 'Choose a picture or video' }).click();
+    const picker = page.locator('#editor-picker');
+    await expect(picker).toBeVisible();
+    const card = picker.locator('[data-media-card][data-media-kind="image"]:not([data-private]) [data-editor-media]').first();
+    const id = await card.getAttribute('data-editor-media');
+    await card.click();
+    await expect(picker).toBeHidden();
+    await expect(dialog.locator('[data-editor-link-media-name]')).toContainText('Links to');
+    await expect(dialog.getByRole('button', { name: 'Choose another' })).toBeVisible();
+    await dialog.getByRole('button', { name: 'Set the link' }).click();
+    await saved(page);
+    const body = readJson(articleFile()).body as { markdown?: string }[];
+    expect(body.find((b) => b.markdown?.includes('See '))?.markdown).toContain(`[the picture](ref:media/${id})`);
+
+    // opened again from the link, the dialog shows the picture chosen; typing an address instead clears it
+    // (the caret is put in the link: the format toolbar floats over the paragraph while text is selected)
+    await expect(dialog).toBeHidden();
+    await frame(page).locator('[data-editor-editable="rich"] a', { hasText: 'the picture' }).first().evaluate((a) => {
+      (a.closest('[contenteditable]') as HTMLElement).focus();
+      const r = document.createRange();
+      r.setStart(a.firstChild!, 3);
+      r.collapse(true);
+      const s = getSelection()!;
+      s.removeAllRanges();
+      s.addRange(r);
+    });
+    await page.keyboard.press('Control+k');
+    await expect(dialog).toBeVisible();
+    await expect(dialog.locator('[data-editor-link-media-name]')).toContainText('Links to');
+    await dialog.getByLabel('Address').fill('https://example.com/');
+    await expect(dialog.locator('[data-editor-link-media-name]')).not.toContainText('Links to');
+    await dialog.getByRole('button', { name: 'Cancel' }).click();
+
+    // on the page: the picture at its full size, opened in the lightbox
+    await page.goto(`/leadership/${ARTICLE}/`);
+    const link = page.getByRole('link', { name: 'the picture' });
+    await expect(link).toHaveAttribute('data-lightbox', `link:${id}`);
+    await expect(link).toHaveAttribute('href', /\.(webp|avif|jpe?g|png)$|^\/_image\?/);
+    await link.click();
+    await expect(page.locator('[data-lightbox-dialog]')).toBeVisible();
+  });
+
   test('a file broken by hand is left out until it is fixed: every other page and screen works, and edit mode names it (content spec §5)', async ({ page, request }) => {
     const good = readFileSync(articleFile(), 'utf8');
     // a text block holding two paragraphs, as a hand edit once left one

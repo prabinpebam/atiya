@@ -231,9 +231,20 @@ describe('the loader checks what it is given', () => {
     expect(c.documents.get('articles/a/cv')).toMatchObject({ title: 'The CV', master: '/content/media/articles/a/cv.pdf' });
     expect(c.media.has('articles/a/cv')).toBe(false);
     expect(problems({ ...base, ...doc }, masters).join('\n')).toMatch(/cv\.json: its file content\/media\/articles\/a\/cv\.pdf is missing/);
-    expect(problems({ ...base, '/content/articles/a.json': linking }, masters).join('\n')).toMatch(/the file to download "media\/articles\/a\/cv" doesn't exist/);
+    expect(problems({ ...base, '/content/articles/a.json': linking }, masters).join('\n')).toMatch(/links to "media\/articles\/a\/cv", which isn't in the library/);
     expect(problems({ ...base, ...doc, '/content/media/articles/a/cv.json': { ...doc['/content/media/articles/a/cv.json'], visibility: 'notPublishable' }, '/content/articles/a.json': linking }, withDoc).join('\n')).toMatch(/isn't public/);
     expect(problems({ ...base, '/content/articles/a.json': { ...article, portrait: 'articles/a/nope' } }).join('\n')).toMatch(/media "articles\/a\/nope" doesn't exist/);
+  });
+
+  it('a link to the library (ref:media/<id>) goes to a picture, a video or a file that is there, open and public (media §11.1)', () => {
+    const article = base['/content/articles/a.json'];
+    const pic = base['/content/media/articles/a/pic.json'];
+    const linkTo = (id: string) => ({ ...article, body: [{ type: 'text', markdown: `See [it](ref:media/${id}).` }] });
+    expect(problems({ ...base, '/content/articles/a.json': linkTo('articles/a/pic') }, masters)).toEqual([]);
+    const secret = { '/private/media/articles/a/secret.json': { ...pic, file: 'secret.webp' } };
+    const withSecret = new Set([...masters, '/private/media/articles/a/secret.webp']);
+    expect(problems({ ...base, ...secret, '/content/articles/a.json': linkTo('articles/a/secret') }, withSecret).join('\n')).toMatch(/links to "media\/articles\/a\/secret", a private page's/);
+    expect(problems({ ...base, '/content/articles/a.json': linkTo('articles/a/gone') }, masters).join('\n')).toMatch(/isn't in the library/);
   });
 
   it("a picture's dark version: named by its sidecar, beside its master, and nowhere else", () => {

@@ -18,6 +18,7 @@ import { GitHubDataError, validateGitHubSnapshot, type GitHubSnapshot } from './
 import { checkHome } from '../home/check';
 import { HIGHLIGHTS_FILE, checkHighlights, highlightsFile, type Highlights } from './highlights';
 import { albumProblems, albumWarnings, fingerprintClashes, isMediaItem, type MediaLookup } from './album';
+import { mediaLinkIds } from './mediaLinks';
 import { DRAWING_MAX_BYTES, PRIVATE_VIDEO_MAX_BYTES, isDrawingFile } from './schema';
 
 const kb = (bytes: number) => `${Math.round(bytes / 1024)} KB`;
@@ -178,6 +179,9 @@ export function mediaUsed(a: Article): string[] {
 
 /** Every video file's media ID a document uses. */
 export const videosUsed = (a: Article): string[] => a.body.flatMap((b) => (b.type === 'video' && b.media ? [b.media] : []));
+
+/** Every library item a document's words link to (`ref:media/<id>`: a file, a picture, a video file or a linked video; media.md §11.1). */
+export const mediaLinked = (a: Article): string[] => mediaLinkIds(JSON.stringify(a.body));
 
 /**
  * @param docs the JSON files under content/, keyed by their path from the project root (/content/…)
@@ -523,11 +527,12 @@ export function loadContent(docs: Record<string, unknown>, masters: Set<string>,
         else if (v.origin === 'private' && origin === 'public') add(file, `the video "${b.media}" is private (in private-pages/): an open page can't show it (V25)`, `${at}.media`);
       }
     });
-    // a link to a file to download (ref:media/<id>) needs the file, public
-    for (const [, id] of JSON.stringify(a.body).matchAll(/\]\(ref:media\/([a-z0-9/-]+)\)/g)) {
-      const doc = documents.get(id);
-      if (!doc) add(file, `the file to download "media/${id}" doesn't exist`);
-      else if (!PUBLIC.has(doc.visibility)) add(file, `the file to download "media/${id}" isn't public`);
+    // a link to the library (ref:media/<id>: a file to download, a picture, a video file or a linked video) needs the item, public and open (media.md §11.1)
+    for (const id of mediaLinked(a)) {
+      const rec = documents.get(id) ?? media.get(id) ?? videos.get(id) ?? embeds.get(id);
+      if (!rec) add(file, `links to "media/${id}", which isn't in the library: a link goes to a file, a picture or a video that's there`);
+      else if (!PUBLIC.has(rec.visibility)) add(file, `links to "media/${id}", which isn't public`);
+      else if (rec.origin === 'private') add(file, `links to "media/${id}", a private page's (in private-pages/): a link can only go to an open item of the library`);
     }
     // a link to another page (ref:article/<id>) from an open page never names a private one (V25)
     if (origin === 'public') {

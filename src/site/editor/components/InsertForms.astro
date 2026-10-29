@@ -14,6 +14,7 @@
 import TextField from '../../components/fundamentals/TextField.astro';
 import Select from '../../components/fundamentals/Select.astro';
 import Button from '../../components/fundamentals/Button.astro';
+import HiddenField from '../../components/fundamentals/HiddenField.astro';
 import Text from '../../components/fundamentals/Text.astro';
 import IconButton from '../../components/fundamentals/IconButton.astro';
 import ActionBar from '../../components/compounds/ActionBar.astro';
@@ -39,11 +40,13 @@ interface Props {
   kind: 'quote' | 'collection' | 'video' | 'carousel' | 'link' | 'album';
   /** For the link form: the articles a link can go to. */
   articles?: SelectOption[];
+  /** For the link form: the library's files to download a link can go to (`ref:media/<id>`, named by their titles). */
+  files?: SelectOption[];
   /** For the album form: the site's albums, each one this page can show or disabled with the reason it can't. */
   albums?: AlbumChoice[];
 }
 
-const { kind, articles = [], albums = [] } = Astro.props;
+const { kind, articles = [], files = [], albums = [] } = Astro.props;
 const SUBMIT: Record<Props['kind'], string> = { quote: 'Add the quote', collection: 'Add the collection', video: 'Add the video', carousel: 'Add the carousel', link: 'Set the link', album: 'Add the album' };
 ---
 
@@ -148,6 +151,16 @@ const SUBMIT: Record<Props['kind'], string> = { quote: 'Add the quote', collecti
       <>
         <TextField label="Address" type="url" name="href" optional hint="https://…, http://… or mailto:…" />
         <Select label="Or an article" name="ref" placeholder="Choose an article" options={[{ value: '', label: 'None' }, ...articles]} hint="A link to an article follows it if its address ever changes." />
+        {files.length > 0 && <Select label="Or a file" name="file" placeholder="Choose a file" options={[{ value: '', label: 'None' }, ...files]} hint="A file to download, such as a PDF." />}
+        <div data-editor-link-media-row="">
+          <HiddenField name="media" data-editor-link-media-value="" />
+          <Button variant="secondary" icon="image" data-editor-link-media="">
+            Choose a picture or video
+          </Button>
+          <div data-editor-link-media-name="" aria-live="polite">
+            <Text variant="ui" tone="muted">Or link a picture or a video from Media: it opens in the lightbox.</Text>
+          </div>
+        </div>
       </>
     )
   }
@@ -194,6 +207,12 @@ const SUBMIT: Record<Props['kind'], string> = { quote: 'Add the quote', collecti
   .pair {
     display: grid;
     grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: var(--space-3);
+  }
+  [data-editor-link-media-row] {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: center;
     gap: var(--space-3);
   }
 </style>

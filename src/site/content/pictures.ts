@@ -13,10 +13,13 @@ import { getImage } from 'astro:assets';
 import type { ImageMetadata } from 'astro';
 import { statSync } from 'node:fs';
 import { pathToFileURL, fileURLToPath } from 'node:url';
-import { getEmbed, getMedia, getVideo, videoHref } from './repository';
+import { content, documentHref, getEmbed, getMedia, getVideo, videoHref } from './repository';
 import { fileOf } from './source';
 import { pictureFacts, type SidecarFacts } from './pictureFacts';
 import { timedAsync } from './timing';
+import { pageUrl, playerUrl } from './providers';
+import { embedLink, pictureLink, videoLink } from './mediaLinks';
+import type { LinkTarget } from './markdown';
 
 const devMeta = new Map<string, { mtime: number; size: number; meta: ImageMetadata }>();
 
@@ -266,4 +269,29 @@ export async function video(id: string, slot: Slot): Promise<VideoFile> {
     ...(v.credit ? { credit: v.credit } : {}),
     ...(poster ? { poster: { src: poster.src, srcset: poster.srcset, width: poster.width, height: poster.height, thumb: poster.thumb } } : {}),
   };
+}
+
+/**
+ * Where each library item a text links to goes (documentation/content/media.md §11.1), for `refResolver`: a
+ * file to download, a picture at its full size, a video file or a linked video, each with its lightbox data.
+ * An ID that isn't a public item of the library is left out (the content check refuses such a link).
+ */
+export async function mediaLinkTargets(ids: Iterable<string>): Promise<Map<string, LinkTarget>> {
+  const index = content();
+  const entries = await Promise.all(
+    [...new Set(ids)].map(async (id): Promise<[string, LinkTarget] | undefined> => {
+      if (index.documents.has(id)) {
+        const href = documentHref(id);
+        return href ? [id, { href }] : undefined;
+      }
+      if (index.videos.has(id)) return [id, videoLink(id, await video(id, 'content'))];
+      if (index.embeds.has(id)) {
+        const e = getEmbed(id);
+        return [id, embedLink(id, { page: pageUrl(e.provider, e.video), player: playerUrl(e.provider, e.video, { autoplay: true }), title: e.title, poster: await embedPoster(id, 'content') })];
+      }
+      if (index.media.has(id)) return [id, pictureLink(id, await picture(id, 'content'))];
+      return undefined;
+    }),
+  );
+  return new Map(entries.filter((e): e is [string, LinkTarget] => !!e));
 }

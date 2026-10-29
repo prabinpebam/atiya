@@ -35,9 +35,18 @@ export type MdList = Extract<MdBlock, { t: 'ul' | 'ol' }>;
 /** The deepest a list nests: its own items at 0, then two lists inside. */
 export const LIST_DEPTH_MAX = 2;
 
+/**
+ * Where a ref: link goes: an address, and the data its link carries (a library item's, for the lightbox:
+ * `kind`, `thumb`, `alt`…, written as `data-*` attributes).
+ */
+export interface LinkTarget {
+  href: string;
+  data?: Record<string, string | undefined>;
+}
+
 export interface MarkdownOptions {
-  /** Turns a ref: link (`ref:caseStudy/some-id`) into an href; an unknown ref is an error. */
-  resolveRef?: (ref: string) => string | undefined;
+  /** Turns a ref: link (`ref:caseStudy/some-id`) into an href (or an href with its link's data); an unknown ref is an error. */
+  resolveRef?: (ref: string) => string | LinkTarget | undefined;
   /** Keeps each link's written target on it (data-md-href), so the editor can write it back unchanged. */
   annotate?: boolean;
   /** Allows a link to a place on the same page (`#item-plan`) when it returns true for the fragment (`item-plan`). */
@@ -325,6 +334,12 @@ export function listOf(tree: ListTree): MdList {
 // ---------- rendering ----------
 
 const escapeHtml = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+/** A link's data as `data-*` attributes (camelCase names in kebab-case), left out when undefined; an empty string is a flag. */
+const dataAttrs = (data: Record<string, string | undefined>) =>
+  Object.entries(data)
+    .filter((e): e is [string, string] => e[1] !== undefined && /^[a-z][a-zA-Z]*$/.test(e[0]))
+    .map(([k, v]) => ` data-${k.replace(/[A-Z]/g, (c) => `-${c.toLowerCase()}`)}="${escapeHtml(v)}"`)
+    .join('');
 
 function renderInline(nodes: Inline[], opts: MarkdownOptions): string {
   return nodes
@@ -344,9 +359,12 @@ function renderInline(nodes: Inline[], opts: MarkdownOptions): string {
           return '<br>\n';
         case 'link': {
           let target: string | undefined;
+          let data = '';
           if (n.href.startsWith('ref:')) {
-            target = opts.resolveRef?.(n.href.slice(4));
+            const to = opts.resolveRef?.(n.href.slice(4));
+            target = typeof to === 'string' ? to : to?.href;
             if (!target) throw new Error(`unknown link target: ${n.href}`);
+            if (typeof to === 'object' && to.data) data = dataAttrs(to.data);
           } else if (SAFE_HREF.test(n.href)) target = n.href;
           else if (n.href.startsWith('#') && opts.fragment?.(n.href.slice(1))) target = n.href;
           else throw new Error(`links may only go to https, http, mailto or ref:${opts.fragment ? ', or an item of this album' : ''} (${n.href})`);
@@ -354,7 +372,7 @@ function renderInline(nodes: Inline[], opts: MarkdownOptions): string {
           const policy = linkAttrs(target);
           const tab = policy.newTab ? ` target="${policy.target}" rel="${policy.rel}"` : '';
           const note = policy.newTab ? newTabSign() : '';
-          return `<a href="${escapeHtml(target)}"${written}${tab}>${renderInline(n.c, opts)}${note}</a>`;
+          return `<a href="${escapeHtml(target)}"${written}${tab}${data}>${renderInline(n.c, opts)}${note}</a>`;
         }
       }
     })

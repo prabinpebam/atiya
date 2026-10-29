@@ -5,8 +5,9 @@
  * its items and gives the span of their dates. The site's Page and the planet's frame both open a page with it,
  * so a page reads the same in both (§6.1).
  */
-import { albumLookup, canonicalPath, captionHrefs, documentHref, getAlbum, getPerson, getSite, tagsOf } from './repository';
-import { embedPoster, picture, video } from './pictures';
+import { albumLookup, canonicalPath, captionHrefs, getAlbum, getPerson, getSite, tagsOf } from './repository';
+import { embedPoster, mediaLinkTargets, picture, video } from './pictures';
+import { mediaLinkIds, refResolver } from './mediaLinks';
 import { coverPicture } from './album';
 import { albumCells, albumDateWords, albumMeasure, itemFragment } from './albumPage';
 import { renderMarkdown } from './markdown';
@@ -168,13 +169,12 @@ export interface AlbumView {
   items: AlbumEntry[];
 }
 
-/** A `ref:` link in an album's words, as the body's blocks resolve it (Blocks.astro). */
-const resolveRef = (ref: string) => {
-  if (ref.startsWith('media/')) return documentHref(ref.slice('media/'.length));
-  const [type, id] = ref.split('/');
-  const path = canonicalPath(type, id);
-  return path && withBase(path);
-};
+/** A `ref:` link in an album's words, as the body's blocks resolve it (Blocks.astro): a library item from `links`, else a page. */
+const resolverOf = (links: Awaited<ReturnType<typeof mediaLinkTargets>>) =>
+  refResolver(links, (type, id) => {
+    const path = canonicalPath(type, id);
+    return path && withBase(path);
+  });
 
 /** An album, ready for its page (undefined for no such album). A Story's pictures are drawn at the wide width, a Grid's at the gallery's. */
 export async function albumOf(albumId: string): Promise<AlbumView | undefined> {
@@ -183,6 +183,8 @@ export async function albumOf(albumId: string): Promise<AlbumView | undefined> {
   const { album, items } = resolved;
   const layout = album.layout ?? 'grid';
   const slot = layout === 'story' ? 'wide' : 'gallery';
+  // its words and its items' (on their sidecars) can link to the library
+  const resolveRef = resolverOf(await mediaLinkTargets(mediaLinkIds(JSON.stringify([album, items]))));
   return {
     id: album.id,
     title: album.title,

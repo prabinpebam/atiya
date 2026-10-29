@@ -306,7 +306,7 @@ One résumé, as structured data, so it renders as an HTML page and can feed oth
 | `{ "type": "caseStudy", "id": "…" }` (any item type) | The item's canonical path on the site |
 | `{ "type": "url", "href": "https://…" }` | The URL (https, http or mailto only) |
 | `{ "type": "app", "name": "play" }` | A route the code owns: `play`, `design`, `docs` |
-| `{ "type": "media", "id": "…" }` | A file to download (the résumé's PDF) |
+| `{ "type": "media", "id": "…" }` | An item of the library: a file to download (the résumé's PDF), or a picture or video opened in the lightbox ([media §11.1](media.md#111-links-to-the-library)) |
 
 - **Inside Markdown**, an internal link uses the `ref:` scheme, `[the design system](ref:caseStudy/design-system-at-scale)`. It resolves to the item's canonical path, so a slug change or a move in the site structure never breaks a link in a body.
 - **Resolution** happens in the view mappers: a target becomes an `href` through the route table and `withBase`, so neither the base path (`/atiya` on GitHub Pages) nor any path is written into content.

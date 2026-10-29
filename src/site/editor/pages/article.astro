@@ -104,6 +104,9 @@ const pickerPaging = loaded.ok
     }
   : undefined;
 const links = loaded.ok ? [...loaded.index.articles.values()].filter((a) => loaded.index.canonical.has(`article/${a.id}`)).map((a) => ({ value: `ref:article/${a.id}`, label: a.title })) : [];
+// the files a link can go to (media.md §11.1): the library's open, public files to download
+const PUBLIC_FILE = new Set(['public', 'publicRedacted', 'summaryOnly']);
+const files = loaded.ok ? [...loaded.index.documents.values()].filter((d) => d.origin === 'public' && PUBLIC_FILE.has(d.visibility)).map((d) => ({ value: `ref:media/${d.id}`, label: d.title })) : [];
 // the album block's chooser (gallery spec §7.2): the site's albums, each this page can't show said with why (V51)
 const albums = loaded.ok
   ? albumChoices(
@@ -202,7 +205,7 @@ const json = JSON.stringify(state).replace(/</g, '\\u003c');
           <InsertForms kind="carousel" />
         </Dialog>
         <Dialog id="editor-insert-link" title="Link" size="sm">
-          <InsertForms kind="link" articles={links} />
+          <InsertForms kind="link" articles={links} files={files} />
         </Dialog>
         <Dialog id="editor-insert-album" title="Add an album">
           <InsertForms kind="album" albums={albums} />

@@ -292,7 +292,7 @@ Paragraphs (text blocks), headings, quotes, the title and the standfirst are edi
 | Ctrl or Cmd + B, I | Bold, italic |
 | Ctrl or Cmd + Shift + X | Strikethrough |
 | Ctrl or Cmd + ], [ | In a list: the item one level in (an item of a list inside the one above), or back out; three levels at most |
-| Ctrl or Cmd + K | Link: a small dialog for the address (https, http, mailto) or another article (a `ref:` link) |
+| Ctrl or Cmd + K | Link: a small dialog for the address (https, http, mailto), another article (a `ref:` link), a file (a public document) or a picture or video chosen from Media (a `ref:media/` link, opened in the page's lightbox: [media §11.1](../content/media.md#111-links-to-the-library)) |
 | Enter | In a paragraph, a heading or a subheading: a new paragraph (a new text block) after it, split at the caret (at the end, an empty one, ready to type; a new heading's words are kept first). In a list: a new item, taking the words after the caret; on an empty last item, the list ends and a new paragraph starts after it |
 | Ctrl or Cmd + Enter | A new paragraph after the block, its words kept whole: the way out of a list from any item |
 | Shift + Enter | A line break (the poem); in a heading or a subheading too, where it's kept as a new line of its text |

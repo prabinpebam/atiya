@@ -1086,15 +1086,71 @@ export function initEditor(root: HTMLElement, signal: AbortSignal) {
     linkRequest = href;
     linkTo = to;
     const d = dialog('editor-insert-link');
-    const input = d?.querySelector<HTMLInputElement>('input[name="href"]');
-    if (input) input.value = href.startsWith('ref:') ? '' : href;
+    const f = linkForm();
+    if (f) {
+      clearLink(f, '');
+      const input = f.querySelector<HTMLInputElement>('input[name="href"]');
+      if (!href.startsWith('ref:')) {
+        if (input) input.value = href;
+      } else if (href.startsWith('ref:media/')) {
+        const file = f.querySelector(`input[name="file"]`)?.closest('[data-select]')?.querySelector(`[data-value="${CSS.escape(href)}"]`);
+        if (file) setLinkSelect(f, 'file', href);
+        else setLinkMedia(f, href.slice('ref:media/'.length));
+      } else setLinkSelect(f, 'ref', href);
+    }
     d?.showModal();
+  };
+  /** The link dialog's form: an address, an article, a file, or a picture or video from Media (media.md §11.1). */
+  const linkForm = () => dialog('editor-insert-link')?.querySelector<HTMLFormElement>('[data-editor-insert-form="link"]') ?? null;
+  const setLinkSelect = (f: HTMLElement, name: string, value: string) =>
+    f.querySelector(`input[name="${name}"]`)?.closest('[data-select]')?.dispatchEvent(new CustomEvent('select-set', { detail: { value } }));
+  /** A library item's name, as the picker's card says it (its alt text or its title), else its ID. */
+  const mediaName = (id: string) => root.querySelector(`[data-editor-media="${CSS.escape(id)}"]`)?.getAttribute('aria-label') || state.media[id]?.alt || id;
+  const setLinkMedia = (f: HTMLElement, id: string) => {
+    const value = f.querySelector<HTMLInputElement>('[data-editor-link-media-value]');
+    if (value) value.value = id;
+    const words = f.querySelector<HTMLElement>('[data-editor-link-media-name] .text');
+    if (words) {
+      words.dataset.hint ??= words.textContent ?? '';
+      words.textContent = id ? `Links to ${mediaName(id)}.` : words.dataset.hint;
+    }
+    const label = f.querySelector('[data-editor-link-media] .label');
+    if (label) label.textContent = id ? 'Choose another' : 'Choose a picture or video';
+  };
+  /** One way to the link's target at a time: choosing one clears the others. */
+  const clearLink = (f: HTMLElement, keep: 'href' | 'ref' | 'file' | 'media' | '') => {
+    const input = f.querySelector<HTMLInputElement>('input[name="href"]');
+    if (keep !== 'href' && input) input.value = '';
+    for (const name of ['ref', 'file'] as const) if (keep !== name && f.querySelector<HTMLInputElement>(`input[name="${name}"]`)?.value) setLinkSelect(f, name, '');
+    if (keep !== 'media') setLinkMedia(f, '');
+  };
+  const pickLinkMedia = () => {
+    const f = linkForm();
+    if (!f) return;
+    return openPicker({
+      mode: 'single',
+      min: 1,
+      kind: 'any',
+      title: 'Choose a picture or video to link',
+      onChoose: ([id]) => {
+        if (!id) return;
+        const issue = f.querySelector<HTMLElement>('[data-editor-form-issue]');
+        const secret = root.querySelector(`[data-media-card="${CSS.escape(id)}"]`)?.hasAttribute('data-private');
+        if (issue) {
+          issue.textContent = secret ? "That's a private page's: a link can only go to an open picture or video. Choose another." : '';
+          issue.hidden = !secret;
+        }
+        if (secret) return;
+        clearLink(f, 'media');
+        setLinkMedia(f, id);
+      },
+    });
   };
 
   on(root, 'click', (e) => {
     const t = e.target as Element;
     const el = t.closest<HTMLElement>(
-      '[data-editor-select], [data-editor-move], [data-editor-group], [data-editor-add-at], [data-editor-block-op], [data-editor-turn-open], [data-editor-subheading], [data-editor-turn-to], [data-editor-pick], [data-editor-crop], [data-editor-clear], [data-editor-items], [data-editor-collection], [data-editor-unset], [data-editor-add], [data-editor-media], [data-editor-media-use], [data-editor-unlink], [data-editor-reload]',
+      '[data-editor-select], [data-editor-move], [data-editor-group], [data-editor-add-at], [data-editor-block-op], [data-editor-turn-open], [data-editor-subheading], [data-editor-turn-to], [data-editor-pick], [data-editor-crop], [data-editor-clear], [data-editor-items], [data-editor-collection], [data-editor-unset], [data-editor-add], [data-editor-media], [data-editor-media-use], [data-editor-unlink], [data-editor-link-media], [data-editor-reload]',
     );
     if (!el) return;
     const d = el.dataset;
@@ -1214,6 +1270,7 @@ export function initEditor(root: HTMLElement, signal: AbortSignal) {
       if (linkTo) return linkTo('');
       return toCanvas({ type: 'link', href: '' });
     }
+    if (d.editorLinkMedia !== undefined) return pickLinkMedia();
     if (d.editorReload !== undefined) return location.reload();
   });
 
@@ -1335,6 +1392,13 @@ export function initEditor(root: HTMLElement, signal: AbortSignal) {
   on(root, 'change', (e) => {
     const t = e.target as HTMLInputElement;
     if (t.name === 'layout' && t.closest('[data-editor-insert-form]')) describeLayout(t.closest('form')!);
+    const link = t.closest<HTMLElement>('[data-editor-insert-form="link"]');
+    if (link && (t.name === 'ref' || t.name === 'file') && t.value) clearLink(link, t.name);
+  });
+  on(root, 'input', (e) => {
+    const t = e.target as HTMLInputElement;
+    const link = t.closest<HTMLElement>('[data-editor-insert-form="link"]');
+    if (link && t.name === 'href' && t.value.trim()) clearLink(link, 'href');
   });
   on(root, 'submit', (e) => {
     const form = (e.target as HTMLElement).closest<HTMLFormElement>('[data-editor-insert-form]');
@@ -1413,9 +1477,9 @@ export function initEditor(root: HTMLElement, signal: AbortSignal) {
     }
     if (kind === 'link') {
       const href = val('href');
-      const ref = val('ref');
-      const target = ref || href || linkRequest;
-      if (target && !/^(https?:\/\/|mailto:|ref:)/i.test(target)) return issue('Use an address that starts with https://, http:// or mailto:, or choose an article.');
+      const media = val('media');
+      const target = (media && `ref:media/${media}`) || val('file') || val('ref') || href || linkRequest;
+      if (target && !/^(https?:\/\/|mailto:|ref:)/i.test(target)) return issue('Use an address that starts with https://, http:// or mailto:, or choose an article, a file, or a picture or video.');
       close();
       if (linkTo) return linkTo(target);
       return toCanvas({ type: 'link', href: target });

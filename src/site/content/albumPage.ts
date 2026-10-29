@@ -6,7 +6,7 @@
  * unit-tested (`tests/unit/albumPage.test.ts`).
  */
 import { albumCounts, albumDates, countWords, dateSpan, dayWords, type AlbumMedia, type MediaLookup, type ResolvedItem } from './album';
-import { renderMarkdown } from './markdown';
+import { renderMarkdown, type MarkdownOptions } from './markdown';
 import type { Picture, VideoFile } from './pictures';
 import type { Album } from './schema';
 import type { AlbumCell, AlbumCellPicture, AlbumEntry } from '../scripts/albumGrid';
@@ -36,8 +36,8 @@ export interface CellSources {
   videoOf: (id: string) => Promise<VideoFile>;
   /** A linked video's poster, by its media ID. */
   posterOf: (id: string) => Promise<Picture>;
-  /** Turns a `ref:` link in a description into an address. */
-  resolveRef?: (ref: string) => string | undefined;
+  /** Turns a `ref:` link in a description into an address (or an address with its link's data). */
+  resolveRef?: MarkdownOptions['resolveRef'];
   /** A video file's caption tracks, for the lightbox's player (repository.ts `captionHrefs`). */
   tracksOf?: (id: string) => { src: string; srclang: string; label: string; default?: boolean }[];
 }
