@@ -35,4 +35,12 @@ describe('agent kits', () => {
   it.skipIf(!checkedOut)('match the pinned kits', () => {
     expect(check()).toEqual({ stale: [], leftovers: [] });
   });
+
+  it('registers AI integration as a tooling-only skill with a dedicated offline updater', () => {
+    expect(KITS).toContain('ai-integration');
+    expect(SKILL_NOTES['ai-integration']).toContain('no site or engine build reads it');
+    const updater = readFileSync(join(ROOT, 'scripts/update-ai-integration.ps1'), 'utf8');
+    expect(updater).toContain('node --test');
+    expect(updater).toContain('catalogue validate');
+  });
 });

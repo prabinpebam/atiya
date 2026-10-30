@@ -27,4 +27,16 @@ describe('an engine release', () => {
   it('decides by prefix and exact name', () => {
     expect(engineFiles(['content/site.json', 'src/a.ts', 'scripts/serve.ps1', 'scripts/verify-sealed.mjs', '.env', '.env.test', 'starter/content/site.json'])).toEqual(['scripts/verify-sealed.mjs', 'src/a.ts', 'starter/content/site.json']);
   });
+
+  it('keeps agent kits and their discovery/updater files outside the engine allowlist', () => {
+    expect(engineFiles([
+      'ai-integration',
+      'ai-integration/skills/ai-integration/SKILL.md',
+      'ai-integration/skills/ai-integration/references/providers.json',
+      'agentic-craft/skills/craft/SKILL.md',
+      'agent-orchestration/skills/orchestrate/SKILL.md',
+      '.github/skills/ai-integration/SKILL.md',
+      'scripts/update-ai-integration.ps1',
+    ])).toEqual([]);
+  });
 });

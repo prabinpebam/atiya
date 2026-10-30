@@ -204,15 +204,16 @@ Spec, navigation modes, plan and Definitions of Done: [documentation/desktop/](.
 - **Tests never touch real GitHub:** they use the fake GitHub (`src/core/setup/fake-github.mjs`, real bare repositories). Run the app's E2E through the launcher: `node scripts/test-run.mjs --by agent --purpose "…" -- -c apps/desktop/playwright.config.mjs`. A live check against GitHub is made on purpose only, on a test account.
 - **The engine names no owner:** a site's name and features (the planet, the design library, the docs) come from its content and `atiya.json` (`integrations/features.mjs`). `npm run build:site-only` and `npm run build:starter` build the starter as someone else's site and check it.
 
-### Agent kits (Slate, agentic-craft, agent-orchestration)
+### Agent kits (Slate, agentic-craft, agent-orchestration, ai-integration)
 
-The owner's three kits, each a pinned git submodule (`main`) used through thin discovery files. Each one works alone; together they split the work with no overlap:
+The owner's four kits, each a pinned git submodule (`main`) used through thin discovery files. Each one works alone; together they split the work by responsibility:
 
 | Kit | Owns | Here |
 |---|---|---|
 | [Slate](./slate/README.md) (`slate/`) | How documentation is written and read | `documentation/`, the `slate` skill (see **Documentation site**) |
 | [agentic-craft](https://github.com/prabinpebam/agentic-craft) (`agentic-craft/`) | What is worth building and what success means | The `craft` skill and its seven others; the `grounding-critic` and `design-system-auditor` agents |
 | [agent-orchestration](https://github.com/prabinpebam/agent-orchestration) (`agent-orchestration/`) | How work is carried out, checked and adapted | The `orchestrate` skill and its four others; the `throughput-reviewer` agent |
+| [ai-integration](https://github.com/prabinpebam/ai-integration) (`ai-integration/`) | Adding and updating AI across apps: provider policy, configuration, security, UX and migration | The `ai-integration` skill; offline catalogue/profile tools, never a site runtime |
 
 **Use them without being asked:** the owner never has to name a kit. Load the kit's skill yourself when its moment comes:
 - **Any multi-step task:** `orchestrate` first (the mode in one line, the bounds, then the loop). A one-step answer or a lookup doesn't need it.
@@ -220,6 +221,7 @@ The owner's three kits, each a pinned git submodule (`main`) used through thin d
 - **Any change to how the site, edit mode or the game looks:** `design-system` with this repository's design system documents (for an edit mode screen that manages a collection, [list and details](./documentation/editor/list-and-details.md) first), then a `design-system-auditor` review before showing it; words a person reads: `ui-copy`; anything a person waits on: `perceived-performance`; a claim that something is faster: `performance`. Walk every new screen or flow through craft's usability heuristics (H1 to H10, `agentic-craft/skills/craft/references/usability-heuristics.md`) and note how it meets them in its spec (an example: gallery spec §9.8.1).
 - **Choosing checks, merging or saying something is ready:** `stage-validation` with **Validation** below. **About every 30 minutes of running work, or when progress stalls:** `progress-review`, with the `throughput-reviewer` agent. **A status report, a handoff or delegating:** `coordinate`.
 - **Writing or changing anything in `documentation/`:** `slate`.
+- **Adding or updating AI:** `ai-integration`, before choosing a provider, model or SDK. Reuse this repository's UI and security boundaries; profiles contain references, never keys. Local-only never falls back remotely. Provider research is documentation evidence, not live-tested support; live checks and their data/cost require explicit permission.
 
 Where they meet: a spec and its Definitions of Done are Slate pages in `documentation/`, reasoned with Craft (promise, user-can statements, assumptions, evidence) and carried out with Orchestration (mode, increments, checks, log), with this file's Validation tiers choosing the checks.
 
@@ -228,17 +230,17 @@ Where they meet: a spec and its Definitions of Done are Slate pages in `document
 2. This file and the repository documents it names: specs, the design systems, Validation, the security rules.
 3. The repository's own skills (`article-writing`, `ink-sketch`) for their tasks.
 4. The kits' canonical skills and agents: generic defaults that fill gaps.
-5. An `AGENTS.md` inside `slate/`, `agentic-craft/` or `agent-orchestration/` governs work on that package upstream, never this site.
+5. An `AGENTS.md` inside `slate/`, `agentic-craft/`, `agent-orchestration/` or `ai-integration/` governs work on that package upstream, never this site.
 
 **Conflicts, resolved:**
-- **Discovery files are generated:** `node scripts/agent-kits.mjs` writes each kit skill's adapter in `.github/skills/<name>/` (the kit's description, a pointer to the canonical skill and one line of this repository's rules) and each kit agent in `.github/agents/` (the kit's text plus this repository's inputs); `--check` and `tests/unit/agentKits.test.ts` fail on drift. Change the notes in the script, never the generated files. Never run the kits' installers here: they copy whole skills over the adapters and add generic sections to this file.
+- **Discovery files are generated:** `node scripts/agent-kits.mjs` writes each kit skill's adapter in `.github/skills/<name>/` (the kit's description, a pointer to the canonical skill and one line of this repository's rules) and each kit agent in `.github/agents/` (the kit's text plus this repository's inputs); `--check` and `tests/unit/agentKits.test.ts` fail on drift. Change the notes in the script, never the generated files. Never run the kits' installers here: they copy whole skills over the adapters (Craft and Orchestration also add generic sections to this file).
 - **One throughput reviewer:** agent-orchestration's, with eight questions (it adds "traced to intent"), plus this repository's log, deploy and parity runs, holds and checks. It replaces the hand-written one.
 - **Design system, copy and performance:** this repository's systems, glossary, budgets and tests win over Craft's generic ones; never use the kit's `tools/` (tokens, style and copy linters) or its templates here.
 - **Specs before building:** Craft's "grounded or not built" applies to new features and changes of intent, written into the area's existing spec. A fix or the owner's feedback on a built feature traces to its spec and never waits for a new one (Orchestration: never stop a code task to ask for a formal spec). New specs and Definitions of Done use Craft's stable IDs (P1, J1, U1, A1, O1, PD1, 1.1); older pages aren't renumbered.
 - **Modes:** attended is Orchestration's "work with me", unattended its "keep going unattended" (**Working modes and throughput**); its goal modes (show me the UX sooner, prove the risky assumption, make this production-ready) apply on top. Say the mode in one line when starting multi-step work.
 - **Publishing:** Orchestration never assumes publishing is allowed; here the default is to merge to `main`, push (which deploys) and watch the runs. An owner's hold wins: then stop at validated and ready, unpushed, and say what's waiting. Never tag or publish a release without the owner.
 - **Work plans and handoffs:** Orchestration's templates aren't copied. A planned stage lives in the area's `plan.md`; anything smaller keeps its plan in the session workspace, and handoffs go in the reply. Neither is committed unless the owner asks.
-- **Updating:** `pwsh -File scripts/update-agent-kits.ps1` (refuses local changes, moves both kits to upstream `main`, runs their own tests, regenerates and checks); review and commit the pointers with `.github/` together. Fresh checkouts run `git submodule update --init slate agentic-craft agent-orchestration`. Kit changes go upstream, never into the submodules here. No build reads the kits: CI never fetches them and the engine pack leaves them out.
+- **Updating:** `pwsh -File scripts/update-agent-kits.ps1` updates Craft and Orchestration; `pwsh -File scripts/update-ai-integration.ps1` updates AI integration (refuses local changes, moves to upstream `main`, runs its own offline tests, regenerates and checks). Review and commit the pointers with `.github/` together. Fresh checkouts run `git submodule update --init slate agentic-craft agent-orchestration ai-integration`. Kit changes go upstream, never into the submodules here. No build reads the kits: CI never fetches them and the engine pack's allowlist leaves them out.
 
 <!-- agentic-craft:start -->
 #### Craft facts

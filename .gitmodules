@@ -14,3 +14,7 @@
 	path = agentic-craft
 	url = https://github.com/prabinpebam/agentic-craft.git
 	branch = main
+[submodule "ai-integration"]
+	path = ai-integration
+	url = https://github.com/prabinpebam/ai-integration.git
+	branch = main
