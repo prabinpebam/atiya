@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
-import { AGENT_NOTES, KITS, MARK, ROOT, SKILL_NOTES, check, frontmatter } from '../../scripts/agent-kits.mjs';
+import { AGENT_NOTES, KITS, MARK, ROOT, SKILL_NOTES, check, frontmatter, orchestrationHooks } from '../../scripts/agent-kits.mjs';
 
 const checkedOut = KITS.every((k) => existsSync(join(ROOT, k, 'skills')));
 const generated = (folder: string) =>
@@ -34,6 +34,19 @@ describe('agent kits', () => {
 
   it.skipIf(!checkedOut)('match the pinned kits', () => {
     expect(check()).toEqual({ stale: [], leftovers: [] });
+  });
+
+  it.skipIf(!checkedOut)("installs agent-orchestration's session clock and guard as project hooks", () => {
+    const hooks = orchestrationHooks();
+    expect([...hooks.keys()].sort()).toEqual(['.github/hooks/orchestration-clock.json', '.github/hooks/orchestration-clock.mjs', '.github/hooks/orchestration-guard.json']);
+    const events = (rel: string) => Object.keys(JSON.parse(hooks.get(rel) ?? '{}').hooks);
+    expect(events('.github/hooks/orchestration-clock.json')).toEqual(['sessionStart', 'postToolUse', 'preCompact', 'agentStop']);
+    expect(events('.github/hooks/orchestration-guard.json')).toEqual(['preToolUse', 'userPromptSubmitted']);
+    for (const rel of ['.github/hooks/orchestration-clock.json', '.github/hooks/orchestration-guard.json']) {
+      for (const [entry] of Object.values(JSON.parse(hooks.get(rel) ?? '{}').hooks) as { command: string }[][]) {
+        expect(entry.command, rel).toMatch(/^node \.github\/hooks\/orchestration-clock\.mjs \w+$/);
+      }
+    }
   });
 
   it('registers AI integration as a tooling-only skill with a dedicated offline updater', () => {

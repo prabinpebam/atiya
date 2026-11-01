@@ -1,12 +1,12 @@
 {
   "schemaVersion": 1,
   "sourcePackage": "@slate/docs",
-  "sourceVersion": "0.10.3",
+  "sourceVersion": "0.12.2",
   "sourcePath": "../slate",
   "files": [
     {
       "path": "shell/slate.css",
-      "sha256": "1064096234b1f8d52364fc580c3cc88d87686ec4af589ecdc276d77203fa2ae7"
+      "sha256": "2d8e9dd2b70758c1fbac7fcd098a956deb0af9870a7a571688b22a9eaef4ad96"
     },
     {
       "path": "shell/presentation.js",
@@ -14,7 +14,15 @@
     },
     {
       "path": "shell/slate.js",
-      "sha256": "037ecc07af65c2792a62c608061bc5b6271b8b4e177d17a9b1388ffeb53ad17c"
+      "sha256": "46e8b41ad45613d370d3b865540f2ee80330e385935b41329c3346a6ad74a7bb"
+    },
+    {
+      "path": "shell/revisions.js",
+      "sha256": "d2e3d03623e7174d995727ae6fff21034a3abc9eb64a643dd3dd0289c607373e"
+    },
+    {
+      "path": "shell/revisions-core.js",
+      "sha256": "3da6f93b959146358e90a3b1c1fd433797c4b94de5af8a70dac46b7e2cba8721"
     },
     {
       "path": "shell/canvas/canvas.css",
@@ -22,15 +30,15 @@
     },
     {
       "path": "shell/canvas/canvas.js",
-      "sha256": "1aa4f3d932e4d1f8aa6b7531b3406dcd37343795ab2a98cbd965aa4000e2300a"
-    },
-    {
-      "path": "shell/canvas/canvas.js.LEGAL.txt",
-      "sha256": "f0988821466dc35257060739174db7102f9c52445dfdf584e6869d7c0c161d0f"
+      "sha256": "c4cc9bc3c244bc5a49ba54de148cfffe66ac91ff704928044d3d666eb2012cf3"
     },
     {
       "path": "shell/canvas/index.html",
-      "sha256": "87fbdce6901bc92d3d791c4b684fea2a112b67647a5250d17e06baa20ab56458"
+      "sha256": "71450737b344d5f0ff229d19664d390f1721de8ab4720c1da8e34811ae402d85"
+    },
+    {
+      "path": "shell/canvas/THIRD_PARTY_NOTICES.txt",
+      "sha256": "a061a0a8ba70a4064d8533dc4a3846b472d7cc908b0d935cacd65cf884755550"
     },
     {
       "path": "shell/vendor/github-dark.min.css",
@@ -43,6 +51,22 @@
     {
       "path": "shell/vendor/highlight.min.js",
       "sha256": "837a6fa5b0c736b52bbde2b2b6190f305da3fc9ed41681db5321507057b5c846"
+    },
+    {
+      "path": "shell/vendor/LICENSES/DOMPurify.LICENSE.txt",
+      "sha256": "274ba7d358207cebdbff44a8d221fd5478395e0b93fce92698e1f5172e5c2f16"
+    },
+    {
+      "path": "shell/vendor/LICENSES/highlight.js.LICENSE.txt",
+      "sha256": "ba98a4816e09175c3b526e4da5ef6d4eee5c3728ac778551e8f3e1779571eb4a"
+    },
+    {
+      "path": "shell/vendor/LICENSES/marked.LICENSE.md",
+      "sha256": "8c2857d4762624ec11c303ccbd3f885ff214eae5126dca24997a68e7466e7cd6"
+    },
+    {
+      "path": "shell/vendor/LICENSES/material-symbols.LICENSE.txt",
+      "sha256": "c5ffa8248492590c8e2d7a386f1bf40fafd313e4fe3b8572c8d3fa76e82c3f12"
     },
     {
       "path": "shell/vendor/marked.min.js",
@@ -58,7 +82,7 @@
     },
     {
       "path": "shell/vendor/README.md",
-      "sha256": "0fe67bff6108371efee8b4b207cb9f1da61291b242517bf1af00455a87d55868"
+      "sha256": "4de1f772f0ed145b3ac7552de79f4d719293d3f6758747847fafff011b20cb3b"
     }
   ]
 }

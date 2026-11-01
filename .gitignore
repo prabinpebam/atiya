@@ -18,6 +18,10 @@ assets-src/audio/.cache/
 .editor-test-private-seed/
 # a site's local AI settings and proposals, beside its content (documentation/editor/ai-services.md §11): never committed
 .atiya/
+# Slate's reader revisions (comments on the docs' blocks, AGENTS.md "Documentation site") and agent-orchestration's
+# per-copy mode file (AGENTS.md "Agent kits"): local to a checkout, never committed
+.slate/
+.agent-orchestration/
 
 
 # the contact service's local settings can hold its secrets (documentation/contact/spec.md §4.4)
