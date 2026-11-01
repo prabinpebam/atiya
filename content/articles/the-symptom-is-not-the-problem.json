@@ -2,9 +2,9 @@
   "id": "the-symptom-is-not-the-problem",
   "type": "article",
   "kind": "note",
-  "slug": "the-symptom-is-not-the-problem",
-  "title": "While working with AI agents, fix the framework, not the symptom",
-  "summary": "Working with first principles and systems thinking is what gets rewarded while working with AI agents.",
+  "slug": "working-with-ai-agents-fix-the-framework-not-the-symptom",
+  "title": "Working with AI agents: Fix the framework, not the symptom",
+  "summary": "First-principles and systems thinking are becoming the most valuable muscles to exercise when working with AI agents.",
   "status": "published",
   "visibility": "public",
   "publishedAt": "2026-11-01",
@@ -54,12 +54,12 @@
       "background": false,
       "rounded": false,
       "showCaption": false,
-      "key": "okrufk"
+      "key": "3wp0h2"
     },
     {
       "type": "text",
-      "markdown": "You didn't ask the agent to fix the problem you saw. You asked it to fix the system that produced the problem.",
-      "key": "yncq9u"
+      "markdown": "You didn't ask the agent to fix the problem you saw. You asked it to fix the framework that produced the problem.",
+      "key": "ca9aui"
     },
     {
       "type": "quote",
@@ -70,8 +70,8 @@
     {
       "type": "heading",
       "level": 2,
-      "text": "Fixing problems vs fixing what produces them",
-      "key": "3irbii"
+      "text": "Fixing the symptom vs fixing the framework",
+      "key": "jqdyda"
     },
     {
       "type": "text",
@@ -90,8 +90,8 @@
     },
     {
       "type": "text",
-      "markdown": "Both approaches are possible. The difference lies in how we frame the problem and what we understand about the system we're working with.",
-      "key": "cgq2xh"
+      "markdown": "Both approaches are possible. The difference lies in how we frame the problem and what we understand about the framework we're working within.",
+      "key": "pnjlox"
     },
     {
       "type": "text",
@@ -107,12 +107,7 @@
       "background": false,
       "rounded": false,
       "showCaption": false,
-      "key": "63id06"
-    },
-    {
-      "type": "text",
-      "markdown": "And this distinction becomes increasingly important as the complexity of the work increases.",
-      "key": "3f110y"
+      "key": "ro0rnm"
     },
     {
       "type": "text",
@@ -148,45 +143,152 @@
       "background": false,
       "rounded": false,
       "showCaption": false,
-      "key": "613mw3"
+      "key": "m9blsy"
     },
     {
       "type": "text",
-      "markdown": "In each case, the difference is in the level at which you approach the problem.",
-      "key": "27b5xs"
+      "markdown": "In each case, the difference isn't how well you instruct the agent. It's how deeply you understand the problem and the framework producing it.",
+      "key": "ahivxw"
     },
     {
       "type": "heading",
       "level": 2,
-      "text": "Think from first principles. Think in systems.",
-      "key": "krg3jq"
+      "text": "But isn't this how we've always been supposed to work?",
+      "key": "g9psa3"
     },
     {
       "type": "text",
-      "markdown": "When working with AI agents, two ways of thinking become particularly valuable.",
-      "key": "gt66a7"
+      "markdown": "You might argue that none of this is new. We've always known that we should address root causes, build sound architectures, maintain design systems, and invest in quality. First-principles thinking and systems thinking aren't discoveries brought about by AI.",
+      "key": "vmhth6"
+    },
+    {
+      "type": "text",
+      "markdown": "And you'd be right.",
+      "key": "mb089u"
+    },
+    {
+      "type": "text",
+      "markdown": "But there's a rather important distinction between knowing the right way to do something and being able to afford doing it.",
+      "key": "5vffzt"
+    },
+    {
+      "type": "text",
+      "markdown": "In practice, working this way has often been prohibitively expensive.",
+      "key": "qxzrsg"
+    },
+    {
+      "type": "text",
+      "markdown": "Investigating the underlying cause of an inconsistency takes time. Refactoring an architecture to address a systemic problem takes considerably more effort than patching a bug. Maintaining design systems, documenting conventions, building validation mechanisms, and keeping everything aligned across a growing product all require sustained investment.",
+      "key": "641c1i"
+    },
+    {
+      "type": "text",
+      "markdown": "When faced with deadlines, competing priorities, and limited resources, we make compromises.",
+      "key": "3zlifs"
+    },
+    {
+      "type": "text",
+      "markdown": "We fix the immediate problem instead of addressing the underlying cause. We introduce exceptions instead of improving the framework. We postpone refactoring. We skip documentation. We accept inconsistencies because fixing them everywhere is too expensive.",
+      "key": "hrn33b"
+    },
+    {
+      "type": "text",
+      "markdown": "This is how technical debt, design debt, and all sorts of accumulated compromises come into existence.",
+      "key": "3zqpya"
+    },
+    {
+      "type": "text",
+      "markdown": "It's not necessarily because we don't know better. Often, it's because the cost of doing better is too high at that moment.",
+      "key": "fep3ue"
     },
     {
       "type": "quote",
-      "variant": "block",
-      "text": "First-principles thinking helps you understand what actually needs to be solved.",
-      "key": "8pcy6p"
+      "variant": "pull",
+      "text": "We've always known what good product development looks like. We've just rarely been able to afford doing it consistently.",
+      "key": "vjrs3q"
     },
     {
       "type": "text",
-      "markdown": "It means not blindly inheriting assumptions, conventions, or existing processes. Instead, you reason about the underlying problem, understand the intended outcome, and question whether the current approach is the right one.",
-      "key": "w74pkm"
+      "markdown": "This is where AI fundamentally changes the equation.",
+      "key": "pd7zkc"
+    },
+    {
+      "type": "figure",
+      "media": "articles/the-symptom-is-not-the-problem/too-dear",
+      "width": "wide",
+      "lightbox": true,
+      "display": "fit",
+      "background": false,
+      "rounded": false,
+      "showCaption": false,
+      "key": "sgdh2m"
+    },
+    {
+      "type": "text",
+      "markdown": "Investigating an architecture, tracing dependencies, identifying inconsistencies, refactoring components, writing tests, documenting decisions, and validating implementations are all activities that agents can now help us accomplish at a fraction of the previous effort.",
+      "key": "e96zpm"
+    },
+    {
+      "type": "text",
+      "markdown": "This doesn't make the work free, nor does it eliminate the need for expertise and judgment. But it changes the economics of doing it properly.",
+      "key": "uc4zqz"
+    },
+    {
+      "type": "text",
+      "markdown": "We can now afford to investigate problems more deeply, address them at their source, and improve the frameworks around them rather than repeatedly settling for local fixes.",
+      "key": "y086oo"
     },
     {
       "type": "quote",
-      "variant": "block",
-      "text": "Systems thinking helps you understand how to solve it in a way that produces lasting results.",
-      "key": "abcyf8"
+      "variant": "pull",
+      "text": "AI is making it economically practical to be fundamentally better at how we work.",
+      "key": "w89fd4"
+    },
+    {
+      "type": "heading",
+      "level": 2,
+      "text": "The muscle we need to exercise is changing",
+      "key": "849kkv"
     },
     {
       "type": "text",
-      "markdown": "It means looking beyond individual tasks and understanding the relationships, dependencies, constraints and feedback loops that influence the outcome.",
-      "key": "zkdlmp"
+      "markdown": "For a long time, professional expertise was closely associated with our ability to execute.",
+      "key": "v6t3xw"
+    },
+    {
+      "type": "text",
+      "markdown": "We developed proficiency in tools, techniques, processes and the craft of producing things. Knowing how to do something, understanding the steps involved, and being able to execute them efficiently were significant sources of professional value.",
+      "key": "25u9pv"
+    },
+    {
+      "type": "text",
+      "markdown": "These skills remain valuable. But AI agents are changing how much of the execution we need to do ourselves.",
+      "key": "quxrqs"
+    },
+    {
+      "type": "text",
+      "markdown": "The opportunity is to redirect that effort.",
+      "key": "qfn0gm"
+    },
+    {
+      "type": "text",
+      "markdown": "Instead of spending most of our energy figuring out how to execute a task, we can spend more time understanding why we're doing it, questioning the assumptions behind it, examining the framework it belongs to, and figuring out what would produce a fundamentally better outcome.",
+      "key": "8xnwex"
+    },
+    {
+      "type": "text",
+      "markdown": "This requires a different kind of muscle.",
+      "key": "51jnow"
+    },
+    {
+      "type": "text",
+      "markdown": "**First-principles thinking** helps us reason about problems without being constrained by existing assumptions, conventions or the immediate symptoms we observe. It helps us understand the underlying problem and establish what we're actually trying to achieve.",
+      "key": "d0axv8"
+    },
+    {
+      "type": "text",
+      "markdown": "**Systems thinking** helps us understand how different parts interact, how decisions affect one another, and where an intervention can create the greatest impact. It moves us beyond isolated tasks and toward improving the frameworks that produce the outcomes.",
+      "key": "pqirgt"
     },
     {
       "type": "text",
@@ -195,8 +297,8 @@
     },
     {
       "type": "text",
-      "markdown": "First principles help you identify what needs to change. Systems thinking helps you understand where and how to make that change.",
-      "key": "a9fuhc"
+      "markdown": "First principles help us understand what needs to change. Systems thinking helps us understand where and how to make that change.",
+      "key": "4f3rg8"
     },
     {
       "type": "figure",
@@ -207,23 +309,17 @@
       "background": false,
       "rounded": false,
       "showCaption": false,
-      "key": "u6z857"
+      "key": "e8rmzy"
     },
     {
       "type": "text",
-      "markdown": "This is particularly important because AI agents are very capable of executing instructions, but execution capacity alone doesn't guarantee a good outcome.",
-      "key": "33cyfy"
+      "markdown": "And this is particularly important when working with agents. They can execute instructions, explore solutions, investigate dependencies and make changes across an entire codebase. But the quality of those interventions depends heavily on how well we understand the problem and the framework within which we're asking them to operate.",
+      "key": "fni7yb"
     },
     {
       "type": "text",
-      "markdown": "You can ask an agent to build something and get a working implementation. But whether that implementation solves the right problem, fits into the larger product, maintains consistency, and delivers a good experience depends on the thinking behind the work.",
-      "key": "0ng20q"
-    },
-    {
-      "type": "quote",
-      "variant": "pull",
-      "text": "AI makes execution easier. It doesn't make good judgment automatic.",
-      "key": "bbia05"
+      "markdown": "You can give an agent a very specific instruction and get exactly what you asked for. But that doesn't necessarily mean you've solved the right problem.",
+      "key": "w24bcq"
     },
     {
       "type": "figure",
@@ -234,7 +330,18 @@
       "background": false,
       "rounded": false,
       "showCaption": false,
-      "key": "1g7tfx"
+      "key": "xkexhz"
+    },
+    {
+      "type": "text",
+      "markdown": "Sometimes the best instruction is not to fix the problem you've observed, but to investigate and improve the framework that allowed it to happen.",
+      "key": "alk0c0"
+    },
+    {
+      "type": "quote",
+      "variant": "pull",
+      "text": "The bottleneck is shifting from our ability to execute to our ability to think about what should be executed.",
+      "key": "r90tgh"
     },
     {
       "type": "heading",
@@ -259,8 +366,8 @@
     },
     {
       "type": "text",
-      "markdown": "You might have multiple agents working in parallel, producing code, creating components, implementing features and fixing bugs. But without a coherent understanding of the product and the systems governing its development, you can end up with inconsistencies, conflicting decisions and increasing amounts of rework.",
-      "key": "pez72v"
+      "markdown": "You might have multiple agents working in parallel, producing code, creating components, implementing features and fixing bugs. But without a coherent understanding of the product and the frameworks governing its development, you can end up with inconsistencies, conflicting decisions and increasing amounts of rework.",
+      "key": "dsdaon"
     },
     {
       "type": "text",
@@ -276,7 +383,7 @@
       "background": false,
       "rounded": false,
       "showCaption": false,
-      "key": "f5c1f2"
+      "key": "55ndg0"
     },
     {
       "type": "text",
@@ -306,8 +413,8 @@
     {
       "type": "heading",
       "level": 2,
-      "text": "Don't let your learning disappear into conversations",
-      "key": "meceo6"
+      "text": "Make your thinking accumulate",
+      "key": "nbgqak"
     },
     {
       "type": "text",
@@ -333,7 +440,7 @@
       "background": false,
       "rounded": false,
       "showCaption": false,
-      "key": "n5asiv"
+      "key": "0xibjy"
     },
     {
       "type": "text",
@@ -357,8 +464,8 @@
     },
     {
       "type": "text",
-      "markdown": "Over time, you accumulate a collection of principles, skills, workflows, tools and conventions that reflect your understanding of how to produce good outcomes.",
-      "key": "0rdc7r"
+      "markdown": "Over time, you accumulate a collection of principles, skills, workflows, tools and conventions that reflect your understanding of how to work effectively with AI agents.",
+      "key": "usr2tk"
     },
     {
       "type": "text",
@@ -433,6 +540,17 @@
       "key": "syq5pu"
     },
     {
+      "type": "figure",
+      "media": "articles/the-symptom-is-not-the-problem/new-parts",
+      "width": "popout",
+      "lightbox": true,
+      "display": "fit",
+      "background": false,
+      "rounded": false,
+      "showCaption": false,
+      "key": "let4of"
+    },
+    {
       "type": "text",
       "markdown": "And this is another reason why investing in understanding and articulating your approach is worthwhile. You're not just optimizing how you work with today's models. You're building a foundation that can adapt as the capabilities change.",
       "key": "o4v12i"
@@ -440,8 +558,8 @@
     {
       "type": "heading",
       "level": 2,
-      "text": "Ultimately, it's about producing great products",
-      "key": "u76vvd"
+      "text": "What gets rewarded?",
+      "key": "0m56db"
     },
     {
       "type": "text",
@@ -450,28 +568,38 @@
     },
     {
       "type": "text",
-      "markdown": "But these are means, not the end.",
-      "key": "prtr62"
+      "markdown": "These things matter, but they aren't the differentiator I'm talking about.",
+      "key": "5ryrkf"
     },
     {
       "type": "text",
-      "markdown": "The end goal is to produce a well-designed product that solves a real problem. To do it consistently. To maintain quality as the product grows. And to take on increasingly complex challenges without the development process becoming a bottleneck.",
-      "key": "3dw86z"
+      "markdown": "The real differentiator is how you think.",
+      "key": "9mav19"
     },
     {
       "type": "text",
-      "markdown": "First-principles thinking helps you understand what you're trying to achieve. Systems thinking helps you establish the conditions to achieve it. AI agents give you the execution leverage to make it happen.",
-      "key": "plvxzk"
+      "markdown": "Can you look beyond the immediate problem and understand what's producing it? Can you question the assumptions behind an established approach? Can you understand the larger system, identify the right intervention, and direct agents toward a solution that improves more than just the instance in front of you?",
+      "key": "4jubz4"
     },
     {
       "type": "text",
-      "markdown": "The more deliberate you are about these things, the more you can accomplish without compromising on the quality of the outcome.",
-      "key": "jgs5tm"
+      "markdown": "And can you turn those learnings into reusable knowledge that makes your next attempt even better?",
+      "key": "ea8z35"
     },
     {
       "type": "text",
-      "markdown": "I believe this is where the real advantage of working with AI agents lies.",
-      "key": "ay6dqb"
+      "markdown": "These are the muscles worth exercising.",
+      "key": "umsf1k"
+    },
+    {
+      "type": "text",
+      "markdown": "AI agents give us unprecedented execution leverage. But the ability to reason from first principles and think in systems determines how effectively we use that leverage.",
+      "key": "932z5a"
+    },
+    {
+      "type": "text",
+      "markdown": "The result isn't simply getting more work done. It's being able to produce better outcomes, more consistently, and tackle levels of complexity that would previously have been impractical.",
+      "key": "g8tojs"
     },
     {
       "type": "figure",
@@ -482,18 +610,13 @@
       "background": false,
       "rounded": false,
       "showCaption": false,
-      "key": "nc6sx6"
-    },
-    {
-      "type": "text",
-      "markdown": "And while I've primarily explored this through product development, I suspect the same philosophy will prove valuable in many other disciplines.",
-      "key": "rb6xw9"
+      "key": "rr2spn"
     },
     {
       "type": "quote",
       "variant": "pull",
-      "text": "Working with first principles and systems thinking is what gets rewarded while working with AI agents.",
-      "key": "6ev575"
+      "text": "Working with AI agents, fix the framework, not the symptom.",
+      "key": "xh9brk"
     }
   ],
   "hero": {

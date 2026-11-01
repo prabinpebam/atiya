@@ -1,7 +1,7 @@
 {
   "style": "ink-sketch",
   "article": "the-symptom-is-not-the-problem",
-  "theme": "The teacup machine: a maker and her tireless little helpers fix the contraption that turns out the wonky cups, not the one wonky cup in front of them. Taken from the essay's own line, \"You asked it to fix the system that produced the problem.\"",
+  "theme": "The teacup machine: a maker and her tireless little helpers fix the contraption that turns out the wonky cups, not the one wonky cup in front of them. Taken from the essay's own line, \"You asked it to fix the framework that produced the problem.\"",
   "castAnchor": "fix-the-machine",
   "cast": "THE MAKER, the recurring hero: a small, round, fuzzy creature with huge, slightly mismatched round eyes, a pair of round brass goggles pushed up on her forehead, a long stripy scarf trailing behind her, a pencil tucked behind one ear and a little leather apron with a tape measure in its pocket; curious, thoughtful and quietly amused. THE HELPERS (the AI agents): a gaggle of tiny, identical bean-shaped creatures, each with one springy antenna topped by a little round bulb, enormous eager eyes, stubby legs and a tiny tool belt with a spanner; tireless, very fast and very literal, they do exactly what they are told. THE MACHINE: a big, quirky, hand-drawn contraption of cogs, pipes, funnels, chutes, levers and a crank handle, drawn in the same loose ink, that turns out little teacups from a chute onto a wooden shelf. THE TEACUPS: plain little cups; a wonky one has a lopsided, droopy handle.",
   "images": [
@@ -40,11 +40,20 @@
       "alt": "Teacups pass through a cup-shaped hoop at the end of a machine; a lopsided one sticks, a bell rings, and a tiny helper with a whistle sends it back while a fuzzy creature sips tea."
     },
     {
+      "name": "too-dear",
+      "use": "figure",
+      "format": "figure",
+      "width": "wide",
+      "after": "This is where AI fundamentally changes the equation.",
+      "subject": "Two scenes side by side, divided by a loose ink line. LEFT: the Maker, alone and in a hurry, with a big sand hourglass beside her almost run out, wraps sticky tape and string round the handle of a wonky cup instead of opening the Machine. Behind her a tall, wobbly tower of cups patched with tape, string, splints and sticking plasters leans dangerously. The Machine's hatch stays shut, and next to it sits an enormous toolbox far too heavy for her to lift. RIGHT: the same Maker, now with a few Helpers who carry the enormous toolbox for her on their shoulders, has the Machine's hatch wide open and points inside; the hourglass beside them still has plenty of sand, and two Helpers cheerfully take the patched tower down, cup by cup.",
+      "alt": "Left: short of time, a fuzzy creature tapes up a wonky cup beside a teetering tower of patched cups and an unused toolbox. Right: tiny helpers carry the toolbox, the teacup machine is open, and the patched tower comes down."
+    },
+    {
       "name": "why-then-where",
       "use": "figure",
       "format": "comic",
       "width": "wide",
-      "after": "First principles help you identify what needs to change.",
+      "after": "First principles help us understand what needs to change.",
       "subject": "PANEL 1: at a little workbench, the Maker, goggles down over her eyes, has taken one wonky cup apart into its pieces, a lump of clay, a handle and a saucer, and studies the handle under a huge magnifying glass. PANEL 2: the Maker stands on a tall stepladder beside the whole Machine, holding a long rolled-out blueprint of it, with pieces of string pinned between cogs, pipes and the chute to show how they connect; a Helper holds the bottom of the ladder, looking up with huge eyes. PANEL 3: the Maker points to one exact spot on the Machine with her pencil, and the Helper turns a single small cog there with its spanner.",
       "alt": "A three-panel comic: a fuzzy creature takes a lopsided cup apart under a magnifying glass, then maps the whole teacup machine with string from a ladder, then points to one cog for a helper to turn."
     },
@@ -53,7 +62,7 @@
       "use": "figure",
       "format": "figure",
       "width": "popout",
-      "after": "AI makes execution easier.",
+      "after": "You can give an agent a very specific instruction",
       "subject": "A crowd of beaming Helpers proudly unveils an enormous, exquisitely crafted teacup, polished and ornate, with scaffolding still around it, a ribbon and a tiny trumpet fanfare. But the cup has no bottom: a little stream of tea pours straight through it onto the floor. The Maker, holding a teapot mid-pour, stares at the puddle with a flat, deadpan expression.",
       "alt": "Tiny helpers proudly unveil a huge, ornate teacup with a ribbon and a trumpet, but it has no bottom, and tea pours through onto the floor while a fuzzy creature with a teapot stares deadpan."
     },
@@ -76,11 +85,20 @@
       "alt": "A fuzzy creature catches glowing paper moths drifting out of a window with a butterfly net and jars them, while a tiny helper lifts a jar of hand-made tools off a full shelf."
     },
     {
+      "name": "new-parts",
+      "use": "figure",
+      "format": "figure",
+      "width": "popout",
+      "after": "The collection should evolve alongside the technology.",
+      "subject": "The Machine is being upgraded. Two Helpers wheel in a wooden crate of shiny new parts packed in straw. The Maker, goggles down over her eyes, holds a gleaming new cog up beside an old, worn cog still on the Machine, comparing them with a curious, thoughtful look. Beside her is the tall shelf of glass jars, each holding a tiny hand-made tool: one Helper on a ladder tips an old jar's little tool into a scrap bucket, while another Helper sets a brand-new jar on the shelf. No labels or writing anywhere.",
+      "alt": "A fuzzy creature in goggles compares a shiny new cog with an old one on the teacup machine, while tiny helpers wheel in a crate of new parts and swap an old jar on the shelf for a new one."
+    },
+    {
       "name": "tea-party",
       "use": "figure",
       "format": "figure",
       "width": "popout",
-      "after": "I believe this is where the real advantage",
+      "after": "The result isn't simply getting more work done.",
       "subject": "In front of the humming Machine, the Maker pours tea for a small line of delighted little creature guests from the neighbourhood, each holding a perfect cup. The Helpers have downed tools: one naps on a cog, two clink cups, one balances a cup on its antenna. The Machine itself seems to smile, a little puff of steam rising from its funnel.",
       "alt": "A fuzzy creature in goggles pours tea for delighted guests holding perfect cups, while tiny helpers nap and clink cups in front of a contented, steaming teacup machine."
     },
