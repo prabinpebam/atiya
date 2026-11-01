@@ -108,6 +108,14 @@
         "view": "features",
         "children": [
           {
+            "id": "the-symptom-is-not-the-problem",
+            "kind": "item",
+            "item": {
+              "type": "article",
+              "id": "the-symptom-is-not-the-problem"
+            }
+          },
+          {
             "id": "good-design-isnt-a-list-of-principles",
             "kind": "item",
             "item": {

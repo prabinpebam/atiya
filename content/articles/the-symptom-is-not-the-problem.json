@@ -1,0 +1,510 @@
+{
+  "id": "the-symptom-is-not-the-problem",
+  "type": "article",
+  "kind": "note",
+  "slug": "the-symptom-is-not-the-problem",
+  "title": "The symptom is not the problem",
+  "summary": "Working with first principles and systems thinking is what gets rewarded while working with AI agents.",
+  "status": "published",
+  "visibility": "public",
+  "publishedAt": "2026-11-01",
+  "updatedAt": "2026-11-01",
+  "locale": "en",
+  "topics": [
+    "ai",
+    "craft"
+  ],
+  "body": [
+    {
+      "type": "text",
+      "markdown": "Imagine you're reviewing an interface built by an AI agent. You notice that a button is slightly taller than the input field next to it.",
+      "key": "7jergi"
+    },
+    {
+      "type": "text",
+      "markdown": "You could simply tell the agent to fix the height. It makes the adjustment, and the problem is gone.",
+      "key": "7z8l5q"
+    },
+    {
+      "type": "text",
+      "markdown": "But what if you approached it differently?",
+      "key": "ih52ub"
+    },
+    {
+      "type": "text",
+      "markdown": "Instead of pointing out the height mismatch, you ask the agent to investigate the design system. You want to understand whether the components are following the same sizing conventions, whether they're referencing the right design tokens, and whether the implementation is adhering to the component library.",
+      "key": "2tlm8e"
+    },
+    {
+      "type": "text",
+      "markdown": "The agent discovers that the button and input field are referencing different height tokens. It fixes the underlying inconsistency, and the original mismatch disappears.",
+      "key": "9i81nz"
+    },
+    {
+      "type": "text",
+      "markdown": "But there's a bigger benefit. Other components that you hadn't even noticed might have the same problem. They get fixed too.",
+      "key": "lrmlv8"
+    },
+    {
+      "type": "figure",
+      "media": "articles/the-symptom-is-not-the-problem/all-fixed-at-once",
+      "width": "popout",
+      "lightbox": true,
+      "display": "fit",
+      "background": false,
+      "rounded": false,
+      "showCaption": false,
+      "key": "okrufk"
+    },
+    {
+      "type": "text",
+      "markdown": "You didn't ask the agent to fix the problem you saw. You asked it to fix the system that produced the problem.",
+      "key": "yncq9u"
+    },
+    {
+      "type": "quote",
+      "variant": "pull",
+      "text": "The symptom is not the problem.",
+      "key": "pdmkhu"
+    },
+    {
+      "type": "heading",
+      "level": 2,
+      "text": "Fixing problems vs fixing what produces them",
+      "key": "3irbii"
+    },
+    {
+      "type": "text",
+      "markdown": "This distinction is not new. Good engineers, designers and problem solvers have always understood the importance of addressing root causes rather than symptoms.",
+      "key": "ta8wvw"
+    },
+    {
+      "type": "text",
+      "markdown": "But working with AI agents makes this distinction particularly valuable.",
+      "key": "29pum3"
+    },
+    {
+      "type": "text",
+      "markdown": "An agent can fix the height of a button. It can also investigate the design system, trace dependencies, identify inconsistencies, and make systemic improvements.",
+      "key": "phmhdk"
+    },
+    {
+      "type": "text",
+      "markdown": "Both approaches are possible. The difference lies in how we frame the problem and what we understand about the system we're working with.",
+      "key": "cgq2xh"
+    },
+    {
+      "type": "text",
+      "markdown": "The first approach produces a local fix. The second improves the conditions under which the product gets built.",
+      "key": "7u859q"
+    },
+    {
+      "type": "figure",
+      "media": "articles/the-symptom-is-not-the-problem/local-fix",
+      "width": "wide",
+      "lightbox": true,
+      "display": "fit",
+      "background": false,
+      "rounded": false,
+      "showCaption": false,
+      "key": "63id06"
+    },
+    {
+      "type": "text",
+      "markdown": "And this distinction becomes increasingly important as the complexity of the work increases.",
+      "key": "3f110y"
+    },
+    {
+      "type": "text",
+      "markdown": "Consider another example.",
+      "key": "rnuisa"
+    },
+    {
+      "type": "text",
+      "markdown": "You notice that a particular screen takes five seconds to load. You could ask the agent to optimize that screen. But perhaps the problem is caused by how the application handles data fetching, state management, or rendering.",
+      "key": "eclo5r"
+    },
+    {
+      "type": "text",
+      "markdown": "Fixing the screen might improve one experience. Fixing the underlying architecture could improve the performance of the entire application.",
+      "key": "a5dcss"
+    },
+    {
+      "type": "text",
+      "markdown": "Or consider accessibility. You could ask an agent to fix accessibility issues in individual components as you encounter them. Alternatively, you could establish accessibility standards, incorporate them into component development, and build automated checks into the validation process.",
+      "key": "yt0fn3"
+    },
+    {
+      "type": "text",
+      "markdown": "The latter doesn't just help you fix accessibility issues. It helps prevent them from being introduced in the first place.",
+      "key": "9jkj96"
+    },
+    {
+      "type": "figure",
+      "media": "articles/the-symptom-is-not-the-problem/the-gate",
+      "width": "popout",
+      "lightbox": true,
+      "display": "fit",
+      "background": false,
+      "rounded": false,
+      "showCaption": false,
+      "key": "613mw3"
+    },
+    {
+      "type": "text",
+      "markdown": "In each case, the difference is in the level at which you approach the problem.",
+      "key": "27b5xs"
+    },
+    {
+      "type": "heading",
+      "level": 2,
+      "text": "Think from first principles. Think in systems.",
+      "key": "krg3jq"
+    },
+    {
+      "type": "text",
+      "markdown": "When working with AI agents, two ways of thinking become particularly valuable.",
+      "key": "gt66a7"
+    },
+    {
+      "type": "quote",
+      "variant": "block",
+      "text": "First-principles thinking helps you understand what actually needs to be solved.",
+      "key": "8pcy6p"
+    },
+    {
+      "type": "text",
+      "markdown": "It means not blindly inheriting assumptions, conventions, or existing processes. Instead, you reason about the underlying problem, understand the intended outcome, and question whether the current approach is the right one.",
+      "key": "w74pkm"
+    },
+    {
+      "type": "quote",
+      "variant": "block",
+      "text": "Systems thinking helps you understand how to solve it in a way that produces lasting results.",
+      "key": "abcyf8"
+    },
+    {
+      "type": "text",
+      "markdown": "It means looking beyond individual tasks and understanding the relationships, dependencies, constraints and feedback loops that influence the outcome.",
+      "key": "zkdlmp"
+    },
+    {
+      "type": "text",
+      "markdown": "These two complement each other.",
+      "key": "yaz23x"
+    },
+    {
+      "type": "text",
+      "markdown": "First principles help you identify what needs to change. Systems thinking helps you understand where and how to make that change.",
+      "key": "a9fuhc"
+    },
+    {
+      "type": "figure",
+      "media": "articles/the-symptom-is-not-the-problem/why-then-where",
+      "width": "wide",
+      "lightbox": true,
+      "display": "fit",
+      "background": false,
+      "rounded": false,
+      "showCaption": false,
+      "key": "u6z857"
+    },
+    {
+      "type": "text",
+      "markdown": "This is particularly important because AI agents are very capable of executing instructions, but execution capacity alone doesn't guarantee a good outcome.",
+      "key": "33cyfy"
+    },
+    {
+      "type": "text",
+      "markdown": "You can ask an agent to build something and get a working implementation. But whether that implementation solves the right problem, fits into the larger product, maintains consistency, and delivers a good experience depends on the thinking behind the work.",
+      "key": "0ng20q"
+    },
+    {
+      "type": "quote",
+      "variant": "pull",
+      "text": "AI makes execution easier. It doesn't make good judgment automatic.",
+      "key": "bbia05"
+    },
+    {
+      "type": "figure",
+      "media": "articles/the-symptom-is-not-the-problem/built-wrong",
+      "width": "popout",
+      "lightbox": true,
+      "display": "fit",
+      "background": false,
+      "rounded": false,
+      "showCaption": false,
+      "key": "1g7tfx"
+    },
+    {
+      "type": "heading",
+      "level": 2,
+      "text": "The more complex the problem, the more this matters",
+      "key": "hgadpr"
+    },
+    {
+      "type": "text",
+      "markdown": "A simple task can often be handled in isolation. A complex product cannot.",
+      "key": "kq80cj"
+    },
+    {
+      "type": "text",
+      "markdown": "As a product grows, its components, architecture, interactions, requirements and dependencies become increasingly interconnected. Decisions made in one area can have consequences elsewhere.",
+      "key": "5quum6"
+    },
+    {
+      "type": "text",
+      "markdown": "This is where simply delegating more tasks to agents starts to break down.",
+      "key": "vxhabb"
+    },
+    {
+      "type": "text",
+      "markdown": "You might have multiple agents working in parallel, producing code, creating components, implementing features and fixing bugs. But without a coherent understanding of the product and the systems governing its development, you can end up with inconsistencies, conflicting decisions and increasing amounts of rework.",
+      "key": "pez72v"
+    },
+    {
+      "type": "text",
+      "markdown": "More execution capacity doesn't necessarily translate into more progress.",
+      "key": "wyd4rc"
+    },
+    {
+      "type": "figure",
+      "media": "articles/the-symptom-is-not-the-problem/many-hands",
+      "width": "wide",
+      "lightbox": true,
+      "display": "fit",
+      "background": false,
+      "rounded": false,
+      "showCaption": false,
+      "key": "f5c1f2"
+    },
+    {
+      "type": "text",
+      "markdown": "What you need is a way to make all that execution work toward a coherent outcome.",
+      "key": "afeb35"
+    },
+    {
+      "type": "text",
+      "markdown": "This means establishing the foundations before and during execution: a clear understanding of the problem, sound product decisions, design and engineering conventions, well-defined constraints, and mechanisms to validate the work.",
+      "key": "fpeok1"
+    },
+    {
+      "type": "text",
+      "markdown": "You need to think about how the pieces fit together, not just whether each individual piece works.",
+      "key": "kwm0fs"
+    },
+    {
+      "type": "text",
+      "markdown": "The interesting thing about working this way is that you can take on problems that would otherwise have been prohibitively complex, slow or expensive to solve.",
+      "key": "lnltig"
+    },
+    {
+      "type": "text",
+      "markdown": "You're not merely using agents to do more work. You're using them to make more ambitious work practical.",
+      "key": "v2chiw"
+    },
+    {
+      "type": "heading",
+      "level": 2,
+      "text": "Don't let your learning disappear into conversations",
+      "key": "meceo6"
+    },
+    {
+      "type": "text",
+      "markdown": "There's another aspect of this that I think is easy to overlook.",
+      "key": "zmtide"
+    },
+    {
+      "type": "text",
+      "markdown": "When you invest time understanding a problem and figuring out a better way to solve it, don't let that learning remain confined to the project or conversation where it happened.",
+      "key": "j2otpr"
+    },
+    {
+      "type": "text",
+      "markdown": "Articulate it. Refine it. Turn it into something reusable.",
+      "key": "g88ta9"
+    },
+    {
+      "type": "figure",
+      "media": "articles/the-symptom-is-not-the-problem/jars-of-know-how",
+      "width": "popout",
+      "lightbox": true,
+      "display": "fit",
+      "background": false,
+      "rounded": false,
+      "showCaption": false,
+      "key": "n5asiv"
+    },
+    {
+      "type": "text",
+      "markdown": "For example, if you've figured out a better way to establish product requirements, capture the methodology. If you've developed a reliable approach to auditing design systems, codify it. If you've established conventions for how agents should plan and execute work, make those conventions reusable.",
+      "key": "a3h97e"
+    },
+    {
+      "type": "text",
+      "markdown": "These don't have to be elaborate frameworks. Sometimes a concise instruction is enough. Sometimes it needs to become a skill, a workflow, an agent, a validation tool, or an entire interconnected system.",
+      "key": "qbi2eo"
+    },
+    {
+      "type": "text",
+      "markdown": "The important thing is that the articulation is rooted in the underlying problem rather than the specifics of an individual project.",
+      "key": "8qgc98"
+    },
+    {
+      "type": "text",
+      "markdown": "That makes it reusable and largely project-agnostic.",
+      "key": "59mel3"
+    },
+    {
+      "type": "text",
+      "markdown": "Over time, you accumulate a collection of principles, skills, workflows, tools and conventions that reflect your understanding of how to produce good outcomes.",
+      "key": "0rdc7r"
+    },
+    {
+      "type": "text",
+      "markdown": "This is something I've been deliberately building through my own work. My collection of kits, skills, tools and workflows is an evolving representation of how I approach product development with AI agents.",
+      "key": "5yh4ju"
+    },
+    {
+      "type": "text",
+      "markdown": "It spans everything from product discovery and specification to agent orchestration, design-system discipline, implementation, validation and documentation.",
+      "key": "vsz9lu"
+    },
+    {
+      "type": "text",
+      "markdown": "It's not a collection of prompts to copy and paste. It's an accumulated methodology for getting work done well.",
+      "key": "csbklf"
+    },
+    {
+      "type": "text",
+      "markdown": "And the value compounds.",
+      "key": "1yji0z"
+    },
+    {
+      "type": "text",
+      "markdown": "Every new project starts with a better foundation. Every new problem is an opportunity to refine that foundation. Every successful experiment can become part of how you approach future work.",
+      "key": "3gdtov"
+    },
+    {
+      "type": "quote",
+      "variant": "pull",
+      "text": "Don't just accumulate prompts. Accumulate understanding.",
+      "key": "07ce9u"
+    },
+    {
+      "type": "heading",
+      "level": 2,
+      "text": "Keep evolving your way of working",
+      "key": "n2ydhj"
+    },
+    {
+      "type": "text",
+      "markdown": "Of course, none of this is static.",
+      "key": "ym3pmu"
+    },
+    {
+      "type": "text",
+      "markdown": "AI models are improving. Agent harnesses are evolving. New capabilities are emerging. Things that required elaborate workflows yesterday might become native capabilities tomorrow.",
+      "key": "cm1vad"
+    },
+    {
+      "type": "text",
+      "markdown": "Some of the conventions we've established will become unnecessary. Others will need to be rethought. New possibilities will emerge that change how we approach problems altogether.",
+      "key": "wppama"
+    },
+    {
+      "type": "text",
+      "markdown": "So the goal isn't to create a definitive playbook and stick to it.",
+      "key": "fvrjor"
+    },
+    {
+      "type": "text",
+      "markdown": "It's to continuously evolve your methodology.",
+      "key": "0l8bxi"
+    },
+    {
+      "type": "text",
+      "markdown": "Learn from your own experiences. Curate what others have discovered. Experiment with new capabilities. Challenge existing assumptions. Refine what works and discard what no longer does.",
+      "key": "dgksk0"
+    },
+    {
+      "type": "text",
+      "markdown": "The collection should evolve alongside the technology.",
+      "key": "syq5pu"
+    },
+    {
+      "type": "text",
+      "markdown": "And this is another reason why investing in understanding and articulating your approach is worthwhile. You're not just optimizing how you work with today's models. You're building a foundation that can adapt as the capabilities change.",
+      "key": "o4v12i"
+    },
+    {
+      "type": "heading",
+      "level": 2,
+      "text": "Ultimately, it's about producing great products",
+      "key": "u76vvd"
+    },
+    {
+      "type": "text",
+      "markdown": "It's easy to get caught up in the mechanics of working with AI agents. Which model to use, which harness is better, how to write instructions, how many agents to orchestrate, and how to automate more of the process.",
+      "key": "6u14tx"
+    },
+    {
+      "type": "text",
+      "markdown": "But these are means, not the end.",
+      "key": "prtr62"
+    },
+    {
+      "type": "text",
+      "markdown": "The end goal is to produce a well-designed product that solves a real problem. To do it consistently. To maintain quality as the product grows. And to take on increasingly complex challenges without the development process becoming a bottleneck.",
+      "key": "3dw86z"
+    },
+    {
+      "type": "text",
+      "markdown": "First-principles thinking helps you understand what you're trying to achieve. Systems thinking helps you establish the conditions to achieve it. AI agents give you the execution leverage to make it happen.",
+      "key": "plvxzk"
+    },
+    {
+      "type": "text",
+      "markdown": "The more deliberate you are about these things, the more you can accomplish without compromising on the quality of the outcome.",
+      "key": "jgs5tm"
+    },
+    {
+      "type": "text",
+      "markdown": "I believe this is where the real advantage of working with AI agents lies.",
+      "key": "ay6dqb"
+    },
+    {
+      "type": "figure",
+      "media": "articles/the-symptom-is-not-the-problem/tea-party",
+      "width": "popout",
+      "lightbox": true,
+      "display": "fit",
+      "background": false,
+      "rounded": false,
+      "showCaption": false,
+      "key": "nc6sx6"
+    },
+    {
+      "type": "text",
+      "markdown": "And while I've primarily explored this through product development, I suspect the same philosophy will prove valuable in many other disciplines.",
+      "key": "rb6xw9"
+    },
+    {
+      "type": "quote",
+      "variant": "pull",
+      "text": "Working with first principles and systems thinking is what gets rewarded while working with AI agents.",
+      "key": "6ev575"
+    }
+  ],
+  "hero": {
+    "media": "articles/the-symptom-is-not-the-problem/fix-the-machine",
+    "display": "fit",
+    "background": false,
+    "rounded": false,
+    "showCaption": false
+  },
+  "thumbnail": "articles/the-symptom-is-not-the-problem/fix-the-machine-thumbnail",
+  "thumbnails": {
+    "square": "articles/the-symptom-is-not-the-problem/fix-the-machine-square"
+  }
+}
