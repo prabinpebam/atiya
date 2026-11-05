@@ -202,6 +202,8 @@ describe('publishing: no private words in public history (QB10)', () => {
     expect(publicMessage('Edit the harbour lantern study', [files[0]], titles)).toBe('Edit the harbour lantern study');
     expect(publicMessage('Edit the harbour lantern study', files, titles)).toBe('Content: Khonjel; Private pages: update');
     expect(publicMessage('Edit the harbour lantern study', [files[1]], titles)).toBe('Private pages: update');
+    expect(publicMessage('Fixture private message', [], titles, true)).toBe('Private pages: update');
+    expect(publicMessage('Fixture private message', [files[0]], titles, true)).toBe('Content: Khonjel; Private pages: update');
   });
 });
 

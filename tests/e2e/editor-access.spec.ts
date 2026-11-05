@@ -27,6 +27,7 @@ const choose = async (page: Page, scope: Pick<Page, 'getByRole'>, name: string, 
 
 test.describe('editor: private pages', () => {
   test.beforeEach(() => reset());
+  test.afterEach(() => rmSync(join(PRIVATE_REMOTE, 'hooks/pre-receive'), { force: true }));
   test.afterAll(() => reset());
 
   test('access form fields stay aligned when only one field has a hint', async ({ page }) => {
@@ -207,7 +208,7 @@ test.describe('editor: private pages', () => {
     expect(pointer).toBe(remoteLog(PRIVATE_REMOTE, '%H'));
   });
 
-  test('a refused private push holds back the public one, says why, and Push again sends both, re-pointed after a rebase', async ({ page }) => {
+  test('a refused private push holds back the public one and Push again merges and sends both with the published pointer', async ({ page }) => {
     confirmAll(page);
     // someone else pushed to the private repository first
     const other = join(tmpdir(), `editor-e2e-private-${Date.now()}`);
@@ -216,6 +217,8 @@ test.describe('editor: private pages', () => {
     execFileSync('git', ['push', '-q'], { cwd: other });
     rmSync(other, { recursive: true, force: true });
     const publicBefore = remoteLog(REMOTE, '%H');
+    const rejection = join(PRIVATE_REMOTE, 'hooks/pre-receive');
+    writeFileSync(rejection, '#!/bin/sh\nexit 1\n', { mode: 0o755 });
 
     await page.goto('/_edit/access/?grant=new');
     const detail = page.locator('[data-region="access-detail"]');
@@ -226,13 +229,13 @@ test.describe('editor: private pages', () => {
     await page.goto('/_edit/publish/');
     await page.getByLabel('Message').fill('Access for Ana');
     await page.getByRole('button', { name: 'Save to remote', exact: true }).last().click();
-    await expect(page.locator('[data-publish-push-issue]')).toContainText('the private pages: the remote has newer commits', { timeout: 30_000 });
+    await expect(page.locator('[data-publish-push-issue]')).toContainText("the private pages: git couldn't push", { timeout: 30_000 });
     expect(remoteLog(REMOTE, '%H')).toBe(publicBefore);
 
-    execFileSync('git', ['-c', 'user.name=O', '-c', 'user.email=o@localhost', 'pull', '-q', '--rebase'], { cwd: PRIVATE });
+    rmSync(rejection);
     await page.getByRole('button', { name: 'Push again' }).click();
     await expect(page.getByRole('heading', { name: 'Saved to remote' })).toBeVisible({ timeout: 30_000 });
-    expect(remoteLog(PRIVATE_REMOTE)).toBe('Access for Ana');
+    expect(execFileSync('git', [`--git-dir=${PRIVATE_REMOTE}`, 'log', '--format=%s', 'main'], { encoding: 'utf8' })).toContain('Access for Ana');
     const pointer = execFileSync('git', [`--git-dir=${REMOTE}`, 'ls-tree', 'main', 'private-pages'], { encoding: 'utf8' }).split(/\s+/)[2];
     expect(pointer).toBe(remoteLog(PRIVATE_REMOTE, '%H'));
     expect(remoteLog(REMOTE)).not.toMatch(/Ana/);

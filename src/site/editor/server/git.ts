@@ -2,9 +2,10 @@
  * Publishing (documentation/editor/spec.md §7; documentation/access/spec.md §8.3): git, run as a child
  * process with its arguments as a list (never a shell), never prompting, with a time limit. Publish holds
  * the store's writer lock and checks the content of both folders. Private changes go first: staged in the
- * private-pages submodule, confirmed to be the files it checked, committed on its main and pushed. Then the
- * public repository: content/ and the submodule's moved pointer, confirmed the same way, committed (those
- * paths only, whatever else is staged stays staged) and pushed, which deploys. Your message goes on the
+ * private-pages submodule, confirmed to be the files it checked and committed on its main. Then the
+ * public repository: content/ and the submodule's moved pointer, confirmed the same way and committed (those
+ * paths only, whatever else is staged stays staged). Both save paths fetch and merge without rewriting
+ * history, push private first, record its published head, then push public, which deploys. Your message goes on the
  * public commit only when nothing private changed. A failed push leaves its commit local, with Push again.
  * A save can take only the changes ticked: then each repository commits just their files, after the check
  * has passed the content as those commits will hold it (every change left out as last committed).
@@ -456,9 +457,9 @@ export type PublishResult =
   | { ok: false; reason: string; issues?: Issue[] };
 
 /** The public commit's message (spec §8.3): yours when nothing private changed; else made from the public changes, never from private ones. */
-export function publicMessage(mine: string, files: ChangedFile[], titles: Titles): string {
+export function publicMessage(mine: string, files: ChangedFile[], titles: Titles, privateChanged = false): string {
   const pub = files.filter((f) => f.key.startsWith('/content/'));
-  const priv = files.some((f) => f.key.startsWith('/private/'));
+  const priv = privateChanged || files.some((f) => f.key.startsWith('/private/'));
   if (!priv) return mine;
   return pub.length ? `${suggestMessage(pub, titles)}; Private pages: update` : 'Private pages: update';
 }
@@ -549,19 +550,16 @@ async function publishLocked(message: string, titles: Titles, keys?: string[]): 
       if (c.code) return { ok: false, reason: `git couldn't commit the private pages: ${(c.stderr || c.stdout).trim()}` };
       privateCommit = (await git(['rev-parse', '--short', 'HEAD'], { cwd: privTop })).stdout.trim();
     }
-    // a refused private push still gets its public commit, but that one waits: it must never point at a private commit GitHub lacks
-    let privatePushError: string | undefined;
-    if (privTop && state.private && (privateCommit || state.private.ahead)) {
-      const p = await pushIn(privTop);
-      if (!p.ok) privatePushError = `the private pages: ${p.reason}`;
-    }
+    // Commit the checked snapshot before syncing: a private merge can change the files and its pointer.
     // 3. the public repository: content/ (or the chosen files in it) and the moved pointer, exactly what was checked, then pushed (the deploy)
     const pubPaths = partial ? (await Promise.all(pub.map((f) => locate(f.key)))).map((at) => at!.path) : pub.length ? [where.path] : [];
     const paths = [...pubPaths, ...(state.pointer && (privateCommit || state.pointer.moved) ? [state.pointer.path] : [])];
     // nothing public to commit (private pages outside the public repository): never `git add -A` with no path, which takes everything
     if (!paths.length) {
       if (!privateCommit) return { ok: false, reason: 'there is nothing to save' };
-      return { ok: true, commit: privateCommit, privateCommit, pushed: !privatePushError, ...(privatePushError ? { pushError: privatePushError } : {}), files: priv.length, message: msg };
+      const p = await pushLocked();
+      privateCommit = (await git(['rev-parse', '--short', 'HEAD'], { cwd: privTop })).stdout.trim();
+      return { ok: true, commit: privateCommit, privateCommit, pushed: p.ok, ...(!p.ok ? { pushError: p.reason } : {}), files: priv.length, message: msg };
     }
     const add = await git(['add', '-A', '--', ...paths], { cwd: where.top });
     if (add.code) return { ok: false, reason: `git couldn't stage the content: ${add.stderr.trim()}` };
@@ -574,33 +572,94 @@ async function publishLocked(message: string, titles: Titles, keys?: string[]): 
       await git(['restore', '--staged', '--', ...paths], { cwd: where.top });
       return { ok: false, reason: 'the content changed while saving: save again' };
     }
-    const publicMsg = publicMessage(msg, chosen, titles);
+    const publicMsg = publicMessage(msg, chosen, titles, !!privateCommit || !!state.pointer?.moved);
     const c = await git(['commit', '-m', publicMsg, '--', ...paths], { cwd: where.top, timeout: 60_000 });
     if (c.code) return { ok: false, reason: `git couldn't commit: ${(c.stderr || c.stdout).trim()}` };
+    const p = await pushLocked();
     const sha = (await git(['rev-parse', '--short', 'HEAD'], { cwd: where.top })).stdout.trim();
-    if (privatePushError) return { ok: true, commit: sha, ...(privateCommit ? { privateCommit } : {}), pushed: false, pushError: privatePushError, files: checked.staged.length + priv.length, message: publicMsg };
-    const p = await pushIn(where.top);
+    if (privateCommit) privateCommit = (await git(['rev-parse', '--short', 'HEAD'], { cwd: privTop })).stdout.trim();
     return { ok: true, commit: sha, ...(privateCommit ? { privateCommit } : {}), pushed: p.ok, ...(p.ok ? {} : { pushError: p.reason }), files: checked.staged.length + priv.length, message: publicMsg };
   }
 }
 
+function remoteFailure(r: GitResult, action: 'fetch' | 'push'): string {
+  const err = r.stderr || r.stdout;
+  if (/could not read|authentication|permission denied|terminal prompts disabled/i.test(err))
+    return "git couldn't sign in to the remote without asking: sign in once in a terminal, then push again";
+  if (/recurse-submodules|not found on any remote|submodule/i.test(err))
+    return 'the private pages have a commit that is not pushed: push again';
+  return `git couldn't ${action} the remote: check the connection and remote permissions, then push again`;
+}
+
+/** Reconciles without rewriting history or leaving conflict markers in the person's files. */
+async function reconcileIn(top: string): Promise<string | null> {
+  const state = await stateOf(top);
+  if (!state.branch) return 'git is not on a branch (a detached HEAD): check out a branch, then push again';
+  if (!state.upstream) return 'the branch has no upstream: set one, then push again';
+  const unfinished = await git(['ls-files', '--unmerged', '-z'], { cwd: top });
+  const merge = await git(['rev-parse', '--quiet', '--verify', 'MERGE_HEAD'], { cwd: top });
+  const rebase = await git(['rev-parse', '--git-path', 'rebase-merge', '--git-path', 'rebase-apply'], { cwd: top });
+  if (unfinished.code || rebase.code) return "git couldn't check for an unfinished merge: check the repository, then push again";
+  if (unfinished.stdout || !merge.code || rebase.stdout.trim().split('\n').some((p) => existsSync(resolve(top, p.trim()))))
+    return 'a merge or rebase is unfinished: finish or abort it in a terminal, then push again';
+  const remote = await git(['config', '--get', `branch.${state.branch}.remote`], { cwd: top });
+  if (remote.code || !remote.stdout.trim()) return 'the branch has no remote: set its upstream, then push again';
+  const fetched = await git(['fetch', '--no-tags', '--no-recurse-submodules', remote.stdout.trim()], { cwd: top, timeout: 120_000 });
+  if (fetched.code) return remoteFailure(fetched, 'fetch');
+  const behind = await git(['rev-list', '--count', 'HEAD..@{u}'], { cwd: top });
+  if (behind.code) return "git couldn't compare the remote history: check the upstream, then push again";
+  if (behind.stdout.trim() === '0') return null;
+  const staged = await git(['diff', '--cached', '--quiet'], { cwd: top });
+  if (staged.code) return 'other changes are staged: commit or unstage them in a terminal, then push again';
+  const preview = await git(['merge-tree', '--write-tree', 'HEAD', '@{u}'], { cwd: top, timeout: 60_000 });
+  if (preview.code === 1) return 'the remote changes conflict with this save: merge them in a terminal, resolve the conflicts, then push again';
+  if (preview.code) return "git couldn't check whether the remote changes merge safely: check the repository and Git version, then push again";
+  const merged = await git(['-c', 'submodule.recurse=false', 'merge', '--ff', '--no-edit', '--no-stat', '--no-autostash', '-m', 'Sync remote changes', '@{u}'], { cwd: top, timeout: 60_000 });
+  return merged.code ? "git couldn't merge the remote changes safely: keep your work, check the repository in a terminal, then push again" : null;
+}
+
+/** Checks the committed content, not any unticked changes still on disk, after a remote merge. */
+async function committedContentIssue(top: string): Promise<string | null> {
+  const where = await repo();
+  const priv = await privateRepo();
+  const path = where && priv ? pointerPath(where.top, priv.top) : null;
+  if (where && priv && path && resolve(top) === resolve(where.top)) {
+    const pointer = await git(['rev-parse', `HEAD:${path}`], { cwd: top });
+    const head = await git(['rev-parse', 'HEAD'], { cwd: priv.top });
+    if (pointer.code || head.code || pointer.stdout.trim() !== head.stdout.trim())
+      return 'the private pages changed while syncing: push again to update their published pointer';
+  }
+  const state = await changes({ fresh: true });
+  if (state.error) return `${state.error}: try again`;
+  const snap = readSnapshot();
+  const left = await Promise.all(state.files.map(async (f) => {
+    const at = await locate(f.key);
+    return { key: f.key, bytes: at ? await showBinary(at.top, at.path) : null };
+  }));
+  const committed = asCommitted(snap, left);
+  try {
+    loadContent(committed.docs, committed.masters, committed.errors);
+    return null;
+  } catch (e) {
+    if (e instanceof ContentError) return 'the combined changes fail the content check: review the content, then save to remote again';
+    throw e;
+  }
+}
+
 async function pushIn(top: string): Promise<{ ok: true } | { ok: false; reason: string }> {
-  const r = await git(['push'], { cwd: top, timeout: 120_000 });
-  if (!r.code) return { ok: true };
-  const err = (r.stderr || r.stdout).trim();
-  const why = /rejected|non-fast-forward|fetch first/i.test(err)
-    ? 'the remote has newer commits: pull, then push again'
-    : /recurse-submodules|not found on any remote|submodule/i.test(err)
-      ? 'the private pages have a commit that is not pushed: push again'
-      : /could not read|authentication|permission denied|terminal prompts disabled/i.test(err)
-        ? "git couldn't sign in to the remote without asking: sign in once in a terminal (git push), then push again"
-        : err.split('\n').slice(-2).join(' ');
-  return { ok: false, reason: why };
+  for (let attempt = 0; attempt < 2; attempt++) {
+    const issue = await reconcileIn(top) ?? await committedContentIssue(top);
+    if (issue) return { ok: false, reason: issue };
+    const r = await git(['push', '--recurse-submodules=check'], { cwd: top, timeout: 120_000 });
+    if (!r.code) return { ok: true };
+    if (!/non-fast-forward|fetch first|cannot lock ref[\s\S]*but expected|failed to update ref/i.test(r.stderr || r.stdout))
+      return { ok: false, reason: remoteFailure(r, 'push') };
+  }
+  return { ok: false, reason: 'the remote changed again while saving: your commits are kept here; push again' };
 }
 
 /**
- * Push again: the private repository first if it's ahead; then, if its head moved since the public commit
- * (you pulled and rebased it), a public commit pointing at the head GitHub now has; then the public one.
+ * Both save paths sync the private repository first, record its published head, then sync the public one.
  */
 export function push(): Promise<{ ok: true } | { ok: false; reason: string }> {
   return withWriterLock(pushLocked).finally(forgetChanges);
@@ -613,10 +672,9 @@ async function pushLocked(): Promise<{ ok: true } | { ok: false; reason: string 
     const priv = await privateRepo();
     if (priv) {
       const s = await stateOf(priv.top);
-      if (s.ahead) {
-        const p = await pushIn(priv.top);
-        if (!p.ok) return { ok: false, reason: `the private pages: ${p.reason}` };
-      }
+      if (s.branch !== 'main') return { ok: false, reason: 'private-pages/ is not on its main branch: check out main, then push again' };
+      const p = await pushIn(priv.top);
+      if (!p.ok) return { ok: false, reason: `the private pages: ${p.reason}` };
       const path = pointerPath(where.top, priv.top);
       const st = path ? await git(['status', '--porcelain=v1', '--ignore-submodules=dirty', '--', path], { cwd: where.top }) : null;
       if (path && st?.stdout.trim()) {

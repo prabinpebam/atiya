@@ -678,6 +678,31 @@ const setupRepo = (withRemote = true) => {
 };
 const removeRemote = () => remote && rmSync(remote, { recursive: true, force: true });
 
+const peer = (origin: string) => {
+  const other = mkdtempSync(join(tmpdir(), 'editor-peer-'));
+  run(tmpdir(), 'clone', '-q', origin, other);
+  run(other, 'config', 'user.email', 'peer@localhost');
+  run(other, 'config', 'user.name', 'Peer');
+  run(other, 'config', 'core.autocrlf', 'false');
+  return other;
+};
+const remoteChange = (other: string, file: string, bytes: string) => {
+  mkdirSync(join(other, file, '..'), { recursive: true });
+  writeFileSync(join(other, file), bytes);
+  run(other, 'add', '--', file);
+  run(other, 'commit', '-q', '-m', 'Generated remote update');
+  run(other, 'push', '-q');
+  return run(other, 'rev-parse', 'HEAD');
+};
+const hook = (repo: string, name: string, js: string) => {
+  const folder = run(repo, 'rev-parse', '--absolute-git-dir');
+  const script = join(folder, `${name}.cjs`);
+  writeFileSync(script, js);
+  const file = join(folder, 'hooks', name);
+  writeFileSync(file, `#!/bin/sh\n"${process.execPath.replace(/\\/g, '/')}" "${script.replace(/\\/g, '/')}"\n`, { mode: 0o755 });
+  return file;
+};
+
 describe('publishing with git', { timeout: 60_000 }, () => {
   afterEach(removeRemote);
 
@@ -753,26 +778,186 @@ describe('publishing with git', { timeout: 60_000 }, () => {
     expect(await publish('Fine')).toMatchObject({ ok: false, reason: expect.stringMatching(/no upstream/) });
   });
 
-  it('keeps the commit when the push fails, says why, counts it as not pushed, and pushes it again later', async () => {
+  it('merges a generated remote-only commit during a normal save, preserving both histories and unchosen work', async () => {
     setupRepo();
-    // someone else pushed first: the remote is ahead
-    const other = `${dir}-other`;
-    run(tmpdir(), 'clone', '-q', remote, other);
-    run(other, 'config', 'user.email', 'o@example.com');
-    run(other, 'config', 'user.name', 'O');
-    writeFileSync(join(other, 'README.md'), 'hi\n');
-    run(other, 'add', '-A');
-    run(other, 'commit', '-q', '-m', 'elsewhere');
-    run(other, 'push', '-q');
+    const other = peer(remote);
+    try {
+      const theirs = remoteChange(other, 'content/people/generated.json', '{"id":"generated","name":"Generated"}\n');
+      put('/content/site.json', { name: 'Mine', description: 'D', owner: 'p', locale: 'en' });
+      put('/content/articles/a.json', article({ summary: 'x'.repeat(300) }));
+      const left = readFileSync(join(content, 'articles/a.json'));
+      expect(await publish('Content: mine', undefined, { keys: ['/content/site.json'] })).toMatchObject({ ok: true, pushed: true });
+      expect(run(dir, 'log', '--format=%s')).toContain('Content: mine');
+      expect(run(dir, 'merge-base', '--is-ancestor', theirs, 'HEAD')).toBe('');
+      expect(run(dir, 'show', 'HEAD:content/site.json')).toContain('"Mine"');
+      expect(run(dir, 'show', 'HEAD:content/people/generated.json')).toContain('"Generated"');
+      expect(readFileSync(join(content, 'articles/a.json'))).toEqual(left);
+      expect(run(dir, 'rev-parse', 'HEAD')).toBe(run(dir, '--git-dir', remote, 'rev-parse', 'main'));
+    } finally {
+      rmSync(other, { recursive: true, force: true });
+    }
+  });
+
+  it('Push again reconciles an existing pending save without rewriting its commit', async () => {
+    setupRepo();
     put('/content/site.json', { name: 'Mine', description: 'D', owner: 'p', locale: 'en' });
-    const r = await publish('Content: mine');
-    expect(r).toMatchObject({ ok: true, pushed: false, pushError: expect.stringMatching(/newer commits/) });
+    run(dir, 'add', 'content');
+    run(dir, 'commit', '-q', '-m', 'Pending save');
+    const mine = run(dir, 'rev-parse', 'HEAD');
+    const other = peer(remote);
+    try {
+      const theirs = remoteChange(other, 'content/people/generated.json', '{"id":"generated","name":"Generated"}\n');
+      expect(await push()).toEqual({ ok: true });
+      for (const sha of [mine, theirs]) expect(run(dir, 'merge-base', '--is-ancestor', sha, 'HEAD')).toBe('');
+      expect((await changes()).ahead).toBe(0);
+    } finally {
+      rmSync(other, { recursive: true, force: true });
+    }
+  });
+
+  it('keeps genuine conflicts intact and reports an actionable error through both save paths', async () => {
+    setupRepo();
+    const other = peer(remote);
+    try {
+      const theirs = remoteChange(other, 'content/site.json', '{"name":"Theirs","description":"D","owner":"p","locale":"en"}\n');
+      put('/content/site.json', { name: 'Mine', description: 'D', owner: 'p', locale: 'en' });
+      const bytes = readFileSync(join(content, 'site.json'));
+      expect(await publish('Mine')).toMatchObject({ ok: true, pushed: false, pushError: expect.stringMatching(/conflict.*terminal/) });
+      const mine = run(dir, 'rev-parse', 'HEAD');
+      expect(await push()).toMatchObject({ ok: false, reason: expect.stringMatching(/conflict.*terminal/) });
+      expect(run(dir, 'rev-parse', 'HEAD')).toBe(mine);
+      expect(run(dir, '--git-dir', remote, 'rev-parse', 'main')).toBe(theirs);
+      expect(readFileSync(join(content, 'site.json'))).toEqual(bytes);
+      expect(run(dir, 'ls-files', '--unmerged')).toBe('');
+      expect(existsSync(join(dir, '.git/MERGE_HEAD'))).toBe(false);
+    } finally {
+      rmSync(other, { recursive: true, force: true });
+    }
+  });
+
+  it('does not overwrite overlapping unsaved work or include unrelated staged code in a merge', async () => {
+    setupRepo();
+    const other = peer(remote);
+    try {
+      remoteChange(other, 'src/code.ts', 'export const x = 3;\n');
+      writeFileSync(join(dir, 'src/code.ts'), 'export const x = 2;\n');
+      put('/content/site.json', { name: 'Mine', description: 'D', owner: 'p', locale: 'en' });
+      expect(await publish('Mine')).toMatchObject({ ok: true, pushed: false, pushError: expect.stringMatching(/merge.*safely/) });
+      expect(readFileSync(join(dir, 'src/code.ts'), 'utf8')).toBe('export const x = 2;\n');
+      run(dir, 'add', 'src/code.ts');
+      const staged = run(dir, 'rev-parse', ':src/code.ts');
+      expect(await push()).toMatchObject({ ok: false, reason: expect.stringMatching(/staged.*unstage/) });
+      expect(run(dir, 'rev-parse', ':src/code.ts')).toBe(staged);
+      expect(run(dir, 'ls-files', '--unmerged')).toBe('');
+    } finally {
+      rmSync(other, { recursive: true, force: true });
+    }
+  });
+
+  it.each([1, 2])('bounds concurrent remote-update retries at two pushes (%i remote advances)', async (advances) => {
+    setupRepo();
+    const other = peer(remote);
+    const counter = join(other, '.git/race-count');
+    const prePush = hook(dir, 'pre-push', `
+      const fs = require('node:fs'), { execFileSync } = require('node:child_process');
+      const counter = ${JSON.stringify(counter)}, other = ${JSON.stringify(other)};
+      const n = fs.existsSync(counter) ? Number(fs.readFileSync(counter, 'utf8')) : 0;
+      if (n < ${advances}) {
+        fs.writeFileSync(counter, String(n + 1));
+        fs.writeFileSync(require('node:path').join(other, 'README.md'), 'Generated ' + n);
+        const git = (...a) => execFileSync('git', a, { cwd: other, stdio: 'pipe' });
+        git('add', 'README.md'); git('commit', '-qm', 'Generated race update'); git('push', '-q');
+      }
+    `);
+    try {
+      put('/content/site.json', { name: 'Mine', description: 'D', owner: 'p', locale: 'en' });
+      const r = await publish('Mine');
+      expect(r).toMatchObject(advances === 1 ? { ok: true, pushed: true } : { ok: true, pushed: false, pushError: expect.stringMatching(/remote changed again.*push again/) });
+      expect(readFileSync(counter, 'utf8')).toBe(String(advances));
+      expect(run(dir, 'log', '--format=%s')).toContain('Mine');
+      if (advances === 2) {
+        rmSync(prePush);
+        expect(await push()).toEqual({ ok: true });
+      }
+      expect(run(dir, 'rev-parse', 'HEAD')).toBe(run(dir, '--git-dir', remote, 'rev-parse', 'main'));
+    } finally {
+      rmSync(other, { recursive: true, force: true });
+    }
+  });
+
+  it('a no-change retry creates no commit; a rejected hook preserves the pending save for a later retry', async () => {
+    setupRepo();
+    const before = run(dir, 'rev-parse', 'HEAD');
+    expect(await push()).toEqual({ ok: true });
+    expect(run(dir, 'rev-parse', 'HEAD')).toBe(before);
+    const rejection = hook(dir, 'pre-push', 'process.exit(1);');
+    put('/content/site.json', { name: 'Mine', description: 'D', owner: 'p', locale: 'en' });
+    expect(await publish('Mine')).toMatchObject({ ok: true, pushed: false });
     expect((await changes()).ahead).toBe(1);
-    expect(await push()).toMatchObject({ ok: false });
-    run(dir, 'pull', '-q', '--rebase');
+    rmSync(rejection);
     expect(await push()).toEqual({ ok: true });
     expect((await changes()).ahead).toBe(0);
-    rmSync(other, { recursive: true, force: true });
+  });
+
+  it.each([false, true])('syncs private first and records its merged published head (retry: %s)', async (retry) => {
+    setupRepo();
+    const privateRemote = `${dir}-private.git`;
+    const priv = join(dir, 'private-pages');
+    let privatePeer: string | undefined;
+    let publicPeer: string | undefined;
+    try {
+      run(tmpdir(), 'init', '-q', '--bare', '-b', 'main', privateRemote);
+      run(tmpdir(), 'clone', '-q', privateRemote, priv);
+      run(priv, 'config', 'user.name', 'Fixture');
+      run(priv, 'config', 'user.email', 'fixture@localhost');
+      run(priv, 'config', 'core.autocrlf', 'false');
+      mkdirSync(join(priv, 'structures'));
+      writeFileSync(join(priv, 'access.json'), '{"grants":[]}\n');
+      writeFileSync(join(priv, 'structures/overlay.json'), '{"sections":[]}\n');
+      run(priv, 'add', '-A');
+      run(priv, 'commit', '-qm', 'Private fixture');
+      run(priv, 'push', '-qu', 'origin', 'main');
+      run(dir, '-c', 'protocol.file.allow=always', 'submodule', 'add', '-q', privateRemote, 'private-pages');
+      run(dir, 'add', '.gitmodules', 'private-pages');
+      run(dir, 'commit', '-qm', 'Link private fixture');
+      run(dir, 'push', '-q');
+      run(dir, 'config', 'submodule.recurse', 'true');
+      run(dir, 'config', 'push.recurseSubmodules', 'check');
+      privatePeer = peer(privateRemote);
+      publicPeer = peer(remote);
+      const theirs = remoteChange(privatePeer, 'structures/overlay.json', '{\n  "sections": []\n}\n');
+      remoteChange(publicPeer, 'content/people/generated.json', '{"id":"generated","name":"Generated"}\n');
+      run(publicPeer, 'update-index', '--cacheinfo', `160000,${theirs},private-pages`);
+      run(publicPeer, 'commit', '-qm', 'Remote private pointer');
+      run(publicPeer, 'push', '-q');
+      writeFileSync(join(priv, 'access.json'), '{\n  "grants": []\n}\n');
+      put('/content/site.json', { name: 'Mine', description: 'D', owner: 'p', locale: 'en' });
+      const order = join(dir, '.git/push-order');
+      for (const [repo, label] of [[priv, 'private'], [dir, 'public']])
+        hook(repo, 'pre-push', `require('node:fs').appendFileSync(${JSON.stringify(order)}, ${JSON.stringify(`${label}\n`)});`);
+      const before = run(dir, '--git-dir', remote, 'rev-parse', 'main');
+      let blocked: string | undefined;
+      if (retry) blocked = hook(priv, 'pre-push', 'process.exit(1);');
+      const result = await publish('Fixture private message');
+      if (retry) {
+        expect(result).toMatchObject({ ok: true, pushed: false, pushError: expect.stringMatching(/^the private pages:/) });
+        expect(run(dir, '--git-dir', remote, 'rev-parse', 'main')).toBe(before);
+        rmSync(blocked!);
+        hook(priv, 'pre-push', `require('node:fs').appendFileSync(${JSON.stringify(order)}, "private\\n");`);
+        expect(await push()).toEqual({ ok: true });
+      } else expect(result).toMatchObject({ ok: true, pushed: true });
+      const publishedPrivate = run(priv, '--git-dir', privateRemote, 'rev-parse', 'main');
+      expect(run(priv, 'rev-parse', 'HEAD')).toBe(publishedPrivate);
+      expect(run(dir, 'rev-parse', 'HEAD:private-pages')).toBe(publishedPrivate);
+      expect(run(dir, '--git-dir', remote, 'rev-parse', 'main:private-pages')).toBe(publishedPrivate);
+      expect(run(priv, 'merge-base', '--is-ancestor', theirs, 'HEAD')).toBe('');
+      expect(run(dir, 'log', '--format=%B', `${before}..HEAD`)).not.toContain('Fixture private message');
+      expect(readFileSync(order, 'utf8').trim().split('\n')).toEqual(['private', 'public']);
+      expect((await changes()).ahead).toBe(0);
+      expect((await changes()).private?.ahead).toBe(0);
+    } finally {
+      for (const p of [privatePeer, publicPeer, privateRemote]) if (p) rmSync(p, { recursive: true, force: true });
+    }
   });
 
   it('discards: a changed file goes back as committed, a new picture (master and sidecar) goes together', async () => {

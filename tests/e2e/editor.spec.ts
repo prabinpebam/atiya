@@ -1901,25 +1901,60 @@ test.describe('editor', () => {
     await expect(page.getByRole('button', { name: 'Save to remote', exact: true }).last()).toBeEnabled();
   });
 
-  test('a push the remote refuses keeps the commit, says why, and Push again sends it once the branch is up to date', async ({ page }) => {
-    // someone else pushed first: the remote is ahead
+  for (const retry of [false, true]) test(`${retry ? 'Push again' : 'Save to remote'} reconciles a generated GitHub activity update without a manual pull`, async ({ page }) => {
+    const site = readJson(join(FIXTURE, 'content/site.json'));
+    writeFileSync(join(FIXTURE, 'content/site.json'), `${JSON.stringify({ ...site, positioning: 'Pushed with the remote update.' }, null, 2)}\n`);
+    let pending: string | undefined;
+    if (retry) {
+      git('add', 'content/site.json');
+      git('commit', '-qm', 'Fixture pending save');
+      pending = git('rev-parse', 'HEAD');
+    }
     const other = join(tmpdir(), `editor-e2e-other-${Date.now()}`);
     execFileSync('git', ['clone', '-q', REMOTE, other]);
-    execFileSync('git', ['-c', 'user.name=O', '-c', 'user.email=o@localhost', 'commit', '-q', '--allow-empty', '-m', 'elsewhere'], { cwd: other });
+    const activity = readJson(join(other, 'content/github.json'));
+    writeFileSync(join(other, 'content/github.json'), `${JSON.stringify({ ...activity, fetchedAt: '2026-11-05T00:00:00.000Z' }, null, 2)}\n`);
+    execFileSync('git', ['add', 'content/github.json'], { cwd: other });
+    execFileSync('git', ['-c', 'user.name=O', '-c', 'user.email=o@localhost', 'commit', '-qm', 'Refresh generated activity'], { cwd: other });
     execFileSync('git', ['push', '-q'], { cwd: other });
+    const remoteUpdate = execFileSync('git', ['rev-parse', 'HEAD'], { cwd: other, encoding: 'utf8' }).trim();
     rmSync(other, { recursive: true, force: true });
 
+    await page.goto('/_edit/publish/');
+    if (retry) {
+      await expect(page.getByRole('heading', { name: '1 commit not on GitHub yet' })).toBeVisible();
+      await page.getByRole('button', { name: 'Push again' }).click();
+    } else await page.getByRole('button', { name: 'Save to remote', exact: true }).last().click();
+    await expect(page.getByRole('heading', { name: 'Saved to remote' })).toBeVisible({ timeout: 30_000 });
+    expect(git('rev-parse', 'HEAD')).toBe(git(`--git-dir=${REMOTE}`, 'rev-parse', 'main'));
+    expect(git('merge-base', '--is-ancestor', remoteUpdate, 'HEAD')).toBe('');
+    if (pending) expect(git('merge-base', '--is-ancestor', pending, 'HEAD')).toBe('');
+    expect(readJson(join(FIXTURE, 'content/site.json')).positioning).toBe('Pushed with the remote update.');
+    expect(readJson(join(FIXTURE, 'content/github.json')).fetchedAt).toBe('2026-11-05T00:00:00.000Z');
+    await expect(page.getByRole('button', { name: 'Push again' })).toHaveCount(0);
+  });
+
+  test('a remote conflict leaves the saved work intact and explains how to resolve it', async ({ page }) => {
+    const other = join(tmpdir(), `editor-e2e-conflict-${Date.now()}`);
+    execFileSync('git', ['clone', '-q', REMOTE, other]);
     const site = readJson(join(FIXTURE, 'content/site.json'));
-    writeFileSync(join(FIXTURE, 'content/site.json'), `${JSON.stringify({ ...site, positioning: 'Pushed later.' }, null, 2)}\n`);
+    writeFileSync(join(other, 'content/site.json'), `${JSON.stringify({ ...site, positioning: 'Remote fixture change.' }, null, 2)}\n`);
+    execFileSync('git', ['add', 'content/site.json'], { cwd: other });
+    execFileSync('git', ['-c', 'user.name=O', '-c', 'user.email=o@localhost', 'commit', '-qm', 'Remote fixture change'], { cwd: other });
+    execFileSync('git', ['push', '-q'], { cwd: other });
+    rmSync(other, { recursive: true, force: true });
+    const mine = `${JSON.stringify({ ...site, positioning: 'My fixture change.' }, null, 2)}\n`;
+    writeFileSync(join(FIXTURE, 'content/site.json'), mine);
     await page.goto('/_edit/publish/');
     await page.getByRole('button', { name: 'Save to remote', exact: true }).last().click();
-    await expect(page.getByRole('heading', { name: '1 commit not on GitHub yet' })).toBeVisible({ timeout: 30_000 });
-    await expect(page.locator('[data-publish-push-issue]')).toContainText('newer commits');
-
-    git('pull', '-q', '--rebase');
+    await expect(page.locator('[data-publish-push-issue]')).toContainText('conflict', { timeout: 30_000 });
+    await expect(page.locator('[data-publish-push-issue]')).toContainText('resolve the conflicts, then push again');
+    expect(readFileSync(join(FIXTURE, 'content/site.json'), 'utf8')).toBe(mine);
+    expect(git('ls-files', '--unmerged')).toBe('');
+    const before = git('rev-parse', 'HEAD');
     await page.getByRole('button', { name: 'Push again' }).click();
-    await expect(page.getByRole('heading', { name: 'Saved to remote' })).toBeVisible({ timeout: 30_000 });
-    expect(execFileSync('git', [`--git-dir=${REMOTE}`, 'log', '-1', '--format=%s', 'main'], { encoding: 'utf8' }).trim()).toBe('Content: the site settings');
+    await expect(page.locator('[data-publish-push-issue]')).toContainText('conflict');
+    expect(git('rev-parse', 'HEAD')).toBe(before);
   });
 
   test('the theme switch changes the whole of edit mode, its canvas with it, and every other open page of the site', async ({ page, context }) => {
