@@ -4,6 +4,7 @@
  * tests or secrets' addresses.
  */
 import { execFileSync } from 'node:child_process';
+import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { engineFiles, EXCLUDE } from '../../scripts/pack-engine.mjs';
@@ -13,6 +14,23 @@ const tracked = execFileSync('git', ['ls-files'], { cwd: ROOT, encoding: 'utf8' 
 const files: string[] = engineFiles(tracked);
 
 describe('an engine release', () => {
+  it('keeps Sharp and every pinned native optional dependency in production installs', () => {
+    const manifest = JSON.parse(readFileSync(join(ROOT, 'package.json'), 'utf8'));
+    const lock = JSON.parse(readFileSync(join(ROOT, 'package-lock.json'), 'utf8'));
+    const sharp = lock.packages['node_modules/sharp'];
+    expect(manifest.dependencies.sharp).toBe(sharp.version);
+    expect(lock.packages[''].dependencies.sharp).toBe(sharp.version);
+    expect(sharp.dev).not.toBe(true);
+    expect(sharp.devOptional).not.toBe(true);
+    for (const [name, version] of Object.entries(sharp.optionalDependencies)) {
+      const native = lock.packages[`node_modules/${name}`];
+      expect(native, name).toBeDefined();
+      expect(native.version, name).toBe(version);
+      expect(native.optional, name).toBe(true);
+      expect(native.dev, `${name} must survive npm ci --omit=dev`).not.toBe(true);
+    }
+  });
+
   it('holds what a site needs to build', () => {
     for (const f of ['package.json', 'package-lock.json', 'astro.config.mjs', 'src/pages/index.astro', 'src/site/content/schema.ts', 'integrations/site-only.mjs', 'integrations/seal.mjs', 'scripts/verify-sealed.mjs', 'starter/content/site.json', 'public/favicon.svg', 'contact-api/src/rules.mjs']) expect(files, f).toContain(f);
     expect(files.filter((f) => f.startsWith('contact-api/'))).toEqual(['contact-api/src/rules.mjs']);

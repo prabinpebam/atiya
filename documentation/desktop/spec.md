@@ -645,6 +645,8 @@ A tag `engine-v<version>` runs `release.yml`: the unit tests, `npm run check`, `
 
 One engine release, its production dependencies installed per platform, a portable git and an ffmpeg without GPL parts, packed on Windows as an MSIX for the Microsoft Store (signed and updated by the Store) and as a per-user installer on GitHub (no administrator, unsigned), and as an unsigned disk image on macOS (O18). The GitHub build's auto-update downloads in the background and applies at the next restart, never during a write or a save to remote.
 
+**The image runtime is production code** (5 November 2026). Edit mode imports Sharp directly, so the engine pins it as a production dependency rather than relying on Astro's optional copy. Its locked platform packages must not be marked development-only: `npm ci --omit=dev` must retain the native runtime for the target platform. The engine unit check holds those classifications; distribution checks create a WebP before packaging and verify that the Windows archive carries Sharp's native module and its bundled libvips DLLs. A successful app launch alone is not evidence that Save to remote can run.
+
 ### 10.3 Moving a site to a newer engine
 
 The app opens a site only at its own engine version. **Update your site** runs the content migrations through the store, writes the pin and the workflow's commit, commits and saves to remote, and follows the build; if it fails and no migration ran, **Go back** restores the pin.

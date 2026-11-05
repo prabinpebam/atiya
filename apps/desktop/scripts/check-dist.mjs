@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * Checks Atiya Studio's preview installer (documentation/desktop/plan.md, stage 9P).
- *   --before: the engine is bundled (engine/engine.json) and git is there (dugite's), so the build can start.
+ *   --before: the engine is bundled, its native image runtime creates WebP and git is there, so the build can start.
  *   after: the installer is under 250 MB (spec §11); the unpacked app carries the engine and git where the app
  *   looks for them; the app's archive holds its code and none of its tests or scripts; nothing of the owner's
  *   (his content, private pages, an .env, a token) is anywhere in it.
@@ -21,7 +21,13 @@ const ok = (/** @type {string} */ m) => console.log(`✓ ${m}`);
 
 if (process.argv.includes('--before')) {
   if (!existsSync(join(APP, 'engine', 'engine.json'))) fail('no engine in apps/desktop/engine: run node scripts/bundle-engine.mjs --engine <engine-x.y.z.tgz> first');
-  else ok('the engine is bundled');
+  else {
+    ok('the engine is bundled');
+    const sharp = createRequire(join(APP, 'engine', 'package.json'))('sharp');
+    const image = await sharp({ create: { width: 1, height: 1, channels: 3, background: '#ffffff' } }).webp().toBuffer();
+    if (image.subarray(8, 12).toString('ascii') !== 'WEBP') fail("the engine's native image runtime did not create WebP");
+    else ok("the engine's native image runtime creates WebP");
+  }
   if (!existsSync(join(APP, 'node_modules', 'dugite', 'git', 'cmd', 'git.exe')) && process.platform === 'win32') fail("no git in node_modules/dugite: run npm install in apps/desktop");
   else ok('git is there');
   if (!existsSync(join(APP, 'vendor', 'gh', 'bin', process.platform === 'win32' ? 'gh.exe' : 'gh'))) fail('no GitHub CLI in vendor/gh: run node scripts/fetch-gh.mjs');
@@ -63,6 +69,12 @@ if (process.argv.includes('--before')) {
     const has = (/** @type {string} */ e) => entries.includes(e);
     if (!has('./engine.json') || !has('./node_modules/astro/package.json') || !has('./node_modules/astro/templates/content/types.d.ts') || !entries.some((e) => e.startsWith('./starter/content/'))) fail("the engine's archive is missing its manifest, its packages or its starter");
     else ok(`the engine's archive is whole (${entries.length} entries)`);
+    const native = './node_modules/@img/sharp-win32-x64/lib/';
+    if (!entries.some((e) => e.startsWith(`${native}sharp-win32-x64`) && e.endsWith('.node')) ||
+        !entries.some((e) => e.startsWith(native) && /^libvips-\d+\.dll$/.test(e.slice(native.length))) ||
+        !entries.some((e) => e.startsWith(`${native}libvips-cpp-`) && e.endsWith('.dll')))
+      fail("the engine's archive is missing Sharp's Windows native runtime");
+    else ok("the engine's archive carries Sharp's Windows native runtime");
     const extra = entries.filter((e) => /\.map$/.test(e));
     if (extra.length) fail(`the engine's archive holds what never runs: ${extra.slice(0, 3).join(', ')}`);
     const owners = entries.filter((e) => /^\.\/(content|private-pages)\//.test(e) || /(^|\/)\.env(\.|$)/.test(e));
