@@ -7,7 +7,8 @@ import { carouselPresentation, mediaId, PICTURE_DISPLAYS } from './schema';
 import { thumbnailFor } from '../design/pictures';
 import type { ContentIndex, Issue } from './load';
 import { coverPicture } from './album';
-import { fullText, normalise } from '../home/evidence';
+import { fullText, normalise, pageOfNode } from '../home/evidence';
+import type { IconName } from '../design/icons';
 
 export const HIGHLIGHTS_FILE = 'highlights.json';
 export const HIGHLIGHT_MAX = 12;
@@ -160,6 +161,28 @@ export function visibleHighlights(index: Index): { item: HighlightItem; state: H
   const settings = defaultHighlights(index);
   if (!settings.enabled) return [];
   return settings.items.map((item) => ({ item, state: highlightState(index, item) })).filter(({ state }) => !state.reason);
+}
+
+/** A slide's own button (highlights spec §2.5): what pressing it does, said by what the slide shows. */
+export interface HighlightAction {
+  label: string;
+  icon: IconName;
+}
+
+/**
+ * The button a shown slide carries, or none where the slide already has its own (the GitHub slide's profile link).
+ * Its label is a verb for what opens and a noun for what it is: the site's résumé page, a talk with a video, a page,
+ * an article, an album or a lone picture's full view.
+ */
+export function highlightAction(index: Pick<ContentIndex, 'articles' | 'routes' | 'site'>, item: HighlightItem): HighlightAction | undefined {
+  if (item.type === 'custom') return undefined;
+  if (item.type === 'image') return { label: 'View full picture', icon: 'expand' };
+  if (item.type === 'album') return { label: 'View album', icon: 'arrow-right' };
+  const a = index.articles.get(item.article);
+  if (!a) return undefined;
+  if (pageOfNode(index, index.site.resumePage) === a.id) return { label: 'Read my résumé', icon: 'arrow-right' };
+  if (a.kind === 'talk') return a.body.some((b) => b.type === 'video') ? { label: 'Watch talk', icon: 'arrow-right' } : { label: 'Read talk', icon: 'arrow-right' };
+  return { label: a.kind === 'page' ? 'Read page' : 'Read article', icon: 'arrow-right' };
 }
 
 /** A video's/linked video's poster can stand for an album, never private or unpublishable media. */

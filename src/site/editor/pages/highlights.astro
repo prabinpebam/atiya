@@ -15,7 +15,7 @@ import { thumbOf } from '../server/albumScreens';
 import { chartData } from '../model/highlightChart';
 import { chosenKind, chosenSlide, chosenSource, fixPlace, HIGHLIGHT_REGIONS, highlightsView, previewPicture, showsCover, SLIDE_PICTURE_REGION, sourceFacts, sourceTiles, type HighlightItem, type SlidePreviewData } from '../model/highlights';
 import { regionsAsked, wants } from '../model/regions';
-import { checkHighlights, highlightImages, highlightState } from '../../content/highlights';
+import { checkHighlights, highlightAction, highlightImages, highlightState } from '../../content/highlights';
 import { slidePicture } from '../../content/highlightPictures';
 import { bandOf } from '../../content/bands';
 import { timedAsync } from '../../content/timing';
@@ -82,7 +82,7 @@ const preview = await (async (): Promise<SlidePreviewData | null> => {
   return {
     source: { ...source, item: draft.item, reason: invalid ?? state.reason },
     facts: sourceFacts(draft.item, { text: state.text, href: state.href, media: invalid ? undefined : state.media, caption }, view.highlights.items.length + 1),
-    words: { title: state.title, text: state.text, href: state.href ? withBase(state.href) : undefined },
+    words: { title: state.title, text: state.text, href: state.href ? withBase(state.href) : undefined, action: highlightAction(index, draft.item) },
     picture,
     cover: cover && { tiles: cover.tiles, square: cover.square },
     pictureFailed: !!state.media && !picture,

@@ -61,11 +61,11 @@ const HIGHLIGHTS = [{ src: '', alt: 'A year on GitHub', caption: '', width: 21, 
   <Carousel items={WITH_VIDEO} label="Scenes and a tour" display="fit" lightbox="carousel-video" />
 </Example>
 
-<Example title="Trusted mixed highlights" layout="block" description="The same track, peek and controls carry a custom interactive chart, a page excerpt, an album cover and a single picture. Here it holds still (the home turns on loop and autoplay: Playing by itself).">
+<Example title="Trusted mixed highlights" layout="block" description="The same track, peek and controls carry a custom interactive chart, a page excerpt, an album cover and a single picture, each card but the chart with its button. Here it holds still (the home turns on loop and autoplay: Playing by itself).">
   <Carousel items={HIGHLIGHTS} label="Mixed home highlights" content peek>
     {(n: number) => n === 0
       ? <ContributionHero embedded data={{ ...CONTRIBUTION_SAMPLE, stats: contributionStats(CONTRIBUTION_SAMPLE) }} />
-      : <HighlightCard title={n === 1 ? 'Finding a shared direction' : n === 2 ? 'An afternoon outdoors' : 'A waterfall'} text={n === 1 ? 'A small team tried three approaches together.' : n === 2 ? 'A few scenes from the same walk.' : undefined} href={n < 3 ? `#example-${n === 1 ? 'page' : 'album'}` : undefined} picture={SAMPLES[n]} settings={{ display: 'fit' }} />}
+      : <HighlightCard title={n === 1 ? 'Finding a shared direction' : n === 2 ? 'An afternoon outdoors' : 'A waterfall'} text={n === 1 ? 'A small team tried three approaches together.' : n === 2 ? 'A few scenes from the same walk.' : undefined} href={n < 3 ? `#example-${n === 1 ? 'page' : 'album'}` : undefined} picture={SAMPLES[n]} settings={{ display: 'fit' }} action={n === 1 ? { label: 'Read article', icon: 'arrow-right' } : n === 2 ? { label: 'View album', icon: 'arrow-right' } : { label: 'View full picture', icon: 'expand' }} />}
   </Carousel>
 </Example>
 

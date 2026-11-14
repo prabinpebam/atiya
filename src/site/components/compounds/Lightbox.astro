@@ -1,16 +1,16 @@
 ---
 /**
  * The page’s one lightbox: a native modal dialog with a smoke scrim (paper-white in light mode, black in
- * dark), previous and next controls, a live counter, captions and a filmstrip. Figures, galleries,
- * carousels, album pages and bands only provide links (`a[data-lightbox]`). For an album it also shows the
- * album's title, every kind of item on the stage (a picture, an animated picture with Pause, a drawing, a
- * video file with its captions, an embed after Play), the info panel (Info, I), Copy link, Download where
- * it's allowed, and zoom where there's more to see. Its script (`scripts/lightbox.ts` and its parts, loaded
- * when a link is first pointed at, focused or pressed) keeps its rules pure in `lightboxRules.ts` and
+ * dark), previous and next controls, a live counter, captions and a filmstrip. Figures, galleries, carousels,
+ * album pages and bands only provide links (`a[data-lightbox]`, or a control naming one in `data-lightbox-opens`).
+ * For an album it also shows the album's title, every kind of item on the stage (a picture, an animated picture
+ * with Pause, a drawing, a video file with its captions, an embed after Play), the info panel (Info, I), Copy
+ * link, Download where it's allowed, and zoom where there's more to see. Its script (`scripts/lightbox.ts` and its
+ * parts, loaded when a link is first pointed at, focused or pressed) keeps its rules pure in `lightboxRules.ts` and
  * `zoomRules.ts`.
  * @tier compound
  * @a11y Uses <dialog>.showModal(), so focus is trapped, the page behind is inert and Escape closes it.
- * @a11y The opener keeps focus history; closing returns focus to the thumbnail that opened it.
+ * @a11y The opener keeps focus history; closing returns focus to the thumbnail, or the control naming its link in `data-lightbox-opens`, that opened it.
  * @a11y Opening adds a history entry (the item's address on an album page), so Back closes it; none in the planet's frame.
  * @a11y The counter is announced politely; the filmstrip is one Tab stop (a roving tab index) of named buttons.
  * @a11y Zoom has buttons beside every gesture, and its level is announced; Copy link says it copied, or shows the address selected.
@@ -467,16 +467,17 @@ const playIcon = svgOf('play');
   import { each } from '../../scripts/page';
   import type { LightboxApi } from '../../scripts/lightbox';
 
-  // the lightbox's code loads when a link is first pointed at, focused or pressed (or the page opens at an item)
+  // it loads when a link (or a control naming one: data-lightbox-opens) is pointed at, focused or pressed, or on #item-
   each<HTMLDialogElement>('[data-lightbox-dialog]', (dialog, signal) => {
     let loading: Promise<LightboxApi | undefined> | undefined;
     const load = () => (loading ??= import('../../scripts/lightbox').then((m) => m.setupLightbox(dialog, signal)));
     const linkOf = (event: Event) => {
-      const link = event.target instanceof Element ? event.target.closest<HTMLAnchorElement>('a[data-lightbox]') : null;
-      return link && !dialog.contains(link) ? link : null;
+      const proxy = event.target instanceof Element ? event.target.closest<HTMLElement>('[data-lightbox-opens]') : null;
+      const link = proxy ? document.getElementById(proxy.dataset.lightboxOpens ?? '') : event.target instanceof Element ? event.target.closest('a[data-lightbox]') : null;
+      return link instanceof HTMLAnchorElement && link.matches('a[data-lightbox]') && !dialog.contains(link) ? { link, from: proxy ?? link } : null;
     };
     const warm = (event: Event) => {
-      const link = linkOf(event);
+      const link = linkOf(event)?.link;
       if (link) void load().then((api) => api?.warm(link));
     };
     document.addEventListener('pointerover', warm, { signal, passive: true });
@@ -484,12 +485,12 @@ const playIcon = svgOf('play');
     document.addEventListener(
       'click',
       (event) => {
-        const link = linkOf(event);
-        if (!link || event.defaultPrevented || typeof dialog.showModal !== 'function') return;
+        const found = linkOf(event);
+        if (!found || event.defaultPrevented || typeof dialog.showModal !== 'function') return;
         if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
         event.preventDefault();
-        const follow = () => location.assign(link.href);
-        load().then((api) => (api ? api.open(link, true) : follow()), follow);
+        const follow = () => location.assign(found.link.href);
+        load().then((api) => (api ? api.open(found.link, true, false, found.from) : follow()), follow);
       },
       { signal, capture: true },
     );

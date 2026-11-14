@@ -47,9 +47,9 @@ const missing = pictureFailed ? "The picture couldn't be drawn here. Reload to t
         chart ? (
           <ContributionHero data={chart} embedded />
         ) : cover && words.href ? (
-          <HighlightCard title={words.title} text={words.text} href={words.href} cover={cover.tiles} square={cover.square} settings={highlightPresentation(settings, source.item)} />
+          <HighlightCard title={words.title} text={words.text} href={words.href} cover={cover.tiles} square={cover.square} action={words.action} settings={highlightPresentation(settings, source.item)} />
         ) : picture ? (
-          <HighlightCard title={words.title} text={words.text} href={words.href} picture={picture} settings={highlightPresentation(settings, source.item)} />
+          <HighlightCard title={words.title} text={words.text} href={words.href} picture={picture} action={words.action} settings={highlightPresentation(settings, source.item)} />
         ) : (
           <span class="missing">
             <Icon name={slideIcon(source.item)} size="lg" />

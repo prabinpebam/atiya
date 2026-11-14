@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { ContentError, loadContent, loadContentLeavingOut, type ContentIndex } from '../../src/site/content/load';
-import { checkHighlights, defaultHighlights, highlightCandidates, highlightImages, highlightMedia, highlightPicture, highlightPresentation, highlightState, highlightsFile, HIGHLIGHT_MAX, showsCover, visibleHighlights, type HighlightItem } from '../../src/site/content/highlights';
+import { checkHighlights, defaultHighlights, highlightAction, highlightCandidates, highlightImages, highlightMedia, highlightPicture, highlightPresentation, highlightState, highlightsFile, HIGHLIGHT_MAX, showsCover, visibleHighlights, type HighlightItem } from '../../src/site/content/highlights';
 import { article, album } from '../../src/site/content/schema';
 
 const pic = 'library/picture';
@@ -115,6 +115,25 @@ describe('home highlights contract', () => {
     expect(visibleHighlights(c).every((s) => !s.state.reason)).toBe(true);
     c.highlights = { ...c.highlights!, enabled: false };
     expect(visibleHighlights(c)).toEqual([]);
+  });
+  it('names each slide button by what it opens, and gives the GitHub slide none of its own (§2.5)', () => {
+    const c = index();
+    const label = (item: HighlightItem) => highlightAction(c, item)?.label;
+    expect(highlightAction(c, picks[0])).toBeUndefined();
+    expect(label(picks[1])).toBe('Read article');
+    expect(highlightAction(c, picks[2])).toEqual({ label: 'View album', icon: 'arrow-right' });
+    expect(highlightAction(c, picks[3])).toEqual({ label: 'View full picture', icon: 'expand' });
+    const as = (change: object) => c.articles.set('page', { ...c.articles.get('page')!, ...change });
+    as({ kind: 'page' });
+    expect(label(picks[1])).toBe('Read page');
+    as({ kind: 'talk' });
+    expect(label(picks[1])).toBe('Read talk');
+    as({ body: [{ type: 'video', key: 'v' }] });
+    expect(label(picks[1])).toBe('Watch talk');
+    // the site's résumé, named by its node, says so whatever its kind
+    c.site = { ...c.site, resumePage: 'page' };
+    expect(label(picks[1])).toBe('Read my résumé');
+    expect(highlightAction(c, { id: 'x', type: 'article', article: 'missing' })).toBeUndefined();
   });
   it('does not offer private/unpublishable media or private pages/albums', () => {
     const c = index();

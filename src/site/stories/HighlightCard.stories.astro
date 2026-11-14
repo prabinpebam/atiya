@@ -16,15 +16,15 @@ const cover: BandTile[] = [
   tile('waterfall', 'waterfall', { x: 6, y: 2, w: 6, h: 2 }, undefined),
 ];
 ---
-<Example title="A page and its excerpt" layout="block" description="The page supplies its lead picture, title and a short verbatim passage; its section above the title, then its facts: how long it takes to read and what it's about, beside its words on a wide slide.">
-  <HighlightCard title="Finding a shared direction" text="A small team tried three approaches, then chose the one they could explain together." href="#example-page" picture={SAMPLES[1]} settings={settings} section="Leadership" meta="6 min read" topics={[{ label: 'Craft', href: '#topic-craft' }, { label: 'Storytelling', href: '#topic-storytelling' }]} />
+<Example title="A page and its excerpt" layout="block" description="The page supplies its lead picture, title and a short verbatim passage; its section above the title, then its facts: how long it takes to read and what it's about, beside its words on a wide slide. A small outlined button under its words, or heading its facts on a wide slide, is named for what it opens.">
+  <HighlightCard title="Finding a shared direction" text="A small team tried three approaches, then chose the one they could explain together." href="#example-page" picture={SAMPLES[1]} settings={settings} section="Leadership" meta="6 min read" topics={[{ label: 'Craft', href: '#topic-craft' }, { label: 'Storytelling', href: '#topic-storytelling' }]} action={{ label: 'Read article', icon: 'arrow-right' }} />
 </Example>
 <Example title="An album and its cover" layout="block" description="The album's cover and current summary, its section and counts above the title, with a link to the whole album.">
-  <HighlightCard title="An afternoon outdoors" text="A few scenes from the same walk." href="#example-album" picture={SAMPLES[2]} settings={{ display: 'fit', background: true }} section="Gallery" meta="18 pictures" metaIcon="gallery" />
+  <HighlightCard title="An afternoon outdoors" text="A few scenes from the same walk." href="#example-album" picture={SAMPLES[2]} settings={{ display: 'fit', background: true }} section="Gallery" meta="18 pictures" metaIcon="gallery" action={{ label: 'View album', icon: 'arrow-right' }} />
 </Example>
 <Example title="An album's arranged cover" layout="block" description="The album's cover as its owner arranged it, on the album's square cells, 12 columns across at every width (scaled down whole on a narrow slide, never restacked). Its tiles keep the album's own displays and corners.">
-  <HighlightCard title="A walk round the planet" text="A few scenes from the same walk." href="#example-album" picture={SAMPLES[2]} cover={cover} settings={settings} section="Gallery" meta="18 pictures" metaIcon="gallery" />
+  <HighlightCard title="A walk round the planet" text="A few scenes from the same walk." href="#example-album" picture={SAMPLES[2]} cover={cover} settings={settings} section="Gallery" meta="18 pictures" metaIcon="gallery" action={{ label: 'View album', icon: 'arrow-right' }} />
 </Example>
-<Example title="A picture on its own" layout="block" description="The library's picture and caption, with its full-size file as the link fallback.">
-  <HighlightCard title="The bridge" picture={SAMPLES[4]} settings={settings} />
+<Example title="A picture on its own" layout="block" description="The library's picture and caption, with its full-size file as the link fallback, and a button that opens it in the lightbox.">
+  <HighlightCard title="The bridge" picture={SAMPLES[4]} settings={settings} action={{ label: 'View full picture', icon: 'expand' }} />
 </Example>

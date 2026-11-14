@@ -2,7 +2,7 @@
  * Home highlights' editor rules: trusted source choices, stable slide IDs and immutable list operations.
  * The content contract owns eligibility and validation; the editor never copies source titles or pictures.
  */
-import { defaultHighlights, highlightCandidates, highlightMotion, highlightSource, highlightState, HIGHLIGHT_MAX, slidePictureStyle, type Highlights, type HighlightItem, type SlidePictureStyle } from '../../content/highlights';
+import { defaultHighlights, highlightCandidates, highlightMotion, highlightSource, highlightState, HIGHLIGHT_MAX, slidePictureStyle, type HighlightAction, type Highlights, type HighlightItem, type SlidePictureStyle } from '../../content/highlights';
 import { mediaId } from '../../content/schema';
 import type { ContentIndex } from '../../content/load';
 import type { Picture } from '../../content/pictures';
@@ -334,8 +334,8 @@ export interface SlidePreviewData {
   source: HighlightChoice;
   /** What its slide would use, in order (`sourceFacts`). */
   facts: { term: string; detail: string }[];
-  /** Its words as the slide shows them: the title and, for a page or album, its summary, and where it leads. */
-  words: { title: string; text?: string; href?: string };
+  /** Its words as the slide shows them: the title and, for a page or album, its summary, where it leads and its button (`highlightAction`). */
+  words: { title: string; text?: string; href?: string; action?: HighlightAction };
   /** Its picture at the slide's shape, if it has one that can be drawn. */
   picture?: Picture;
   /** An album shown by its arranged cover: its band's tiles, and whether its pictures have square corners. */

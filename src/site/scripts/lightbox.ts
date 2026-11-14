@@ -61,8 +61,9 @@ function warm(item: LightboxItem): Promise<void> {
 
 /** What the page's loader hands links to. */
 export interface LightboxApi {
-  /** Opens at a link; `pressed`: the reader pressed it (a video plays); `loaded`: the page was opened at its address. */
-  open(link: HTMLAnchorElement, pressed?: boolean, loaded?: boolean): void;
+  /** Opens at a link; `pressed`: the reader pressed it (a video plays); `loaded`: the page was opened at its address;
+   *  `from`: what to give the focus back to on closing, when it wasn't the link itself (a button that opens it). */
+  open(link: HTMLAnchorElement, pressed?: boolean, loaded?: boolean, from?: HTMLElement): void;
   /** Starts its full size (and, for a band's tile, its album page). */
   warm(link: HTMLAnchorElement): void;
 }
@@ -268,7 +269,7 @@ export function setupLightbox(dialog: HTMLDialogElement, signal: AbortSignal): L
     return bandGroup(members, at, num(link.dataset.count));
   };
 
-  const open = (link: HTMLAnchorElement, press = false, loaded = false) => {
+  const open = (link: HTMLAnchorElement, press = false, loaded = false, from: HTMLElement = link) => {
     if (typeof dialog.showModal !== 'function') return;
     opening++;
     group = link.dataset.lightbox || '';
@@ -283,7 +284,7 @@ export function setupLightbox(dialog: HTMLDialogElement, signal: AbortSignal): L
     items = g.items;
     index = g.index;
     ctx = { albumUrl, siteUrl, albumTitle: album() ? (items[index]?.albumTitle ?? '') : '', onAlbumPage };
-    opener = link;
+    opener = from;
     pressed = press;
     title.textContent = ctx.albumTitle;
     title.hidden = !ctx.albumTitle;
