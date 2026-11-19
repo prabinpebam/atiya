@@ -45,6 +45,17 @@
       "key": "diy8ie"
     },
     {
+      "type": "figure",
+      "media": "articles/when-everyone-can-build-everything-what-is-worth-building/dinner-with-company",
+      "width": "popout",
+      "lightbox": true,
+      "display": "fit",
+      "background": false,
+      "rounded": false,
+      "showCaption": false,
+      "key": "hhzf7f"
+    },
+    {
       "type": "heading",
       "level": 2,
       "text": "Why buy what you can build?",
@@ -79,6 +90,17 @@
       "type": "text",
       "markdown": "Why buy software that you can create on demand, exactly as you need it?",
       "key": "d94whi"
+    },
+    {
+      "type": "figure",
+      "media": "articles/when-everyone-can-build-everything-what-is-worth-building/made-for-a-minute",
+      "width": "wide",
+      "lightbox": true,
+      "display": "fit",
+      "background": false,
+      "rounded": false,
+      "showCaption": false,
+      "key": "73c6sq"
     },
     {
       "type": "text",
