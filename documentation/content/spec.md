@@ -236,6 +236,9 @@ The owner requested **When Everyone Can Build Everything, What Is Worth Building
 | Do not invent publication metadata | Reuse a source sentence as the summary; use the existing AI and Making topics; omit `publishedAt`. `updatedAt` records the import maintenance date, not the essay's authorship or publication date |
 | Match the established illustration method | Use the shared `ink-sketch` style and `illustrate.py`, with an article-specific fold-up fair cast, a hero, eight body pictures and two thumbnail shapes. The owner explicitly directed generation and insertion into the draft on 19 November for in-context review |
 | Keep the unfinished article nonpublic | Keep `status: draft`, with no publication date. Integrate reviewed image pairs locally in coherent increments; no push, article publication or deployment is authorised by draft-artwork review |
+| Reuse the site's editorial composition | Following the owner's draft-review feedback, compare the public Storytelling, Perfecting things nobody sees and Fix the framework essays. Convert four existing, source-bold thesis paragraphs to the existing `quote` block's `pull` variant, in place with their keys and wording retained. Do not invent an attributed quotation: this source contains no external quotation to set as a block quote |
+
+The existing narrative opening, summary, seven section headings, selective remaining emphasis, and alternating popout figures and wide strips already fit those essays. Keep that pacing rather than force a numbered marker, divider, list, callout or repeated summary into an argument that does not need it. Decorative illustrations keep the shared caption-free treatment, with alt text and a lightbox; their placement prefixes follow the quote conversion. No component, style or schema change is needed.
 
 ## 7. Performance and budgets
 

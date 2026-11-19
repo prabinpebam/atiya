@@ -108,8 +108,9 @@
       "key": "vfuwap"
     },
     {
-      "type": "text",
-      "markdown": "**The number of software applications in existence could increase dramatically while the number of software products being sold decreases.**",
+      "type": "quote",
+      "variant": "pull",
+      "text": "The number of software applications in existence could increase dramatically while the number of software products being sold decreases.",
       "key": "aq21fn"
     },
     {
@@ -144,8 +145,9 @@
       "key": "bon4i6"
     },
     {
-      "type": "text",
-      "markdown": "**The software is often just the door. What matters is what's on the other side.**",
+      "type": "quote",
+      "variant": "pull",
+      "text": "The software is often just the door. What matters is what's on the other side.",
       "key": "74tkkf"
     },
     {
@@ -258,6 +260,17 @@
       "key": "35u0wx"
     },
     {
+      "type": "figure",
+      "media": "articles/when-everyone-can-build-everything-what-is-worth-building/someone-holds-the-roof",
+      "width": "popout",
+      "lightbox": true,
+      "display": "fit",
+      "background": false,
+      "rounded": false,
+      "showCaption": false,
+      "key": "jpwuxq"
+    },
+    {
       "type": "heading",
       "level": 2,
       "text": "When innovation becomes difficult to own",
@@ -346,9 +359,21 @@
       "key": "dg4xoh"
     },
     {
-      "type": "text",
-      "markdown": "**AI doesn't make building the advantage. It makes everything around building the advantage.**",
+      "type": "quote",
+      "variant": "pull",
+      "text": "AI doesn't make building the advantage. It makes everything around building the advantage.",
       "key": "btbh45"
+    },
+    {
+      "type": "figure",
+      "media": "articles/when-everyone-can-build-everything-what-is-worth-building/the-queue-moved",
+      "width": "wide",
+      "lightbox": true,
+      "display": "fit",
+      "background": false,
+      "rounded": false,
+      "showCaption": false,
+      "key": "tgazkr"
     },
     {
       "type": "heading",
@@ -382,9 +407,21 @@
       "key": "78dedn"
     },
     {
-      "type": "text",
-      "markdown": "**It's what can we offer that others can build, but cannot easily replace?**",
+      "type": "quote",
+      "variant": "pull",
+      "text": "It's what can we offer that others can build, but cannot easily replace?",
       "key": "zv3n26"
+    },
+    {
+      "type": "figure",
+      "media": "articles/when-everyone-can-build-everything-what-is-worth-building/what-the-fair-keeps",
+      "width": "popout",
+      "lightbox": true,
+      "display": "fit",
+      "background": false,
+      "rounded": false,
+      "showCaption": false,
+      "key": "ufpydu"
     }
   ],
   "hero": {
@@ -393,5 +430,9 @@
     "background": false,
     "rounded": false,
     "showCaption": false
+  },
+  "thumbnail": "articles/when-everyone-can-build-everything-what-is-worth-building/the-fold-up-fair-thumbnail",
+  "thumbnails": {
+    "square": "articles/when-everyone-can-build-everything-what-is-worth-building/the-fold-up-fair-square"
   }
 }
