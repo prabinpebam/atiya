@@ -83,7 +83,7 @@
     },
     {
       "type": "text",
-      "markdown": "And when you are done, you can throw it away and build another one.",
+      "markdown": "And when you're done, you can throw it away and build another one.",
       "key": "tv75k3"
     },
     {
@@ -211,48 +211,123 @@
     {
       "type": "heading",
       "level": 2,
-      "text": "Who stands behind the software?",
+      "text": "The next competitor to Word might not be another Word",
+      "key": "p8n4rs"
+    },
+    {
+      "type": "text",
+      "markdown": "This is no longer a theoretical possibility.",
+      "key": "qx7k2v"
+    },
+    {
+      "type": "text",
+      "markdown": "ArtCraft has demonstrated how AI can be used to recreate familiar software. Its developer, Brandon Thomas, has released open-source alternatives to Adobe's creative suite and Microsoft Office, including Word, Excel and PowerPoint. Describing the possibilities, he said:",
+      "key": "m2ft8c"
+    },
+    {
+      "type": "quote",
+      "variant": "block",
+      "text": "We can build anything, even triple-A video games and operating systems.",
+      "cite": "Brandon Thomas",
+      "key": "y9r3kd"
+    },
+    {
+      "type": "text",
+      "markdown": "These projects are still early, and aren't yet full replacements for the originals. But the significance isn't whether they achieve feature parity. It's that reproducing the functionality and familiar workflows of established products is becoming dramatically easier.",
+      "key": "v4s7nc"
+    },
+    {
+      "type": "text",
+      "markdown": "And I think the next shift goes much further.",
+      "key": "f8b2mt"
+    },
+    {
+      "type": "text",
+      "markdown": "Why recreate Microsoft Word when the world may not need another Microsoft Word?",
+      "key": "c3w9pk"
+    },
+    {
+      "type": "text",
+      "markdown": "For my own work, I've built a writing application using Figma's app chrome, interface patterns and workflow. Not because I wanted a Word clone, but because that is the environment and way of working that makes sense to me. And it won't necessarily stay the same. I can keep changing it as my needs evolve.",
+      "key": "h6n4xs"
+    },
+    {
+      "type": "text",
+      "markdown": "This is a fundamentally different proposition from replacing one software product with another.",
+      "key": "u5j8rq"
+    },
+    {
+      "type": "text",
+      "markdown": "For decades, software companies made products for the broadest possible audience. Users adapted their workflows to the conventions and limitations of those products. Now, we can increasingly make the software adapt to us.",
+      "key": "e7z2bd"
+    },
+    {
+      "type": "text",
+      "markdown": "The opportunity isn't just to reproduce existing applications. It's to rethink them, combine their capabilities, discard conventions that no longer make sense and create entirely new ways of working.",
+      "key": "a9p6gw"
+    },
+    {
+      "type": "quote",
+      "variant": "pull",
+      "text": "The next competitor to Word might not be another word processor. It might be a completely different way of working with documents.",
+      "key": "r3k7vf"
+    },
+    {
+      "type": "text",
+      "markdown": "And if that is true, the threat to established software companies isn't simply that someone can build a cheaper copy of their product. It's that someone can question whether that product needs to exist in its current form at all.",
+      "key": "t2m8cq"
+    },
+    {
+      "type": "heading",
+      "level": 2,
+      "text": "From making software to making it dependable",
       "key": "z8q2t5"
     },
     {
       "type": "text",
-      "markdown": "There is a less obvious problem emerging from the explosion of AI-generated software.",
-      "key": "d5ywn5"
-    },
-    {
-      "type": "text",
-      "markdown": "Most people are excited about vibe coding: describing an idea and watching an application come to life. But getting something to work is not the same as making it safe, reliable and ready for people to depend on.",
+      "markdown": "Most people are excited about vibe coding: describe an idea, and an AI agent builds it. But getting something to work is not the same as making it dependable enough for others to use.",
       "key": "sa8rbo"
     },
     {
       "type": "text",
-      "markdown": "Who handles authentication? Who protects sensitive data? Who monitors failures? Who maintains it? Who is responsible when something goes wrong?",
+      "markdown": "Who handles authentication? Who protects sensitive data? Where does it get deployed? How do people discover it? Who maintains it? How do teams collaborate on it? And who takes responsibility when something goes wrong?",
       "key": "3ol3jk"
     },
     {
       "type": "text",
-      "markdown": "These aren't trivial details. They're the difference between a working prototype and a dependable product.",
-      "key": "vepm8x"
-    },
-    {
-      "type": "text",
-      "markdown": "This is already creating a new category of opportunity.",
-      "key": "bqod31"
-    },
-    {
-      "type": "text",
-      "markdown": "Take [Isomorph](https://isomorph.ai/), for example. Its proposition is to bridge the gap between AI-generated applications and the requirements of enterprise software: security, governance, deployment and operational controls.",
+      "markdown": "Startups like Isomorph are approaching the same problem from the operational and governance side, helping organisations turn AI-generated applications into software that can be securely deployed, managed and trusted.",
       "key": "bums6d"
     },
     {
       "type": "text",
-      "markdown": "**The builder creates the functionality. Someone else has to make it safe enough to depend on.**",
-      "key": "2gctcv"
+      "markdown": "**the value isn't just in making software. It's in turning what people make into something others can reliably use and depend on.**",
+      "key": "s6d9pn"
+    },
+    {
+      "type": "figure",
+      "media": "articles/when-everyone-can-build-everything-what-is-worth-building/the-queue-moved",
+      "width": "wide",
+      "lightbox": true,
+      "display": "fit",
+      "background": false,
+      "rounded": false,
+      "showCaption": false,
+      "key": "tgazkr"
     },
     {
       "type": "text",
-      "markdown": "And that someone is selling something much more valuable than code: accountability.",
-      "key": "47r3f3"
+      "markdown": "A prototype is useful to its creator. A dependable tool can become useful to an entire organisation.",
+      "key": "b7v3km"
+    },
+    {
+      "type": "text",
+      "markdown": "And the infrastructure that makes that transition possible could become a significant business in its own right.",
+      "key": "w4q8hf"
+    },
+    {
+      "type": "text",
+      "markdown": "The builder creates the functionality. Someone has to make it safe enough to depend on.",
+      "key": "2gctcv"
     },
     {
       "type": "text",
@@ -326,54 +401,6 @@
       "rounded": false,
       "showCaption": false,
       "key": "g5ehq8"
-    },
-    {
-      "type": "heading",
-      "level": 2,
-      "text": "The new bottleneck",
-      "key": "retcok"
-    },
-    {
-      "type": "text",
-      "markdown": "Perhaps the biggest misconception about AI is that it eliminates bottlenecks.",
-      "key": "5a5468"
-    },
-    {
-      "type": "text",
-      "markdown": "It doesn't. It moves them.",
-      "key": "52h8li"
-    },
-    {
-      "type": "text",
-      "markdown": "When building software was expensive, the ability to build was the constraint. As that becomes cheaper, the constraints shift to coordination, integration, governance, reliability and accountability.",
-      "key": "czn8b5"
-    },
-    {
-      "type": "text",
-      "markdown": "We are already seeing this happen. Teams that once needed help creating prototypes now need a common place to publish, discover and collaborate on them. Organisations that once worried about whether employees could build software now need to worry about what they are building, what data it accesses and whether it can be trusted.",
-      "key": "vcm2vm"
-    },
-    {
-      "type": "text",
-      "markdown": "The competitive advantage may increasingly come from what an organisation can continuously do, rather than what it has built once.",
-      "key": "dg4xoh"
-    },
-    {
-      "type": "quote",
-      "variant": "pull",
-      "text": "AI doesn't make building the advantage. It makes everything around building the advantage.",
-      "key": "btbh45"
-    },
-    {
-      "type": "figure",
-      "media": "articles/when-everyone-can-build-everything-what-is-worth-building/the-queue-moved",
-      "width": "wide",
-      "lightbox": true,
-      "display": "fit",
-      "background": false,
-      "rounded": false,
-      "showCaption": false,
-      "key": "tgazkr"
     },
     {
       "type": "heading",
