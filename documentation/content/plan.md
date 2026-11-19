@@ -189,3 +189,16 @@ The migration is then a snapshot to compare, the `api` adapter pointed at the ba
 2. **The article:** write `content/articles/<id>.json` with the blocks in [model §6](model.md#6-blocks).
 3. **Its place:** give it a node under its hub in `content/structures/site.json`.
 4. **Check:** `npx vitest run tests/unit/content.test.ts` names any problem, by file and field.
+
+### Writing import: what is worth building (19 November 2026)
+
+The [authored-import requirements](spec.md#authored-writing-import-what-is-worth-building) are implemented as a draft article and a Writing node. The original source is unchanged; a nonpublic example and its dependent transition are omitted pending public citation or clearance.
+
+| Increment | Done when | State |
+|---|---|---|
+| Faithful safe import | The complete resource passes the actual article schema, the structure passes its schema, retained source blocks match exactly, and the repository content checks pass | Article and structure schemas pass; 62 retained blocks (55 text, 7 headings) match the source exactly after the two authorised omissions. Strict content loading has zero errors and the same five warnings as the committed baseline |
+| Illustration proposal | An article-specific theme, cast and every name, placement, format and scene are recorded in the manifest and sent for approval | Proposed; no images generated |
+| Illustrated review | After explicit approval: generate and inspect each light/dark pair, extract transparent ink, preview, publish media and place it; credit the generated work | Waiting for illustration approval |
+| Publication | Content checks and `verify:prod` pass with the new assets, an isolated normal-UI preview is inspected, and publication is approved | Not started; draft remains unpublished |
+
+**Validation evidence:** four focused import checks passed: complete actual schemas and unpublished state, exact retained-source fidelity, every proposed placement and alt length, and strict content loading against the committed baseline. The existing `tests/unit/content.test.ts` run passed 83 of 84 tests; its zero-warnings assertion fails on five unchanged album warnings (phone cover height, missing alt text and video captions), not on the imported article. No content or schema rule was weakened. Builds, browser checks and new-asset checks wait for the illustrated increment; no assets, rendering code or styles changed here.

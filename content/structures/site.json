@@ -108,6 +108,14 @@
         "view": "features",
         "children": [
           {
+            "id": "when-everyone-can-build-everything-what-is-worth-building",
+            "kind": "item",
+            "item": {
+              "type": "article",
+              "id": "when-everyone-can-build-everything-what-is-worth-building"
+            }
+          },
+          {
             "id": "the-symptom-is-not-the-problem",
             "kind": "item",
             "item": {

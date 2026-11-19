@@ -224,6 +224,19 @@ export interface ContentSource {
 
 **The snapshot.** `npm run content:snapshot` asks the API for everything published and writes it in the mock layout. It replaces `content/` in a pull request, so the backend's content can be reviewed, diffed and rolled back like code.
 
+### Authored Writing import: what is worth building
+
+The owner requested **When Everyone Can Build Everything, What Is Worth Building?** in Writing, from the supplied Markdown, with the same ink-sketch style and illustration workflow as the existing essays.
+
+| Requirement | Import decision |
+|---|---|
+| Preserve the authored essay | Keep the title, heading order, paragraphs, punctuation, emphasis and links; one paragraph or list per text block. The original source stays unchanged |
+| Keep nonpublic material out of public files | A nonpublic example and its dependent transition are omitted pending a public citation or publication clearance; no identifying details are recorded here |
+| Use the existing content contract | One `note` article and one Writing node, with the stable ID and slug `when-everyone-can-build-everything-what-is-worth-building`; no schema, renderer or component changes |
+| Do not invent publication metadata | Reuse a source sentence as the summary; use the existing AI and Making topics; omit `publishedAt`. `updatedAt` records the import maintenance date, not the essay's authorship or publication date |
+| Match the established illustration method | Use the shared `ink-sketch` style and `illustrate.py`, with an article-specific fold-up fair cast, a hero, eight body pictures and two thumbnail shapes. The manifest is a proposal, not approval |
+| Keep the unfinished article nonpublic | Keep `status: draft`; no image generation before explicit illustration approval, and no publication or deployment in the proposal increment |
+
 ## 7. Performance and budgets
 
 - **No content fetches at run time.** The browser gets HTML and optimised media. Only `/play` inlines the places it needs as JSON, as it does today.

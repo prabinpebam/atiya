@@ -1,0 +1,335 @@
+{
+  "id": "when-everyone-can-build-everything-what-is-worth-building",
+  "type": "article",
+  "kind": "note",
+  "slug": "when-everyone-can-build-everything-what-is-worth-building",
+  "title": "When Everyone Can Build Everything, What Is Worth Building?",
+  "summary": "When the utility becomes ubiquitous, the business has to find value somewhere else.",
+  "status": "draft",
+  "visibility": "public",
+  "updatedAt": "2026-11-19",
+  "locale": "en",
+  "topics": [
+    "ai",
+    "making"
+  ],
+  "body": [
+    {
+      "type": "text",
+      "markdown": "Imagine having a food replicator at home, just like in Star Trek. You could produce any meal you wanted, with the same quality, consistency and variety as the best restaurants.",
+      "key": "ku8yvb"
+    },
+    {
+      "type": "text",
+      "markdown": "Would you still go to restaurants?",
+      "key": "c8790n"
+    },
+    {
+      "type": "text",
+      "markdown": "Probably. For the experience, the company, the occasion, the atmosphere. But you probably wouldn't go because you couldn't make the food yourself.",
+      "key": "1utw6j"
+    },
+    {
+      "type": "text",
+      "markdown": "Something similar happened to cinema. We can watch almost anything at home today, yet people still go to theatres. The big screen, immersive sound and shared experience offer something beyond access to the movie itself.",
+      "key": "6djgpu"
+    },
+    {
+      "type": "text",
+      "markdown": "When the utility becomes ubiquitous, the business has to find value somewhere else.",
+      "key": "fbwqw6"
+    },
+    {
+      "type": "text",
+      "markdown": "Software is approaching its own replicator moment.",
+      "key": "diy8ie"
+    },
+    {
+      "type": "heading",
+      "level": 2,
+      "text": "Why buy what you can build?",
+      "key": "ykmizg"
+    },
+    {
+      "type": "text",
+      "markdown": "For decades, building software required specialised skills, significant investment and time. That created an economy where companies could package functionality into products and sell access to it.",
+      "key": "x7xc0h"
+    },
+    {
+      "type": "text",
+      "markdown": "AI is changing that equation.",
+      "key": "latbtn"
+    },
+    {
+      "type": "text",
+      "markdown": "You can describe a household expense tracker, an investment comparison tool, a family trip planner or a temporary interface for a project, and have an AI agent build it for you. You don't necessarily need to search for an application, evaluate subscriptions or adapt your workflow to someone else's product.",
+      "key": "oateze"
+    },
+    {
+      "type": "text",
+      "markdown": "You can make the software fit your problem.",
+      "key": "y39230"
+    },
+    {
+      "type": "text",
+      "markdown": "And when you are done, you can throw it away and build another one.",
+      "key": "tv75k3"
+    },
+    {
+      "type": "text",
+      "markdown": "Why buy software that you can create on demand, exactly as you need it?",
+      "key": "d94whi"
+    },
+    {
+      "type": "text",
+      "markdown": "This doesn't mean every application will disappear. Some software will remain persistent, complex and deeply integrated into people's lives. But the economics of creating functionality are changing fundamentally.",
+      "key": "vfuwap"
+    },
+    {
+      "type": "text",
+      "markdown": "**The number of software applications in existence could increase dramatically while the number of software products being sold decreases.**",
+      "key": "aq21fn"
+    },
+    {
+      "type": "text",
+      "markdown": "The ability to build software is becoming less of a differentiator. And that raises a more interesting question: if everyone can build the software, what are people actually going to pay for?",
+      "key": "b6k33p"
+    },
+    {
+      "type": "heading",
+      "level": 2,
+      "text": "The software isn't always the product",
+      "key": "bzxxzg"
+    },
+    {
+      "type": "text",
+      "markdown": "Think about Amazon, Netflix, Spotify, banking apps or cloud backup services. What we pay for is much bigger than the application itself.",
+      "key": "u44y76"
+    },
+    {
+      "type": "text",
+      "markdown": "Amazon gives us access to products and gets them delivered to our doorstep. Netflix and Spotify give us access to content. Banking apps connect us to our money and the financial system. Cloud backup services give us the assurance that our data is stored, available and recoverable.",
+      "key": "n60kpw"
+    },
+    {
+      "type": "text",
+      "markdown": "The application is simply the interface to an underlying service, network, asset or outcome.",
+      "key": "ucn43i"
+    },
+    {
+      "type": "text",
+      "markdown": "AI can recreate these interfaces and much of their functionality. But reproducing an Amazon-like shopping experience doesn't give you a delivery network. Building a Netflix clone doesn't give you its content catalogue. Creating a banking interface doesn't give you access to financial rails.",
+      "key": "bon4i6"
+    },
+    {
+      "type": "text",
+      "markdown": "**The software is often just the door. What matters is what's on the other side.**",
+      "key": "74tkkf"
+    },
+    {
+      "type": "text",
+      "markdown": "This is where software businesses may evolve into outcome providers. They use whatever software is necessary to deliver the value people actually pay for. The application becomes an implementation detail; the outcome remains the product.",
+      "key": "ndg23t"
+    },
+    {
+      "type": "heading",
+      "level": 2,
+      "text": "You can copy the product. You cannot copy the network.",
+      "key": "5wnz69"
+    },
+    {
+      "type": "text",
+      "markdown": "There is another kind of value that becomes more important when software itself is easy to reproduce: participation.",
+      "key": "4eo0bs"
+    },
+    {
+      "type": "text",
+      "markdown": "You can build a messaging app. You cannot automatically recreate the network of friends and family already using WhatsApp.",
+      "key": "kqqcq5"
+    },
+    {
+      "type": "text",
+      "markdown": "You can build a marketplace. You cannot instantly recreate its buyers and sellers.",
+      "key": "r651zp"
+    },
+    {
+      "type": "text",
+      "markdown": "The value isn't in the interface or even the underlying functionality. It is in the people, relationships and activity that have accumulated around it.",
+      "key": "nwtki6"
+    },
+    {
+      "type": "text",
+      "markdown": "**You can copy the product. You cannot copy the network.**",
+      "key": "th98w0"
+    },
+    {
+      "type": "heading",
+      "level": 2,
+      "text": "Who stands behind the software?",
+      "key": "z8q2t5"
+    },
+    {
+      "type": "text",
+      "markdown": "There is a less obvious problem emerging from the explosion of AI-generated software.",
+      "key": "d5ywn5"
+    },
+    {
+      "type": "text",
+      "markdown": "Most people are excited about vibe coding: describing an idea and watching an application come to life. But getting something to work is not the same as making it safe, reliable and ready for people to depend on.",
+      "key": "sa8rbo"
+    },
+    {
+      "type": "text",
+      "markdown": "Who handles authentication? Who protects sensitive data? Who monitors failures? Who maintains it? Who is responsible when something goes wrong?",
+      "key": "3ol3jk"
+    },
+    {
+      "type": "text",
+      "markdown": "These aren't trivial details. They're the difference between a working prototype and a dependable product.",
+      "key": "vepm8x"
+    },
+    {
+      "type": "text",
+      "markdown": "This is already creating a new category of opportunity.",
+      "key": "bqod31"
+    },
+    {
+      "type": "text",
+      "markdown": "Take [Isomorph](https://isomorph.ai/), for example. Its proposition is to bridge the gap between AI-generated applications and the requirements of enterprise software: security, governance, deployment and operational controls.",
+      "key": "bums6d"
+    },
+    {
+      "type": "text",
+      "markdown": "**The builder creates the functionality. Someone else has to make it safe enough to depend on.**",
+      "key": "2gctcv"
+    },
+    {
+      "type": "text",
+      "markdown": "And that someone is selling something much more valuable than code: accountability.",
+      "key": "47r3f3"
+    },
+    {
+      "type": "text",
+      "markdown": "The scarce resource isn't necessarily the ability to build it. It's the willingness and capacity to stand behind it.",
+      "key": "35u0wx"
+    },
+    {
+      "type": "heading",
+      "level": 2,
+      "text": "When innovation becomes difficult to own",
+      "key": "rppr8s"
+    },
+    {
+      "type": "text",
+      "markdown": "There is another consequence of making software and its underlying techniques easier to reproduce.",
+      "key": "3b0djy"
+    },
+    {
+      "type": "text",
+      "markdown": "Today, companies protect their intellectual property through patents, trade secrets and proprietary implementations. They can expose a product to the market while retaining an advantage in how it works.",
+      "key": "8at89z"
+    },
+    {
+      "type": "text",
+      "markdown": "But AI is lowering the cost of reproducing capabilities. A competitor may no longer need to reverse-engineer the original implementation. They can observe what a product does, describe the problem it solves and build an alternative from scratch.",
+      "key": "xujisl"
+    },
+    {
+      "type": "text",
+      "markdown": "Even keeping a tool internal isn't a complete solution. The knowledge required to recreate it may leave with an employee who understands the problem and the decisions behind the implementation.",
+      "key": "jtm1id"
+    },
+    {
+      "type": "text",
+      "markdown": "This could change how companies think about innovation.",
+      "key": "fr2izr"
+    },
+    {
+      "type": "text",
+      "markdown": "Instead of building something and selling it as a product, companies may increasingly build proprietary capabilities and use them internally to deliver better outcomes. The innovation becomes a secret recipe, not something they expose for others to reproduce.",
+      "key": "ohf4n9"
+    },
+    {
+      "type": "text",
+      "markdown": "**The easier it becomes to reproduce an innovation, the more valuable secrecy may become.**",
+      "key": "5tlhrh"
+    },
+    {
+      "type": "text",
+      "markdown": "There is a paradox here. AI makes innovation easier to create, but potentially harder to commercialise as an exclusive advantage. And the faster innovations can be reproduced, the shorter the window in which being first matters.",
+      "key": "kujilb"
+    },
+    {
+      "type": "heading",
+      "level": 2,
+      "text": "The new bottleneck",
+      "key": "retcok"
+    },
+    {
+      "type": "text",
+      "markdown": "Perhaps the biggest misconception about AI is that it eliminates bottlenecks.",
+      "key": "5a5468"
+    },
+    {
+      "type": "text",
+      "markdown": "It doesn't. It moves them.",
+      "key": "52h8li"
+    },
+    {
+      "type": "text",
+      "markdown": "When building software was expensive, the ability to build was the constraint. As that becomes cheaper, the constraints shift to coordination, integration, governance, reliability and accountability.",
+      "key": "czn8b5"
+    },
+    {
+      "type": "text",
+      "markdown": "We are already seeing this happen. Teams that once needed help creating prototypes now need a common place to publish, discover and collaborate on them. Organisations that once worried about whether employees could build software now need to worry about what they are building, what data it accesses and whether it can be trusted.",
+      "key": "vcm2vm"
+    },
+    {
+      "type": "text",
+      "markdown": "The competitive advantage may increasingly come from what an organisation can continuously do, rather than what it has built once.",
+      "key": "dg4xoh"
+    },
+    {
+      "type": "text",
+      "markdown": "**AI doesn't make building the advantage. It makes everything around building the advantage.**",
+      "key": "btbh45"
+    },
+    {
+      "type": "heading",
+      "level": 2,
+      "text": "So, what is worth building?",
+      "key": "k0edma"
+    },
+    {
+      "type": "text",
+      "markdown": "Perhaps the answer isn't more software products.",
+      "key": "o7kjm2"
+    },
+    {
+      "type": "text",
+      "markdown": "It's the services, networks, infrastructure and capabilities that make software useful and dependable. It's the systems that help organisations coordinate, govern and operate the flood of applications being created. It's the ability to take responsibility for outcomes that people and businesses depend on.",
+      "key": "ceelkn"
+    },
+    {
+      "type": "text",
+      "markdown": "Software isn't going away. There may actually be more of it than ever.",
+      "key": "rdjjqk"
+    },
+    {
+      "type": "text",
+      "markdown": "But the value of software as a thing we build and sell may be fundamentally changing.",
+      "key": "qguc3y"
+    },
+    {
+      "type": "text",
+      "markdown": "When everyone can build everything, the question is no longer simply what can we make?",
+      "key": "78dedn"
+    },
+    {
+      "type": "text",
+      "markdown": "**It's what can we offer that others can build, but cannot easily replace?**",
+      "key": "zv3n26"
+    }
+  ]
+}
