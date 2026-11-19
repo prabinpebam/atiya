@@ -149,6 +149,17 @@
       "key": "74tkkf"
     },
     {
+      "type": "figure",
+      "media": "articles/when-everyone-can-build-everything-what-is-worth-building/beyond-the-door",
+      "width": "wide",
+      "lightbox": true,
+      "display": "fit",
+      "background": false,
+      "rounded": false,
+      "showCaption": false,
+      "key": "0naezj"
+    },
+    {
       "type": "text",
       "markdown": "This is where software businesses may evolve into outcome providers. They use whatever software is necessary to deliver the value people actually pay for. The application becomes an implementation detail; the outcome remains the product.",
       "key": "ndg23t"
@@ -183,6 +194,17 @@
       "type": "text",
       "markdown": "**You can copy the product. You cannot copy the network.**",
       "key": "th98w0"
+    },
+    {
+      "type": "figure",
+      "media": "articles/when-everyone-can-build-everything-what-is-worth-building/you-cant-fold-a-crowd",
+      "width": "popout",
+      "lightbox": true,
+      "display": "fit",
+      "background": false,
+      "rounded": false,
+      "showCaption": false,
+      "key": "gceayz"
     },
     {
       "type": "heading",
@@ -280,6 +302,17 @@
       "type": "text",
       "markdown": "There is a paradox here. AI makes innovation easier to create, but potentially harder to commercialise as an exclusive advantage. And the faster innovations can be reproduced, the shorter the window in which being first matters.",
       "key": "kujilb"
+    },
+    {
+      "type": "figure",
+      "media": "articles/when-everyone-can-build-everything-what-is-worth-building/the-recipe-stays-backstage",
+      "width": "popout",
+      "lightbox": true,
+      "display": "fit",
+      "background": false,
+      "rounded": false,
+      "showCaption": false,
+      "key": "g5ehq8"
     },
     {
       "type": "heading",
