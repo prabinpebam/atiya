@@ -331,5 +331,12 @@
       "markdown": "**It's what can we offer that others can build, but cannot easily replace?**",
       "key": "zv3n26"
     }
-  ]
+  ],
+  "hero": {
+    "media": "articles/when-everyone-can-build-everything-what-is-worth-building/the-fold-up-fair",
+    "display": "fit",
+    "background": false,
+    "rounded": false,
+    "showCaption": false
+  }
 }

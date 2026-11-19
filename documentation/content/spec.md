@@ -234,8 +234,8 @@ The owner requested **When Everyone Can Build Everything, What Is Worth Building
 | Keep nonpublic material out of public files | A nonpublic example and its dependent transition are omitted pending a public citation or publication clearance; no identifying details are recorded here |
 | Use the existing content contract | One `note` article and one Writing node, with the stable ID and slug `when-everyone-can-build-everything-what-is-worth-building`; no schema, renderer or component changes |
 | Do not invent publication metadata | Reuse a source sentence as the summary; use the existing AI and Making topics; omit `publishedAt`. `updatedAt` records the import maintenance date, not the essay's authorship or publication date |
-| Match the established illustration method | Use the shared `ink-sketch` style and `illustrate.py`, with an article-specific fold-up fair cast, a hero, eight body pictures and two thumbnail shapes. The manifest is a proposal, not approval |
-| Keep the unfinished article nonpublic | Keep `status: draft`; no image generation before explicit illustration approval, and no publication or deployment in the proposal increment |
+| Match the established illustration method | Use the shared `ink-sketch` style and `illustrate.py`, with an article-specific fold-up fair cast, a hero, eight body pictures and two thumbnail shapes. The owner explicitly directed generation and insertion into the draft on 19 November for in-context review |
+| Keep the unfinished article nonpublic | Keep `status: draft`, with no publication date. Integrate reviewed image pairs locally in coherent increments; no push, article publication or deployment is authorised by draft-artwork review |
 
 ## 7. Performance and budgets
 
