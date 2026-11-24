@@ -1,18 +1,8 @@
 {
   "login": "prabinpebam",
-  "fetchedAt": "2026-11-22T23:42:53.879Z",
-  "through": "2026-11-22",
+  "fetchedAt": "2026-11-24T04:00:34.335Z",
+  "through": "2026-11-24",
   "days": [
-    {
-      "date": "2025-11-23",
-      "count": 47,
-      "level": 2
-    },
-    {
-      "date": "2025-11-24",
-      "count": 44,
-      "level": 2
-    },
     {
       "date": "2025-11-25",
       "count": 72,
@@ -1820,12 +1810,22 @@
     },
     {
       "date": "2026-11-21",
-      "count": 0,
-      "level": 0
+      "count": 1,
+      "level": 1
     },
     {
       "date": "2026-11-22",
-      "count": 8,
+      "count": 26,
+      "level": 1
+    },
+    {
+      "date": "2026-11-23",
+      "count": 103,
+      "level": 1
+    },
+    {
+      "date": "2026-11-24",
+      "count": 1,
       "level": 1
     }
   ]
